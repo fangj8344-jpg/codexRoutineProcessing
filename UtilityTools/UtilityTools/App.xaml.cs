@@ -1,0 +1,118 @@
+﻿using NLog;
+using NLog.Config;
+using NLog.Targets;
+using Prism.Ioc;
+using Prism.Modularity;
+using System.Threading.Tasks;
+using System;
+using System.Windows;
+using UtilityTools.Core.Interface;
+using UtilityTools.Modules.ModuleName;
+using UtilityTools.Services;
+using UtilityTools.Services.Interfaces;
+using UtilityTools.Views;
+using UtilityTools.Core.Helper;
+using UtilityTools.ViewModels;
+using UtilityTools.Core.Dialog;
+
+namespace UtilityTools
+{
+    /// <summary>
+    /// Interaction logic for App.xaml
+    /// </summary>
+    public partial class App
+    {
+        protected override Window CreateShell()
+        {
+            //UI线程未捕获异常处理事件
+            this.DispatcherUnhandledException += OnDispatcherUnhandledException;
+            //Task线程内未捕获异常处理事件
+            TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+            //多线程异常
+            AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+            return Container.Resolve<MainWindow>();
+        }
+
+        private void OnDispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+        {
+            //通常全局异常捕捉的都是致命信息
+            LogManager.GetCurrentClassLogger().Fatal($"{e.Exception.StackTrace},{e.Exception.Message}");
+        }
+
+        private void OnUnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
+        {
+            LogManager.GetCurrentClassLogger().Fatal($"{e.Exception.StackTrace},{e.Exception.Message}");
+        }
+
+        private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            Exception ex = e.ExceptionObject as Exception;
+            LogManager.GetCurrentClassLogger().Fatal($"{ex.StackTrace},{ex.Message}");
+
+            //记录dump文件
+            MiniDump.TryDump($"dumps\\Wemail_{DateTime.Now.ToString("HH-mm-ss-ms")}.dmp");
+        }
+
+        protected override void RegisterTypes(IContainerRegistry containerRegistry)
+        {
+            containerRegistry.RegisterSingleton<IMessageService, MessageService>();
+
+            containerRegistry.Register<IDialogHostService, DialogHostService>();
+            containerRegistry.RegisterForNavigation<HomeView, HomeViewModel>();
+        }
+
+        protected override void ConfigureModuleCatalog(IModuleCatalog moduleCatalog)
+        {
+            moduleCatalog.AddModule<ModuleNameModule>(ModuleNameModule.ModuleName);
+        }
+
+        protected override void OnInitialized()
+        {
+            LogConfig();
+            var service = App.Current.MainWindow.DataContext as IConfigureService;
+            if (service != null)
+                service.InitConfig();
+            base.OnInitialized();
+        }
+
+        protected void LogConfig()
+        {
+            // Step 1. Create configuration object 
+            var config = new LoggingConfiguration();
+
+            // Step 2. Create targets and add them to the configuration 
+            var consoleTarget = new ColoredConsoleTarget();
+            config.AddTarget("console", consoleTarget);
+
+            var fileTarget = new FileTarget();
+            config.AddTarget("file", fileTarget);
+
+            // Step 3. Set target properties 
+            consoleTarget.Layout = @"${date:format=HH\:mm\:ss} ${logger} ${message}";
+            fileTarget.FileName = "${basedir}/Log.txt";
+            fileTarget.Layout = @"${longdate}|${level:uppercase=true}|${logger}|${message:withexception=true}";
+
+            // Step 4. Define rules
+            var rule1 = new LoggingRule("*", LogLevel.Debug, consoleTarget);
+            config.LoggingRules.Add(rule1);
+
+            var rule2 = new LoggingRule("*", LogLevel.Error, fileTarget);
+            config.LoggingRules.Add(rule2);
+
+            var rule3 = new LoggingRule("*", LogLevel.Info, fileTarget);
+            config.LoggingRules.Add(rule3);
+
+            var rule4 = new LoggingRule("*", LogLevel.Warn, fileTarget);
+            config.LoggingRules.Add(rule4);
+
+            var rule5 = new LoggingRule("*", LogLevel.Trace, fileTarget);
+            config.LoggingRules.Add(rule5);
+
+            var rule6 = new LoggingRule("*", LogLevel.Fatal, fileTarget);
+            config.LoggingRules.Add(rule6);
+
+            // Step 5. Activate the configuration
+            LogManager.Configuration = config;
+        }
+    }
+}

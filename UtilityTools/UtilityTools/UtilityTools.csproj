@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MaterialDesignColors" Version="2.1.4" />
+    <PackageReference Include="MaterialDesignThemes" Version="4.9.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
+    <PackageReference Include="NLog" Version="5.2.3" />
+    <PackageReference Include="NLog.Extensions.Logging" Version="5.3.3" />
+    <PackageReference Include="Prism.DryIoc" Version="8.1.97" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\UtilityTools.Core\UtilityTools.Core.csproj" />
+    <ProjectReference Include="..\Modules\UtilityTools.Modules.ModuleName\UtilityTools.Modules.ModuleName.csproj" />
+    <ProjectReference Include="..\Services\UtilityTools.Services.Interfaces\UtilityTools.Services.Interfaces.csproj" />
+    <ProjectReference Include="..\Services\UtilityTools.Services\UtilityTools.Services.csproj" />
+  </ItemGroup>
+</Project>
