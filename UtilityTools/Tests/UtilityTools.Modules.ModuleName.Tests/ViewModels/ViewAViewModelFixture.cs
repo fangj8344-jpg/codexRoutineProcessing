@@ -1,7 +1,7 @@
 ﻿using Moq;
 using Prism.Ioc;
 using Prism.Regions;
-using UtilityTools.Modules.ModuleName.ViewModels;
+using UtilityTools.Modules.NetController.ViewModels;
 using UtilityTools.Services.Interfaces;
 using Xunit;
 
@@ -25,7 +25,7 @@ namespace UtilityTools.Modules.ModuleName.Tests.ViewModels
         [Fact]
         public void MessagePropertyValueUpdated()
         {
-            var vm = new ViewAViewModel(_containerProviderMock.Object, _messageServiceMock.Object);
+            var vm = new NetControllerViewModel(_containerProviderMock.Object, _messageServiceMock.Object);
 
             _messageServiceMock.Verify(x => x.GetMessage(), Times.Once);
 
@@ -35,7 +35,7 @@ namespace UtilityTools.Modules.ModuleName.Tests.ViewModels
         [Fact]
         public void MessageINotifyPropertyChangedCalled()
         {
-            var vm = new ViewAViewModel(_containerProviderMock.Object, _messageServiceMock.Object);
+            var vm = new NetControllerViewModel(_containerProviderMock.Object, _messageServiceMock.Object);
             Assert.PropertyChanged(vm, nameof(vm.Message), () => vm.Message = "Changed");
         }
     }

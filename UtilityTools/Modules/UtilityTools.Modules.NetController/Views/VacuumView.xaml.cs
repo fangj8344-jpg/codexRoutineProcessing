@@ -13,14 +13,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace UtilityTools.Modules.ModuleName.Views
+namespace UtilityTools.Modules.NetController.Views
 {
     /// <summary>
-    /// Interaction logic for ViewA.xaml
+    /// VacuumView.xaml 的交互逻辑
     /// </summary>
-    public partial class ViewA : UserControl
+    public partial class VacuumView : UserControl
     {
-        public ViewA()
+        public VacuumView()
         {
             InitializeComponent();
         }

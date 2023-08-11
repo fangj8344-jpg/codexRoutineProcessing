@@ -7,13 +7,14 @@ using System.Threading.Tasks;
 using System;
 using System.Windows;
 using UtilityTools.Core.Interface;
-using UtilityTools.Modules.ModuleName;
 using UtilityTools.Services;
 using UtilityTools.Services.Interfaces;
 using UtilityTools.Views;
 using UtilityTools.Core.Helper;
 using UtilityTools.ViewModels;
 using UtilityTools.Core.Dialog;
+using UtilityTools.Modules.NetController;
+using UtilityTools.Modules.VacMonitor;
 
 namespace UtilityTools
 {
@@ -59,11 +60,14 @@ namespace UtilityTools
 
             containerRegistry.Register<IDialogHostService, DialogHostService>();
             containerRegistry.RegisterForNavigation<HomeView, HomeViewModel>();
+
+            containerRegistry.RegisterDialog<SerialPortView>();
         }
 
         protected override void ConfigureModuleCatalog(IModuleCatalog moduleCatalog)
         {
-            moduleCatalog.AddModule<ModuleNameModule>(ModuleNameModule.ModuleName);
+            moduleCatalog.AddModule<NetControllerModule>(NetControllerModule.ModuleName);
+            moduleCatalog.AddModule<VacMonitorModule>(VacMonitorModule.ModuleName);
         }
 
         protected override void OnInitialized()

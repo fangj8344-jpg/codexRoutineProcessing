@@ -13,14 +13,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace UtilityTools.Modules.ModuleName.Views
+namespace UtilityTools.Views
 {
     /// <summary>
-    /// TestView.xaml 的交互逻辑
+    /// SerialPortView.xaml 的交互逻辑
     /// </summary>
-    public partial class TestView : UserControl
+    public partial class SerialPortView : UserControl
     {
-        public TestView()
+        public SerialPortView()
         {
             InitializeComponent();
         }

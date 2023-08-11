@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Modules\UtilityTools.Modules.ModuleName\UtilityTools.Modules.ModuleName.csproj" />
+    <ProjectReference Include="..\..\Modules\UtilityTools.Modules.NetController\UtilityTools.Modules.NetController.csproj" />
   </ItemGroup>
 
 </Project>

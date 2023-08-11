@@ -1,0 +1,164 @@
+﻿<UserControl x:Class="UtilityTools.Modules.NetController.Views.LightView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:cv="clr-namespace:UtilityTools.Core.Converter;assembly=UtilityTools.Core"
+             xmlns:model="clr-namespace:UtilityTools.Modules.NetController.Model"
+             xmlns:ex="clr-namespace:UtilityTools.Core.Extension;assembly=UtilityTools.Core"
+             xmlns:local="clr-namespace:UtilityTools.Modules.NetController.Views"
+             mc:Ignorable="d"
+             d:DesignHeight="450"
+             d:DesignWidth="800">
+    <UserControl.Resources>
+        <cv:IntToBitBoolConverter x:Key="intToBitBoolConverter"/>
+        <ObjectDataProvider x:Key="enumFlowDirection"
+                            MethodName="GetValues"
+                            ObjectType="{x:Type model:EnumFlowDirection}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type Type="model:EnumFlowDirection" />
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </UserControl.Resources>
+
+    <GroupBox Grid.Row="2"
+              Grid.Column="0"
+              Grid.ColumnSpan="2"
+              Header="灯光控制"
+              Margin="2">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+            <DockPanel Grid.Row="0"
+                       VerticalAlignment="Center">
+                <TextBlock Text="灯编号"
+                           Margin="5, 0" />
+                <UniformGrid Rows="1">
+                    <CheckBox IsChecked="{Binding NumMask, Converter={StaticResource intToBitBoolConverter}, ConverterParameter=0}"
+                              Content="1"
+                              Style="{StaticResource MaterialDesignLightCheckBox}" />
+                    <CheckBox IsChecked="{Binding NumMask, Converter={StaticResource intToBitBoolConverter}, ConverterParameter=1}"
+                              Content="2"
+                              Style="{StaticResource MaterialDesignLightCheckBox}" />
+                    <CheckBox IsChecked="{Binding NumMask, Converter={StaticResource intToBitBoolConverter}, ConverterParameter=2}"
+                              Content="3"
+                              Style="{StaticResource MaterialDesignLightCheckBox}" />
+                    <CheckBox IsChecked="{Binding NumMask, Converter={StaticResource intToBitBoolConverter}, ConverterParameter=3}"
+                              Content="4"
+                              Style="{StaticResource MaterialDesignLightCheckBox}" />
+                    <CheckBox IsChecked="{Binding NumMask, Converter={StaticResource intToBitBoolConverter}, ConverterParameter=4}"
+                              Content="5"
+                              Style="{StaticResource MaterialDesignLightCheckBox}" />
+                    <CheckBox IsChecked="{Binding NumMask, Converter={StaticResource intToBitBoolConverter}, ConverterParameter=5}"
+                              Content="6"
+                              Style="{StaticResource MaterialDesignLightCheckBox}" />
+                    <CheckBox IsChecked="{Binding NumMask, Converter={StaticResource intToBitBoolConverter}, ConverterParameter=6}"
+                              Content="7"
+                              Style="{StaticResource MaterialDesignLightCheckBox}" />
+                    <CheckBox IsChecked="{Binding NumMask, Converter={StaticResource intToBitBoolConverter}, ConverterParameter=7}"
+                              Content="8"
+                              Style="{StaticResource MaterialDesignLightCheckBox}" />
+                    <CheckBox IsChecked="{Binding NumMask, Converter={StaticResource intToBitBoolConverter}, ConverterParameter=8}"
+                              Content="9"
+                              Style="{StaticResource MaterialDesignLightCheckBox}" />
+                    <CheckBox IsChecked="{Binding NumMask, Converter={StaticResource intToBitBoolConverter}, ConverterParameter=9}"
+                              Content="10"
+                              Style="{StaticResource MaterialDesignLightCheckBox}" />
+                    <CheckBox IsChecked="{Binding NumMask, Converter={StaticResource intToBitBoolConverter}, ConverterParameter=10}"
+                              Content="11"
+                              Style="{StaticResource MaterialDesignLightCheckBox}" />
+                    <CheckBox IsChecked="{Binding NumMask, Converter={StaticResource intToBitBoolConverter}, ConverterParameter=11}"
+                              Content="12"
+                              Style="{StaticResource MaterialDesignLightCheckBox}" />
+                    <CheckBox IsChecked="{Binding NumMask, Converter={StaticResource intToBitBoolConverter}, ConverterParameter=12}"
+                              Content="13"
+                              Style="{StaticResource MaterialDesignLightCheckBox}" />
+                    <CheckBox IsChecked="{Binding NumMask, Converter={StaticResource intToBitBoolConverter}, ConverterParameter=13}"
+                              Content="14"
+                              Style="{StaticResource MaterialDesignLightCheckBox}" />
+                    <CheckBox IsChecked="{Binding NumMask, Converter={StaticResource intToBitBoolConverter}, ConverterParameter=14}"
+                              Content="15"
+                              Style="{StaticResource MaterialDesignLightCheckBox}" />
+                    <CheckBox IsChecked="{Binding NumMask, Converter={StaticResource intToBitBoolConverter}, ConverterParameter=15}"
+                              Content="16"
+                              Style="{StaticResource MaterialDesignLightCheckBox}" />
+                </UniformGrid>
+            </DockPanel>
+
+            <UniformGrid Grid.Row="1"
+                         Rows="1"
+                         VerticalAlignment="Center">
+                <DockPanel Margin="0, 0, 5, 0">
+                    <TextBlock Text="呼吸灯周期" />
+                    <TextBox Text="{Binding BreathPeriod}"
+                             TextAlignment="Center" />
+                </DockPanel>
+
+                <DockPanel Margin="5, 0, 0, 0">
+                    <TextBlock Text="闪烁周期" />
+                    <TextBox Text="{Binding BlinkPeriod}"
+                             TextAlignment="Center" />
+                </DockPanel>
+
+                <DockPanel Margin="5, 0, 0, 0">
+                    <TextBlock Text="进度值" />
+                    <TextBox Text="{Binding LoadValue}"
+                             TextAlignment="Center" />
+                </DockPanel>
+            </UniformGrid>
+
+            <UniformGrid Grid.Row="2"
+                         Rows="1"
+                         VerticalAlignment="Center">
+                <DockPanel Margin="0, 0, 5, 0">
+                    <TextBlock Text="流动周期" />
+                    <TextBox Text="{Binding FlowPeriod}"
+                             TextAlignment="Center" />
+                </DockPanel>
+
+                <DockPanel Margin="5, 0, 0, 0">
+                    <TextBlock Text="流动方向" />
+                    <ComboBox IsReadOnly="True"
+                              SelectedItem="{Binding FlowDirect}"
+                              HorizontalContentAlignment="Center"
+                              ItemsSource="{Binding Source={StaticResource enumFlowDirection}}" />
+                </DockPanel>
+
+                <DockPanel Margin="5, 0, 0, 0">
+                    <TextBlock Text="流动灯数量" />
+                    <TextBox Text="{Binding FlowCount}"
+                             TextAlignment="Center" />
+                </DockPanel>
+            </UniformGrid>
+
+            <DockPanel Grid.Row="3"
+                       VerticalAlignment="Center"
+                       LastChildFill="False">
+                <StackPanel DockPanel.Dock="Left"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                    <TextBlock Text="工作模式"
+                               VerticalAlignment="Center"
+                               Margin="0, 0, 5, 0" />
+                    <ComboBox IsReadOnly="True"
+                              Margin="5, 0, 5, 0"
+                              HorizontalContentAlignment="Center"
+                              DisplayMemberPath="Description"
+                              SelectedValue="{Binding WorkType}"
+                              SelectedValuePath="Value"
+                              ItemsSource="{Binding Source={ex:Enum {x:Type model:EnumLightWorkType}}}" />
+                </StackPanel>
+
+                <Button Content="更新灯光状态"
+                        Command="{Binding ExecuteCommand}"
+                        CommandParameter="更新灯光状态"
+                        DockPanel.Dock="Right"
+                        Margin="5, 0" />
+            </DockPanel>
+        </Grid>
+    </GroupBox>
+</UserControl>
