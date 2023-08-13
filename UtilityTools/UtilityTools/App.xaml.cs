@@ -13,8 +13,6 @@ using UtilityTools.Views;
 using UtilityTools.Core.Helper;
 using UtilityTools.ViewModels;
 using UtilityTools.Core.Dialog;
-using UtilityTools.Modules.NetController;
-using UtilityTools.Modules.VacMonitor;
 
 namespace UtilityTools
 {
@@ -66,8 +64,16 @@ namespace UtilityTools
 
         protected override void ConfigureModuleCatalog(IModuleCatalog moduleCatalog)
         {
-            moduleCatalog.AddModule<NetControllerModule>(NetControllerModule.ModuleName);
-            moduleCatalog.AddModule<VacMonitorModule>(VacMonitorModule.ModuleName);
+            //moduleCatalog.AddModule<NetControllerModule>(NetControllerModule.ModuleName);
+            //moduleCatalog.AddModule<VacMonitorModule>(VacMonitorModule.ModuleName);
+        }
+
+        protected override IModuleCatalog CreateModuleCatalog()
+        {
+            //new ConfigurationModuleCatalog()
+
+            //指定模块加载方式为从文件夹中以反射发现并加载module(推荐用法)
+            return new DirectoryModuleCatalog() { ModulePath = @".\Modules" };
         }
 
         protected override void OnInitialized()

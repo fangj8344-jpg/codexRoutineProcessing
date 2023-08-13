@@ -14,4 +14,10 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\UtilityTools.Core\UtilityTools.Core.csproj" />
   </ItemGroup>
+  <Target Name="CopyTargetFiles" AfterTargets="PostBuildEvent">
+    <ItemGroup>
+      <SomeFiles Include="$(OutDir)$(TargetFileName)"/>
+    </ItemGroup>
+    <Copy SourceFiles="@(SomeFiles)" DestinationFolder="$(SolutionDir)UtilityTools\bin\$(ConfigurationName)\$(TargetFramework)\Modules\" SkipUnchangedFiles="true"/>
+  </Target>
 </Project>

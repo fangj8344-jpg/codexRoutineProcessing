@@ -79,7 +79,7 @@
             <DataTemplate x:Key="intSliderInfoTemplate"
                           DataType="{x:Type model:IntSliderInfoModel}">
                 <DockPanel LastChildFill="True"
-                           VerticalAlignment="Center">
+                           VerticalAlignment="Center" Margin="5,0">
                     <TextBlock Text="{Binding Title}"
                                VerticalAlignment="Center"
                                HorizontalAlignment="Center"
@@ -102,7 +102,7 @@
             <DataTemplate x:Key="doubleSliderInfoTemplate"
                           DataType="{x:Type model:DoubleSliderInfoModel}">
                 <DockPanel LastChildFill="True"
-                           VerticalAlignment="Center">
+                           VerticalAlignment="Center" Margin="5,0">
                     <TextBlock Text="{Binding Title}"
                                VerticalAlignment="Center"
                                HorizontalAlignment="Center"
@@ -125,7 +125,7 @@
             <DataTemplate x:Key="floatSliderInfoTemplate"
                           DataType="{x:Type model:FloatSliderInfoModel}">
                 <DockPanel LastChildFill="True"
-                           VerticalAlignment="Center">
+                           VerticalAlignment="Center" Margin="5,0">
                     <TextBlock Text="{Binding Title}"
                                VerticalAlignment="Center"
                                HorizontalAlignment="Center"

@@ -5,10 +5,9 @@ using UtilityTools.Modules.VacMonitor.Views;
 
 namespace UtilityTools.Modules.VacMonitor
 {
+    [Module(ModuleName ="VacMonitor")]
     public class VacMonitorModule : IModule
     {
-        public static string ModuleName => "VacMonitor";
-
         public void OnInitialized(IContainerProvider containerProvider)
         {
 

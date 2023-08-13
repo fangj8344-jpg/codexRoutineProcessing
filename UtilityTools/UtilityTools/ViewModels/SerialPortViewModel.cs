@@ -25,7 +25,6 @@
 #endregion
 
 using MaterialDesignThemes.Wpf;
-using OxyPlot;
 using Prism.Commands;
 using Prism.Events;
 using Prism.Ioc;
@@ -35,8 +34,6 @@ using System;
 using System.Collections.Generic;
 using System.IO.Ports;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UtilityTools.Core.Dialog;
 using UtilityTools.Core.Model;
 using UtilityTools.Core.Extension;

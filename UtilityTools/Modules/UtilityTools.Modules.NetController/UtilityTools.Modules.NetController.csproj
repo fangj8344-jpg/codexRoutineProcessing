@@ -16,4 +16,7 @@
     <ProjectReference Include="..\..\Services\UtilityTools.Services.Interfaces\UtilityTools.Services.Interfaces.csproj" />
     <ProjectReference Include="..\..\UtilityTools.Core\UtilityTools.Core.csproj" />
   </ItemGroup>
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="xcopy /y $(OutDir)$(TargetFileName) $(SolutionDir)UtilityTools\bin\$(ConfigurationName)\$(TargetFramework)\Modules\" />
+  </Target>
 </Project>
