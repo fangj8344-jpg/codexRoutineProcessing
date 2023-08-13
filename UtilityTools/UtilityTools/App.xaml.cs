@@ -56,6 +56,7 @@ namespace UtilityTools
         protected override void RegisterTypes(IContainerRegistry containerRegistry)
         {
             containerRegistry.RegisterSingleton<IMessageService, MessageService>();
+            containerRegistry.RegisterSingleton<IServiceFactory, ServiceFactory>();
 
             containerRegistry.Register<IDialogHostService, DialogHostService>();
             containerRegistry.RegisterForNavigation<HomeView, HomeViewModel>();

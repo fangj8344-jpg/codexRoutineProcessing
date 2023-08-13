@@ -61,7 +61,9 @@
                                                      Margin="15, 0" />
                                         <TextBlock Text="{Binding Title}"
                                                    Margin="10, 0"
-                                                   TextAlignment="Center" />
+                                                   TextAlignment="Center" 
+                                                   ToolTip="{Binding Tip}">
+                                        </TextBlock>
                                     </StackPanel>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
