@@ -13,6 +13,7 @@ using UtilityTools.Views;
 using UtilityTools.Core.Helper;
 using UtilityTools.ViewModels;
 using UtilityTools.Core.Dialog;
+using UtilityTools.Core.Mvvm;
 
 namespace UtilityTools
 {
@@ -73,7 +74,7 @@ namespace UtilityTools
             //new ConfigurationModuleCatalog()
 
             //指定模块加载方式为从文件夹中以反射发现并加载module(推荐用法)
-            return new DirectoryModuleCatalog() { ModulePath = @".\Modules" };
+            return new CustomModuleCatalog() { ModulePath = @".\Modules" };
         }
 
         protected override void OnInitialized()

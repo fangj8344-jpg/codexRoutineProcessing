@@ -57,9 +57,9 @@
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal"
                                                 VerticalAlignment="Center">
-                                        <md:PackIcon Kind="Tools"
+                                        <md:PackIcon Kind="{Binding Icon}"
                                                      Margin="15, 0" />
-                                        <TextBlock Text="{Binding ModuleName}"
+                                        <TextBlock Text="{Binding Title}"
                                                    Margin="10, 0"
                                                    TextAlignment="Center" />
                                     </StackPanel>

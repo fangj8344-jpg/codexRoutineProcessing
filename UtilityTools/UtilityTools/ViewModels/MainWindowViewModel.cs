@@ -3,12 +3,14 @@ using Prism.Ioc;
 using Prism.Modularity;
 using Prism.Mvvm;
 using Prism.Regions;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Windows.Controls.Primitives;
 using UtilityTools.Core;
 using UtilityTools.Core.Interface;
 using UtilityTools.Core.Model;
+using UtilityTools.Core.Mvvm;
 
 namespace UtilityTools.ViewModels
 {
@@ -25,13 +27,13 @@ namespace UtilityTools.ViewModels
             set { SetProperty(ref _title, value); }
         }
 
-        private ObservableCollection<IModuleInfo> _modules;
+        private ObservableCollection<CustomModuleInfo> _modules;
         /// <summary>
         /// 导航菜单列表
         /// </summary>
-        public ObservableCollection<IModuleInfo> Modules
+        public ObservableCollection<CustomModuleInfo> Modules
         {
-            get => _modules ?? (_modules = new ObservableCollection<IModuleInfo>());
+            get => _modules ?? (_modules = new ObservableCollection<CustomModuleInfo>());
             set { _modules = value; RaisePropertyChanged(); }
         }
 
@@ -144,8 +146,13 @@ namespace UtilityTools.ViewModels
         /// </summary>
         private void LoadedWindow()
         {
-            Modules.Add(new ModuleInfo("Home", "Default"));
-            Modules.AddRange(_moduleCatalog.Modules);
+            Modules.Add(new CustomModuleInfo("Home", "Default") { Title = "首页", Tip="首页", Icon="Home"});
+            foreach (var module in _moduleCatalog.Modules)
+            {
+                var customModule = module as CustomModuleInfo;
+                if(customModule != null)
+                    Modules.Add(customModule);
+            }
         }
 
         /// <summary>
