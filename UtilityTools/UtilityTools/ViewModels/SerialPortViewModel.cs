@@ -37,6 +37,7 @@ using System.Linq;
 using UtilityTools.Core.Dialog;
 using UtilityTools.Core.Model;
 using UtilityTools.Core.Extension;
+using NLog;
 
 namespace UtilityTools.ViewModels
 {
@@ -53,6 +54,7 @@ namespace UtilityTools.ViewModels
             SaveCommand = new DelegateCommand(Save);
             CancelCommand = new DelegateCommand(Cancel);
             SwitchCommand = new DelegateCommand(SwitchSerialPort);
+            DropDownOpenedCommand = new DelegateCommand(DropDownOpened);
 
             this.containerProvider = containerProvider;
             aggregator = containerProvider.Resolve<IEventAggregator>();
@@ -117,6 +119,7 @@ namespace UtilityTools.ViewModels
         public DelegateCommand SaveCommand { get; set; }
         public DelegateCommand CancelCommand { get; set; }
         public DelegateCommand SwitchCommand { get; set; }
+        public DelegateCommand DropDownOpenedCommand { get; set; }
         #endregion
 
         #region ------------PublicMethod------------
@@ -131,8 +134,8 @@ namespace UtilityTools.ViewModels
                 {
                     Model.PortName = PortNames[0];
                     Model.SerialPort.BaudRate = Model.BaudRate;
-                    Model.SerialPort.Parity = Model.ParityType;
-                    Model.SerialPort.StopBits = Model.StopBitsType;
+                    Model.SerialPort.Parity = Model.Parity;
+                    Model.SerialPort.StopBits = Model.StopBits;
                     Model.SerialPort.DataBits = Model.DataBits;
                 }
             }
@@ -223,8 +226,8 @@ namespace UtilityTools.ViewModels
                 Model.SerialPort.BaudRate = Model.BaudRate;
                 Model.SerialPort.PortName = Model.PortName;
                 Model.SerialPort.DataBits = Model.DataBits;
-                Model.SerialPort.StopBits = Model.StopBitsType;
-                Model.SerialPort.Parity = Model.ParityType;
+                Model.SerialPort.StopBits = Model.StopBits;
+                Model.SerialPort.Parity = Model.Parity;
 
                 try
                 {
@@ -234,9 +237,18 @@ namespace UtilityTools.ViewModels
                 catch (Exception ex)
                 {
                     //提示错误信息
-                    aggregator.SendMessage("串口打开失败！");
+                    aggregator.SendMessage($"{Model.PortName}串口打开失败: {ex.Message}！");
+                    LogManager.GetCurrentClassLogger().Error($"{Model.PortName}串口打开失败: {ex.Message}！");
                 }
             }
+        }
+
+        /// <summary>
+        /// 下拉框打开
+        /// </summary>
+        private void DropDownOpened()
+        {
+            PortNames = SerialPort.GetPortNames().ToList<string>();
         }
         #endregion
 

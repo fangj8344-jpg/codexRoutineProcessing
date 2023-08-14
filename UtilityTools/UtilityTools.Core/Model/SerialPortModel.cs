@@ -31,6 +31,7 @@ using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Media.Imaging;
 
 namespace UtilityTools.Core.Model
 {
@@ -43,8 +44,8 @@ namespace UtilityTools.Core.Model
         private SerialPort _serialPort = new SerialPort();
         private string _portName;
         private int _baudRate = 115200;
-        private Parity _parityType = Parity.None;
-        private StopBits _stopBitsType = StopBits.One;
+        private Parity _parity = Parity.None;
+        private StopBits _stopBits = StopBits.One;
         private int _dataBits = 8;
         #endregion
 
@@ -79,19 +80,19 @@ namespace UtilityTools.Core.Model
         /// <summary>
         /// 校验码
         /// </summary>
-        public Parity ParityType
+        public Parity Parity
         {
-            get { return _parityType; }
-            set { _parityType = value; RaisePropertyChanged(); }
+            get { return _parity; }
+            set { _parity = value; RaisePropertyChanged(); }
         }
 
         /// <summary>
         /// 停止位
         /// </summary>
-        public StopBits StopBitsType
+        public StopBits StopBits
         {
-            get { return _stopBitsType; }
-            set { _stopBitsType = value; RaisePropertyChanged(); }
+            get { return _stopBits; }
+            set { _stopBits = value; RaisePropertyChanged(); }
         }
 
         /// <summary>
@@ -105,6 +106,35 @@ namespace UtilityTools.Core.Model
         #endregion
 
         #region ------------PublicMethod------------
+        /// <summary>
+        /// 打开串口，需要外层函数捕获异常
+        /// </summary>
+        /// <returns>是否打开串口成功</returns>
+        public bool Open()
+        {
+            SerialPort.PortName = PortName;
+            SerialPort.BaudRate = BaudRate;
+            SerialPort.DataBits = DataBits;
+            SerialPort.StopBits = StopBits;
+            SerialPort.Parity = Parity;
+            SerialPort.Open();
+            return SerialPort.IsOpen;
+        }
+
+        /// <summary>
+        /// 关闭串口，需要外层函数捕获异常
+        /// </summary>
+        /// <returns>是否关闭串口成功</returns>
+        public bool Close()
+        { 
+            if(!SerialPort.IsOpen) 
+            {
+                SerialPort.Close();
+            }
+
+            return SerialPort.IsOpen == false;
+        }
+
         #endregion
 
         #region ------------PrivateMethod------------

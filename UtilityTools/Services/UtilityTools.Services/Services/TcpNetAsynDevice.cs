@@ -34,15 +34,51 @@ namespace UtilityTools.Services.Services
     public class TcpNetAsynDevice : IAsynRWService, INetService
     {
         #region ------------Constructor------------
+        public TcpNetAsynDevice()
+        {
+            
+        }
         #endregion
 
         #region ------------Field------------
         #endregion
 
         #region ------------Property------------
+        public bool IsOpen => throw new NotImplementedException();
+
+        public string Name { get ; set ; }
+
+        #endregion
+
+        #region ------------Event------------
+        public event EventHandler<byte[]> UpdateResponse;
         #endregion
 
         #region ------------PublicMethod------------
+        public void Close()
+        {
+            throw new NotImplementedException();
+        }
+
+        public object GetHandle()
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Open()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SendMsg(byte[] cmd)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetHandle(object obj)
+        {
+            throw new NotImplementedException();
+        }
         #endregion
 
         #region ------------PrivateMethod------------
@@ -50,5 +86,7 @@ namespace UtilityTools.Services.Services
 
         #region ------------StaticMethod------------
         #endregion
+
+
     }
 }

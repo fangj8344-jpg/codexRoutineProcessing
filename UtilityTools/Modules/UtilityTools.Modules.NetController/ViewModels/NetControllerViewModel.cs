@@ -34,6 +34,7 @@ using UtilityTools.Core.Mvvm;
 using UtilityTools.Modules.NetController.Model;
 using UtilityTools.Modules.NetController.Views;
 using UtilityTools.Services.Interfaces;
+using UtilityTools.Services.Interfaces.IServices;
 
 namespace UtilityTools.Modules.NetController.ViewModels
 {
@@ -72,6 +73,11 @@ namespace UtilityTools.Modules.NetController.ViewModels
             get { return _message; }
             set { _message = value; RaisePropertyChanged(); }
         }
+
+        /// <summary>
+        /// 通讯服务
+        /// </summary>
+        public ISyncRWService Service { get; set; }
 
         /// <summary>
         /// CCS参数模型

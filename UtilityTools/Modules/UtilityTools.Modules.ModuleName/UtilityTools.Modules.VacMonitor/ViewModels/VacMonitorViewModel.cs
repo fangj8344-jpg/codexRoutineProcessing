@@ -45,6 +45,9 @@ using System.IO.Ports;
 using UtilityTools.Modules.VacMonitor.Protocol;
 using System.Windows;
 using NLog;
+using UtilityTools.Services.Interfaces.IServices;
+using System.Windows.Interop;
+using UtilityTools.Services.Interfaces;
 
 namespace UtilityTools.Modules.VacMonitor.ViewModels
 {
@@ -59,8 +62,7 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
             InitCommand();
             InitProperty();
 
-            DeviceModel.SerialPort.DataReceived += SerialPort_DataReceived;
-            DeviceModel.SerialPort.ErrorReceived += SerialPort_ErrorReceived;
+            Service.UpdateResponse += Service_UpdateResponse;
         }
 
         ~VacMonitorViewModel()
@@ -72,11 +74,9 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
                 _timer = null;
             }
 
-            if (DeviceModel != null)
+            if (Service != null)
             {
-                DeviceModel.SerialPort.Close();
-                DeviceModel.SerialPort.Dispose();
-                DeviceModel = null;
+                Service.Close();
             }
         }
         #endregion
@@ -102,15 +102,10 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
             set { _isConnected = value; RaisePropertyChanged(); }
         }
 
-        private SerialPortModel _deviceModel;
         /// <summary>
-        /// 串口实例
+        /// 下位机服务端接口
         /// </summary>
-        public SerialPortModel DeviceModel
-        {
-            get { return _deviceModel; }
-            set { _deviceModel = value; RaisePropertyChanged(); }
-        }
+        public IAsynRWService Service { get; set; }
 
         private string _monitorState;
         /// <summary>
@@ -187,7 +182,7 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         private void InitProperty()
         {
             IsConnected = false;
-            DeviceModel = new SerialPortModel();
+            Service = _containerProvider.Resolve<IServiceFactory>().GetAsynRWService("SPVM");
             MonitorState = "开始监控";
             MonitorInterval = 1000;
 
@@ -210,14 +205,14 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         private async void ShowDevice()
         {
             DialogParameters parameter = new DialogParameters();
-            parameter.Add("Value", DeviceModel);
+            parameter.Add("Value", Service.GetHandle());
             var diaglogResult = await this._dialogHostService.ShowDialog("SerialPortView", parameter, CommonModel.VacMonitorRegionName);
             if (diaglogResult == null)
                 return;
             if (diaglogResult.Result == ButtonResult.OK && diaglogResult.Parameters.ContainsKey("Value"))
             {
-                DeviceModel = diaglogResult.Parameters.GetValue<SerialPortModel>("Value");
-                IsConnected = DeviceModel.SerialPort.IsOpen;
+                Service.SetHandle(diaglogResult.Parameters.GetValue<object>("Value"));
+                IsConnected = Service.IsOpen;
             }
         }
 
@@ -336,6 +331,54 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Service_UpdateResponse(object sender, byte[] e)
+        {
+            var msg = Encoding.Default.GetString(e);
+
+            Application.Current.Dispatcher.Invoke(new Action(() =>
+            {
+                LogSource.Insert(0, new VacuumLogModel()
+                {
+                    Time = DateTime.Now,
+                    Message = msg,
+                    Direct = "R"
+                });
+
+                int length = LogSource.Count;
+                if (length > 1000)
+                {
+                    LogSource.RemoveAt(length - 1);
+                }
+            }));
+
+            if (VacMonitorProtocol.TryParseResponse(msg, out int index, out double vac))
+            {
+                switch (index)
+                {
+                    case 1:
+                        {
+                            _vacuum1.Points.Add(new DataPoint(_vacuum1.Points.Count(), vac));
+                            break;
+                        }
+                    case 2:
+                        {
+                            _vacuum1.Points.Add(new DataPoint(_vacuum2.Points.Count(), vac));
+                            break;
+                        }
+                    case 3:
+                        {
+                            _vacuum1.Points.Add(new DataPoint(_vacuum3.Points.Count(), vac));
+                            break;
+                        }
+                }
+            }
+        }
+
+        /// <summary>
         /// 串口通讯异常数据回报接收函数
         /// </summary>
         /// <param name="sender"></param>
@@ -372,10 +415,7 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
                 }
             }));
 
-            if (DeviceModel.SerialPort.IsOpen)
-            {
-                DeviceModel.SerialPort.Write(msg, 0, msg.Length);
-            }
+            Service.SendMsg(msg);
         }
         #endregion
 

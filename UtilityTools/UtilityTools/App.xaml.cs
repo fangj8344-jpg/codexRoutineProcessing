@@ -72,9 +72,7 @@ namespace UtilityTools
 
         protected override IModuleCatalog CreateModuleCatalog()
         {
-            //new ConfigurationModuleCatalog()
-
-            //指定模块加载方式为从文件夹中以反射发现并加载module(推荐用法)
+            //指定模块加载方式为从文件夹中以反射发现并加载module(推荐用法)，并捕获自定义Attribute
             return new CustomModuleCatalog() { ModulePath = @".\Modules" };
         }
 
