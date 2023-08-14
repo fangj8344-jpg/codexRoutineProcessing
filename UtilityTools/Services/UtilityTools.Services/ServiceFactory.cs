@@ -26,7 +26,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Text;
+using UtilityTools.Core.Helper;
 using UtilityTools.Core.Model;
 using UtilityTools.Services.Interfaces;
 using UtilityTools.Services.Interfaces.IServices;
@@ -219,7 +221,32 @@ namespace UtilityTools.Services
         /// <returns></returns>
         public ISyncRWService GetSyncRWService(string type)
         {
-            throw new NotImplementedException();
+            lock (this)
+            {
+                if (IsVirtualDevice)
+                    type = "VirtualDevice";
+
+                if (SyncRWServices.ContainsKey(type))
+                    return SyncRWServices[type];
+                switch (type)
+                {
+                    case "VirtualDevice":
+                        {
+                            ISyncRWService device = new VirtualSyncService();
+                            SyncRWServices.Add(type, device);
+                            return device;
+                        }
+                    // UDP网口主控设备
+                    case "UNCB":
+                        {
+                            ISyncRWService device = new UdpNetSyncDevice();
+                            SyncRWServices.Add(type, device);
+                            return device;
+                        }
+                    default:
+                        return null;
+                }
+            }
         }
 
         /// <summary>

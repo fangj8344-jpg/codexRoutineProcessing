@@ -74,7 +74,7 @@
                            Margin="0, 0, 10, 0" />
                 <ComboBox DockPanel.Dock="Left"
                           ItemsSource="{Binding StopBitsTypes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                          SelectedItem="{Binding Model.StopBitsType, Converter={StaticResource StringToStopBitsConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
+                          SelectedItem="{Binding Model.StopBits, Converter={StaticResource StringToStopBitsConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged }"
                           Style="{StaticResource MaterialDesignComboBox}" />
             </DockPanel>
             <DockPanel DockPanel.Dock="Top"
@@ -96,7 +96,7 @@
                            Margin="0, 0, 10, 0" />
                 <ComboBox DockPanel.Dock="Left"
                           ItemsSource="{Binding ParityTypes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                          SelectedItem="{Binding Model.ParityType, Converter={StaticResource StringToParityConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          SelectedItem="{Binding Model.Parity, Converter={StaticResource StringToParityConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                           Style="{StaticResource MaterialDesignComboBox}" />
             </DockPanel>
         </DockPanel>

@@ -28,6 +28,10 @@ namespace UtilityTools.Services.Interfaces.IServices
             set;
         }
 
+        /// <summary>
+        /// 数据传输是否采用二进制传输
+        /// </summary>
+        bool IsBinary { get; set; }
         #endregion
 
         #region Event

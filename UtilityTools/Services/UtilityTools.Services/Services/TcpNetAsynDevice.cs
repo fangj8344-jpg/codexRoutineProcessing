@@ -27,6 +27,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using UtilityTools.Core.Model;
 using UtilityTools.Services.Interfaces.IServices;
 
 namespace UtilityTools.Services.Services
@@ -44,10 +45,23 @@ namespace UtilityTools.Services.Services
         #endregion
 
         #region ------------Property------------
-        public bool IsOpen => throw new NotImplementedException();
+        public bool IsOpen
+        {
+            get
+            {
+                if (DeviceInstance != null && DeviceInstance.Socket != null)
+                {
+                    return DeviceInstance.Socket.Connected;
+                }
+                return false;
+            }
+        }
 
         public string Name { get ; set ; }
 
+        public bool IsBinary { get; set; }
+
+        public NetConfigModel DeviceInstance { get; set; }
         #endregion
 
         #region ------------Event------------

@@ -38,15 +38,24 @@ namespace UtilityTools.Core.Model
     public class SerialPortModel : BindableBase
     {
         #region ------------Constructor------------
+        public SerialPortModel()
+        {
+            SerialPort = new SerialPort();
+            PortName = string.Empty;
+            BaudRate = 115200;
+            Parity = Parity.None;
+            StopBits = StopBits.None;
+            DataBits = 8;
+        }
         #endregion
 
         #region ------------Field------------
-        private SerialPort _serialPort = new SerialPort();
+        private SerialPort _serialPort;
         private string _portName;
-        private int _baudRate = 115200;
-        private Parity _parity = Parity.None;
-        private StopBits _stopBits = StopBits.One;
-        private int _dataBits = 8;
+        private int _baudRate;
+        private Parity _parity;
+        private StopBits _stopBits;
+        private int _dataBits;
         #endregion
 
         #region ------------Property------------
@@ -56,7 +65,7 @@ namespace UtilityTools.Core.Model
         public SerialPort SerialPort
         {
             get { return _serialPort; }
-            set { _serialPort = value; RaisePropertyChanged(); }
+            set { _serialPort = value;}
         }
 
         /// <summary>

@@ -27,6 +27,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using UtilityTools.Core.Model;
 using UtilityTools.Services.Interfaces.IServices;
 
 namespace UtilityTools.Services.Services
@@ -40,9 +41,52 @@ namespace UtilityTools.Services.Services
         #endregion
 
         #region ------------Property------------
+        public NetConfigModel DeviceInstance { get; set; }
+
+        public bool IsOpen
+        {
+            get
+            {
+                if (DeviceInstance != null && DeviceInstance.Socket != null)
+                {
+                    return DeviceInstance.Socket.Connected;
+                }
+                return false;
+            }
+        }
+
+        public string Name { get; set; }
+
+        public bool IsBinary { get; set; }
+
         #endregion
 
         #region ------------PublicMethod------------
+
+        public void Close()
+        {
+            throw new NotImplementedException();
+        }
+
+        public object GetHandle()
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Open()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Request(string cmdName, byte[] cmd, out byte[] response, out int length, int waitTime)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetHandle(object obj)
+        {
+            throw new NotImplementedException();
+        }
         #endregion
 
         #region ------------PrivateMethod------------
@@ -50,5 +94,6 @@ namespace UtilityTools.Services.Services
 
         #region ------------StaticMethod------------
         #endregion
+
     }
 }

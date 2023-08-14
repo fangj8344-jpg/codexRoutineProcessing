@@ -40,9 +40,39 @@ namespace UtilityTools.Services.Services
         #endregion
 
         #region ------------Property------------
+        public bool IsOpen => throw new NotImplementedException();
+
+        public string Name { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public bool IsBinary { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
         #endregion
 
         #region ------------PublicMethod------------
+
+        public void Close()
+        {
+            throw new NotImplementedException();
+        }
+
+        public object GetHandle()
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Open()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Request(string cmdName, byte[] cmd, out byte[] response, out int length, int waitTime)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetHandle(object obj)
+        {
+            throw new NotImplementedException();
+        }
         #endregion
 
         #region ------------PrivateMethod------------
@@ -50,5 +80,6 @@ namespace UtilityTools.Services.Services
 
         #region ------------StaticMethod------------
         #endregion
+
     }
 }

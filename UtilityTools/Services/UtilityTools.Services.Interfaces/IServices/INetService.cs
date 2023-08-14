@@ -27,11 +27,16 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using UtilityTools.Core.Model;
 
 namespace UtilityTools.Services.Interfaces.IServices
 {
     public interface INetService
     {
-        
+        NetConfigModel DeviceInstance
+        {
+            get;
+            set;
+        }
     }
 }

@@ -44,6 +44,8 @@ namespace UtilityTools.Services.Services
 
         public string Name { get; set; }
 
+        public bool IsBinary { get; set; }
+
         #endregion
 
         #region ------------Event------------

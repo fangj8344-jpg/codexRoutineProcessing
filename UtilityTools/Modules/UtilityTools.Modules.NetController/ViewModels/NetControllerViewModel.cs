@@ -51,6 +51,8 @@ namespace UtilityTools.Modules.NetController.ViewModels
             Relay = containerProvider.Resolve<RelayModel>();
             Temperature = containerProvider.Resolve<TemperatureModel>();
             Vacuum = containerProvider.Resolve<VacuumModel>();
+
+            Service = containerProvider.Resolve<IServiceFactory>().GetSyncRWService("UNCB");
         }
         #endregion
 
