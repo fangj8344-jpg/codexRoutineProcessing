@@ -27,6 +27,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using UtilityTools.Core.Helper;
 using UtilityTools.Core.Model;
 using UtilityTools.Services.Interfaces.IServices;
 
@@ -86,6 +87,22 @@ namespace UtilityTools.Services.Services
         public void SetHandle(object obj)
         {
             throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// 获取指令字符串，用于日志或者打印信息
+        /// </summary>
+        /// <returns></returns>
+        public string GetCmdString(byte[] cmd, int length)
+        {
+            if (IsBinary)
+            {
+                return DataTypeCaster.ByteArrayToString(cmd, length);
+            }
+            else
+            {
+                return Encoding.Default.GetString(cmd, 0, length);
+            }
         }
         #endregion
 

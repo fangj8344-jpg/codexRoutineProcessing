@@ -187,6 +187,22 @@ namespace UtilityTools.Services.Services
             if (handle is NetConfigModel sp)
                 DeviceInstance = sp;
         }
+
+        /// <summary>
+        /// 获取指令字符串，用于日志或者打印信息
+        /// </summary>
+        /// <returns></returns>
+        public string GetCmdString(byte[] cmd, int length)
+        {
+            if (IsBinary)
+            {
+                return DataTypeCaster.ByteArrayToString(cmd, length);
+            }
+            else
+            {
+                return Encoding.Default.GetString(cmd, 0, length);
+            }
+        }
         #endregion
 
         #region ------------PrivateMethod------------

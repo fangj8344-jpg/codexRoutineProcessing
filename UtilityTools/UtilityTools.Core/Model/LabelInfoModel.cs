@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace UtilityTools.Core.Model
 {
@@ -92,6 +93,7 @@ namespace UtilityTools.Core.Model
         #endregion
 
         #region ------------StaticMethod------------
+        public static readonly DependencyProperty ValueProperty = DependencyProperty.Register("Value", typeof(string), typeof(LabelInfoModel));
         #endregion
     }
 }

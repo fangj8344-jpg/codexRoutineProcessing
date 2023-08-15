@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace UtilityTools.Core.Model
 {
@@ -62,14 +63,24 @@ namespace UtilityTools.Core.Model
             set { _tip = value; RaisePropertyChanged(); }
         }
 
-        private int _index;
+        private string _type;
+        /// <summary>
+        /// 控制类型
+        /// </summary>
+        public string Type
+        {
+            get { return _type; }
+            set { _type = value; RaisePropertyChanged(); }
+        }
+
+        private int _channel;
         /// <summary>
         /// 编号
         /// </summary>
-        public int Index
+        public int Channel
         {
-            get { return _index; }
-            set { _index = value; RaisePropertyChanged(); }
+            get { return _channel; }
+            set { _channel = value; RaisePropertyChanged(); }
         }
 
         private bool _enable;
@@ -91,6 +102,7 @@ namespace UtilityTools.Core.Model
         #endregion
 
         #region ------------StaticMethod------------
+        public static readonly DependencyProperty EnableProperty = DependencyProperty.Register("Enable", typeof(bool), typeof(ToggleInfoModel));
         #endregion
     }
 }

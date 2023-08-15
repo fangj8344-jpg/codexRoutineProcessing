@@ -17,10 +17,9 @@
     </UserControl.Resources>
 
     <md:DialogHost Identifier="{x:Static model:CommonModel.Motor5ControllerRegionName}"
-                   DialogTheme="Inherit"
-                   x:Name="DialogHost">
+                   DialogTheme="Inherit">
         <Grid>
-            <Grid.RowDefinitions>s
+            <Grid.RowDefinitions>
                 <RowDefinition Height="auto" />
                 <RowDefinition />
             </Grid.RowDefinitions>

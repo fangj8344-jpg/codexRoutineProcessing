@@ -27,13 +27,16 @@
 using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UtilityTools.Core.Model;
+using UtilityTools.Core.Mvvm;
 
 namespace UtilityTools.Modules.NetController.Model
 {
-    public class LightModel : BindableBase
+    public class LightModel : CustomBindableBase
     {
         #region ------------Constructor------------
         public LightModel()
@@ -167,6 +170,7 @@ namespace UtilityTools.Modules.NetController.Model
         #endregion
 
         #region ------------PublicMethod------------
+        
         #endregion
 
         #region ------------PrivateMethod------------

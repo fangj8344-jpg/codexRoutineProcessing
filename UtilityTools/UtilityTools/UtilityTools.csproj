@@ -17,5 +17,6 @@
     <ProjectReference Include="..\UtilityTools.Core\UtilityTools.Core.csproj" />
     <ProjectReference Include="..\Services\UtilityTools.Services.Interfaces\UtilityTools.Services.Interfaces.csproj" />
     <ProjectReference Include="..\Services\UtilityTools.Services\UtilityTools.Services.csproj" />
+    <ProjectReference Include="..\UtilityTools.UserControls\UtilityTools.UserControls.csproj" />
   </ItemGroup>
 </Project>

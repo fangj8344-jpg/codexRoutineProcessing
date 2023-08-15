@@ -187,6 +187,22 @@ namespace UtilityTools.Services.Services
             if (handle is SerialPortModel sp)
                 DeviceInstance = sp;
         }
+
+        /// <summary>
+        /// 获取指令字符串，用于日志或者打印信息
+        /// </summary>
+        /// <returns></returns>
+        public string GetCmdString(byte[] cmd, int length)
+        {
+            if (IsBinary)
+            {
+                return DataTypeCaster.ByteArrayToString(cmd, length);
+            }
+            else
+            {
+                return Encoding.Default.GetString(cmd, 0, length);
+            }
+        }
         #endregion
 
         #region ------------PrivateMethod------------
@@ -249,6 +265,7 @@ namespace UtilityTools.Services.Services
                     {
                         // 发送业务
                         DeviceInstance.SerialPort.Write(cmd, 0, cmd.Length);
+                        LogManager.GetCurrentClassLogger().Debug($"{Name}发送指令：{GetCmdString(cmd, cmd.Length)}");
                         Thread.Sleep(100);
                     }
 
@@ -283,15 +300,8 @@ namespace UtilityTools.Services.Services
                     byte[] response = new byte[size];
                     int realLen = dev.Read(response, 0, size);
 
-                    if (IsBinary)
-                    {
-                        LogManager.GetCurrentClassLogger().Debug($"{Name}接收二进制数据：{DataTypeCaster.ByteArrayToString(response, response.Length)}");
-                    }
-                    else
-                    {
-                        LogManager.GetCurrentClassLogger().Debug($"{Name}接收字符串数据：{Encoding.Default.GetString(response)}");
-                    }
-
+                    LogManager.GetCurrentClassLogger().Debug($"{Name}接收数据：{GetCmdString(response, realLen)}");
+                    
                     UpdateResponse?.Invoke(this, response);
                 }
                 catch (Exception ex)

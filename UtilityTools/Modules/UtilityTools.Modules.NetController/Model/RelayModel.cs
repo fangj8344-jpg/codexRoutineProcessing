@@ -28,35 +28,37 @@ using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UtilityTools.Core.Model;
+using UtilityTools.Core.Mvvm;
 
 namespace UtilityTools.Modules.NetController.Model
 {
-    public class RelayModel : BindableBase
+    public class RelayModel : CustomBindableBase
     {
         #region ------------Constructor------------
         public RelayModel()
         {
             Enables = new ObservableCollection<ToggleInfoModel>();
-            Enables.Add(new ToggleInfoModel { Name = "CH0", Tip = "", Index = 0, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH1", Tip = "", Index = 1, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH2", Tip = "", Index = 2, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH3", Tip = "", Index = 3, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH4", Tip = "", Index = 4, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH5", Tip = "", Index = 5, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH6", Tip = "", Index = 6, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH7", Tip = "", Index = 7, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH8", Tip = "", Index = 8, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH9", Tip = "", Index = 9, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH10", Tip = "", Index = 10, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH11", Tip = "", Index = 11, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH12", Tip = "", Index = 12, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH13", Tip = "", Index = 13, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH14", Tip = "", Index = 14, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH15", Tip = "", Index = 15, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH0", Type="Relay", Tip = "", Channel = 0, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH1", Type="Relay", Tip = "", Channel = 1, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH2", Type="Relay", Tip = "", Channel = 2, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH3", Type="Relay", Tip = "", Channel = 3, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH4", Type="Relay", Tip = "", Channel = 4, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH5", Type="Relay", Tip = "", Channel = 5, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH6", Type="Relay", Tip = "", Channel = 6, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH7", Type="Relay", Tip = "", Channel = 7, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH8", Type="Relay", Tip = "", Channel = 8, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH9", Type="Relay", Tip = "", Channel = 9, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH10",Type="Relay", Tip = "", Channel = 10, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH11",Type="Relay", Tip = "", Channel = 11, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH12",Type="Relay", Tip = "", Channel = 12, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH13",Type="Relay", Tip = "", Channel = 13, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH14",Type="Relay", Tip = "", Channel = 14, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH15",Type="Relay", Tip = "", Channel = 15, Enable = false });
         }
         #endregion
 
@@ -76,6 +78,18 @@ namespace UtilityTools.Modules.NetController.Model
         #endregion
 
         #region ------------PublicMethod------------
+        /// <summary>
+        /// 设置属性变更回调函数
+        /// </summary>
+        /// <param name="handler"></param>
+        public void SetPropertyChangedHandle(EventHandler handler)
+        {
+            foreach (ToggleInfoModel enableItem in Enables)
+            {
+                DependencyPropertyDescriptor dpd = DependencyPropertyDescriptor.FromProperty(ToggleInfoModel.EnableProperty, typeof(ToggleInfoModel));
+                dpd.AddValueChanged(enableItem, handler);
+            }
+        }
         #endregion
 
         #region ------------PrivateMethod------------

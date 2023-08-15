@@ -37,6 +37,8 @@ using UtilityTools.Core.Converter;
 
 namespace UtilityTools.Core.Model
 {
+    public delegate void DelegateConnectTestCommand(NetConfigModel model);
+
     public class NetConfigModel : BindableBase
     {
         #region ------------Constructor------------
@@ -83,7 +85,12 @@ namespace UtilityTools.Core.Model
         public string TargetIp
         {
             get { return _targetIp; }
-            set { _targetIp = value; RaisePropertyChanged(); }
+            set
+            {
+                _targetIp = value;
+                RaisePropertyChanged();
+                _sendEndPoint = new IPEndPoint(IPAddress.Parse(value), TargetPort);
+            }
         }
 
         /// <summary>
@@ -92,7 +99,12 @@ namespace UtilityTools.Core.Model
         public int TargetPort
         {
             get { return _targetPort; }
-            set { _targetPort = value; RaisePropertyChanged(); }
+            set
+            {
+                _targetPort = value;
+                RaisePropertyChanged();
+                _sendEndPoint = new IPEndPoint(IPAddress.Parse(TargetIp), value);
+            }
         }
 
         /// <summary>
@@ -101,7 +113,12 @@ namespace UtilityTools.Core.Model
         public string HostIp
         {
             get { return _hostIp; }
-            set { _hostIp = value; RaisePropertyChanged(); }
+            set
+            {
+                _hostIp = value;
+                RaisePropertyChanged();
+                _recvEndPoint = new IPEndPoint(IPAddress.Parse(value), HostPort);
+            }
         }
 
         /// <summary>
@@ -110,8 +127,15 @@ namespace UtilityTools.Core.Model
         public int HostPort
         {
             get { return _hostPort; }
-            set { _hostPort = value; RaisePropertyChanged(); }
+            set
+            {
+                _hostPort = value;
+                RaisePropertyChanged();
+                _recvEndPoint = new IPEndPoint(IPAddress.Parse(HostIp), value);
+            }
         }
+
+        public DelegateConnectTestCommand ConnectTest { get; set; }
         #endregion
 
         #region ------------PublicMethod------------
@@ -122,7 +146,7 @@ namespace UtilityTools.Core.Model
         public bool Open(bool isSupportBroadcast = false)
         {
             Socket = new Socket(SocketType, ProtocolType);
-            if(isSupportBroadcast)
+            if (isSupportBroadcast)
                 Socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
             _sendEndPoint = new IPEndPoint(IPAddress.Parse(TargetIp), TargetPort);
             _recvEndPoint = new IPEndPoint(IPAddress.Parse(HostIp), HostPort);
@@ -133,7 +157,7 @@ namespace UtilityTools.Core.Model
         /// <summary>
         /// 断开Socket，有异常抛出，外部捕获
         /// </summary>
-        public void Close() 
+        public void Close()
         {
             Socket?.Dispose();
             Socket = null;
@@ -145,7 +169,7 @@ namespace UtilityTools.Core.Model
         /// <param name="data"></param>
         /// <returns></returns>
         public int Send(byte[] data)
-        { 
+        {
             return Socket.SendTo(data, _sendEndPoint);
         }
 

@@ -54,6 +54,11 @@ namespace UtilityTools.Services.Services
             throw new NotImplementedException();
         }
 
+        public string GetCmdString(byte[] cmd, int length)
+        {
+            throw new NotImplementedException();
+        }
+
         public object GetHandle()
         {
             throw new NotImplementedException();

@@ -72,6 +72,12 @@ namespace UtilityTools.Services.Interfaces.IServices
         /// </summary>
         /// <param name="obj"></param>
         void SetHandle(object obj);
+
+        /// <summary>
+        /// 获取指令字符串，用于日志或者打印信息
+        /// </summary>
+        /// <returns></returns>
+        string GetCmdString(byte[] cmd, int length);
         #endregion
     }
 }

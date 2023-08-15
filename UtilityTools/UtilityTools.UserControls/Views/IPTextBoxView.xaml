@@ -1,0 +1,154 @@
+﻿<UserControl x:Class="UtilityTools.UserControls.Views.IPTextBoxView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:rule="clr-namespace:UtilityTools.Core.Rules;assembly=UtilityTools.Core"
+             xmlns:ex="clr-namespace:UtilityTools.Core.Extension;assembly=UtilityTools.Core"
+             xmlns:local="clr-namespace:UtilityTools.UserControls.Views"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <ControlTemplate x:Key="validationTemplate">
+            <DockPanel>
+                <TextBlock Margin="1, 2"
+                           DockPanel.Dock="Right"
+                           FontSize="{DynamicResource ResourceKey=Heading4}"
+                           FontWeight="Bold"
+                           Foreground="Red"
+                           Text="" />
+                <AdornedElementPlaceholder />
+            </DockPanel>
+        </ControlTemplate>
+        <Style x:Key="CustomTextBoxTextStyle"
+               TargetType="TextBox">
+            <Setter Property="MaxLength"
+                    Value="3" />
+            <Setter Property="HorizontalAlignment"
+                    Value="Stretch" />
+            <Setter Property="VerticalAlignment"
+                    Value="Stretch" />
+            <Setter Property="BorderThickness"
+                    Value="0, 0, 0, 1" />
+            <Setter Property="BorderBrush"
+                    Value="{DynamicResource PrimaryHueLightBrush}"/>
+            <Setter Property="Background"
+                    Value="Transparent" />
+            <Setter Property="Foreground"
+                    Value="{DynamicResource PrimaryHueDarkForegroundBrush}" />
+            <Style.Triggers>
+                <Trigger Property="Validation.HasError"
+                         Value="True">
+                    <Trigger.Setters>
+                        <Setter Property="ToolTip"
+                                Value="{Binding RelativeSource={RelativeSource Self}, Path=(Validation.Errors)[0].ErrorContent}" />
+                        <Setter Property="Foreground"
+                                Value="Red" />
+                    </Trigger.Setters>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+
+        <TextBox Grid.Column="0"
+                 TextAlignment="Center"
+                 x:Name="Part1"
+                 Style="{StaticResource CustomTextBoxTextStyle}"
+                 PreviewKeyDown="Part1_KeyDown"
+                 ex:FocusChangeExtension.IsFocused="{Binding IsPart1Focused, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True}"
+                 Validation.ErrorTemplate="{StaticResource validationTemplate}">
+            <TextBox.Text>
+                <Binding Path="Part1"
+                         UpdateSourceTrigger="PropertyChanged">
+                    <Binding.ValidationRules>
+                        <rule:IPRangeValidationRule Max="255"
+                                                    Min="0" />
+                    </Binding.ValidationRules>
+                </Binding>
+            </TextBox.Text>
+        </TextBox>
+
+        <TextBlock Grid.Column="1"
+                   Text="."
+                   VerticalAlignment="Center"
+                   FontSize="15"
+                   Margin="5,0" />
+
+        <TextBox Grid.Column="2"
+                 TextAlignment="Center"
+                 x:Name="Part2"
+                 Style="{StaticResource CustomTextBoxTextStyle}"
+                 PreviewKeyDown="Part2_KeyDown"
+                 ex:FocusChangeExtension.IsFocused="{Binding IsPart2Focused, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True}"
+                 Validation.ErrorTemplate="{StaticResource validationTemplate}">
+            <TextBox.Text>
+                <Binding Path="Part2"
+                         UpdateSourceTrigger="PropertyChanged">
+                    <Binding.ValidationRules>
+                        <rule:IPRangeValidationRule Max="255"
+                                                    Min="0" />
+                    </Binding.ValidationRules>
+                </Binding>
+            </TextBox.Text>
+        </TextBox>
+
+        <TextBlock Grid.Column="3"
+                   Text="."
+                   VerticalAlignment="Center"
+                   FontSize="15"
+                   Margin="5,0" />
+
+        <TextBox Grid.Column="4"
+                 TextAlignment="Center"
+                 x:Name="Part3"
+                 Style="{StaticResource CustomTextBoxTextStyle}"
+                 PreviewKeyDown="Part3_KeyDown"
+                 ex:FocusChangeExtension.IsFocused="{Binding IsPart3Focused, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True}"
+                 Validation.ErrorTemplate="{StaticResource validationTemplate}">
+            <TextBox.Text>
+                <Binding Path="Part3"
+                         UpdateSourceTrigger="PropertyChanged">
+                    <Binding.ValidationRules>
+                        <rule:IPRangeValidationRule Max="255"
+                                                    Min="0" />
+                    </Binding.ValidationRules>
+                </Binding>
+            </TextBox.Text>
+        </TextBox>
+
+        <TextBlock Grid.Column="5"
+                   Text="."
+                   VerticalAlignment="Center"
+                   FontSize="15"
+                   Margin="5,0" />
+
+        <TextBox Grid.Column="6"
+                 TextAlignment="Center"
+                 x:Name="Part4"
+                 Style="{StaticResource CustomTextBoxTextStyle}"
+                 PreviewKeyDown="Part4_KeyDown"
+                 ex:FocusChangeExtension.IsFocused="{Binding IsPart4Focused, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True}"
+                 Validation.ErrorTemplate="{StaticResource validationTemplate}">
+            <TextBox.Text>
+                <Binding Path="Part4"
+                         UpdateSourceTrigger="PropertyChanged">
+                    <Binding.ValidationRules>
+                        <rule:IPRangeValidationRule Max="255"
+                                                    Min="0" />
+                    </Binding.ValidationRules>
+                </Binding>
+            </TextBox.Text>
+        </TextBox>
+
+    </Grid>
+</UserControl>

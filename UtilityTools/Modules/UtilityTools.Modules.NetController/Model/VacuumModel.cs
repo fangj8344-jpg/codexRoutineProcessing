@@ -28,15 +28,17 @@ using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls.Primitives;
 using UtilityTools.Core.Model;
+using UtilityTools.Core.Mvvm;
 
 namespace UtilityTools.Modules.NetController.Model
 {
-    public class VacuumModel : BindableBase
+    public class VacuumModel : CustomBindableBase
     {
         #region ------------Constructor------------
         public VacuumModel()
@@ -47,7 +49,7 @@ namespace UtilityTools.Modules.NetController.Model
             Vacuums.Add(new LabelInfoModel() { Name = "真空读数3", Channel = 3, Tip = "通道3真空读数", Value = "未知" });
             Vacuums.Add(new LabelInfoModel() { Name = "真空读数4", Channel = 4, Tip = "通道4真空读数", Value = "未知" });
 
-            Motor = new ToggleInfoModel() { Name = "Motor", Tip="电机", Index = 0, Enable = false};
+            Motor = new ToggleInfoModel() { Name = "Motor", Type="Motor", Tip="电机", Channel = 0, Enable = false};
         }
         #endregion
 
@@ -78,6 +80,23 @@ namespace UtilityTools.Modules.NetController.Model
         #endregion
 
         #region ------------PublicMethod------------
+        /// <summary>
+        /// 设置属性变更回调函数
+        /// </summary>
+        /// <param name="handler"></param>
+        public void SetPropertyChangedHandle(EventHandler handler)
+        {
+            foreach (LabelInfoModel valueItem in Vacuums)
+            {
+                DependencyPropertyDescriptor dpd = DependencyPropertyDescriptor.FromProperty(LabelInfoModel.ValueProperty, typeof(LabelInfoModel));
+                dpd.AddValueChanged(valueItem, handler);
+            }
+
+            {
+                DependencyPropertyDescriptor dpd = DependencyPropertyDescriptor.FromProperty(ToggleInfoModel.EnableProperty, typeof(ToggleInfoModel));
+                dpd.AddValueChanged(Motor, handler);
+            }
+        }
         #endregion
 
         #region ------------PrivateMethod------------

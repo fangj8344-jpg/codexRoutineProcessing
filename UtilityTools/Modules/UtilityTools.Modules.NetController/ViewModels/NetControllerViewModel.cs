@@ -24,14 +24,22 @@
  *----------------------------------------------------------------*/
 #endregion
 
+using Prism.Commands;
 using Prism.Ioc;
+using Prism.Services.Dialogs;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UtilityTools.Core.Dialog;
+using UtilityTools.Core.Model;
 using UtilityTools.Core.Mvvm;
+using UtilityTools.Modules.NetController.Extension;
 using UtilityTools.Modules.NetController.Model;
+using UtilityTools.Modules.NetController.Protocol;
 using UtilityTools.Modules.NetController.Views;
 using UtilityTools.Services.Interfaces;
 using UtilityTools.Services.Interfaces.IServices;
@@ -41,22 +49,20 @@ namespace UtilityTools.Modules.NetController.ViewModels
     public class NetControllerViewModel : RegionViewModelBase
     {
         #region ------------Constructor------------
-        public NetControllerViewModel(IContainerProvider containerProvider, IMessageService messageService) 
+        public NetControllerViewModel(IContainerProvider containerProvider, IDialogHostService dialogHostService)
             : base(containerProvider)
         {
-            Message = messageService.GetMessage();
-            CCS = containerProvider.Resolve<CCSModel>();
-            DAC = containerProvider.Resolve<DacModel>();
-            Light = containerProvider.Resolve<LightModel>();
-            Relay = containerProvider.Resolve<RelayModel>();
-            Temperature = containerProvider.Resolve<TemperatureModel>();
-            Vacuum = containerProvider.Resolve<VacuumModel>();
+            _dialogHostService = dialogHostService;
+            _containerProvider = containerProvider;
+            InitProperty();
+            InitCommand();
 
-            Service = containerProvider.Resolve<IServiceFactory>().GetSyncRWService("UNCB");
         }
         #endregion
 
         #region ------------Field------------
+        private readonly IDialogHostService _dialogHostService;
+        private readonly IContainerProvider _containerProvider;
         private string _message;
         private CCSModel _ccs;
         private DacModel _dac;
@@ -74,6 +80,16 @@ namespace UtilityTools.Modules.NetController.ViewModels
         {
             get { return _message; }
             set { _message = value; RaisePropertyChanged(); }
+        }
+
+        private bool _isConnected;
+        /// <summary>
+        /// 是否已经连接设备
+        /// </summary>
+        public bool IsConnected
+        {
+            get { return _isConnected; }
+            set { _isConnected = value; RaisePropertyChanged(); }
         }
 
         /// <summary>
@@ -138,9 +154,151 @@ namespace UtilityTools.Modules.NetController.ViewModels
         #endregion
 
         #region ------------PublicMethod------------
+        public DelegateCommand ShowDeviceCommand { get; set; }
+        #endregion
+
+        #region ------------PublicMethod------------
         #endregion
 
         #region ------------PrivateMethod------------
+        /// <summary>
+        /// 初始化指令
+        /// </summary>
+        private void InitCommand()
+        {
+            ShowDeviceCommand = new DelegateCommand(ShowDevice);
+        }
+
+        /// <summary>
+        /// 初始化属性
+        /// </summary>
+        private void InitProperty()
+        {
+            CCS = _containerProvider.Resolve<CCSModel>();
+            DAC = _containerProvider.Resolve<DacModel>();
+            Light = _containerProvider.Resolve<LightModel>();
+            Relay = _containerProvider.Resolve<RelayModel>();
+            Temperature = _containerProvider.Resolve<TemperatureModel>();
+            Vacuum = _containerProvider.Resolve<VacuumModel>();
+
+            Service = _containerProvider.Resolve<IServiceFactory>().GetSyncRWService("UNCB");
+            SetServiceInfo(Service.GetHandle());
+        }
+
+        /// <summary>
+        /// 初始化属性绑定
+        /// </summary>
+        private void InitBinding()
+        {
+            CCS.SetPropertyChangedHandle(OnPropertyChanged);
+            DAC.SetPropertyChangedHandle(OnPropertyChanged);
+            Relay.SetPropertyChangedHandle(OnPropertyChanged);
+            Temperature.SetPropertyChangedHandle(OnPropertyChanged);
+            Vacuum.SetPropertyChangedHandle(OnPropertyChanged);
+        }
+
+        /// <summary>
+        /// 显示设备连接弹窗
+        /// </summary>
+        private async void ShowDevice()
+        {
+            DialogParameters parameter = new DialogParameters();
+            parameter.Add("Value", Service.GetHandle());
+            var diaglogResult = await this._dialogHostService.ShowDialog("NetConfigView", parameter, CommonModel.NetControllerRegionName);
+            if (diaglogResult == null)
+                return;
+            if (diaglogResult.Result == ButtonResult.OK && diaglogResult.Parameters.ContainsKey("Value"))
+            {
+                Service.SetHandle(diaglogResult.Parameters.GetValue<object>("Value"));
+                IsConnected = Service.IsOpen;
+            }
+        }
+
+        /// <summary>
+        /// 设置服务信息
+        /// </summary>
+        /// <param name="service"></param>
+        private void SetServiceInfo(object service)
+        {
+            if (service is NetConfigModel netConfig)
+            {
+                netConfig.HostIp = "192.168.1.33";
+                netConfig.HostPort = 5005;
+                netConfig.TargetIp = "255.255.255.255";
+                netConfig.TargetPort = 5000;
+                netConfig.ConnectTest = new DelegateConnectTestCommand((config) =>
+                {
+                    var cmd = NetControllerProtocol.PackBytesHandShake(netConfig.HostIp, netConfig.HostPort);
+
+                });
+            }
+        }
+
+        /// <summary>
+        /// 属性变更回调函数
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void OnPropertyChanged(object sender, EventArgs e)
+        {
+            switch (sender)
+            {
+                case IntSliderInfoModel intSlider:
+                    SetIntSliderValue(intSlider.Type, intSlider.Channel, intSlider.Value);
+                    break;
+                case ToggleInfoModel toggle:
+                    SetToggleValue(toggle.Type, toggle.Channel, toggle.Enable);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// 设置整型滑块参数
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="value"></param>
+        private bool SetIntSliderValue(string type, int channel, int value) 
+        {
+            switch (type)
+            {
+                case "Focus":
+                    Service.SetCCSFocusValue(value);
+                    break;
+                case "Compress":
+                    Service.SetCCSCompressValue(channel, value);
+                    break;
+                case "Center":
+                    Service.SetCCSCenterValue(channel, value);
+                    break;
+                case "Astig":
+                    Service.SetCCSAstigValue(channel, value);
+                    break;
+                case "DAC":
+                    Service.SetCCSCenterValue(channel, value);
+                    break;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 设置开关参数
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private bool SetToggleValue(string type, int channle, bool value) 
+        {
+            switch (type)
+            {
+                case "CCS":
+                    Service.SetCCSRelay(channle, value);
+                    break;
+                case "Compress":
+
+                    break;
+            }
+            return false;
+        }
         #endregion
 
         #region ------------StaticMethod------------

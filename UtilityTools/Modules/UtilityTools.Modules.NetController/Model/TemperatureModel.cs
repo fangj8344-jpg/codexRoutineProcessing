@@ -28,14 +28,16 @@ using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UtilityTools.Core.Model;
+using UtilityTools.Core.Mvvm;
 
 namespace UtilityTools.Modules.NetController.Model
 {
-    public class TemperatureModel : BindableBase
+    public class TemperatureModel : CustomBindableBase
     {
         #region ------------Constructor------------
         public TemperatureModel()
@@ -45,9 +47,9 @@ namespace UtilityTools.Modules.NetController.Model
             Temperatures.Add(new LabelInfoModel() { Name = "温度读数2", Channel = 2, Tip = "", Value = "未知" });
 
             Fans = new ObservableCollection<IntSliderInfoModel>();
-            Fans.Add(new IntSliderInfoModel() { Title = "风扇1", Value = 0, Channel = 1, MinValue = 0, MaxValue = 100, Interval = 500 });
-            Fans.Add(new IntSliderInfoModel() { Title = "风扇2", Value = 0, Channel = 1, MinValue = 0, MaxValue = 100, Interval = 500 });
-            Fans.Add(new IntSliderInfoModel() { Title = "风扇3", Value = 0, Channel = 1, MinValue = 0, MaxValue = 100, Interval = 500 });
+            Fans.Add(new IntSliderInfoModel() { Title = "风扇1", Type="Fans", Tip="可调速风扇", Value = 0, Channel = 1, MinValue = 0, MaxValue = 100, Interval = 500 });
+            Fans.Add(new IntSliderInfoModel() { Title = "风扇2", Type="Fans", Tip="可调速风扇", Value = 0, Channel = 2, MinValue = 0, MaxValue = 100, Interval = 500 });
+            Fans.Add(new IntSliderInfoModel() { Title = "风扇3", Type="Fans", Tip="可调速风扇", Value = 0, Channel = 3, MinValue = 0, MaxValue = 100, Interval = 500 });
         }
         #endregion
 
@@ -78,6 +80,24 @@ namespace UtilityTools.Modules.NetController.Model
         #endregion
 
         #region ------------PublicMethod------------
+        /// <summary>
+        /// 设置属性变更回调函数
+        /// </summary>
+        /// <param name="handler"></param>
+        public void SetPropertyChangedHandle(EventHandler handler)
+        {
+            foreach (LabelInfoModel valueItem in Temperatures)
+            {
+                DependencyPropertyDescriptor dpd = DependencyPropertyDescriptor.FromProperty(LabelInfoModel.ValueProperty, typeof(LabelInfoModel));
+                dpd.AddValueChanged(valueItem, handler);
+            }
+
+            foreach (IntSliderInfoModel sliderItem in Fans)
+            {
+                DependencyPropertyDescriptor dpd = DependencyPropertyDescriptor.FromProperty(IntSliderInfoModel.ValueProperty, typeof(IntSliderInfoModel));
+                dpd.AddValueChanged(sliderItem, handler);
+            }
+        }
         #endregion
 
         #region ------------PrivateMethod------------

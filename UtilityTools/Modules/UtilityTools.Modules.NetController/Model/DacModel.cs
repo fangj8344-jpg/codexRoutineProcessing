@@ -28,24 +28,26 @@ using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Data;
 using UtilityTools.Core.Model;
+using UtilityTools.Core.Mvvm;
 
 namespace UtilityTools.Modules.NetController.Model
 {
-    public class DacModel : BindableBase
+    public class DacModel : CustomBindableBase
     {
         #region ------------Constructor------------
         public DacModel()
         {
             Dacs = new ObservableCollection<IntSliderInfoModel>();
-            Dacs.Add(new IntSliderInfoModel() { Title = "DAC1", Tip="", Channel = 0xA, Value = 0, MinValue = 0, MaxValue = 1024, Interval = 500 });
-            Dacs.Add(new IntSliderInfoModel() { Title = "DAC2", Tip="", Channel = 0xB, Value = 0, MinValue = 0, MaxValue = 1024, Interval = 500 });
-            Dacs.Add(new IntSliderInfoModel() { Title = "DAC3", Tip="", Channel = 0xC, Value = 0, MinValue = 0, MaxValue = 1024, Interval = 500 });
-            Dacs.Add(new IntSliderInfoModel() { Title = "DAC4", Tip="", Channel = 0xD, Value = 0, MinValue = 0, MaxValue = 1024, Interval = 500 });
+            Dacs.Add(new IntSliderInfoModel() { Title = "DAC1", Tip="", Type="DAC", Channel = 0xA, Value = 0, MinValue = 0, MaxValue = 1024, Interval = 500 });
+            Dacs.Add(new IntSliderInfoModel() { Title = "DAC2", Tip="", Type="DAC", Channel = 0xB, Value = 0, MinValue = 0, MaxValue = 1024, Interval = 500 });
+            Dacs.Add(new IntSliderInfoModel() { Title = "DAC3", Tip="", Type="DAC", Channel = 0xC, Value = 0, MinValue = 0, MaxValue = 1024, Interval = 500 });
+            Dacs.Add(new IntSliderInfoModel() { Title = "DAC4", Tip="", Type="DAC", Channel = 0xD, Value = 0, MinValue = 0, MaxValue = 1024, Interval = 500 });
         }
         #endregion
 
@@ -65,6 +67,18 @@ namespace UtilityTools.Modules.NetController.Model
         #endregion
 
         #region ------------PublicMethod------------
+        /// <summary>
+        /// 设置属性变更回调函数
+        /// </summary>
+        /// <param name="handler"></param>
+        public void SetPropertyChangedHandle(EventHandler handler)
+        {
+            foreach (IntSliderInfoModel sliderItem in Dacs)
+            {
+                DependencyPropertyDescriptor dpd = DependencyPropertyDescriptor.FromProperty(IntSliderInfoModel.ValueProperty, typeof(IntSliderInfoModel));
+                dpd.AddValueChanged(sliderItem, handler);
+            }
+        }
         #endregion
 
         #region ------------PrivateMethod------------
