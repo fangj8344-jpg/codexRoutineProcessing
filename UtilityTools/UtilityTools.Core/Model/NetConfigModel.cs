@@ -37,8 +37,6 @@ using UtilityTools.Core.Converter;
 
 namespace UtilityTools.Core.Model
 {
-    public delegate void DelegateConnectTestCommand(NetConfigModel model);
-
     public class NetConfigModel : BindableBase
     {
         #region ------------Constructor------------
@@ -135,7 +133,6 @@ namespace UtilityTools.Core.Model
             }
         }
 
-        public DelegateConnectTestCommand ConnectTest { get; set; }
         #endregion
 
         #region ------------PublicMethod------------

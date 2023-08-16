@@ -24,6 +24,7 @@
  *----------------------------------------------------------------*/
 #endregion
 
+using NLog;
 using Prism.Commands;
 using Prism.Ioc;
 using Prism.Services.Dialogs;
@@ -33,6 +34,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using UtilityTools.Core.Dialog;
 using UtilityTools.Core.Model;
@@ -56,7 +58,7 @@ namespace UtilityTools.Modules.NetController.ViewModels
             _containerProvider = containerProvider;
             InitProperty();
             InitCommand();
-
+            InitBinding();
         }
         #endregion
 
@@ -182,7 +184,7 @@ namespace UtilityTools.Modules.NetController.ViewModels
             Vacuum = _containerProvider.Resolve<VacuumModel>();
 
             Service = _containerProvider.Resolve<IServiceFactory>().GetSyncRWService("UNCB");
-            SetServiceInfo(Service.GetHandle());
+            SetServiceInfo();
         }
 
         /// <summary>
@@ -203,14 +205,18 @@ namespace UtilityTools.Modules.NetController.ViewModels
         private async void ShowDevice()
         {
             DialogParameters parameter = new DialogParameters();
-            parameter.Add("Value", Service.GetHandle());
+            parameter.Add("Value", Service);
             var diaglogResult = await this._dialogHostService.ShowDialog("NetConfigView", parameter, CommonModel.NetControllerRegionName);
             if (diaglogResult == null)
                 return;
             if (diaglogResult.Result == ButtonResult.OK && diaglogResult.Parameters.ContainsKey("Value"))
             {
-                Service.SetHandle(diaglogResult.Parameters.GetValue<object>("Value"));
-                IsConnected = Service.IsOpen;
+                var value = diaglogResult.Parameters.GetValue<ISyncRWService>("Value");
+                if (value != null)
+                {
+                    Service = value;
+                    IsConnected = Service.IsOpen;
+                }
             }
         }
 
@@ -218,20 +224,30 @@ namespace UtilityTools.Modules.NetController.ViewModels
         /// 设置服务信息
         /// </summary>
         /// <param name="service"></param>
-        private void SetServiceInfo(object service)
+        private void SetServiceInfo()
         {
-            if (service is NetConfigModel netConfig)
+            if (Service == null) 
+            {
+                LogManager.GetCurrentClassLogger().Error($"NetController has No Service!");
+                return;
+            }
+
+            if (Service.GetHandle() is NetConfigModel netConfig)
             {
                 netConfig.HostIp = "192.168.1.33";
                 netConfig.HostPort = 5005;
                 netConfig.TargetIp = "255.255.255.255";
                 netConfig.TargetPort = 5000;
-                netConfig.ConnectTest = new DelegateConnectTestCommand((config) =>
-                {
-                    var cmd = NetControllerProtocol.PackBytesHandShake(netConfig.HostIp, netConfig.HostPort);
-
-                });
             }
+
+            Service.ConnectTest = new DelegateConnectTestCommand((selfObj) =>
+            {
+                if (selfObj is ISyncRWService service)
+                {
+                    return service.SendHandshake();
+                }
+                return false;
+            });
         }
 
         /// <summary>
@@ -239,7 +255,7 @@ namespace UtilityTools.Modules.NetController.ViewModels
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void OnPropertyChanged(object sender, EventArgs e)
+        private void OnPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             switch (sender)
             {
@@ -249,33 +265,33 @@ namespace UtilityTools.Modules.NetController.ViewModels
                 case ToggleInfoModel toggle:
                     SetToggleValue(toggle.Type, toggle.Channel, toggle.Enable);
                     break;
+                case LabelInfoModel label:
+                    break;
             }
         }
 
         /// <summary>
         /// 设置整型滑块参数
         /// </summary>
-        /// <param name="name"></param>
-        /// <param name="value"></param>
-        private bool SetIntSliderValue(string type, int channel, int value) 
+        /// <param name="type">类型</param>
+        /// <param name="channel">通道信息</param>
+        /// <param name="value">设置值</param>
+        private bool SetIntSliderValue(string type, int channel, int value)
         {
             switch (type)
             {
                 case "Focus":
-                    Service.SetCCSFocusValue(value);
-                    break;
+                    return Service.SetCCSFocusValue(value);
                 case "Compress":
-                    Service.SetCCSCompressValue(channel, value);
-                    break;
+                    return Service.SetCCSCompressValue(channel, value);
                 case "Center":
-                    Service.SetCCSCenterValue(channel, value);
-                    break;
+                    return Service.SetCCSCenterValue(channel, value);
                 case "Astig":
-                    Service.SetCCSAstigValue(channel, value);
-                    break;
+                    return Service.SetCCSAstigValue(channel, value);
                 case "DAC":
-                    Service.SetCCSCenterValue(channel, value);
-                    break;
+                    return Service.SetCCSCenterValue(channel, value);
+                case "Fans":
+                    return Service.SetFansValue(channel, value);
             }
             return false;
         }
@@ -283,18 +299,49 @@ namespace UtilityTools.Modules.NetController.ViewModels
         /// <summary>
         /// 设置开关参数
         /// </summary>
-        /// <param name="name"></param>
-        /// <param name="value"></param>
+        /// <param name="type">类型</param>
+        /// <param name="channel">通道信息</param>
+        /// <param name="value">设置值</param>
         /// <returns></returns>
-        private bool SetToggleValue(string type, int channle, bool value) 
+        private bool SetToggleValue(string type, int channel, bool value)
         {
             switch (type)
             {
                 case "CCS":
-                    Service.SetCCSRelay(channle, value);
-                    break;
-                case "Compress":
+                    return Service.SetCCSRelay(channel, value);
+                case "Relay":
+                    return Service.SetRelayValue(channel, value);
+                case "Motor":
+                    return Service.SetMotorValue(channel, value);
+            }
+            return false;
+        }
 
+        /// <summary>
+        /// 获取Label数值
+        /// </summary>
+        /// <param name="type">类型</param>
+        /// <param name="channel">通道信息</param>
+        /// <param name="value">设置值</param>
+        /// <returns></returns>
+        private bool GetLabelValue(string type, int channel, out string value)
+        {
+            value = string.Empty;
+            switch (type)
+            {
+                case "Temperature":
+                    if (Service.GetTemperatureValue(channel, out double temp))
+                    { 
+                        value = temp.ToString();
+                        return true;
+                    }
+                    break;
+                case "Vacuum":
+                    if (Service.GetVacuumValue(channel, out double vac))
+                    {
+                        value = vac.ToString();
+                        return true;
+                    }
                     break;
             }
             return false;

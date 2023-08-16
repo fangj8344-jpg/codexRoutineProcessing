@@ -70,6 +70,15 @@ namespace UtilityTools.Core.Model
             set { _channel = value; RaisePropertyChanged(); }
         }
 
+        private string _type;
+        /// <summary>
+        /// 控制类型
+        /// </summary>
+        public string Type
+        {
+            get { return _type; }
+            set { _type = value; RaisePropertyChanged(); }
+        }
 
         private string _value;
         /// <summary>
@@ -93,7 +102,6 @@ namespace UtilityTools.Core.Model
         #endregion
 
         #region ------------StaticMethod------------
-        public static readonly DependencyProperty ValueProperty = DependencyProperty.Register("Value", typeof(string), typeof(LabelInfoModel));
         #endregion
     }
 }

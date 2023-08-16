@@ -37,7 +37,7 @@ using UtilityTools.Core.Mvvm;
 
 namespace UtilityTools.Modules.NetController.Model
 {
-    public class RelayModel : CustomBindableBase
+    public class RelayModel : BindableBase
     {
         #region ------------Constructor------------
         public RelayModel()
@@ -82,12 +82,11 @@ namespace UtilityTools.Modules.NetController.Model
         /// 设置属性变更回调函数
         /// </summary>
         /// <param name="handler"></param>
-        public void SetPropertyChangedHandle(EventHandler handler)
+        public void SetPropertyChangedHandle(PropertyChangedEventHandler handler)
         {
             foreach (ToggleInfoModel enableItem in Enables)
             {
-                DependencyPropertyDescriptor dpd = DependencyPropertyDescriptor.FromProperty(ToggleInfoModel.EnableProperty, typeof(ToggleInfoModel));
-                dpd.AddValueChanged(enableItem, handler);
+                enableItem.PropertyChanged += handler;
             }
         }
         #endregion

@@ -56,7 +56,7 @@ namespace UtilityTools.Modules.NetController.Extension
             bool result = service.SendSetCommand(cmdName, inParams);
             if (result == false)
             {
-                LogManager.GetCurrentClassLogger().Error(String.Format("SendGetCommand({0}) return false", cmdName));
+                LogManager.GetCurrentClassLogger().Error($"{service.Name} Send {cmdName} Command failed!");
                 return false;
             }
             return true;
@@ -66,6 +66,7 @@ namespace UtilityTools.Modules.NetController.Extension
         /// 设置压缩镜值
         /// </summary>
         /// <param name="service">服务实例</param>
+        /// <param name="channel">通道信息</param>
         /// <param name="value">压缩镜数值</param>
         /// <returns></returns>
         public static bool SetCCSFocusValue(this ISyncRWService service, int value)
@@ -76,7 +77,7 @@ namespace UtilityTools.Modules.NetController.Extension
             bool result = service.SendSetCommand(cmdName, inParams);
             if (result == false)
             {
-                LogManager.GetCurrentClassLogger().Error(String.Format("SendGetCommand({0}) return false", cmdName));
+                LogManager.GetCurrentClassLogger().Error($"{service.Name} Send {cmdName} Command failed!");
                 return false;
             }
             return true;
@@ -86,6 +87,7 @@ namespace UtilityTools.Modules.NetController.Extension
         /// 设置压缩镜值
         /// </summary>
         /// <param name="service">服务实例</param>
+        /// <param name="channel">通道信息</param>
         /// <param name="value">压缩镜数值</param>
         /// <returns></returns>
         public static bool SetCCSCompressValue(this ISyncRWService service, int channel, int value)
@@ -96,7 +98,7 @@ namespace UtilityTools.Modules.NetController.Extension
             bool result = service.SendSetCommand(cmdName, inParams);
             if (result == false)
             {
-                LogManager.GetCurrentClassLogger().Error(String.Format("SendGetCommand({0}) return false", cmdName));
+                LogManager.GetCurrentClassLogger().Error($"{service.Name} Send {cmdName} Command failed!");
                 return false;
             }
             return true;
@@ -106,6 +108,7 @@ namespace UtilityTools.Modules.NetController.Extension
         /// 设置对中线圈数值
         /// </summary>
         /// <param name="service">服务实例</param>
+        /// <param name="channel">通道信息</param>
         /// <param name="value">对中线圈数值</param>
         /// <returns></returns>
         public static bool SetCCSCenterValue(this ISyncRWService service, int channel, int value)
@@ -123,7 +126,7 @@ namespace UtilityTools.Modules.NetController.Extension
             bool result = service.SendSetCommand(cmdName, inParams);
             if (result == false)
             {
-                LogManager.GetCurrentClassLogger().Error(String.Format("SendGetCommand({0}) return false", cmdName));
+                LogManager.GetCurrentClassLogger().Error($"{service.Name} Send {cmdName} Command failed!");
                 return false;
             }
             return true;
@@ -133,6 +136,7 @@ namespace UtilityTools.Modules.NetController.Extension
         /// 设置像散线圈数值
         /// </summary>
         /// <param name="service">服务实例</param>
+        /// <param name="channel">通道信息</param>
         /// <param name="value">像散线圈数值</param>
         /// <returns></returns>
         public static bool SetCCSAstigValue(this ISyncRWService service, int channel, int value)
@@ -143,7 +147,7 @@ namespace UtilityTools.Modules.NetController.Extension
             bool result = service.SendSetCommand(cmdName, inParams);
             if (result == false)
             {
-                LogManager.GetCurrentClassLogger().Error(String.Format("SendGetCommand({0}) return false", cmdName));
+                LogManager.GetCurrentClassLogger().Error($"{service.Name} Send {cmdName} Command failed!");
                 return false;
             }
             return true;
@@ -153,6 +157,7 @@ namespace UtilityTools.Modules.NetController.Extension
         /// 设置DAC输出数值
         /// </summary>
         /// <param name="service">服务实例</param>
+        /// <param name="channel">通道信息</param>
         /// <param name="value">DAC输出数值</param>
         /// <returns></returns>
         public static bool SetDACValue(this ISyncRWService service, int channel, int value)
@@ -164,7 +169,132 @@ namespace UtilityTools.Modules.NetController.Extension
             bool result = service.SendSetCommand(cmdName, inParams);
             if (result == false)
             {
-                LogManager.GetCurrentClassLogger().Error(String.Format("SendGetCommand({0}) return false", cmdName));
+                LogManager.GetCurrentClassLogger().Error($"{service.Name} Send {cmdName} Command failed!");
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 设置继电器状态
+        /// </summary>
+        /// <param name="service">服务实例</param>
+        /// <param name="channel">通道信息</param>
+        /// <param name="enable">继电器状态</param>
+        /// <returns></returns>
+        public static bool SetRelayValue(this ISyncRWService service, int channel, bool enable)
+        {
+            string cmdName = $"T_SetRelay";
+            List<string> inParams = new List<string>();
+            inParams.Add(channel.ToString());
+            inParams.Add(enable ? "1" : "0");
+            bool result = service.SendSetCommand(cmdName, inParams);
+            if (result == false)
+            {
+                LogManager.GetCurrentClassLogger().Error($"{service.Name} Send {cmdName} Command failed!");
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 设置可调风扇速度
+        /// </summary>
+        /// <param name="service">服务实体</param>
+        /// <param name="channel">通道信息</param>
+        /// <param name="value">速度值</param>
+        /// <returns></returns>
+        public static bool SetFansValue(this ISyncRWService service, int channel, int value)
+        {
+            string cmdName = $"T_SetFan";
+            List<string> inParams = new List<string>();
+            inParams.Add(channel.ToString());
+            inParams.Add(value.ToString());
+            bool result = service.SendSetCommand(cmdName, inParams);
+            if (result == false)
+            {
+                LogManager.GetCurrentClassLogger().Error($"{service.Name} Send {cmdName} Command failed!");
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 读取真空数值
+        /// </summary>
+        /// <param name="service">服务实体</param>
+        /// <param name="channel">通道信息</param>
+        /// <param name="value">真空回值</param>
+        /// <returns></returns>
+        public static bool GetVacuumValue(this ISyncRWService service, int channel, out double value)
+        {
+            value = default(double);
+            string cmdName = "T_GetVAC";
+            List<string> inParams = new List<string>();
+            inParams.Add(channel.ToString());
+            List<string> outParams;
+            bool result = service.SendGetCommand(cmdName, inParams, out outParams);
+            if (result == false)
+            {
+                LogManager.GetCurrentClassLogger().Error($"{service.Name} Send {cmdName} Command failed!");
+                return false;
+            }
+
+            if (outParams.Count() < 1)
+            {
+                LogManager.GetCurrentClassLogger().Error($"{service.Name} Send {cmdName} Command failed!");
+                return false;
+            }
+
+            return double.TryParse(outParams[0], out value);
+        }
+
+        /// <summary>
+        /// 获取温度读数
+        /// </summary>
+        /// <param name="service">服务实体</param>
+        /// <param name="channel">通道信息</param>
+        /// <param name="value">温度回读</param>
+        /// <returns></returns>
+        public static bool GetTemperatureValue(this ISyncRWService service, int channel, out double value)
+        {
+            value = default(double);
+            string cmdName = "T_GetTemp";
+            List<string> inParams = new List<string>();
+            inParams.Add(channel.ToString());
+            List<string> outParams;
+            bool result = service.SendGetCommand(cmdName, inParams, out outParams);
+            if (result == false)
+            {
+                LogManager.GetCurrentClassLogger().Error($"{service.Name} Send {cmdName} Command failed!");
+                return false;
+            }
+
+            if (outParams.Count() < 1)
+            {
+                LogManager.GetCurrentClassLogger().Error($"{service.Name} Send {cmdName} Command failed!");
+                return false;
+            }
+
+            return double.TryParse(outParams[0], out value);
+        }
+
+        /// <summary>
+        /// 设置电机状态
+        /// </summary>
+        /// <param name="service">服务实例</param>
+        /// <param name="channel">通道</param>
+        /// <param name="enable">状态值</param>
+        /// <returns></returns>
+        public static bool SetMotorValue(this ISyncRWService service, int channel, bool enable)
+        {
+            string cmdName = $"SetMotor";
+            List<string> inParams = new List<string>();
+            inParams.Add(enable ? "1" : "0");
+            bool result = service.SendSetCommand(cmdName, inParams);
+            if (result == false)
+            {
+                LogManager.GetCurrentClassLogger().Error($"{service.Name} Send {cmdName} Command failed!");
                 return false;
             }
             return true;
@@ -293,7 +423,7 @@ namespace UtilityTools.Modules.NetController.Extension
         /// <param name="paramList"></param>
         /// <param name="outTime"></param>
         /// <returns></returns>
-        public static bool SendSetCommand(this ISyncRWService service, string cmdName, out List<string> paramList, int outTime = 2000)
+        public static bool SendGetCommand(this ISyncRWService service, string cmdName, out List<string> paramList, int outTime = 2000)
         {
             paramList = new List<string>();
 
@@ -368,7 +498,7 @@ namespace UtilityTools.Modules.NetController.Extension
         /// <param name="paramList"></param>
         /// <param name="outTime"></param>
         /// <returns></returns>
-        public static bool SendSetCommand(this ISyncRWService service, string cmdName, List<string> inparamList, out List<string> paramList, int outTime = 2000)
+        public static bool SendGetCommand(this ISyncRWService service, string cmdName, List<string> inparamList, out List<string> paramList, int outTime = 2000)
         {
             paramList = new List<string>();
 

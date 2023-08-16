@@ -78,6 +78,11 @@ namespace UtilityTools.Services.Services
         /// 数据传输是否采用二进制传输
         /// </summary>
         public bool IsBinary { get; set; }
+
+        /// <summary>
+        /// 连接测试
+        /// </summary>
+        public DelegateConnectTestCommand ConnectTest { get; set; }
         #endregion
 
         #region ------------PublicMethod------------

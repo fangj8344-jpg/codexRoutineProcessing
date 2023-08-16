@@ -141,7 +141,6 @@ namespace UtilityTools.Core.Model
         #endregion
 
         #region ------------StaticMethod------------
-        public static readonly DependencyProperty ValueProperty = DependencyProperty.Register("Value", typeof(T), typeof(SliderInfoModel<T>));
         #endregion
     }
 }

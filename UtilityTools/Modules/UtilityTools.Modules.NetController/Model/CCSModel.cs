@@ -37,20 +37,20 @@ using UtilityTools.Core.Mvvm;
 
 namespace UtilityTools.Modules.NetController.Model
 {
-    public class CCSModel : CustomBindableBase
+    public class CCSModel : BindableBase
     {
         #region ------------Constructor------------
         public CCSModel()
         {
             Enables = new ObservableCollection<ToggleInfoModel>();
-            Enables.Add(new ToggleInfoModel() { Name = "对中Y1", Type = "CCS", Channel = 0, Enable = false, Tip = "Enable0（CHB5）" });
-            Enables.Add(new ToggleInfoModel() { Name = "对中Y2", Type = "CCS", Channel = 1, Enable = false, Tip = "Enable1（CHB8）" });
-            Enables.Add(new ToggleInfoModel() { Name = "对中X1", Type = "CCS", Channel = 2, Enable = false, Tip = "Enable2（CHA0）" });
-            Enables.Add(new ToggleInfoModel() { Name = "对中X2", Type = "CCS", Channel = 3, Enable = false, Tip = "Enable3（CHA1）" });
-            Enables.Add(new ToggleInfoModel() { Name = "像散D", Type = "CCS", Channel = 4, Enable = false, Tip = "Enable4（CHB4）" });
-            Enables.Add(new ToggleInfoModel() { Name = "像散C", Type = "CCS", Channel = 5, Enable = false, Tip = "Enable5（CHB3）" });
-            Enables.Add(new ToggleInfoModel() { Name = "像散A", Type = "CCS", Channel = 6, Enable = false, Tip = "Enable6（CHB1）" });
-            Enables.Add(new ToggleInfoModel() { Name = "像散B", Type = "CCS", Channel = 7, Enable = false, Tip = "Enable7（CHB2）" });
+            Enables.Add(new ToggleInfoModel() { Name = "对中Y1", Type = "CCS", Channel = 0, Enable = true, Tip = "Enable0（CHB5）" });
+            Enables.Add(new ToggleInfoModel() { Name = "对中Y2", Type = "CCS", Channel = 1, Enable = true, Tip = "Enable1（CHB8）" });
+            Enables.Add(new ToggleInfoModel() { Name = "对中X1", Type = "CCS", Channel = 2, Enable = true, Tip = "Enable2（CHA0）" });
+            Enables.Add(new ToggleInfoModel() { Name = "对中X2", Type = "CCS", Channel = 3, Enable = true, Tip = "Enable3（CHA1）" });
+            Enables.Add(new ToggleInfoModel() { Name = "像散D", Type = "CCS", Channel = 4, Enable = true, Tip = "Enable4（CHB4）" });
+            Enables.Add(new ToggleInfoModel() { Name = "像散C", Type = "CCS", Channel = 5, Enable = true, Tip = "Enable5（CHB3）" });
+            Enables.Add(new ToggleInfoModel() { Name = "像散A", Type = "CCS", Channel = 6, Enable = true, Tip = "Enable6（CHB1）" });
+            Enables.Add(new ToggleInfoModel() { Name = "像散B", Type = "CCS", Channel = 7, Enable = true, Tip = "Enable7（CHB2）" });
 
             LensModels = new ObservableCollection<IntSliderInfoModel>();
             LensModels.Add(new IntSliderInfoModel() { Title = "物镜值", Type = "Focus", Channel = 0, Value = 45101, Interval = 500, MinValue = 0, MaxValue = 0xFFFF });
@@ -122,31 +122,32 @@ namespace UtilityTools.Modules.NetController.Model
         /// 设置属性变更回调函数
         /// </summary>
         /// <param name="handler"></param>
-        public void SetPropertyChangedHandle(EventHandler handler)
+        public void SetPropertyChangedHandle(PropertyChangedEventHandler handler)
         {
             foreach (ToggleInfoModel enableItem in Enables)
             {
-                DependencyPropertyDescriptor dpd = DependencyPropertyDescriptor.FromProperty(ToggleInfoModel.EnableProperty, typeof(ToggleInfoModel));
-                dpd.AddValueChanged(enableItem, handler);
+                enableItem.PropertyChanged += handler;
             }
 
             foreach (IntSliderInfoModel sliderItem in LensModels)
             {
-                DependencyPropertyDescriptor dpd = DependencyPropertyDescriptor.FromProperty(IntSliderInfoModel.ValueProperty, typeof(IntSliderInfoModel));
-                dpd.AddValueChanged(sliderItem, handler);
+                sliderItem.PropertyChanged += handler;
             }
 
             foreach (IntSliderInfoModel sliderItem in AligModels)
             {
-                DependencyPropertyDescriptor dpd = DependencyPropertyDescriptor.FromProperty(IntSliderInfoModel.ValueProperty, typeof(IntSliderInfoModel));
-                dpd.AddValueChanged(sliderItem, handler);
+                sliderItem.PropertyChanged += handler;
             }
 
             foreach (IntSliderInfoModel sliderItem in AstigModels)
             {
-                DependencyPropertyDescriptor dpd = DependencyPropertyDescriptor.FromProperty(IntSliderInfoModel.ValueProperty, typeof(IntSliderInfoModel));
-                dpd.AddValueChanged(sliderItem, handler);
+                sliderItem.PropertyChanged += handler;
             }
+        }
+
+        private void ToggleInfoModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            throw new NotImplementedException();
         }
         #endregion
 

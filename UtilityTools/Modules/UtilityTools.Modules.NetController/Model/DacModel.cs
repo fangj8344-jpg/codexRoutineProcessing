@@ -38,7 +38,7 @@ using UtilityTools.Core.Mvvm;
 
 namespace UtilityTools.Modules.NetController.Model
 {
-    public class DacModel : CustomBindableBase
+    public class DacModel : BindableBase
     {
         #region ------------Constructor------------
         public DacModel()
@@ -71,12 +71,11 @@ namespace UtilityTools.Modules.NetController.Model
         /// 设置属性变更回调函数
         /// </summary>
         /// <param name="handler"></param>
-        public void SetPropertyChangedHandle(EventHandler handler)
+        public void SetPropertyChangedHandle(PropertyChangedEventHandler handler)
         {
             foreach (IntSliderInfoModel sliderItem in Dacs)
             {
-                DependencyPropertyDescriptor dpd = DependencyPropertyDescriptor.FromProperty(IntSliderInfoModel.ValueProperty, typeof(IntSliderInfoModel));
-                dpd.AddValueChanged(sliderItem, handler);
+                sliderItem.PropertyChanged += handler;
             }
         }
         #endregion

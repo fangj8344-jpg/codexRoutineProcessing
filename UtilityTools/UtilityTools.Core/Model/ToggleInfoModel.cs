@@ -26,6 +26,7 @@
 
 using Prism.Mvvm;
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -102,7 +103,6 @@ namespace UtilityTools.Core.Model
         #endregion
 
         #region ------------StaticMethod------------
-        public static readonly DependencyProperty EnableProperty = DependencyProperty.Register("Enable", typeof(bool), typeof(ToggleInfoModel));
         #endregion
     }
 }

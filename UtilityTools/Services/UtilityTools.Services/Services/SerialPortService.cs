@@ -98,6 +98,11 @@ namespace UtilityTools.Services.Services
         /// 数据传输是否采用二进制传输
         /// </summary>
         public bool IsBinary { get; set; }
+
+        /// <summary>
+        /// 连接测试
+        /// </summary>
+        public DelegateConnectTestCommand ConnectTest { get; set; }
         #endregion
 
         #region ------------Event------------
@@ -266,7 +271,7 @@ namespace UtilityTools.Services.Services
                         // 发送业务
                         DeviceInstance.SerialPort.Write(cmd, 0, cmd.Length);
                         LogManager.GetCurrentClassLogger().Debug($"{Name}发送指令：{GetCmdString(cmd, cmd.Length)}");
-                        Thread.Sleep(100);
+                        //Thread.Sleep(100);
                     }
 
                     lock (_syncObject)
@@ -292,7 +297,7 @@ namespace UtilityTools.Services.Services
         /// <param name="e"></param>
         private void SerialPort_DataReceived(object sender, System.IO.Ports.SerialDataReceivedEventArgs e)
         {
-            if (sender is SerialPort dev && e.EventType == SerialData.Eof)
+            if (sender is SerialPort dev && e.EventType == SerialData.Chars)
             {
                 try
                 {

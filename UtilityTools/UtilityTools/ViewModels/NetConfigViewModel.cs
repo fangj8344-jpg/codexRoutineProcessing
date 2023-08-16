@@ -39,6 +39,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using UtilityTools.Core.Dialog;
 using UtilityTools.Core.Model;
+using UtilityTools.Services.Interfaces.IServices;
 using UtilityTools.UserControls.ViewModels;
 
 namespace UtilityTools.ViewModels
@@ -73,8 +74,14 @@ namespace UtilityTools.ViewModels
         public DelegateCommand<string> ExecuteCommand { get; set; }
         public DelegateCommand SaveCommand { get; set; }
         public DelegateCommand CancelCommand { get; set; }
+
         /// <summary>
-        /// 
+        /// 基础服务接口
+        /// </summary>
+        public IBaseService BaseService { get; set; }
+
+        /// <summary>
+        /// 网络配置模型
         /// </summary>
         public NetConfigModel Model
         {
@@ -113,11 +120,15 @@ namespace UtilityTools.ViewModels
 
         public void OnDialogOpend(IDialogParameters parameters)
         {
-            Model = parameters.GetValue<NetConfigModel>("Value");
-            if(Model != null)
+            BaseService = parameters.GetValue<IBaseService>("Value");
+            if(BaseService != null)
             {
-                TargetIP.AddressText = Model.TargetIp;
-                HostIP.AddressText = Model.HostIp;
+                Model = BaseService.GetHandle() as NetConfigModel;
+                if (Model != null)
+                {
+                    TargetIP.AddressText = Model.TargetIp;
+                    HostIP.AddressText = Model.HostIp;
+                }
             }
         }
         #endregion
@@ -139,7 +150,7 @@ namespace UtilityTools.ViewModels
             if (DialogHost.IsDialogOpen(DialogHostName))
             {
                 DialogParameters parameters = new DialogParameters();
-                parameters.Add("Value", _isHandshake);
+                parameters.Add("Value", BaseService);
                 DialogHost.Close(DialogHostName, new DialogResult(ButtonResult.OK, parameters));
             }
         }
@@ -149,6 +160,7 @@ namespace UtilityTools.ViewModels
             if (DialogHost.IsDialogOpen(DialogHostName))
             {
                 DialogParameters parameters = new DialogParameters();
+                parameters.Add("Value", BaseService);
                 DialogHost.Close(DialogHostName, new DialogResult(ButtonResult.Cancel, parameters));
             }
         }
@@ -159,7 +171,7 @@ namespace UtilityTools.ViewModels
             {
                 if (Model.Open())
                 {
-                    Model.ConnectTest?.Invoke(Model);
+                    BaseService.ConnectTest?.Invoke(BaseService);
                     TargetIP.AddressText = Model.TargetIp;
                     _isHandshake = true;
                 }

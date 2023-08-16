@@ -8,32 +8,8 @@ namespace UtilityTools.Services.Interfaces.IServices
     /// <summary>
     /// 异步读写服务
     /// </summary>
-    public interface IAsynRWService
+    public interface IAsynRWService : IBaseService
     {
-        #region Property
-        /// <summary>
-        /// 设备是否打开
-        /// </summary>
-        bool IsOpen
-        {
-            get;
-        }
-
-        /// <summary>
-        /// 设备名称
-        /// </summary>
-        string Name
-        {
-            get;
-            set;
-        }
-
-        /// <summary>
-        /// 数据传输是否采用二进制传输
-        /// </summary>
-        bool IsBinary { get; set; }
-        #endregion
-
         #region Event
         /// <summary>
         /// 更新回包数据事件
@@ -43,41 +19,10 @@ namespace UtilityTools.Services.Interfaces.IServices
 
         #region publicFunction
         /// <summary>
-        /// 打开设备
-        /// </summary>
-        /// <returns>打开结果</returns>
-        bool Open();
-
-        /// <summary>
-        /// 关闭设备
-        /// </summary>
-        /// <returns>关闭结果</returns>
-        void Close();
-
-        /// <summary>
         /// 串口数据发送接口
         /// </summary>
-        /// <param name="cmdCode">指令类型</param>
         /// <param name="cmd">指令参数</param>
         void SendMsg(byte[] cmd);
-
-        /// <summary>
-        /// 获取服务句柄
-        /// </summary>
-        /// <returns></returns>
-        object GetHandle();
-
-        /// <summary>
-        /// 设置句柄
-        /// </summary>
-        /// <param name="obj"></param>
-        void SetHandle(object obj);
-
-        /// <summary>
-        /// 获取指令字符串，用于日志或者打印信息
-        /// </summary>
-        /// <returns></returns>
-        string GetCmdString(byte[] cmd, int length);
         #endregion
     }
 }

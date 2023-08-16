@@ -60,6 +60,10 @@ namespace UtilityTools.Services.Services
 
         public bool IsBinary { get; set; }
 
+        /// <summary>
+        /// 连接测试
+        /// </summary>
+        public DelegateConnectTestCommand ConnectTest { get; set; }
         #endregion
 
         #region ------------PublicMethod------------

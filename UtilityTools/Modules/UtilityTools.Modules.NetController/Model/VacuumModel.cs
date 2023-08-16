@@ -38,16 +38,16 @@ using UtilityTools.Core.Mvvm;
 
 namespace UtilityTools.Modules.NetController.Model
 {
-    public class VacuumModel : CustomBindableBase
+    public class VacuumModel : BindableBase
     {
         #region ------------Constructor------------
         public VacuumModel()
         {
             Vacuums = new ObservableCollection<LabelInfoModel>();
-            Vacuums.Add(new LabelInfoModel() { Name = "真空读数1", Channel = 1, Tip = "通道1真空读数", Value = "未知"});
-            Vacuums.Add(new LabelInfoModel() { Name = "真空读数2", Channel = 2, Tip = "通道2真空读数", Value = "未知" });
-            Vacuums.Add(new LabelInfoModel() { Name = "真空读数3", Channel = 3, Tip = "通道3真空读数", Value = "未知" });
-            Vacuums.Add(new LabelInfoModel() { Name = "真空读数4", Channel = 4, Tip = "通道4真空读数", Value = "未知" });
+            Vacuums.Add(new LabelInfoModel() { Name = "真空读数1", Type="Vacuum", Channel = 1, Tip = "通道1真空读数", Value = "未知"});
+            Vacuums.Add(new LabelInfoModel() { Name = "真空读数2", Type="Vacuum", Channel = 2, Tip = "通道2真空读数", Value = "未知" });
+            Vacuums.Add(new LabelInfoModel() { Name = "真空读数3", Type="Vacuum", Channel = 3, Tip = "通道3真空读数", Value = "未知" });
+            Vacuums.Add(new LabelInfoModel() { Name = "真空读数4", Type="Vacuum", Channel = 4, Tip = "通道4真空读数", Value = "未知" });
 
             Motor = new ToggleInfoModel() { Name = "Motor", Type="Motor", Tip="电机", Channel = 0, Enable = false};
         }
@@ -84,17 +84,15 @@ namespace UtilityTools.Modules.NetController.Model
         /// 设置属性变更回调函数
         /// </summary>
         /// <param name="handler"></param>
-        public void SetPropertyChangedHandle(EventHandler handler)
+        public void SetPropertyChangedHandle(PropertyChangedEventHandler handler)
         {
             foreach (LabelInfoModel valueItem in Vacuums)
             {
-                DependencyPropertyDescriptor dpd = DependencyPropertyDescriptor.FromProperty(LabelInfoModel.ValueProperty, typeof(LabelInfoModel));
-                dpd.AddValueChanged(valueItem, handler);
+                valueItem.PropertyChanged += handler;
             }
 
             {
-                DependencyPropertyDescriptor dpd = DependencyPropertyDescriptor.FromProperty(ToggleInfoModel.EnableProperty, typeof(ToggleInfoModel));
-                dpd.AddValueChanged(Motor, handler);
+                Motor.PropertyChanged += handler;
             }
         }
         #endregion

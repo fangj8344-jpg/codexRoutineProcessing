@@ -38,6 +38,7 @@ using UtilityTools.Core.Dialog;
 using UtilityTools.Core.Model;
 using UtilityTools.Core.Extension;
 using NLog;
+using UtilityTools.Services.Interfaces.IServices;
 
 namespace UtilityTools.ViewModels
 {
@@ -76,6 +77,8 @@ namespace UtilityTools.ViewModels
         #endregion
 
         #region ------------Property------------
+        public IBaseService BaseService { get; set; }
+
         public SerialPortModel Model
         {
             get { return _model; }
@@ -125,20 +128,24 @@ namespace UtilityTools.ViewModels
         #region ------------PublicMethod------------
         public void OnDialogOpend(IDialogParameters parameters)
         {
-            Model = parameters.GetValue<SerialPortModel>("Value");
-
-            PortNames = SerialPort.GetPortNames().ToList<string>();
-            if (PortNames.Count > 0)
+            BaseService = parameters.GetValue<IBaseService>("Value");
+            if(BaseService != null)
             {
-                if (Model != null)
+                Model = BaseService.GetHandle() as SerialPortModel;
+                PortNames = SerialPort.GetPortNames().ToList<string>();
+                if (PortNames.Count > 0)
                 {
-                    Model.PortName = PortNames[0];
-                    Model.SerialPort.BaudRate = Model.BaudRate;
-                    Model.SerialPort.Parity = Model.Parity;
-                    Model.SerialPort.StopBits = Model.StopBits;
-                    Model.SerialPort.DataBits = Model.DataBits;
+                    if (Model != null)
+                    {
+                        Model.PortName = PortNames[0];
+                        Model.SerialPort.BaudRate = Model.BaudRate;
+                        Model.SerialPort.Parity = Model.Parity;
+                        Model.SerialPort.StopBits = Model.StopBits;
+                        Model.SerialPort.DataBits = Model.DataBits;
+                    }
                 }
             }
+            
         }
         #endregion
 
@@ -148,7 +155,7 @@ namespace UtilityTools.ViewModels
             if (DialogHost.IsDialogOpen(DialogHostName))
             {
                 DialogParameters parameters = new DialogParameters();
-                parameters.Add("Value", Model);
+                parameters.Add("Value", BaseService);
                 DialogHost.Close(DialogHostName, new DialogResult(ButtonResult.OK, parameters));
             }
         }
@@ -158,7 +165,7 @@ namespace UtilityTools.ViewModels
             if (DialogHost.IsDialogOpen(DialogHostName))
             {
                 DialogParameters parameters = new DialogParameters();
-                parameters.Add("Value", Model);
+                parameters.Add("Value", BaseService);
                 DialogHost.Close(DialogHostName, new DialogResult(ButtonResult.Cancel, parameters));
             }
         }
@@ -216,9 +223,9 @@ namespace UtilityTools.ViewModels
                 return;
             }
 
-            if (Model.SerialPort.IsOpen)
+            if (BaseService.IsOpen)
             {
-                Model.SerialPort.Close();
+                BaseService.Close();
                 Status = "连接";
             }
             else
@@ -231,7 +238,7 @@ namespace UtilityTools.ViewModels
 
                 try
                 {
-                    Model.SerialPort.Open();
+                    BaseService.Open();
                     Status = "断开";
                 }
                 catch (Exception ex)

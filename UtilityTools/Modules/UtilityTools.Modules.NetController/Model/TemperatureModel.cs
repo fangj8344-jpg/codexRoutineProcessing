@@ -37,14 +37,14 @@ using UtilityTools.Core.Mvvm;
 
 namespace UtilityTools.Modules.NetController.Model
 {
-    public class TemperatureModel : CustomBindableBase
+    public class TemperatureModel : BindableBase
     {
         #region ------------Constructor------------
         public TemperatureModel()
         {
             Temperatures = new ObservableCollection<LabelInfoModel>();
-            Temperatures.Add(new LabelInfoModel() { Name = "温度读数1", Channel = 1, Tip = "", Value = "未知" });
-            Temperatures.Add(new LabelInfoModel() { Name = "温度读数2", Channel = 2, Tip = "", Value = "未知" });
+            Temperatures.Add(new LabelInfoModel() { Name = "温度读数1", Type="Temperature", Channel = 1, Tip = "", Value = "未知" });
+            Temperatures.Add(new LabelInfoModel() { Name = "温度读数2", Type="Temperature", Channel = 2, Tip = "", Value = "未知" });
 
             Fans = new ObservableCollection<IntSliderInfoModel>();
             Fans.Add(new IntSliderInfoModel() { Title = "风扇1", Type="Fans", Tip="可调速风扇", Value = 0, Channel = 1, MinValue = 0, MaxValue = 100, Interval = 500 });
@@ -84,18 +84,16 @@ namespace UtilityTools.Modules.NetController.Model
         /// 设置属性变更回调函数
         /// </summary>
         /// <param name="handler"></param>
-        public void SetPropertyChangedHandle(EventHandler handler)
+        public void SetPropertyChangedHandle(PropertyChangedEventHandler handler)
         {
             foreach (LabelInfoModel valueItem in Temperatures)
             {
-                DependencyPropertyDescriptor dpd = DependencyPropertyDescriptor.FromProperty(LabelInfoModel.ValueProperty, typeof(LabelInfoModel));
-                dpd.AddValueChanged(valueItem, handler);
+                valueItem.PropertyChanged += handler;
             }
 
             foreach (IntSliderInfoModel sliderItem in Fans)
             {
-                DependencyPropertyDescriptor dpd = DependencyPropertyDescriptor.FromProperty(IntSliderInfoModel.ValueProperty, typeof(IntSliderInfoModel));
-                dpd.AddValueChanged(sliderItem, handler);
+                sliderItem.PropertyChanged += handler;
             }
         }
         #endregion

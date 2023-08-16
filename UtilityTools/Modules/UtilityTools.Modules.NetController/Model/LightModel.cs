@@ -36,7 +36,7 @@ using UtilityTools.Core.Mvvm;
 
 namespace UtilityTools.Modules.NetController.Model
 {
-    public class LightModel : CustomBindableBase
+    public class LightModel : BindableBase
     {
         #region ------------Constructor------------
         public LightModel()
