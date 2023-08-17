@@ -46,6 +46,10 @@ namespace UtilityTools.Services.Services
 
         public bool IsBinary { get; set; }
 
+        /// <summary>
+        /// 连接测试
+        /// </summary>
+        public DelegateConnectTestCommand ConnectTest { get; set; }
         #endregion
 
         #region ------------Event------------
@@ -54,6 +58,11 @@ namespace UtilityTools.Services.Services
 
         #region ------------PublicMethod------------
         public void Close()
+        {
+            throw new NotImplementedException();
+        }
+
+        public string GetCmdString(byte[] cmd, int length)
         {
             throw new NotImplementedException();
         }

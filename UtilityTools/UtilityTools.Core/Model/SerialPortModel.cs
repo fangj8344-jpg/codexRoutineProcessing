@@ -44,7 +44,7 @@ namespace UtilityTools.Core.Model
             PortName = string.Empty;
             BaudRate = 115200;
             Parity = Parity.None;
-            StopBits = StopBits.None;
+            StopBits = StopBits.One;
             DataBits = 8;
         }
         #endregion

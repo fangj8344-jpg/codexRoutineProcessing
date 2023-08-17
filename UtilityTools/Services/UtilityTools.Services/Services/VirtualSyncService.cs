@@ -45,11 +45,20 @@ namespace UtilityTools.Services.Services
         public string Name { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public bool IsBinary { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
+        /// <summary>
+        /// 连接测试
+        /// </summary>
+        public DelegateConnectTestCommand ConnectTest { get; set; }
         #endregion
 
         #region ------------PublicMethod------------
 
         public void Close()
+        {
+            throw new NotImplementedException();
+        }
+
+        public string GetCmdString(byte[] cmd, int length)
         {
             throw new NotImplementedException();
         }

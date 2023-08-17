@@ -14,6 +14,7 @@ using UtilityTools.Core.Helper;
 using UtilityTools.ViewModels;
 using UtilityTools.Core.Dialog;
 using UtilityTools.Core.Mvvm;
+using UtilityTools.UserControls.Views;
 
 namespace UtilityTools
 {
@@ -62,6 +63,8 @@ namespace UtilityTools
             containerRegistry.RegisterForNavigation<HomeView, HomeViewModel>();
 
             containerRegistry.RegisterDialog<SerialPortView>();
+            containerRegistry.RegisterDialog<NetConfigView>();
+
         }
 
         protected override void ConfigureModuleCatalog(IModuleCatalog moduleCatalog)

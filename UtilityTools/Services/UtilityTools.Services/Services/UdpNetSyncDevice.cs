@@ -78,6 +78,11 @@ namespace UtilityTools.Services.Services
         /// 数据传输是否采用二进制传输
         /// </summary>
         public bool IsBinary { get; set; }
+
+        /// <summary>
+        /// 连接测试
+        /// </summary>
+        public DelegateConnectTestCommand ConnectTest { get; set; }
         #endregion
 
         #region ------------PublicMethod------------
@@ -186,6 +191,22 @@ namespace UtilityTools.Services.Services
         {
             if (handle is NetConfigModel sp)
                 DeviceInstance = sp;
+        }
+
+        /// <summary>
+        /// 获取指令字符串，用于日志或者打印信息
+        /// </summary>
+        /// <returns></returns>
+        public string GetCmdString(byte[] cmd, int length)
+        {
+            if (IsBinary)
+            {
+                return DataTypeCaster.ByteArrayToString(cmd, length);
+            }
+            else
+            {
+                return Encoding.Default.GetString(cmd, 0, length);
+            }
         }
         #endregion
 

@@ -205,14 +205,18 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         private async void ShowDevice()
         {
             DialogParameters parameter = new DialogParameters();
-            parameter.Add("Value", Service.GetHandle());
+            parameter.Add("Value", Service);
             var diaglogResult = await this._dialogHostService.ShowDialog("SerialPortView", parameter, CommonModel.VacMonitorRegionName);
             if (diaglogResult == null)
                 return;
             if (diaglogResult.Result == ButtonResult.OK && diaglogResult.Parameters.ContainsKey("Value"))
             {
-                Service.SetHandle(diaglogResult.Parameters.GetValue<object>("Value"));
-                IsConnected = Service.IsOpen;
+                var value = diaglogResult.Parameters.GetValue<IAsynRWService>("Value");
+                if(value != null) 
+                {
+                    Service = value;
+                    IsConnected = Service.IsOpen;
+                }
             }
         }
 

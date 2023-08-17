@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace UtilityTools.Core.Model
 {
@@ -69,6 +70,15 @@ namespace UtilityTools.Core.Model
             set { _channel = value; RaisePropertyChanged(); }
         }
 
+        private string _type;
+        /// <summary>
+        /// 控制类型
+        /// </summary>
+        public string Type
+        {
+            get { return _type; }
+            set { _type = value; RaisePropertyChanged(); }
+        }
 
         private string _value;
         /// <summary>

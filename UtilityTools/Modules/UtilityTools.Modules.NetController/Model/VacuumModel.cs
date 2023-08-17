@@ -28,11 +28,13 @@ using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls.Primitives;
 using UtilityTools.Core.Model;
+using UtilityTools.Core.Mvvm;
 
 namespace UtilityTools.Modules.NetController.Model
 {
@@ -42,12 +44,12 @@ namespace UtilityTools.Modules.NetController.Model
         public VacuumModel()
         {
             Vacuums = new ObservableCollection<LabelInfoModel>();
-            Vacuums.Add(new LabelInfoModel() { Name = "真空读数1", Channel = 1, Tip = "通道1真空读数", Value = "未知"});
-            Vacuums.Add(new LabelInfoModel() { Name = "真空读数2", Channel = 2, Tip = "通道2真空读数", Value = "未知" });
-            Vacuums.Add(new LabelInfoModel() { Name = "真空读数3", Channel = 3, Tip = "通道3真空读数", Value = "未知" });
-            Vacuums.Add(new LabelInfoModel() { Name = "真空读数4", Channel = 4, Tip = "通道4真空读数", Value = "未知" });
+            Vacuums.Add(new LabelInfoModel() { Name = "真空读数1", Type="Vacuum", Channel = 1, Tip = "通道1真空读数", Value = "未知"});
+            Vacuums.Add(new LabelInfoModel() { Name = "真空读数2", Type="Vacuum", Channel = 2, Tip = "通道2真空读数", Value = "未知" });
+            Vacuums.Add(new LabelInfoModel() { Name = "真空读数3", Type="Vacuum", Channel = 3, Tip = "通道3真空读数", Value = "未知" });
+            Vacuums.Add(new LabelInfoModel() { Name = "真空读数4", Type="Vacuum", Channel = 4, Tip = "通道4真空读数", Value = "未知" });
 
-            Motor = new ToggleInfoModel() { Name = "Motor", Tip="电机", Index = 0, Enable = false};
+            Motor = new ToggleInfoModel() { Name = "Motor", Type="Motor", Tip="电机", Channel = 0, Enable = false};
         }
         #endregion
 
@@ -78,6 +80,21 @@ namespace UtilityTools.Modules.NetController.Model
         #endregion
 
         #region ------------PublicMethod------------
+        /// <summary>
+        /// 设置属性变更回调函数
+        /// </summary>
+        /// <param name="handler"></param>
+        public void SetPropertyChangedHandle(PropertyChangedEventHandler handler)
+        {
+            foreach (LabelInfoModel valueItem in Vacuums)
+            {
+                valueItem.PropertyChanged += handler;
+            }
+
+            {
+                Motor.PropertyChanged += handler;
+            }
+        }
         #endregion
 
         #region ------------PrivateMethod------------

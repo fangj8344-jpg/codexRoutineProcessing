@@ -98,6 +98,11 @@ namespace UtilityTools.Services.Services
         /// 数据传输是否采用二进制传输
         /// </summary>
         public bool IsBinary { get; set; }
+
+        /// <summary>
+        /// 连接测试
+        /// </summary>
+        public DelegateConnectTestCommand ConnectTest { get; set; }
         #endregion
 
         #region ------------Event------------
@@ -187,6 +192,22 @@ namespace UtilityTools.Services.Services
             if (handle is SerialPortModel sp)
                 DeviceInstance = sp;
         }
+
+        /// <summary>
+        /// 获取指令字符串，用于日志或者打印信息
+        /// </summary>
+        /// <returns></returns>
+        public string GetCmdString(byte[] cmd, int length)
+        {
+            if (IsBinary)
+            {
+                return DataTypeCaster.ByteArrayToString(cmd, length);
+            }
+            else
+            {
+                return Encoding.Default.GetString(cmd, 0, length);
+            }
+        }
         #endregion
 
         #region ------------PrivateMethod------------
@@ -249,7 +270,8 @@ namespace UtilityTools.Services.Services
                     {
                         // 发送业务
                         DeviceInstance.SerialPort.Write(cmd, 0, cmd.Length);
-                        Thread.Sleep(100);
+                        LogManager.GetCurrentClassLogger().Debug($"{Name}发送指令：{GetCmdString(cmd, cmd.Length)}");
+                        //Thread.Sleep(100);
                     }
 
                     lock (_syncObject)
@@ -275,7 +297,7 @@ namespace UtilityTools.Services.Services
         /// <param name="e"></param>
         private void SerialPort_DataReceived(object sender, System.IO.Ports.SerialDataReceivedEventArgs e)
         {
-            if (sender is SerialPort dev && e.EventType == SerialData.Eof)
+            if (sender is SerialPort dev && e.EventType == SerialData.Chars)
             {
                 try
                 {
@@ -283,15 +305,8 @@ namespace UtilityTools.Services.Services
                     byte[] response = new byte[size];
                     int realLen = dev.Read(response, 0, size);
 
-                    if (IsBinary)
-                    {
-                        LogManager.GetCurrentClassLogger().Debug($"{Name}接收二进制数据：{DataTypeCaster.ByteArrayToString(response, response.Length)}");
-                    }
-                    else
-                    {
-                        LogManager.GetCurrentClassLogger().Debug($"{Name}接收字符串数据：{Encoding.Default.GetString(response)}");
-                    }
-
+                    LogManager.GetCurrentClassLogger().Debug($"{Name}接收数据：{GetCmdString(response, realLen)}");
+                    
                     UpdateResponse?.Invoke(this, response);
                 }
                 catch (Exception ex)
