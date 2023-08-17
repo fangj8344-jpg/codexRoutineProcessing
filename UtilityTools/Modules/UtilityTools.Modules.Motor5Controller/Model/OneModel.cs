@@ -156,24 +156,8 @@ namespace UtilityTools.Modules.Motor5Controller.Model
         #endregion
 
         #region ------------PublicMethod------------
-        /// 电机使能
-        public DelegateCommand OpenMotorCommand { get; set; }
-        /// 电机失能
-        public DelegateCommand CloseMotorCommand { get; set; }
-        //设置目标位置
-        public DelegateCommand SetTargetPositionCommand { get; set; }
-        //获取目标位置
-        public DelegateCommand ObtainTargetPositionCommand { get; set; }
-        //获取实时位置
-        public DelegateCommand ObtainRealTimePositionCommand { get; set; }
-        //设置原点位置
-        public DelegateCommand SetOriginPositionCommand { get; set; }
-        //获取原点位置
-        public DelegateCommand ObtainOriginPositionCommand { get; set; }
-        //设置零点位置
-        public DelegateCommand SetZeroPositionCommand { get; set; }
-        //设置零点位置
-        public DelegateCommand ObtainZeroPositionCommand { get; set; }
+        public DelegateCommand<object> ButtonEventCommand { get; set; }
+
         #endregion
 
         #region ------------PrivateMethod------------

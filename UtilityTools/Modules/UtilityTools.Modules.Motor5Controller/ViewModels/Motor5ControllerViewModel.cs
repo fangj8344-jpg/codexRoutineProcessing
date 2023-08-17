@@ -45,6 +45,10 @@ using System.Windows;
 using System.Reflection;
 using System.Windows.Controls;
 using System.Threading;
+using System.Windows.Interop;
+using System.Windows.Documents;
+using Prism.Events;
+using UtilityTools.Core.Extension;
 
 namespace UtilityTools.Modules.Motor5Controller.ViewModels
 {
@@ -59,7 +63,8 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
             this._dialogHostService = dialogHostService;
             InitCommand();
             InitProperty();
-            
+            aggregator = containerProvider.Resolve<IEventAggregator>();
+            Service.UpdateResponse += Service_UpdateResponse;
         }
         #endregion
 
@@ -68,6 +73,7 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         private SerialPort comm = new SerialPort();
         private readonly IDialogHostService _dialogHostService;
         private readonly IContainerProvider _containerProvider;
+        public readonly IEventAggregator aggregator;
         #endregion
 
         #region ------------Property------------
@@ -102,6 +108,9 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
 
         #region ------------Command------------
         public DelegateCommand ShowDeviceCommand { get; set; }
+        public string DialogHostName { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public DelegateCommand SaveCommand { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public DelegateCommand CancelCommand { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         #endregion
 
         #region ------------PublicMethod------------
@@ -114,15 +123,7 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         private void InitCommand()
         {
             ShowDeviceCommand = new DelegateCommand(ShowDevice);
-            One.OpenMotorCommand = new DelegateCommand(OpenMotor);
-            One.CloseMotorCommand = new DelegateCommand(CloseMotor);
-            One.SetTargetPositionCommand = new DelegateCommand(SetTargetPosition);
-            One.ObtainTargetPositionCommand = new DelegateCommand(ObtainTargetPosition);
-            One.ObtainRealTimePositionCommand = new DelegateCommand(ObtainRealTimePosition);
-            One.SetOriginPositionCommand = new DelegateCommand(SetOriginPosition);
-            One.ObtainOriginPositionCommand = new DelegateCommand(ObtainOriginPosition);
-            One.SetZeroPositionCommand = new DelegateCommand(SetZeroPosition);
-            One.ObtainZeroPositionCommand = new DelegateCommand(ObtainZeroPosition);
+            One.ButtonEventCommand = new DelegateCommand<Object>(ButtonEvent);
         }
 
         /// <summary>
@@ -133,13 +134,14 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
             IsConnected = false;
             Service = _containerProvider.Resolve<IServiceFactory>().GetAsynRWService("SPVM");
         }
+
         /// <summary>
         /// 显示设备弹窗
         /// </summary>
         private async void ShowDevice()
         {
             DialogParameters parameter = new DialogParameters();
-            parameter.Add("Value", Service.GetHandle());
+            parameter.Add("Value", Service);
             var diaglogResult = await this._dialogHostService.ShowDialog("SerialPortView", parameter, CommonModel.Motor5ControllerRegionName);
             if (diaglogResult == null)
                 return;
@@ -150,92 +152,49 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
             }
         }
 
+
         /// <summary>
-        /// 电机使能
+        /// 执行命令事件：Button按钮
         /// </summary>
-        private void OpenMotor(){
-            try
-            {
-                var MessageByte = ExecuteCommand((int)DataLengthEnum.Four, CreateFunctionCode((int)FunctionCodeEnum.电机使能), CreateSeatNo((int)SeatNoEnum.电机1));
-                One.MotorStatus = "使能中";
-                var State = Service.IsOpen;
+        /// <param name="obj"></param>
+        private void ButtonEvent(Object obj) {
+            Button button = obj as Button;
+            var Name = button.Content;
+            switch (Name) {
+                case "使能":
+                    ExecuteCommand((int)DataLengthEnum.Four, CreateFunctionCode((int)FunctionCodeEnum.电机使能), CreateSeatNo((int)SeatNoEnum.电机1));
+                    break;
+                case "失能":
+                    ExecuteCommand((int)DataLengthEnum.Four, CreateFunctionCode((int)FunctionCodeEnum.电机失能), CreateSeatNo((int)SeatNoEnum.电机1));
+                    break;
+                case "设置目标位置":
+                    ExecuteCommand((int)DataLengthEnum.Eight, CreateFunctionCode((int)FunctionCodeEnum.设置目标位置), CreateSeatNo((int)SeatNoEnum.电机1));
+                    break;
+                case "获取目标位置":
+                    ExecuteCommand((int)DataLengthEnum.Four, CreateFunctionCode((int)FunctionCodeEnum.获取目标位置), CreateSeatNo((int)SeatNoEnum.电机1));
+                    break;
+                case "获取实时位置":
+                    ExecuteCommand((int)DataLengthEnum.Four, CreateFunctionCode((int)FunctionCodeEnum.获取实时位置), CreateSeatNo((int)SeatNoEnum.电机1));
+                    break;
+                case "设置原点位置":
+                    ExecuteCommand((int)DataLengthEnum.Eight, CreateFunctionCode((int)FunctionCodeEnum.设置原点位置), CreateSeatNo((int)SeatNoEnum.电机1));
+                    break;
+                case "获取原点位置":
+                    ExecuteCommand((int)DataLengthEnum.Four, CreateFunctionCode((int)FunctionCodeEnum.获取原点位置), CreateSeatNo((int)SeatNoEnum.电机1));
+                    break;
+                case "设置零点位置":
+                    ExecuteCommand((int)DataLengthEnum.Eight, CreateFunctionCode((int)FunctionCodeEnum.获取零点位置), CreateSeatNo((int)SeatNoEnum.电机1));
+                    break;
+                case "获取零点位置":
+                    ExecuteCommand((int)DataLengthEnum.Four, CreateFunctionCode((int)FunctionCodeEnum.获取零点位置), CreateSeatNo((int)SeatNoEnum.电机1));
+                    break;
+                case "回到原点":
+                    ExecuteCommand((int)DataLengthEnum.Four, CreateFunctionCode((int)FunctionCodeEnum.设置回到原点位置), CreateSeatNo((int)SeatNoEnum.电机1));
+                    break;
+                case "回到零点":
+                    ExecuteCommand((int)DataLengthEnum.Four, CreateFunctionCode((int)FunctionCodeEnum.设置回到零点位置), CreateSeatNo((int)SeatNoEnum.电机1));
+                    break;
             }
-            catch (Exception ex) { 
-            
-            }
-        }
-
-        /// <summary>
-        /// 串口通讯数据回报接收函数
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void SerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
-        {
-            One.MotorStatus = "使能完成";
-        }
-
-
-        /// <summary>
-        /// 电机失能
-        /// </summary>
-        private void CloseMotor()
-        {
-            One.MotorStatus = "失能";
-        }
-
-        /// <summary>
-        /// 设置目标位置
-        /// </summary>
-        private void SetTargetPosition() {
-            One.SetTargetPosition = 11;
-        }
-
-        /// <summary>
-        /// 获取目标位置
-        /// </summary>
-        private void ObtainTargetPosition() {
-            One.ObtainTargetPosition = 22;
-        }
-
-        /// <summary>
-        /// 获取实时位置
-        /// </summary>
-        private void ObtainRealTimePosition()
-        {
-            One.ObtainRealTimePosition = 33;
-        }
-
-        /// <summary>
-        /// 设置原点位置
-        /// </summary>
-        private void SetOriginPosition()
-        {
-            One.SetOriginPosition = 44;
-        }
-
-        /// <summary>
-        /// 获取原点位置
-        /// </summary>
-        private void ObtainOriginPosition()
-        {
-            One.ObtainOriginPosition = 55;
-        }
-
-        /// <summary>
-        /// 设置零点位置
-        /// </summary>
-        private void SetZeroPosition()
-        {
-            One.SetZeroPosition = 66;
-        }
-
-        /// <summary>
-        /// 设置零点位置
-        /// </summary>
-        private void ObtainZeroPosition()
-        {
-            One.ObtainZeroPosition = 77;
         }
 
 
@@ -373,7 +332,7 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         /// </summary>
         private enum DataLengthEnum {
 
-            Four=4,
+            Four = 4,
             Eight = 8
         }
 
@@ -409,14 +368,48 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         }
 
 
+
         /// <summary>
-        /// 发送消息
+        /// 串口通信：发送消息
         /// </summary>
-        /// <param name="msg">消息体</param>
+        /// <param name="msg"></param>
         private void SendMsg(byte[] msg)
         {
             Service.SendMsg(msg);
         }
+
+        /// <summary>
+        /// 串口通信：接收回调信息
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Service_UpdateResponse(object sender, byte[] e)
+        {
+            List<int> ListInfos = new List<int>(); ;
+            var MessageInfo = ByteZH(e);
+            aggregator.SendMessage($"执行命令，接收回调信息: {MessageInfo}！");
+        }
+
+        /// <summary>
+        /// 报文转换
+        /// </summary>
+        /// <returns></returns>
+        private string ByteZH(byte[] e) {
+            List<string> ListInfos = new List<string>(); ;
+            var msg = e;
+            if (e.Length > 0)
+            {
+                foreach (byte b in e)
+                {
+                    var ByteInfo = b.ToString("X2");
+                    ListInfos.Add(ByteInfo.ToString());
+                }
+            }
+            return string.Join(",", ListInfos);
+        }
+
+      
+
         #endregion
 
         #region ------------StaticMethod------------

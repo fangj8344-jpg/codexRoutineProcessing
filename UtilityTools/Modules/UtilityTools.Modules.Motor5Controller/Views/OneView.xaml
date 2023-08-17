@@ -34,13 +34,15 @@
                 <DockPanel>
                 <Button DockPanel.Dock="Right"
                  Content="使能"
-                 Command="{Binding OpenMotorCommand}"
+                 Command="{Binding  ButtonEventCommand}"
+                 CommandParameter="{Binding RelativeSource={x:Static RelativeSource.Self}}" 
                  Margin="5,5" />
                 </DockPanel>
                 <DockPanel>
                 <Button DockPanel.Dock="Right"
                  Content="失能"
-                 Command="{Binding CloseMotorCommand}"
+                 Command="{Binding  ButtonEventCommand}"
+                 CommandParameter="{Binding RelativeSource={x:Static RelativeSource.Self}}" 
                  Margin="5,5" />  
                 </DockPanel>
             </UniformGrid>
@@ -50,7 +52,8 @@
                 <DockPanel>
                     <Button DockPanel.Dock="Right"
                      Content="设置目标位置"
-                     Command="{Binding SetTargetPositionCommand}"
+                     Command="{Binding  ButtonEventCommand}"
+                     CommandParameter="{Binding RelativeSource={x:Static RelativeSource.Self}}" 
                      Margin="5,5" />
                 </DockPanel>
                 <DockPanel>
@@ -63,8 +66,9 @@
             <UniformGrid Grid.Row="2" Columns="2" VerticalAlignment="Center">
                 <DockPanel>
                     <Button DockPanel.Dock="Right"
-                     Content="获取目标位置"
-                     Command="{Binding ObtainTargetPositionCommand}"
+                      Content="获取目标位置"
+                      Command="{Binding  ButtonEventCommand}"
+                      CommandParameter="{Binding RelativeSource={x:Static RelativeSource.Self}}" 
                      Margin="5,5" />
                 </DockPanel>
                 <DockPanel>
@@ -78,8 +82,9 @@
             <UniformGrid Grid.Row="3" Columns="2" VerticalAlignment="Center">
                 <DockPanel>
                     <Button DockPanel.Dock="Right"
-                      Content="获取实时位置"
-                      Command="{Binding ObtainRealTimePositionCommand}"
+                       Content="获取实时位置"
+                       Command="{Binding  ButtonEventCommand}"
+                       CommandParameter="{Binding RelativeSource={x:Static RelativeSource.Self}}" 
                       Margin="5,5" />
                 </DockPanel>
                 <DockPanel>
@@ -93,7 +98,8 @@
                 <DockPanel>
                     <Button DockPanel.Dock="Right"
                      Content="设置原点位置"
-                     Command="{Binding SetOriginPositionCommand}"
+                     Command="{Binding  ButtonEventCommand}"
+                     CommandParameter="{Binding RelativeSource={x:Static RelativeSource.Self}}" 
                      Margin="5,5" />
                 </DockPanel>
                 <DockPanel>
@@ -107,7 +113,8 @@
                 <DockPanel>
                     <Button DockPanel.Dock="Right"
                     Content="获取原点位置"
-                    Command="{Binding ObtainOriginPositionCommand}"
+                    Command="{Binding  ButtonEventCommand}"
+                    CommandParameter="{Binding RelativeSource={x:Static RelativeSource.Self}}" 
                     Margin="5,5" />
                 </DockPanel>
                 <DockPanel>
@@ -122,7 +129,8 @@
                 <DockPanel>
                     <Button DockPanel.Dock="Right"
                      Content="设置零点位置"
-                     Command="{Binding SetZeroPositionCommand}"
+                     Command="{Binding  ButtonEventCommand}"
+                     CommandParameter="{Binding RelativeSource={x:Static RelativeSource.Self}}"  
                      Margin="5,5" />
                 </DockPanel>
                 <DockPanel>
@@ -136,7 +144,8 @@
                 <DockPanel>
                     <Button DockPanel.Dock="Right"
                       Content="获取零点位置"
-                      Command="{Binding ObtainZeroPositionCommand}"
+                      Command="{Binding  ButtonEventCommand}"
+                      CommandParameter="{Binding RelativeSource={x:Static RelativeSource.Self}}"            
                       Margin="5,5" />
                 </DockPanel>
                 <DockPanel>
@@ -150,13 +159,15 @@
                 <DockPanel>
                     <Button DockPanel.Dock="Right"
                       Content="回到原点"
-                      Command="{Binding }"
+                      Command="{Binding ButtonEventCommand}"
+                      CommandParameter="{Binding RelativeSource={x:Static RelativeSource.Self}}"
                       Margin="5,5" />
                 </DockPanel>
                 <DockPanel>
                     <Button DockPanel.Dock="Right"
                       Content="回到零点"
-                      Command="{Binding }"
+                      Command="{Binding  ButtonEventCommand}"
+                      CommandParameter="{Binding RelativeSource={x:Static RelativeSource.Self}}"
                       Margin="5,5" />
                 </DockPanel>
             </UniformGrid>
