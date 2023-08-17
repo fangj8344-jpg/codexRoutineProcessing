@@ -172,8 +172,8 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         private void InitCommand()
         {
             ShowDeviceCommand = new DelegateCommand(ShowDevice);
-            ChangeMonitorStateCommand = new DelegateCommand(ChangeMonitorState);
-            ClearMonitorCommand = new DelegateCommand(ClearMonitor);
+            ChangeMonitorStateCommand = new DelegateCommand(ChangeMonitorState); 
+            ClearMonitorCommand = new DelegateCommand(ClearMonitor); 
         }
 
         /// <summary>

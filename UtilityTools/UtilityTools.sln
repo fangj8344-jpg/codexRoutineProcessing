@@ -23,7 +23,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.Modules.NetCon
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.Modules.VacMonitor", "Modules\UtilityTools.Modules.ModuleName\UtilityTools.Modules.VacMonitor\UtilityTools.Modules.VacMonitor.csproj", "{2EFD5583-AF17-42FA-A6CD-42ACB25D616E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UtilityTools.Modules.Motor5Controller", "Modules\UtilityTools.Modules.Motor5Controller\UtilityTools.Modules.Motor5Controller.csproj", "{784EB163-E55A-4654-B03E-E899869B8AEC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.Modules.Motor5Controller", "Modules\UtilityTools.Modules.Motor5Controller\UtilityTools.Modules.Motor5Controller.csproj", "{784EB163-E55A-4654-B03E-E899869B8AEC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

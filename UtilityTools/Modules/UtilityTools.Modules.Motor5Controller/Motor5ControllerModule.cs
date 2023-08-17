@@ -2,6 +2,7 @@
 using Prism.Modularity;
 using Prism.Regions;
 using UtilityTools.Core.Mvvm;
+using UtilityTools.Modules.Motor5Controller.Model;
 using UtilityTools.Modules.Motor5Controller.Views;
 
 namespace UtilityTools.Modules.Motor5Controller
@@ -17,6 +18,7 @@ namespace UtilityTools.Modules.Motor5Controller
         public void RegisterTypes(IContainerRegistry containerRegistry)
         {
             containerRegistry.RegisterForNavigation<Motor5ControllerView>();
+            containerRegistry.RegisterSingleton<OneModel>();
         }
     }
 }
