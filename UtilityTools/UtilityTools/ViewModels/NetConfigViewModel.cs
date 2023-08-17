@@ -25,6 +25,7 @@
 #endregion
 
 using MaterialDesignThemes.Wpf;
+using NLog;
 using OxyPlot;
 using Prism.Commands;
 using Prism.Mvvm;
@@ -34,6 +35,7 @@ using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO.Ports;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -55,6 +57,7 @@ namespace UtilityTools.ViewModels
 
             TargetIP = new IPTextBoxViewModel();
             HostIP = new IPTextBoxViewModel();
+            Status = "连接";
 
             TargetIP.AddressChanged += TargetIP_AddressChanged;
             HostIP.AddressChanged += HostIP_AddressChanged;
@@ -66,7 +69,7 @@ namespace UtilityTools.ViewModels
         private NetConfigModel _model;
         private IPTextBoxViewModel _targetIP;
         private IPTextBoxViewModel _hostIP;
-        private bool _isHandshake = false;
+        private string _status;
         #endregion
 
         #region ------------Property------------
@@ -114,6 +117,12 @@ namespace UtilityTools.ViewModels
                 RaisePropertyChanged();
             }
         }
+
+        public string Status
+        {
+            get { return _status; }
+            set { _status = value; RaisePropertyChanged(); }
+        }
         #endregion
 
         #region ------------PublicMethod------------
@@ -121,13 +130,17 @@ namespace UtilityTools.ViewModels
         public void OnDialogOpend(IDialogParameters parameters)
         {
             BaseService = parameters.GetValue<IBaseService>("Value");
-            if(BaseService != null)
+            if (BaseService != null)
             {
                 Model = BaseService.GetHandle() as NetConfigModel;
                 if (Model != null)
                 {
                     TargetIP.AddressText = Model.TargetIp;
                     HostIP.AddressText = Model.HostIp;
+                    if (Model.IsOpen())
+                    {
+                        Status = "断开";
+                    }
                 }
             }
         }
@@ -167,15 +180,44 @@ namespace UtilityTools.ViewModels
 
         private async void ConnnectTest()
         {
-            await Task.Run(() => 
+            if (!BaseService.IsOpen)
             {
-                if (Model.Open())
+                await Task.Run(() =>
                 {
-                    BaseService.ConnectTest?.Invoke(BaseService);
-                    TargetIP.AddressText = Model.TargetIp;
-                    _isHandshake = true;
-                }
-            });
+                    try
+                    {
+                        if (BaseService.Open())
+                        {
+                            BaseService.ConnectTest?.Invoke(BaseService);
+                            TargetIP.AddressText = Model.TargetIp;
+                            Status = "断开";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        LogManager.GetCurrentClassLogger().Error($"{BaseService.Name} Open failed: {ex.Message}");
+                    }
+                });
+            }
+            else
+            {
+                await Task.Run(() =>
+                {
+                    try
+                    {
+                        BaseService.Close();
+                        if(!BaseService.IsOpen) 
+                        {
+                            Status = "连接";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        LogManager.GetCurrentClassLogger().Error($"{BaseService.Name} Open failed: {ex.Message}");
+                    }
+                });
+            }
+
         }
 
         private void HostIP_AddressChanged(object sender, EventArgs e)

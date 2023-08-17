@@ -51,7 +51,7 @@ namespace UtilityTools
             LogManager.GetCurrentClassLogger().Fatal($"{ex.StackTrace},{ex.Message}");
 
             //记录dump文件
-            MiniDump.TryDump($"dumps\\Wemail_{DateTime.Now.ToString("HH-mm-ss-ms")}.dmp");
+            MiniDump.TryDump($"dumps\\UtilityTools_{DateTime.Now.ToString("HH-mm-ss-ms")}.dmp");
         }
 
         protected override void RegisterTypes(IContainerRegistry containerRegistry)
@@ -97,32 +97,50 @@ namespace UtilityTools
             var consoleTarget = new ColoredConsoleTarget();
             config.AddTarget("console", consoleTarget);
 
+            var debuggerTarget = new DebuggerTarget();
+            config.AddTarget("debugger", debuggerTarget);
+
             var fileTarget = new FileTarget();
             config.AddTarget("file", fileTarget);
 
+            var debugTarget = new FileTarget() { Name = "Debug" };
+            config.AddTarget("debug", debugTarget);
+
             // Step 3. Set target properties 
             consoleTarget.Layout = @"${date:format=HH\:mm\:ss} ${logger} ${message}";
-            fileTarget.FileName = "${basedir}/Log.txt";
+
+            debuggerTarget.Layout = @"${date:format=HH\:mm\:ss}|${level:uppercase=true}|${logger}|${message:withexception=true}";
+
+            fileTarget.FileName = "${basedir}/logs/logfile.txt";
             fileTarget.Layout = @"${longdate}|${level:uppercase=true}|${logger}|${message:withexception=true}";
+            fileTarget.ArchiveFileName = "${basedir}/logs/Archive/Log{#######}.txt";
+            fileTarget.MaxArchiveFiles = 30;
+            fileTarget.ArchiveEvery = FileArchivePeriod.Day;
+
+            debugTarget.FileName = "${basedir}/logs/debug.txt";
+            debugTarget.Layout = @"${longdate}|${level:uppercase=true}|${logger}|${message:withexception=true}";
+            debugTarget.ArchiveFileName = "${basedir}/logs/Archive/Debug{#######}.txt";
+            debugTarget.MaxArchiveFiles = 3;
+            debugTarget.ArchiveEvery = FileArchivePeriod.Day;
 
             // Step 4. Define rules
-            var rule1 = new LoggingRule("*", LogLevel.Debug, consoleTarget);
+            var rule1 = new LoggingRule("*", LogLevel.Debug, LogLevel.Info, debugTarget);
             config.LoggingRules.Add(rule1);
 
-            var rule2 = new LoggingRule("*", LogLevel.Error, fileTarget);
+            var rule2 = new LoggingRule("*", LogLevel.Warn, fileTarget);
             config.LoggingRules.Add(rule2);
 
-            var rule3 = new LoggingRule("*", LogLevel.Info, fileTarget);
+            var rule3 = new LoggingRule("*", LogLevel.Debug, debuggerTarget);
             config.LoggingRules.Add(rule3);
 
-            var rule4 = new LoggingRule("*", LogLevel.Warn, fileTarget);
-            config.LoggingRules.Add(rule4);
+            //var rule3 = new LoggingRule("*", LogLevel.Info, fileTarget);
+            //config.LoggingRules.Add(rule3);
 
-            var rule5 = new LoggingRule("*", LogLevel.Trace, fileTarget);
-            config.LoggingRules.Add(rule5);
+            //var rule4 = new LoggingRule("*", LogLevel.Warn, fileTarget);
+            //config.LoggingRules.Add(rule4);
 
-            var rule6 = new LoggingRule("*", LogLevel.Fatal, fileTarget);
-            config.LoggingRules.Add(rule6);
+            //var rule5 = new LoggingRule("*", LogLevel.Fatal, fileTarget);
+            //config.LoggingRules.Add(rule5);
 
             // Step 5. Activate the configuration
             LogManager.Configuration = config;

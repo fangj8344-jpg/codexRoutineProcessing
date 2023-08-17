@@ -91,7 +91,7 @@
                     <Slider Value="{Binding Value}"
                             Maximum="{Binding MaxValue}"
                             Minimum="{Binding MinValue}"
-                            Interval="{Binding Interval}"
+                            Interval="1000"
                             DockPanel.Dock="Left"
                             VerticalAlignment="Center"
                             Margin="10, 0, 10, 0" />

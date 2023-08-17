@@ -205,7 +205,7 @@ namespace UtilityTools.Services.Services
             }
             else
             {
-                return Encoding.Default.GetString(cmd, 0, length);
+                return Encoding.Default.GetString(cmd, 0, length).Trim('\n');
             }
         }
         #endregion

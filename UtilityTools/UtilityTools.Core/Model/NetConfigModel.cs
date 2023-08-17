@@ -24,6 +24,7 @@
  *----------------------------------------------------------------*/
 #endregion
 
+using NLog;
 using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
@@ -37,13 +38,11 @@ using UtilityTools.Core.Converter;
 
 namespace UtilityTools.Core.Model
 {
-    public class NetConfigModel : BindableBase
+    public abstract class NetConfigModel : BindableBase
     {
         #region ------------Constructor------------
-        public NetConfigModel(SocketType socketType, ProtocolType protocolType)
+        public NetConfigModel()
         {
-            SocketType = socketType;
-            ProtocolType = protocolType;
             TargetIp = "127.0.0.1";
             TargetPort = 0;
             HostIp = "127.0.0.1";
@@ -57,8 +56,8 @@ namespace UtilityTools.Core.Model
         private string _hostIp;
         private int _hostPort;
 
-        private IPEndPoint _sendEndPoint;                           // UDP发送节点
-        private IPEndPoint _recvEndPoint;                           // UDP接收节点
+        protected IPEndPoint _sendEndPoint;                           // UDP发送节点
+        protected IPEndPoint _recvEndPoint;                           // UDP接收节点
         #endregion
 
         #region ------------Property------------
@@ -66,16 +65,6 @@ namespace UtilityTools.Core.Model
         /// 网络句柄
         /// </summary>
         public Socket Socket { get; set; }
-
-        /// <summary>
-        /// Socket类型
-        /// </summary>
-        public SocketType SocketType { get; set; }
-
-        /// <summary>
-        /// 协议类型
-        /// </summary>
-        public ProtocolType ProtocolType { get; set; }
 
         /// <summary>
         /// 目标IP
@@ -137,28 +126,21 @@ namespace UtilityTools.Core.Model
 
         #region ------------PublicMethod------------
         /// <summary>
+        /// 是否已经连接
+        /// </summary>
+        /// <returns></returns>
+        public abstract bool IsOpen();
+
+        /// <summary>
         /// 连接Socket，有异常抛出，外部捕获
         /// </summary>
         /// <returns></returns>
-        public bool Open(bool isSupportBroadcast = false)
-        {
-            Socket = new Socket(SocketType, ProtocolType);
-            if (isSupportBroadcast)
-                Socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
-            _sendEndPoint = new IPEndPoint(IPAddress.Parse(TargetIp), TargetPort);
-            _recvEndPoint = new IPEndPoint(IPAddress.Parse(HostIp), HostPort);
-            Socket.Bind(_recvEndPoint);
-            return true;
-        }
+        public abstract bool Open();
 
         /// <summary>
         /// 断开Socket，有异常抛出，外部捕获
         /// </summary>
-        public void Close()
-        {
-            Socket?.Dispose();
-            Socket = null;
-        }
+        public abstract void Close();
 
         /// <summary>
         /// 发送数据
@@ -189,6 +171,110 @@ namespace UtilityTools.Core.Model
         #endregion
 
         #region ------------StaticMethod------------
+        #endregion
+    }
+
+    public class UdpNetConfigModel : NetConfigModel
+    {
+        #region ------------Property------------
+        /// <summary>
+        /// 是否支持广播
+        /// </summary>
+        public bool IsSupportBroadcast { get; set; } = true;
+        #endregion
+
+        #region ------------PublicMethod------------
+        /// <summary>
+        /// 是否已经连接
+        /// </summary>
+        /// <returns></returns>
+        public override bool IsOpen()
+        {
+            return Socket != null;
+        }
+
+        /// <summary>
+        /// 连接Socket，有异常抛出，外部捕获
+        /// </summary>
+        /// <returns></returns>
+        public override bool Open()
+        {
+            if (Socket != null)
+                return true;
+
+            Socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
+            Socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, IsSupportBroadcast);
+            _sendEndPoint = new IPEndPoint(IPAddress.Parse(TargetIp), TargetPort);
+            _recvEndPoint = new IPEndPoint(IPAddress.Parse(HostIp), HostPort);
+            Socket.Bind(_recvEndPoint);
+            return true;
+        }
+
+        /// <summary>
+        /// 断开Socket，有异常抛出，外部捕获
+        /// </summary>
+        public override void Close()
+        {
+            Socket?.Dispose();
+            Socket = null;
+        }
+        #endregion
+    }
+
+    public class TcpNetConfigModel : NetConfigModel
+    {
+        #region ------------Property------------
+        #endregion
+
+        #region ------------PublicMethod------------
+        /// <summary>
+        /// 是否已经连接
+        /// </summary>
+        /// <returns></returns>
+        public override bool IsOpen()
+        {
+            if(Socket != null) 
+                return Socket.Connected;
+            return false;
+        }
+
+        /// <summary>
+        /// 连接Socket，有异常抛出，外部捕获
+        /// </summary>
+        /// <returns></returns>
+        public override bool Open()
+        {
+            if (Socket == null)
+            {
+                Socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            }
+            if (Socket.Connected)
+                return true;
+            _recvEndPoint = new IPEndPoint(IPAddress.Parse(HostIp), HostPort);
+            _sendEndPoint = new IPEndPoint(IPAddress.Parse(TargetIp), TargetPort);
+            if (Socket.LocalEndPoint == null)
+            {
+                Socket.Bind(_recvEndPoint);
+            }
+            if (Socket.RemoteEndPoint == null)
+            { 
+                Socket.Connect(_sendEndPoint);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 断开Socket，有异常抛出，外部捕获
+        /// </summary>
+        public override void Close()
+        {
+            if (Socket != null)
+            {
+                Socket.Shutdown(SocketShutdown.Both);
+                Socket.Close();
+                Socket = null;
+            }
+        }
         #endregion
     }
 }

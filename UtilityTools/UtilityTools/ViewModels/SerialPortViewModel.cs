@@ -238,8 +238,8 @@ namespace UtilityTools.ViewModels
 
                 try
                 {
-                    BaseService.Open();
-                    Status = "断开";
+                    if(BaseService.Open())
+                        Status = "断开";
                 }
                 catch (Exception ex)
                 {
