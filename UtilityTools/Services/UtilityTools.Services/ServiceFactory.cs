@@ -73,131 +73,17 @@ namespace UtilityTools.Services
                         {
                             IAsynRWService device = new VirtualAsynService();
                             AsynRWServices.Add(type, device);
+                            device.Name = "虚拟异步读写设备";
                             return device;
                         }
                     case "SPVM":    // SerialPort of VacMonitor(串口真空监控设备)
                         {
-                            return new SerialPortService();
+                            IAsynRWService device = new SerialPortService();
+                            AsynRWServices.Add(type, device);
+                            device.Name = "真空监控设备";
+                            device.IsBinary = false;
+                            return device;
                         }
-                    // 串口高压设备
-                    case "SPHV":
-                        //{
-                        //    var usbInfo = new UsbInfoModel(0x7523, 0x1A86);
-                        //    IAsynRWService device = new SerialPortService(usbInfo);
-                        //    AsynRWServices.Add(type, device);
-                        //    return device;
-                        //}
-                    // TCP网口高压设备
-                    case "TNHV":
-                        //{
-                        //    var netInfo = new NetInfoModel();
-                        //    var content = ConfigurationManager.AppSettings["HostIP"];
-                        //    if (HardwareMethod.IsIPAddress(content))
-                        //        netInfo.HostIP = content;
-                        //    else
-                        //        netInfo.HostIP = "192.168.1.33";
-                        //    content = ConfigurationManager.AppSettings["HVBoardNetHostPort"];
-                        //    if (!string.IsNullOrEmpty(content) && int.TryParse(content, out int hostPort))
-                        //        netInfo.HostPort = hostPort;
-                        //    else
-                        //        netInfo.HostPort = 8702;
-                        //    content = ConfigurationManager.AppSettings["HVBoardNetIP"];
-                        //    if (HardwareMethod.IsIPAddress(content))
-                        //        netInfo.TargetIP = content;
-                        //    else
-                        //        netInfo.TargetIP = "192.168.1.12";
-                        //    content = ConfigurationManager.AppSettings["HVBoardNetPort"];
-                        //    if (!string.IsNullOrEmpty(content) && int.TryParse(content, out int targetPort))
-                        //        netInfo.TargetPort = targetPort;
-                        //    else
-                        //        netInfo.TargetPort = 8802;
-                        //    IAsynRWDevice device = new TcpNetAsyncDevice(netInfo);
-                        //    AsynRWDevices.Add(type, device);
-                        //    return device;
-                        //}
-                    // TCP网口SE设备
-                    case "TNSE":
-                        //{
-                        //    var netInfo = new NetInfoModel();
-                        //    var content = ConfigurationManager.AppSettings["HostIP"];
-                        //    if (HardwareMethod.IsIPAddress(content))
-                        //        netInfo.HostIP = content;
-                        //    else
-                        //        netInfo.HostIP = "192.168.1.33";
-                        //    content = ConfigurationManager.AppSettings["SEBoardHostPort"];
-                        //    if (!string.IsNullOrEmpty(content) && int.TryParse(content, out int hostPort))
-                        //        netInfo.HostPort = hostPort;
-                        //    else
-                        //        netInfo.HostPort = 8703;
-                        //    content = ConfigurationManager.AppSettings["SEBoardIP"];
-                        //    if (HardwareMethod.IsIPAddress(content))
-                        //        netInfo.TargetIP = content;
-                        //    else
-                        //        netInfo.TargetIP = "192.168.1.12";
-                        //    content = ConfigurationManager.AppSettings["SEBoardPort"];
-                        //    if (!string.IsNullOrEmpty(content) && int.TryParse(content, out int targetPort))
-                        //        netInfo.TargetPort = targetPort;
-                        //    else
-                        //        netInfo.TargetPort = 8803;
-                        //    IAsynRWDevice device = new TcpNetAsyncDevice(netInfo);
-                        //    AsynRWDevices.Add(type, device);
-                        //    return device;
-                        //}
-                    // TCP真空检测设备
-                    case "TNVM":
-                        //{
-                        //    var netInfo = new NetInfoModel();
-                        //    var content = ConfigurationManager.AppSettings["HostIP"];
-                        //    if (HardwareMethod.IsIPAddress(content))
-                        //        netInfo.HostIP = content;
-                        //    else
-                        //        netInfo.HostIP = "192.168.1.33";
-                        //    content = ConfigurationManager.AppSettings["VacMonitorHostPort"];
-                        //    if (!string.IsNullOrEmpty(content) && int.TryParse(content, out int hostPort))
-                        //        netInfo.HostPort = hostPort;
-                        //    else
-                        //        netInfo.HostPort = 8702;
-                        //    content = ConfigurationManager.AppSettings["VacMonitorIP"];
-                        //    if (HardwareMethod.IsIPAddress(content))
-                        //        netInfo.TargetIP = content;
-                        //    else
-                        //        netInfo.TargetIP = "192.168.1.12";
-                        //    content = ConfigurationManager.AppSettings["VacMonitorPort"];
-                        //    if (!string.IsNullOrEmpty(content) && int.TryParse(content, out int targetPort))
-                        //        netInfo.TargetPort = targetPort;
-                        //    else
-                        //        netInfo.TargetPort = 8802;
-                        //    IAsynRWDevice device = new TcpNetAsyncDevice(netInfo);
-                        //    AsynRWDevices.Add(type, device);
-                        //    return device;
-                        //}
-                    case "TNSM":
-                        //{
-                        //    var netInfo = new NetInfoModel();
-                        //    var content = ConfigurationManager.AppSettings["HostIP"];
-                        //    if (HardwareMethod.IsIPAddress(content))
-                        //        netInfo.HostIP = content;
-                        //    else
-                        //        netInfo.HostIP = "192.168.1.33";
-                        //    content = ConfigurationManager.AppSettings["Stm28BoardHostPort"];
-                        //    if (!string.IsNullOrEmpty(content) && int.TryParse(content, out int hostPort))
-                        //        netInfo.HostPort = hostPort;
-                        //    else
-                        //        netInfo.HostPort = 8704;
-                        //    content = ConfigurationManager.AppSettings["Stm28BoardIP"];
-                        //    if (HardwareMethod.IsIPAddress(content))
-                        //        netInfo.TargetIP = content;
-                        //    else
-                        //        netInfo.TargetIP = "192.168.1.12";
-                        //    content = ConfigurationManager.AppSettings["Stm28BoardPort"];
-                        //    if (!string.IsNullOrEmpty(content) && int.TryParse(content, out int targetPort))
-                        //        netInfo.TargetPort = targetPort;
-                        //    else
-                        //        netInfo.TargetPort = 8804;
-                        //    IAsynRWDevice device = new TcpNetAsyncDevice(netInfo);
-                        //    AsynRWDevices.Add(type, device);
-                        //    return device;
-                        //}
                     default:
                         return null;
                 }
@@ -234,6 +120,7 @@ namespace UtilityTools.Services
                         {
                             ISyncRWService device = new VirtualSyncService();
                             SyncRWServices.Add(type, device);
+                            device.Name = "虚拟同步读写设备";
                             return device;
                         }
                     // UDP网口主控设备
@@ -241,6 +128,8 @@ namespace UtilityTools.Services
                         {
                             ISyncRWService device = new UdpNetSyncDevice();
                             SyncRWServices.Add(type, device);
+                            device.Name = "控制板";
+                            device.IsBinary = false;
                             return device;
                         }
                     default:

@@ -69,7 +69,7 @@
         </DockPanel>
 
         <Button Grid.Row="2"
-                Content="连接测试"
+                Content="{Binding Status}"
                 Margin="10"
                 HorizontalContentAlignment="Center"
                 Command="{Binding ExecuteCommand}"

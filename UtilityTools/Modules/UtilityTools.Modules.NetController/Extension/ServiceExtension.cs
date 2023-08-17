@@ -352,9 +352,9 @@ namespace UtilityTools.Modules.NetController.Extension
                         return false;
                     }
 
-                    if (HardwareMethod.IsIPAddress(pList[0])) 
+                    if (HardwareMethod.IsIPAddress(pList[1])) 
                     {
-                        netConfig.TargetIp = pList[0];
+                        netConfig.TargetIp = pList[1];
                         return true;
                     }
                 }
@@ -383,7 +383,6 @@ namespace UtilityTools.Modules.NetController.Extension
             byte[] cmd = NetControllerProtocol.PackageBytesCmd(cmdName, paramList, netConfig.HostIp, netConfig.HostPort);
             byte[] response;
             int resLen;
-            LogManager.GetCurrentClassLogger().Debug(cmd);
             service.Request(cmdName, cmd, out response, out resLen, outTime);
             if(resLen > 0)
             {
@@ -437,7 +436,6 @@ namespace UtilityTools.Modules.NetController.Extension
             byte[] cmd = NetControllerProtocol.PackageBytesCmd(cmdName, paramList, netConfig.HostIp, netConfig.HostPort);
             byte[] response;
             int resLen;
-            LogManager.GetCurrentClassLogger().Debug(cmd);
             service.Request(cmdName, cmd, out response, out resLen, outTime);
             
             if (resLen > 0)
@@ -512,7 +510,6 @@ namespace UtilityTools.Modules.NetController.Extension
             byte[] cmd = NetControllerProtocol.PackageBytesCmd(cmdName, inparamList, netConfig.HostIp, netConfig.HostPort);
             byte[] response;
             int resLen;
-            LogManager.GetCurrentClassLogger().Debug(cmd);
             service.Request(cmdName, cmd, out response, out resLen, outTime);
 
             if (resLen > 0)

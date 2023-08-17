@@ -40,7 +40,7 @@ namespace UtilityTools.Services.Services
         #region ------------Constructor------------
         public UdpNetSyncDevice()
         {
-            DeviceInstance = new NetConfigModel(SocketType.Dgram, ProtocolType.Udp);
+            DeviceInstance = new UdpNetConfigModel();
         }
         #endregion
 
@@ -56,9 +56,9 @@ namespace UtilityTools.Services.Services
         {
             get
             {
-                if (DeviceInstance != null && DeviceInstance.Socket != null)
+                if (DeviceInstance != null)
                 {
-                    return DeviceInstance.Socket.Connected;
+                    return DeviceInstance.IsOpen();
                 }
                 return false;
             }
@@ -92,15 +92,15 @@ namespace UtilityTools.Services.Services
         /// <returns>打开结果</returns>
         public bool Open()
         {
-            if (DeviceInstance == null || DeviceInstance.Socket == null)
+            if (DeviceInstance == null)
             {
                 throw new Exception($"{Name}的网络设备句柄不能为NULL！");
             }
 
-            if (DeviceInstance.Socket.Connected)
+            if (IsOpen)
                 return true;
 
-            return DeviceInstance.Open(); ;
+            return DeviceInstance.Open(); 
         }
 
         /// <summary>
@@ -139,6 +139,7 @@ namespace UtilityTools.Services.Services
                 {
                     throw new Exception($"{Name} Send Length Error : {sendSize}/{cmd.Length}");
                 }
+                LogManager.GetCurrentClassLogger().Debug($"{Name} Send : {GetCmdString(cmd, sendSize)}");
                 DeviceInstance.SetWaitTimeOut(waitTime);
                 response = new byte[128];
                 length = 0;
@@ -147,7 +148,7 @@ namespace UtilityTools.Services.Services
                 string backStr = cmdName;
                 if (cmdName.Contains("SendHandshake"))
                 {
-                    backStr = "handshake";
+                    backStr = "Handshake";
                 }
                 while (!resStr.Contains(backStr))
                 {
@@ -155,18 +156,12 @@ namespace UtilityTools.Services.Services
                     {
                         length = DeviceInstance.Receive(response);
                         resStr = Encoding.UTF8.GetString(response, 0, length);
-                        if (IsBinary)
-                        {
-                            LogManager.GetCurrentClassLogger().Debug($"{Name} response : {DataTypeCaster.ByteArrayToString(response, length)}");
-                        }
-                        else
-                        {
-                            LogManager.GetCurrentClassLogger().Debug($"{Name} response : {resStr}");
-                        }
+
+                        LogManager.GetCurrentClassLogger().Debug($"{Name} response : {GetCmdString(response, length)}");
                     }
                     catch (Exception ex)
                     {
-                        LogManager.GetCurrentClassLogger().Debug($"{Name} Receive failed : {ex.Message}");
+                        LogManager.GetCurrentClassLogger().Error($"{Name} Receive failed : {ex.Message}");
                         length = 0;
                         break;
                     }
@@ -205,7 +200,7 @@ namespace UtilityTools.Services.Services
             }
             else
             {
-                return Encoding.Default.GetString(cmd, 0, length);
+                return Encoding.Default.GetString(cmd, 0, length).Trim('\n');
             }
         }
         #endregion
