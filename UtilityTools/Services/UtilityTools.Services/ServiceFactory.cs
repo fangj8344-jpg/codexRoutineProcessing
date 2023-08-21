@@ -84,6 +84,14 @@ namespace UtilityTools.Services
                             device.IsBinary = false;
                             return device;
                         }
+                    case "SPMC":
+                        {
+                            IAsynRWService device = new SerialPortService();
+                            AsynRWServices.Add(type, device);
+                            device.Name = "电机控制";
+                            device.IsBinary = true;
+                            return device;
+                        }
                     default:
                         return null;
                 }

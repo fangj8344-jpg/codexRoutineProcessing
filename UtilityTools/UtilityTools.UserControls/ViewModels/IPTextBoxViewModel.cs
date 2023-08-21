@@ -38,7 +38,11 @@ namespace UtilityTools.UserControls.ViewModels
         #region ------------Constructor------------
         public IPTextBoxViewModel()
         {
-            
+            _part1 = string.Empty;
+            _part2 = string.Empty;
+            _part3 = string.Empty;
+            _part4 = string.Empty;
+            AddressChanged = null;
         }
         #endregion
 
@@ -224,7 +228,7 @@ namespace UtilityTools.UserControls.ViewModels
         #endregion
 
         #region ------------Event------------
-        public event EventHandler AddressChanged;
+        public event EventHandler? AddressChanged;
         #endregion
 
         #region ------------PublicMethod------------
