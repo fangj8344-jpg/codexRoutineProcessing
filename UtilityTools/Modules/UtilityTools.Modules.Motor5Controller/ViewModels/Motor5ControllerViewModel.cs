@@ -159,7 +159,7 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         private void InitProperty()
         {
             IsConnected = false;
-            Service = _containerProvider.Resolve<IServiceFactory>().GetAsynRWService("SPVM");
+            Service = _containerProvider.Resolve<IServiceFactory>().GetAsynRWService("SPMC");
         }
 
         /// <summary>
@@ -174,8 +174,12 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
                 return;
             if (diaglogResult.Result == ButtonResult.OK && diaglogResult.Parameters.ContainsKey("Value"))
             {
-                Service.SetHandle(diaglogResult.Parameters.GetValue<object>("Value"));
-                IsConnected = Service.IsOpen;
+                var value = diaglogResult.Parameters.GetValue<IAsynRWService>("Value");
+                if(value != null) 
+                {
+                    Service = value;
+                    IsConnected = Service.IsOpen;
+                }
             }
         }
 
