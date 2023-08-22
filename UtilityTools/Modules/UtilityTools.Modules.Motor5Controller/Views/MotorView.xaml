@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="UtilityTools.Modules.Motor5Controller.Views.OneView"
+﻿<UserControl x:Class="UtilityTools.Modules.Motor5Controller.Views.MotorView"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -10,7 +10,7 @@
 
     <GroupBox Grid.Row="0"
           Grid.ColumnSpan="2"
-          Header="电机一"
+          Header="{Binding MotorName}"
           Margin="2">
         <Grid>
             <Grid.RowDefinitions>
@@ -27,15 +27,17 @@
 
             <UniformGrid Grid.Row="0" Columns="3" VerticalAlignment="Center">
                 <DockPanel>
-                    <TextBlock Margin="5.5" Text="电机一状态" />
-                    <TextBox   Text="{Binding MotorStatus}"
-                     TextAlignment="Center" />
+                    <ItemsControl Grid.Row="0" 
+                         ItemsSource="{Binding MotorStatus}"
+                         ItemTemplate="{StaticResource labelInfoTemplate}">
+                    </ItemsControl>
                 </DockPanel>
                 <DockPanel>
                 <Button DockPanel.Dock="Right"
                  Content="使能"
                  Command="{Binding  ButtonEventCommand}"
                  CommandParameter="{Binding RelativeSource={x:Static RelativeSource.Self}}" 
+
                  Margin="5,5" />
                 </DockPanel>
                 <DockPanel>
@@ -167,7 +169,7 @@
                     <Button DockPanel.Dock="Right"
                       Content="回到零点"
                       Command="{Binding  ButtonEventCommand}"
-                      CommandParameter="{Binding RelativeSource={x:Static RelativeSource.Self}}"
+                      CommandParameter="{Binding RelativeSource={x:Static  RelativeSource.Self}}"
                       Margin="5,5" />
                 </DockPanel>
             </UniformGrid>

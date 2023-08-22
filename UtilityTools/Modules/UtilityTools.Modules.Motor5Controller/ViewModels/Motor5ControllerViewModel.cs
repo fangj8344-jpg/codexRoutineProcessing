@@ -49,6 +49,8 @@ using System.Windows.Interop;
 using System.Windows.Documents;
 using Prism.Events;
 using UtilityTools.Core.Extension;
+using UtilityTools.Core.Model;
+using UtilityTools.Core.Helper;
 
 namespace UtilityTools.Modules.Motor5Controller.ViewModels
 {
@@ -58,38 +60,43 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         public Motor5ControllerViewModel(IDialogHostService dialogHostService, IContainerProvider containerProvider)
             : base(containerProvider)
         {
-            One = containerProvider.Resolve<OneModel>();
+            MotorList = CretetModels();
             this._containerProvider = containerProvider;
             this._dialogHostService = dialogHostService;
             InitCommand();
             InitProperty();
+            //消息提示
             aggregator = containerProvider.Resolve<IEventAggregator>();
+            //下位机数据回调
             Service.UpdateResponse += Service_UpdateResponse;
         }
         #endregion
 
         #region ------------Field------------
-        private OneModel _one;
+        private bool _isConnected;
+        private ObservableCollection<MotorModel> _motorlist;
         private SerialPort comm = new SerialPort();
         private readonly IDialogHostService _dialogHostService;
         private readonly IContainerProvider _containerProvider;
-        public readonly IEventAggregator aggregator;
+        private readonly IEventAggregator aggregator;
         #endregion
 
         #region ------------Property------------
-
-
         /// <summary>
-        /// 电机一模型
+        /// 电机模型
         /// </summary>
-        public OneModel One
+        //public MotorModel Motor
+        //{
+        //    get { return _motor; }
+        //    set { _motor = value; RaisePropertyChanged(); }
+        //}
+
+        public ObservableCollection<MotorModel> MotorList
         {
-            get { return _one; }
-            set { _one = value; RaisePropertyChanged(); }
+            get { return _motorlist; }
+            set { _motorlist = value; RaisePropertyChanged(); }
         }
 
-
-        private bool _isConnected;
         /// <summary>
         /// 是否已经连接设备
         /// </summary>
@@ -118,13 +125,33 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
 
         #region ------------PrivateMethod------------
         /// <summary>
+        /// 初始化电机信息
+        /// </summary>
+        /// <returns></returns>
+        private ObservableCollection<MotorModel> CretetModels() {
+            ObservableCollection<MotorModel> List = new ObservableCollection<MotorModel>();
+            for (int i = 1; i < 6; i++)
+            {
+                MotorModel NewModel = new MotorModel();
+                NewModel.MotorNo = i;
+                NewModel.MotorName = "电机" + i.ToString();
+                List.Add(NewModel);
+            }
+            return List;
+        }
+
+        /// <summary>
         /// 初始化指令
         /// </summary>
         private void InitCommand()
         {
             ShowDeviceCommand = new DelegateCommand(ShowDevice);
-            One.ButtonEventCommand = new DelegateCommand<Object>(ButtonEvent);
+            foreach (var item in MotorList)
+            {
+                item.ButtonEventCommand = new DelegateCommand<Object>(ButtonEvent);
+            }
         }
+
 
         /// <summary>
         /// 初始化属性
@@ -154,61 +181,62 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
 
 
         /// <summary>
-        /// 执行命令事件：Button按钮
+        /// 电机执行命令事件：Button按钮
         /// </summary>
         /// <param name="obj"></param>
         private void ButtonEvent(Object obj) {
             Button button = obj as Button;
-            var Name = button.Content;
+            var Model = (MotorModel)button.DataContext;
+            string Name = (string)button.Content;
             switch (Name) {
                 case "使能":
-                    ExecuteCommand((int)DataLengthEnum.Four, CreateFunctionCode((int)FunctionCodeEnum.电机使能), CreateSeatNo((int)SeatNoEnum.电机1));
+                    ExecuteCommand(GetLengthByFunctionCode(Name), CreateFunctionCode((int)FunctionCodeEnum.使能), CreateSeatNo(Model.MotorNo),0);
                     break;
                 case "失能":
-                    ExecuteCommand((int)DataLengthEnum.Four, CreateFunctionCode((int)FunctionCodeEnum.电机失能), CreateSeatNo((int)SeatNoEnum.电机1));
+                    ExecuteCommand(GetLengthByFunctionCode(Name), CreateFunctionCode((int)FunctionCodeEnum.失能), CreateSeatNo(Model.MotorNo), 0);
                     break;
                 case "设置目标位置":
-                    ExecuteCommand((int)DataLengthEnum.Eight, CreateFunctionCode((int)FunctionCodeEnum.设置目标位置), CreateSeatNo((int)SeatNoEnum.电机1));
+                    ExecuteCommand(GetLengthByFunctionCode(Name), CreateFunctionCode((int)FunctionCodeEnum.设置目标位置), CreateSeatNo(Model.MotorNo), Model.SetTargetPosition);
                     break;
                 case "获取目标位置":
-                    ExecuteCommand((int)DataLengthEnum.Four, CreateFunctionCode((int)FunctionCodeEnum.获取目标位置), CreateSeatNo((int)SeatNoEnum.电机1));
+                    ExecuteCommand(GetLengthByFunctionCode(Name), CreateFunctionCode((int)FunctionCodeEnum.获取目标位置), CreateSeatNo(Model.MotorNo), 0);
                     break;
                 case "获取实时位置":
-                    ExecuteCommand((int)DataLengthEnum.Four, CreateFunctionCode((int)FunctionCodeEnum.获取实时位置), CreateSeatNo((int)SeatNoEnum.电机1));
+                    ExecuteCommand(GetLengthByFunctionCode(Name), CreateFunctionCode((int)FunctionCodeEnum.获取实时位置), CreateSeatNo(Model.MotorNo), 0);
                     break;
                 case "设置原点位置":
-                    ExecuteCommand((int)DataLengthEnum.Eight, CreateFunctionCode((int)FunctionCodeEnum.设置原点位置), CreateSeatNo((int)SeatNoEnum.电机1));
+                    ExecuteCommand(GetLengthByFunctionCode(Name), CreateFunctionCode((int)FunctionCodeEnum.设置原点位置), CreateSeatNo(Model.MotorNo),  Model.SetTargetPosition);
                     break;
                 case "获取原点位置":
-                    ExecuteCommand((int)DataLengthEnum.Four, CreateFunctionCode((int)FunctionCodeEnum.获取原点位置), CreateSeatNo((int)SeatNoEnum.电机1));
+                    ExecuteCommand(GetLengthByFunctionCode(Name), CreateFunctionCode((int)FunctionCodeEnum.获取原点位置), CreateSeatNo(Model.MotorNo), 0);
                     break;
                 case "设置零点位置":
-                    ExecuteCommand((int)DataLengthEnum.Eight, CreateFunctionCode((int)FunctionCodeEnum.获取零点位置), CreateSeatNo((int)SeatNoEnum.电机1));
+                    ExecuteCommand(GetLengthByFunctionCode(Name), CreateFunctionCode((int)FunctionCodeEnum.设置零点位置), CreateSeatNo(Model.MotorNo), Model.SetZeroPosition);
                     break;
                 case "获取零点位置":
-                    ExecuteCommand((int)DataLengthEnum.Four, CreateFunctionCode((int)FunctionCodeEnum.获取零点位置), CreateSeatNo((int)SeatNoEnum.电机1));
+                    ExecuteCommand(GetLengthByFunctionCode(Name), CreateFunctionCode((int)FunctionCodeEnum.获取零点位置), CreateSeatNo(Model.MotorNo), 0);
                     break;
                 case "回到原点":
-                    ExecuteCommand((int)DataLengthEnum.Four, CreateFunctionCode((int)FunctionCodeEnum.设置回到原点位置), CreateSeatNo((int)SeatNoEnum.电机1));
+                    ExecuteCommand(GetLengthByFunctionCode(Name), CreateFunctionCode((int)FunctionCodeEnum.回到原点), CreateSeatNo(Model.MotorNo), 0);
                     break;
                 case "回到零点":
-                    ExecuteCommand((int)DataLengthEnum.Four, CreateFunctionCode((int)FunctionCodeEnum.设置回到零点位置), CreateSeatNo((int)SeatNoEnum.电机1));
+                    ExecuteCommand(GetLengthByFunctionCode(Name), CreateFunctionCode((int)FunctionCodeEnum.回到零点), CreateSeatNo(Model.MotorNo), 0);
                     break;
             }
         }
+
 
 
         /// <summary>
         /// 生成报文并发送消息
         /// </summary>
         /// <param name="Type"></param>
-        private byte[] ExecuteCommand(int DataLength, byte FunctionCode, byte SeatNo)
+        private void ExecuteCommand(int DataLength, byte FunctionCode, byte SeatNo,int PositionNum)
         {
             //动态生成报文
-            var Bytes = GetVacuumValue(DataLength, FunctionCode, SeatNo);
+            var Bytes = GetVacuumValue(DataLength, FunctionCode, SeatNo, PositionNum);
             //发送报文
             SendMsg(Bytes);
-            return Bytes;
         }
 
 
@@ -218,11 +246,28 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         /// <param name="dataLength">数据位长度</param>
         /// <param name="functionCode">功能码</param>
         /// <param name="No">机位</param>
+        /// <param name="PositionNum">位置码</param>
         /// <returns></returns>
-        private static byte[] GetVacuumValue(int DataLength, byte FunctionCode, byte SeatNo)
+        private static byte[] GetVacuumValue(int DataLength, byte FunctionCode, byte SeatNo,int PositionNum)
         {
-
-            if (DataLength == 4)
+            if (DataLength == 8)
+            {
+                //十进制转十六进制字符串
+                var Num = PositionNum.ToString("x8");
+                //十六进制字符串转字节数组
+                var NumBytes = Convert.FromHexString(Num);
+                byte[] bytes = new byte[8];
+                bytes[0] = 0x53;
+                bytes[1] = 0x08;
+                bytes[2] = FunctionCode;
+                bytes[3] = SeatNo;
+                bytes[4] = NumBytes[0];
+                bytes[5] = NumBytes[1];
+                bytes[6] = NumBytes[2];
+                bytes[7] = NumBytes[3];
+                return bytes;
+            }
+            else if (DataLength == 4)
             {
                 byte[] bytes = new byte[4];
                 bytes[0] = 0x53;
@@ -231,24 +276,12 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
                 bytes[3] = SeatNo;
                 return bytes;
             }
-            else if (DataLength == 8)
-            {
-                byte[] bytes = new byte[8];
-                bytes[0] = 0x53;
-                bytes[1] = 0x08;
-                bytes[2] = FunctionCode;
-                bytes[3] = SeatNo;
-                bytes[4] = new byte();
-                bytes[5] = new byte();
-                bytes[6] = new byte();
-                bytes[7] = new byte();
-                return bytes;
-            }
-            else
-            {
+            else {
                 return new byte[0];
             }
+           
         }
+
 
 
         /// <summary>
@@ -328,12 +361,28 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
 
 
         /// <summary>
-        /// 数据位长度枚举
+        /// 返回操作数据位长度
         /// </summary>
-        private enum DataLengthEnum {
-
-            Four = 4,
-            Eight = 8
+        private int GetLengthByFunctionCode(string FunctionCodeName){
+            var ResultInfo = 0;
+            //四位数据位对应功能
+            List<string> FourList = new List<string>();
+            FourList.Add("使能");
+            FourList.Add("失能");
+            FourList.Add("获取目标位置");
+            FourList.Add("获取实时位置");
+            FourList.Add("获取原点位置");
+            FourList.Add("获取零点位置");
+            FourList.Add("回到原点");
+            FourList.Add("回到零点");
+            //八位数据位对应功能
+            List<string> EightList = new List<string>();
+            EightList.Add("设置目标位置");
+            EightList.Add("设置原点位置");
+            EightList.Add("设置零点位置");
+            if (FourList.Contains(FunctionCodeName)) ResultInfo = 4;
+            if (EightList.Contains(FunctionCodeName)) ResultInfo = 8;
+            return ResultInfo;
         }
 
 
@@ -342,8 +391,8 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         /// </summary>
         private enum FunctionCodeEnum
         {
-            电机使能 = 1,
-            电机失能,
+            使能 = 1,
+            失能,
             设置目标位置,
             获取目标位置,
             获取实时位置,
@@ -351,22 +400,9 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
             设置原点位置,
             获取零点位置,
             设置零点位置,
-            设置回到原点位置,
-            设置回到零点位置
+            回到原点,
+            回到零点
         }
-
-        /// <summary>
-        /// 功能码枚举
-        /// </summary>
-        private enum SeatNoEnum
-        {
-            电机1 = 1,
-            电机2,
-            电机3,
-            电机4,
-            电机5
-        }
-
 
 
         /// <summary>
@@ -378,6 +414,7 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
             Service.SendMsg(msg);
         }
 
+
         /// <summary>
         /// 串口通信：接收回调信息
         /// </summary>
@@ -385,30 +422,79 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         /// <param name="e"></param>
         private void Service_UpdateResponse(object sender, byte[] e)
         {
-            List<int> ListInfos = new List<int>(); ;
-            var MessageInfo = ByteZH(e);
-            aggregator.SendMessage($"执行命令，接收回调信息: {MessageInfo}！");
-        }
-
-        /// <summary>
-        /// 报文转换
-        /// </summary>
-        /// <returns></returns>
-        private string ByteZH(byte[] e) {
-            List<string> ListInfos = new List<string>(); ;
-            var msg = e;
-            if (e.Length > 0)
+            var DataInfo = DataTypeCaster.ByteArrayToString(e, e.Length);
+            var DataList = DataInfo.Split(' ');
+            if(DataList.Count()>0) DataList = DataList.Where(q => q != "").ToArray();
+            if (e.Length == 8 && DataList.Count() == 8)
             {
-                foreach (byte b in e)
+                if (MotorList.Where(q => q.MotorNo == Convert.ToInt32(DataList[3], 16)).Count() > 0)
                 {
-                    var ByteInfo = b.ToString("X2");
-                    ListInfos.Add(ByteInfo.ToString());
+                    //解析机位信息（协议约束第四位为机位信息）
+                    var Model = MotorList.Where(q => q.MotorNo == Convert.ToInt32(DataList[3], 16)).First();
+                    //解析机位相关位置信息（协议约束后四位为位置相关信息）
+                    var PositionByteString = Convert.ToHexString(e.Reverse().Take(4).Reverse().ToArray());
+                    var PositionValue = Convert.ToInt32(PositionByteString, 16);
+                    //解析相关操作反馈（协议约束最后一位为操作反馈相关信息）
+                    var OperateByte = DataList.Last();
+                    //协议约束:第三位功能码
+                    try
+                    {
+                        switch (DataList[2])
+                        {
+                            case "0x01":
+                                break;
+                            case "0x02":
+                                break;
+                            case "0x03":
+                                Model.SetTargetPosition = PositionValue;
+                                aggregator.SendMessage($"设置目标位置成功，目标位置：" + PositionValue.ToString());
+                                break;
+                            case "0x04":
+                                Model.SetTargetPosition = PositionValue;
+                                aggregator.SendMessage($"获取目标位置成功，目标位置：" + PositionValue.ToString());
+                                break;
+                            case "0x05":
+                                Model.SetTargetPosition = PositionValue;
+                                aggregator.SendMessage($"获取实时位置成功，目标位置：" + PositionValue.ToString());
+                                break;
+                            case "0x06":
+                                Model.SetTargetPosition = PositionValue;
+                                aggregator.SendMessage($"获取原点位置成功，目标位置：" + PositionValue.ToString());
+                                break;
+                            case "0x07":
+                                Model.SetTargetPosition = PositionValue;
+                                aggregator.SendMessage($"设置原点位置成功，目标位置：" + PositionValue.ToString());
+                                break;
+                            case "0x08":
+                                Model.SetTargetPosition = PositionValue;
+                                aggregator.SendMessage($"获取零点位置成功，目标位置：" + PositionValue.ToString());
+                                break;
+                            case "0x09":
+                                Model.SetTargetPosition = PositionValue;
+                                aggregator.SendMessage($"设置零点位置成功，目标位置：" + PositionValue.ToString());
+                                break;
+                            case "0x0A":
+                                break;
+                            case "0x0B":
+                                break;
+                            default:
+                                aggregator.SendMessage($"报文解析功能码有误，请核实指令");
+                                break;
+                        }
+                    }
+                    catch (Exception ex) {
+                        aggregator.SendMessage($"报文解析机位码有误，错误信息："+ ex.ToString());
+                    }
+                }
+                else {
+                    aggregator.SendMessage($"报文解析机位码有误，请核实指令");
                 }
             }
-            return string.Join(",", ListInfos);
+            else
+            {
+                aggregator.SendMessage($"报文解析有误，请核实指令");
+            }
         }
-
-      
 
         #endregion
 

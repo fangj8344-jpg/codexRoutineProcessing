@@ -11,59 +11,63 @@ using UtilityTools.Core.Model;
 
 namespace UtilityTools.Modules.Motor5Controller.Model
 {
-    public class OneModel : BindableBase
+    public class MotorModel : BindableBase
     {
         #region ------------Constructor------------
-        public OneModel()
+        public MotorModel()
         {
-            //电机状态
-            MotorStatus = "失能";
-
-            //设置目标位置
-            SetTargetPosition = 1;
-            //获取目标位置
-            ObtainTargetPosition = 2;
-            //获取实时位置
-            ObtainRealTimePosition = 3;
-            //设置原点位置
-            SetOriginPosition = 4;
-            //获取原点位置
-            ObtainOriginPosition = 5 ;
-            //设置零点位置
-            SetZeroPosition = 6;
-            //设置零点位置
-            ObtainZeroPosition = 7;
+            MotorStatus = new ObservableCollection<LabelInfoModel>();
+            MotorStatus.Add(new LabelInfoModel() { Name = "状态：", Type = "MotorStatus", Channel = 1, Tip = "", Value = "失能" });
         }
         #endregion
 
         #region ------------Field------------
-        private string _motorstatus;
+        //电机编号
+        private int _motorno;
+        //电机名称
+        private string _motorname;
+        //电机状态
+        private ObservableCollection<LabelInfoModel> _motorstatus;
+        //设置目标位置
         private int _settargetposition;
+        //获取目标位置
         private int _obtaintargetposition;
+        //获取实时位置
         private int _obtainrealtimeposition;
+        //设置原点位置
         private int _setoriginposition;
+        //获取原点位置
         private int _obtainoriginposition;
+        //设置零点位置
         private int _setzeroposition;
+        //设置零点位置
         private int _obtainzeroposition;
         #endregion
 
         #region ------------Property------------
-        /// <summary>
-        ///电机状态
-        /// </summary>
-        public string MotorStatus
-        {
-            get { return _motorstatus; }
+        public int MotorNo {
+            get { return _motorno; }
             set
             {
-                _motorstatus = value;
+                _motorno = value;
                 RaisePropertyChanged();
             }
         }
+        public string MotorName
+        {
+            get { return _motorname; }
+            set
+            {
+                _motorname = value;
+                RaisePropertyChanged();
+            }
+        }
+        public ObservableCollection<LabelInfoModel> MotorStatus
+        {
+            get { return _motorstatus; }
+            set { _motorstatus = value; RaisePropertyChanged(); }
+        }
 
-        /// <summary>
-        ///设置目标位置
-        /// </summary>
         public int SetTargetPosition
         {
             get { return _settargetposition; }
@@ -74,9 +78,6 @@ namespace UtilityTools.Modules.Motor5Controller.Model
             }
         }
 
-        /// <summary>
-        ///设置目标位置
-        /// </summary>
         public int ObtainTargetPosition
         {
             get { return _obtaintargetposition; }
@@ -87,9 +88,6 @@ namespace UtilityTools.Modules.Motor5Controller.Model
             }
         }
 
-        /// <summary>
-        ///获取实时位置
-        /// </summary>
         public int ObtainRealTimePosition
         {
             get { return _obtainrealtimeposition; }
@@ -100,9 +98,6 @@ namespace UtilityTools.Modules.Motor5Controller.Model
             }
         }
 
-        /// <summary>
-        ///设置原点位置
-        /// </summary>
         public int SetOriginPosition
         {
             get { return _setoriginposition; }
@@ -113,9 +108,6 @@ namespace UtilityTools.Modules.Motor5Controller.Model
             }
         }
 
-        /// <summary>
-        ///获取原点位置
-        /// </summary>
         public int ObtainOriginPosition
         {
             get { return _obtainoriginposition; }
@@ -126,10 +118,6 @@ namespace UtilityTools.Modules.Motor5Controller.Model
             }
         }
 
-
-        /// <summary>
-        ///设置零点位置
-        /// </summary>
         public int SetZeroPosition
         {
             get { return _setzeroposition; }
@@ -140,9 +128,6 @@ namespace UtilityTools.Modules.Motor5Controller.Model
             }
         }
 
-        /// <summary>
-        ///设置零点位置
-        /// </summary>
         public int ObtainZeroPosition
         {
             get { return _obtainzeroposition; }

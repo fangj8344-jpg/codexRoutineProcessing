@@ -18,7 +18,7 @@ namespace UtilityTools.Modules.Motor5Controller
         public void RegisterTypes(IContainerRegistry containerRegistry)
         {
             containerRegistry.RegisterForNavigation<Motor5ControllerView>();
-            containerRegistry.RegisterSingleton<OneModel>();
+            containerRegistry.RegisterSingleton<MotorModel>();
         }
     }
 }

@@ -17,11 +17,11 @@ using UtilityTools.Modules.Motor5Controller.Model;
 namespace UtilityTools.Modules.Motor5Controller.Views
 {
     /// <summary>
-    /// OneView.xaml 的交互逻辑
+    /// MotorView.xaml 的交互逻辑
     /// </summary>
-    public partial class OneView : UserControl
+    public partial class MotorView : UserControl
     {
-        public OneView()
+        public MotorView()
         {
             InitializeComponent();
         }
