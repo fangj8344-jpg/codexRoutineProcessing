@@ -43,22 +43,22 @@ namespace UtilityTools.Modules.NetController.Model
         public RelayModel()
         {
             Enables = new ObservableCollection<ToggleInfoModel>();
-            Enables.Add(new ToggleInfoModel { Name = "CH0", Type="Relay", Tip = "", Channel = 0, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH1", Type="Relay", Tip = "", Channel = 1, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH2", Type="Relay", Tip = "", Channel = 2, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH3", Type="Relay", Tip = "", Channel = 3, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH4", Type="Relay", Tip = "", Channel = 4, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH5", Type="Relay", Tip = "", Channel = 5, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH6", Type="Relay", Tip = "", Channel = 6, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH7", Type="Relay", Tip = "", Channel = 7, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH8", Type="Relay", Tip = "", Channel = 8, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH9", Type="Relay", Tip = "", Channel = 9, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH10",Type="Relay", Tip = "", Channel = 10, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH11",Type="Relay", Tip = "", Channel = 11, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH12",Type="Relay", Tip = "", Channel = 12, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH13",Type="Relay", Tip = "", Channel = 13, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH14",Type="Relay", Tip = "", Channel = 14, Enable = false });
-            Enables.Add(new ToggleInfoModel { Name = "CH15",Type="Relay", Tip = "", Channel = 15, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH1", Type = "Relay", Tip = "", Channel = 1, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH2", Type = "Relay", Tip = "", Channel = 2, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH3", Type = "Relay", Tip = "", Channel = 3, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH4", Type = "Relay", Tip = "", Channel = 4, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH5", Type = "Relay", Tip = "", Channel = 5, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH6", Type = "Relay", Tip = "", Channel = 6, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH7", Type = "Relay", Tip = "", Channel = 7, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH8", Type = "Relay", Tip = "", Channel = 8, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH9", Type = "Relay", Tip = "", Channel = 9, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH10", Type = "Relay", Tip = "", Channel = 10, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH11", Type = "Relay", Tip = "", Channel = 11, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH12", Type = "Relay", Tip = "", Channel = 12, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH13", Type = "Relay", Tip = "", Channel = 13, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH14", Type = "Relay", Tip = "", Channel = 14, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH15", Type = "Relay", Tip = "", Channel = 15, Enable = false });
+            Enables.Add(new ToggleInfoModel { Name = "CH16", Type = "Relay", Tip = "", Channel = 16, Enable = false });
         }
         #endregion
 

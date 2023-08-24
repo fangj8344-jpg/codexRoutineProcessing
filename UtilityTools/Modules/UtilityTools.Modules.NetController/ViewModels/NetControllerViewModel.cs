@@ -289,7 +289,7 @@ namespace UtilityTools.Modules.NetController.ViewModels
                 case "Astig":
                     return Service.SetCCSAstigValue(channel, value);
                 case "DAC":
-                    return Service.SetCCSCenterValue(channel, value);
+                    return Service.SetDACValue(channel, value);
                 case "Fans":
                     return Service.SetFansValue(channel, value);
             }

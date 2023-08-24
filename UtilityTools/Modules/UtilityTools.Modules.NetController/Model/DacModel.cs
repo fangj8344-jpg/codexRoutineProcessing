@@ -44,10 +44,10 @@ namespace UtilityTools.Modules.NetController.Model
         public DacModel()
         {
             Dacs = new ObservableCollection<IntSliderInfoModel>();
-            Dacs.Add(new IntSliderInfoModel() { Title = "DAC1", Tip="", Type="DAC", Channel = 0xA, Value = 0, MinValue = 0, MaxValue = 1024, Interval = 500 });
-            Dacs.Add(new IntSliderInfoModel() { Title = "DAC2", Tip="", Type="DAC", Channel = 0xB, Value = 0, MinValue = 0, MaxValue = 1024, Interval = 500 });
-            Dacs.Add(new IntSliderInfoModel() { Title = "DAC3", Tip="", Type="DAC", Channel = 0xC, Value = 0, MinValue = 0, MaxValue = 1024, Interval = 500 });
-            Dacs.Add(new IntSliderInfoModel() { Title = "DAC4", Tip="", Type="DAC", Channel = 0xD, Value = 0, MinValue = 0, MaxValue = 1024, Interval = 500 });
+            Dacs.Add(new IntSliderInfoModel() { Title = "DAC1", Tip="", Type="DAC", Channel = 0xA, Value = 0, MinValue = 0, MaxValue = 1023, Interval = 500 });
+            Dacs.Add(new IntSliderInfoModel() { Title = "DAC2", Tip="", Type="DAC", Channel = 0xB, Value = 0, MinValue = 0, MaxValue = 1023, Interval = 500 });
+            Dacs.Add(new IntSliderInfoModel() { Title = "DAC3", Tip="", Type="DAC", Channel = 0xC, Value = 0, MinValue = 0, MaxValue = 1023, Interval = 500 });
+            Dacs.Add(new IntSliderInfoModel() { Title = "DAC4", Tip="", Type="DAC", Channel = 0xD, Value = 0, MinValue = 0, MaxValue = 1023, Interval = 500 });
         }
         #endregion
 

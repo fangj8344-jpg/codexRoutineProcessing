@@ -137,9 +137,9 @@ namespace UtilityTools.Services.Services
                 int sendSize = DeviceInstance.Send(cmd);
                 if (sendSize != cmd.Length)
                 {
-                    throw new Exception($"{Name} Send Length Error : {sendSize}/{cmd.Length}");
+                    throw new Exception($"{Name} 发送长度异常: {sendSize}/{cmd.Length}");
                 }
-                LogManager.GetCurrentClassLogger().Debug($"{Name} Send : {GetCmdString(cmd, sendSize)}");
+                LogManager.GetCurrentClassLogger().Debug($"{Name} 发送 : {GetCmdString(cmd, sendSize)}");
                 DeviceInstance.SetWaitTimeOut(waitTime);
                 response = new byte[128];
                 length = 0;
@@ -157,11 +157,11 @@ namespace UtilityTools.Services.Services
                         length = DeviceInstance.Receive(response);
                         resStr = Encoding.UTF8.GetString(response, 0, length);
 
-                        LogManager.GetCurrentClassLogger().Debug($"{Name} response : {GetCmdString(response, length)}");
+                        LogManager.GetCurrentClassLogger().Debug($"{Name} 接收 : {GetCmdString(response, length)}");
                     }
                     catch (Exception ex)
                     {
-                        LogManager.GetCurrentClassLogger().Error($"{Name} Receive failed : {ex.Message}");
+                        LogManager.GetCurrentClassLogger().Error($"{Name} 接收失败: {ex.Message}");
                         length = 0;
                         break;
                     }

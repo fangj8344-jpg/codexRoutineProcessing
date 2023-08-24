@@ -76,7 +76,6 @@ namespace UtilityTools.Core.Model
             {
                 _targetIp = value;
                 RaisePropertyChanged();
-                _sendEndPoint = new IPEndPoint(IPAddress.Parse(value), TargetPort);
             }
         }
 
@@ -90,7 +89,6 @@ namespace UtilityTools.Core.Model
             {
                 _targetPort = value;
                 RaisePropertyChanged();
-                _sendEndPoint = new IPEndPoint(IPAddress.Parse(TargetIp), value);
             }
         }
 
@@ -104,7 +102,6 @@ namespace UtilityTools.Core.Model
             {
                 _hostIp = value;
                 RaisePropertyChanged();
-                _recvEndPoint = new IPEndPoint(IPAddress.Parse(value), HostPort);
             }
         }
 
@@ -118,7 +115,6 @@ namespace UtilityTools.Core.Model
             {
                 _hostPort = value;
                 RaisePropertyChanged();
-                _recvEndPoint = new IPEndPoint(IPAddress.Parse(HostIp), value);
             }
         }
 

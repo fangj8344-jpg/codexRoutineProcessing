@@ -270,7 +270,7 @@ namespace UtilityTools.Services.Services
                     {
                         // 发送业务
                         DeviceInstance.SerialPort.Write(cmd, 0, cmd.Length);
-                        LogManager.GetCurrentClassLogger().Debug($"{Name}发送指令：{GetCmdString(cmd, cmd.Length)}");
+                        LogManager.GetCurrentClassLogger().Debug($"{Name} 发送 : {GetCmdString(cmd, cmd.Length)}");
                         //Thread.Sleep(100);
                     }
 
@@ -305,7 +305,7 @@ namespace UtilityTools.Services.Services
                     byte[] response = new byte[size];
                     int realLen = dev.Read(response, 0, size);
 
-                    LogManager.GetCurrentClassLogger().Debug($"{Name}接收数据：{GetCmdString(response, realLen)}");
+                    LogManager.GetCurrentClassLogger().Debug($"{Name} 接收 : {GetCmdString(response, realLen)}");
                     
                     UpdateResponse?.Invoke(this, response);
                 }
