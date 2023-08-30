@@ -51,6 +51,7 @@ using Prism.Events;
 using UtilityTools.Core.Extension;
 using UtilityTools.Core.Model;
 using UtilityTools.Core.Helper;
+using System.Collections;
 
 namespace UtilityTools.Modules.Motor5Controller.ViewModels
 {
@@ -60,6 +61,7 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         public Motor5ControllerViewModel(IDialogHostService dialogHostService, IContainerProvider containerProvider)
             : base(containerProvider)
         {
+            CacheCallBackDate = new List<byte>();
             MotorList = CretetModels();
             this._containerProvider = containerProvider;
             this._dialogHostService = dialogHostService;
@@ -73,6 +75,7 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         #endregion
 
         #region ------------Field------------
+        private List<byte> _cachecallbackdate;
         private bool _isConnected;
         private ObservableCollection<MotorModel> _motorlist;
         private SerialPort comm = new SerialPort();
@@ -110,6 +113,16 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         /// 下位机服务端接口
         /// </summary>
         public IAsynRWService Service { get; set; }
+
+
+        /// <summary>
+        /// 指定回调信息缓存
+        /// </summary>
+        public List<byte> CacheCallBackDate
+        {
+            get { return _cachecallbackdate; }
+            set { _cachecallbackdate = value; RaisePropertyChanged(); }
+        }
 
         #endregion
 
@@ -158,6 +171,7 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         /// </summary>
         private void InitProperty()
         {
+            List<byte> CacheCallBackDate = new List<byte>();
             IsConnected = false;
             Service = _containerProvider.Resolve<IServiceFactory>().GetAsynRWService("SPMC");
         }
@@ -256,19 +270,32 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         {
             if (DataLength == 8)
             {
-                //十进制转十六进制字符串
-                var Num = PositionNum.ToString("x8");
-                //十六进制字符串转字节数组
-                var NumBytes = Convert.FromHexString(Num);
+                //数据处理（32位INT型数据；最高位表示符号位，1表示负数，0表示正数，其余31位表示数字位，
+                //最大能表示0x 7F FF FF FF(2147483647(十进制))，最小能表示-0x 7F FF FF FF(-2147483647(十进制))）
+                bool flag = PositionNum > 0;
+                int positiveNum = flag ? PositionNum : -PositionNum;
+                byte[] data = new byte[4];
+                data[0] = (byte)((positiveNum & 0xFF000000) >> 24);
+                data[1] = (byte)((positiveNum & 0xFF0000) >> 16);
+                data[2] = (byte)((positiveNum & 0xFF00) >> 8);
+                data[3] = (byte)((positiveNum & 0xFF));
+                if (!flag)
+                {
+                    data[0] = (byte)(data[0] | 0x80);
+                }
+                else
+                {
+                    data[0] = (byte)(data[0] & 0x7F);
+                }
                 byte[] bytes = new byte[8];
                 bytes[0] = 0x53;
                 bytes[1] = 0x08;
                 bytes[2] = FunctionCode;
                 bytes[3] = SeatNo;
-                bytes[4] = NumBytes[0];
-                bytes[5] = NumBytes[1];
-                bytes[6] = NumBytes[2];
-                bytes[7] = NumBytes[3];
+                bytes[4] = data[0];
+                bytes[5] = data[1];
+                bytes[6] = data[2];
+                bytes[7] = data[3];
                 return bytes;
             }
             else if (DataLength == 4)
@@ -286,7 +313,7 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
            
         }
 
-
+       
 
         /// <summary>
         /// 获取报文-功能码
@@ -426,71 +453,153 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         /// <param name="e"></param>
         private void Service_UpdateResponse(object sender, byte[] e)
         {
+            //报文处理（缓存处理）
+            if (e.Count() > 0) {
+                foreach (var item in e)
+                {
+                    CacheCallBackDate.Add(item);
+                }
+            }
+            if (CacheCallBackDate.Count() >= 8) Service_CacheMessage(CacheCallBackDate);
+        }
+
+        /// <summary>
+        /// 缓存：报文处理
+        /// </summary>
+        /// <param name="bytelist"></param>
+        /// <returns></returns>
+        private List<byte> Service_CacheMessage(List<byte> bytelist)
+        {
+            //读取缓存报文，根据约束；8位为一段完成报文信息
+            if (bytelist.Count < 8)
+            {
+                return bytelist;
+            }
+            else
+            {
+                //取目标报文
+                var DataByte = CacheCallBackDate.GetRange(0, 8);
+                //清楚缓存已取目标报文
+                CacheCallBackDate.RemoveRange(0, 8);
+                byte[] Bytes = new byte[8];
+                for ( int i = 0;  i < DataByte.Count();  i++)
+                {
+                    Bytes[i] = DataByte[i];
+                }
+                Service_CallbackProcessing(Bytes);
+                return Service_CacheMessage(CacheCallBackDate);
+            }
+        }
+
+
+
+        /// <summary>
+        /// 报文解析：操作提示，页面数据动态渲染
+        /// </summary>
+        /// <param name="e"></param>
+        private void Service_CallbackProcessing(byte[] e) {
             var DataInfo = DataTypeCaster.ByteArrayToString(e, e.Length);
             var DataList = DataInfo.Split(' ');
-            if(DataList.Count()>0) DataList = DataList.Where(q => q != "").ToArray();
+            if (DataList.Count() > 0) DataList = DataList.Where(q => q != "").ToArray();
             if (e.Length == 8 && DataList.Count() == 8)
             {
                 if (MotorList.Where(q => q.MotorNo == Convert.ToInt32(DataList[3], 16)).Count() > 0)
                 {
                     //解析机位信息（协议约束第四位为机位信息）
                     var Model = MotorList.Where(q => q.MotorNo == Convert.ToInt32(DataList[3], 16)).First();
-                    //解析机位相关位置信息（协议约束后四位为位置相关信息）
-                    var PositionByteString = Convert.ToHexString(e.Reverse().Take(4).Reverse().ToArray());
-                    var PositionValue = Convert.ToInt32(PositionByteString, 16);
+                    //解析机位相关位置信息（协议约束后四位为位置相关信息,高位为正负数标识，0表示正数，1表示负数）
+                    string PositionString = DataTypeCaster.ByteArrayToBinaryStr(e.Reverse().Take(4).Reverse().ToArray());
+                    var NewPositionString = PositionString;
+                    StringBuilder NewPositionBuilder = new StringBuilder(NewPositionString);
+                    NewPositionBuilder[0] = '0';
+                    NewPositionString = NewPositionBuilder.ToString();
+                    var PositionValue = Convert.ToInt32(NewPositionString, 2);
+                    PositionValue = PositionString.Substring(0, 1) == "0" ? PositionValue : -PositionValue;
                     //解析相关操作反馈（协议约束最后一位为操作反馈相关信息）
-                    var OperateByte = DataList.Last();
+                    var OperateByte = Convert.ToInt32(DataList.Last(), 16);
                     //协议约束:第三位功能码
                     try
                     {
                         switch (DataList[2])
                         {
                             case "0x01":
+                                if (OperateByte == 0)
+                                {
+                                    Model.MotorStatus.First().Value = "使能";
+                                    aggregator.SendMessage($"操作成功,电机状态：使能");
+                                }
+                                else if (OperateByte == 1)
+                                {
+                                    aggregator.SendMessage($"使能失败，请核实指令");
+                                }
+                                else
+                                {
+                                    aggregator.SendMessage($"报文解析功能码有误，请核实指令");
+                                }
                                 break;
                             case "0x02":
+                                if (OperateByte == 0)
+                                {
+                                    Model.MotorStatus.First().Value = "失能";
+                                    aggregator.SendMessage($"操作成功,电机状态：失能");
+                                }
+                                else if (OperateByte == 1)
+                                {
+                                    aggregator.SendMessage($"失能失败，请核实指令");
+                                }
+                                else
+                                {
+                                    aggregator.SendMessage($"报文解析功能码有误，请核实指令");
+                                }
                                 break;
                             case "0x03":
                                 Model.SetTargetPosition = PositionValue;
                                 aggregator.SendMessage($"设置目标位置成功，目标位置：" + PositionValue.ToString());
                                 break;
                             case "0x04":
-                                Model.SetTargetPosition = PositionValue;
+                                Model.ObtainTargetPosition = PositionValue;
                                 aggregator.SendMessage($"获取目标位置成功，目标位置：" + PositionValue.ToString());
                                 break;
                             case "0x05":
-                                Model.SetTargetPosition = PositionValue;
+                                Model.ObtainRealTimePosition = PositionValue;
                                 aggregator.SendMessage($"获取实时位置成功，目标位置：" + PositionValue.ToString());
                                 break;
                             case "0x06":
-                                Model.SetTargetPosition = PositionValue;
+                                Model.ObtainOriginPosition = PositionValue;
                                 aggregator.SendMessage($"获取原点位置成功，目标位置：" + PositionValue.ToString());
                                 break;
                             case "0x07":
-                                Model.SetTargetPosition = PositionValue;
+                                Model.SetOriginPosition = PositionValue;
                                 aggregator.SendMessage($"设置原点位置成功，目标位置：" + PositionValue.ToString());
                                 break;
                             case "0x08":
-                                Model.SetTargetPosition = PositionValue;
+                                Model.ObtainZeroPosition = PositionValue;
                                 aggregator.SendMessage($"获取零点位置成功，目标位置：" + PositionValue.ToString());
                                 break;
                             case "0x09":
-                                Model.SetTargetPosition = PositionValue;
+                                Model.SetZeroPosition = PositionValue;
                                 aggregator.SendMessage($"设置零点位置成功，目标位置：" + PositionValue.ToString());
                                 break;
                             case "0x0A":
+                                if (OperateByte == 0) aggregator.SendMessage($"操作成功，回到原点");
+                                else if (OperateByte == 1) aggregator.SendMessage($"操作失败，请核实指令");
                                 break;
                             case "0x0B":
+                                if (OperateByte == 0) aggregator.SendMessage($"操作成功，回到零点");
+                                else if (OperateByte == 1) aggregator.SendMessage($"操作失败，请核实指令");
                                 break;
                             default:
                                 aggregator.SendMessage($"报文解析功能码有误，请核实指令");
                                 break;
                         }
                     }
-                    catch (Exception ex) {
-                        aggregator.SendMessage($"报文解析机位码有误，错误信息："+ ex.ToString());
+                    catch (Exception ex)
+                    {
+                        aggregator.SendMessage($"报文解析机位码有误，错误信息：" + ex.ToString());
                     }
                 }
-                else {
+                else
+                {
                     aggregator.SendMessage($"报文解析机位码有误，请核实指令");
                 }
             }
@@ -499,6 +608,8 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
                 aggregator.SendMessage($"报文解析有误，请核实指令");
             }
         }
+
+
 
         #endregion
 
