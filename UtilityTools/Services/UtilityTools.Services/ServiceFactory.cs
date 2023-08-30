@@ -84,11 +84,19 @@ namespace UtilityTools.Services
                             device.IsBinary = false;
                             return device;
                         }
-                    case "SPMC":
+                    case "SPMC":    // SerialPort of Motor Controller
                         {
                             IAsynRWService device = new SerialPortService();
                             AsynRWServices.Add(type, device);
                             device.Name = "电机控制";
+                            device.IsBinary = true;
+                            return device;
+                        }
+                    case "SPHV":    // SerialPort of High Vol
+                        {
+                            IAsynRWService device = new SerialPortService();
+                            AsynRWServices.Add(type, device);
+                            device.Name = "高压控制";
                             device.IsBinary = true;
                             return device;
                         }

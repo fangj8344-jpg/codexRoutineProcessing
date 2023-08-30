@@ -48,6 +48,7 @@ using NLog;
 using UtilityTools.Services.Interfaces.IServices;
 using System.Windows.Interop;
 using UtilityTools.Services.Interfaces;
+using System.Threading;
 
 namespace UtilityTools.Modules.VacMonitor.ViewModels
 {
@@ -84,7 +85,7 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         #region ------------Field------------
         private readonly IDialogHostService _dialogHostService;
         private readonly IContainerProvider _containerProvider;
-        private Timer _timer;
+        private System.Timers.Timer _timer;
 
         LineSeries _vacuum1;
         LineSeries _vacuum2;
@@ -229,7 +230,7 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
             {
                 if (_timer == null)
                 {
-                    _timer = new Timer();
+                    _timer = new System.Timers.Timer();
                     _timer.AutoReset = true;
                     _timer.Elapsed += Timer_Elapsed;
                 }
@@ -270,7 +271,9 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         {
             // Work
             SendMsg(VacMonitorProtocol.GetVacuumValue(1));
+            Thread.Sleep(MonitorInterval / 3);
             SendMsg(VacMonitorProtocol.GetVacuumValue(2));
+            Thread.Sleep(MonitorInterval / 3);
             SendMsg(VacMonitorProtocol.GetVacuumValue(3));
         }
 

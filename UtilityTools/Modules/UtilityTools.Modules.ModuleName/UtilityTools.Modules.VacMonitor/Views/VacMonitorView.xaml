@@ -13,7 +13,6 @@
              d:DesignHeight="450" d:DesignWidth="800">
     <UserControl.Resources>
         <cv:BoolToColorConverter x:Key="boolToColorConverter" />
-        <cv:BoolToVisibilityConverter x:Key="boolToVisibilityConverter"/>
     </UserControl.Resources>
 
     <md:DialogHost Identifier="{x:Static model:CommonModel.VacMonitorRegionName}"
@@ -72,6 +71,7 @@
                         Content="{Binding MonitorState}"
                         Margin="5, 0, 5, 0" />
                 <CheckBox Content="Log"
+                          VerticalAlignment="Center"
                           x:Name="checkBox"
                           Margin="5, 0, 5, 0" />
                 <Label Content="采样间隔(ms):"

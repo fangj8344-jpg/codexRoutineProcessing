@@ -27,6 +27,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.Modules.Motor5
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.UserControls", "UtilityTools.UserControls\UtilityTools.UserControls.csproj", "{72AA155D-AAD3-411B-85FD-5E81EAE1DBC9}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.Modules.HvController", "Modules\HvController\UtilityTools.Modules.HvController.csproj", "{C8AA4F34-67B0-4FDD-831C-7BD2DB5DF378}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,6 +71,10 @@ Global
 		{72AA155D-AAD3-411B-85FD-5E81EAE1DBC9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{72AA155D-AAD3-411B-85FD-5E81EAE1DBC9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{72AA155D-AAD3-411B-85FD-5E81EAE1DBC9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C8AA4F34-67B0-4FDD-831C-7BD2DB5DF378}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C8AA4F34-67B0-4FDD-831C-7BD2DB5DF378}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C8AA4F34-67B0-4FDD-831C-7BD2DB5DF378}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C8AA4F34-67B0-4FDD-831C-7BD2DB5DF378}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -80,6 +86,7 @@ Global
 		{2C8E4917-E8F6-4F5D-8B56-1EF0810999D3} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
 		{2EFD5583-AF17-42FA-A6CD-42ACB25D616E} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
 		{784EB163-E55A-4654-B03E-E899869B8AEC} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
+		{C8AA4F34-67B0-4FDD-831C-7BD2DB5DF378} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {4877E460-1ABE-4B63-8221-9202D7477E25}

@@ -53,5 +53,41 @@ namespace UtilityTools.Core.Helper
 
             return result;
         }
+
+        /// <summary>
+        /// 讲16进制的消息字符串转换成byte数组，以空格为分割符
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public static byte[] StringToByteArray(string str)
+        {
+            var list = str.Split(' ');
+            byte[] arr = new byte[list.Length];
+            for (int i = 0; i < list.Length; i++)
+            {
+                if (byte.TryParse(list[i], out var value))
+                {
+                    arr[i] = value;
+                }
+            }
+            return arr;
+        }
+
+        /// <summary>
+        /// 将struct数据内容copy到byte数组中
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public static byte[] StructToByteArray<T>(T data) where T : struct
+        {
+            int size = System.Runtime.InteropServices.Marshal.SizeOf(data);
+            byte[] byteArray = new byte[size];
+            IntPtr ptr = System.Runtime.InteropServices.Marshal.AllocHGlobal(size);
+            System.Runtime.InteropServices.Marshal.StructureToPtr(data, ptr, true);
+            System.Runtime.InteropServices.Marshal.Copy(ptr, byteArray, 0, size);
+            System.Runtime.InteropServices.Marshal.FreeHGlobal(ptr);
+            return byteArray;
+        }
     }
 }
