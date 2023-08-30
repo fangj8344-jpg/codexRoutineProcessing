@@ -42,6 +42,18 @@ namespace UtilityTools.Modules.Motor5Controller.Model
         private int _setzeroposition;
         //设置零点位置
         private int _obtainzeroposition;
+
+
+        //直流电机
+        //电机转动一圈需脉冲数 int
+        //传动比
+        //丝杆导程 丝杆转一圈位移距离
+
+        //步进电机（步进角 细分数）
+        //步进角：度数
+        //细分数：一度细分
+
+
         #endregion
 
         #region ------------Property------------

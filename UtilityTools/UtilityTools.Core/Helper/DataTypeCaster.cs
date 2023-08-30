@@ -53,5 +53,45 @@ namespace UtilityTools.Core.Helper
 
             return result;
         }
+
+
+        /// <summary>
+        /// Int转二进制字符串
+        /// </summary>
+        /// <param name="x"></param>
+        /// <returns></returns>
+        public static string IntToBinary(int x)
+        {
+            char[] buff = new char[32];
+
+            for (int i = 31; i >= 0; i--)
+            {
+                int mask = 1 << i;
+                buff[31 - i] = (x & mask) != 0 ? '1' : '0';
+            }
+
+            return new string(buff);
+        }
+
+
+        /// <summary>
+        /// 类型转换，将byte[]转二进制字符串
+        /// </summary>
+        /// <param name="x"></param>
+        /// <returns></returns>
+        public static string ByteArrayToBinaryStr(byte[] bytes)
+        {
+            string strResult = "";
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                string strTemp = System.Convert.ToString(bytes[i], 2);
+                strTemp = strTemp.Insert(0, new string('0', 8 - strTemp.Length));
+
+                strResult += strTemp;
+            }
+            return strResult;
+        }
+
+
     }
 }
