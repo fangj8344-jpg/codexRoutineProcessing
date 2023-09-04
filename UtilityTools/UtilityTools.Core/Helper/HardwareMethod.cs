@@ -36,6 +36,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Management;
 using Microsoft.VisualBasic.CompilerServices;
+using NLog;
 
 namespace UtilityTools.Core.Helper
 {
@@ -305,6 +306,26 @@ namespace UtilityTools.Core.Helper
             }
 
             return addressIP;
+        }
+
+        /// <summary>
+        /// PING指定地址
+        /// </summary>
+        /// <param name="ip"></param>
+        /// <returns></returns>
+        public static bool PingRemoteIP(string ip)
+        {
+            try 
+            {
+                Ping ping = new Ping();
+                PingReply pingReply = ping.Send(ip, 1000);
+                return pingReply.Status != IPStatus.Success;
+            }
+            catch (Exception ex) 
+            {
+                LogManager.GetCurrentClassLogger().Error($"PING {ip} 异常：{ex.Message}");
+                return false;
+            }
         }
     }
 }
