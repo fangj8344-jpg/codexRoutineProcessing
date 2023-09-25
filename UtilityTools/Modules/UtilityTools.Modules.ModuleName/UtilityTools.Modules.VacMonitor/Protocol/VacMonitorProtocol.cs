@@ -60,9 +60,9 @@ namespace UtilityTools.Modules.VacMonitor.Protocol
             byte key = (byte)'U';
             switch (index)
             {
-                case 1: key = (byte)'U'; break;
-                case 2: key = (byte)'V'; break;
-                case 3: key = (byte)'W'; break;
+                case 1: key = (byte)'V'; break;
+                case 2: key = (byte)'W'; break;
+                case 3: key = (byte)'X'; break;
             }
             byte[] bytes = new byte[6];
             bytes[0] = (byte)'?';
@@ -176,15 +176,15 @@ namespace UtilityTools.Modules.VacMonitor.Protocol
                 return false;
             }
 
-            if (list[0].Contains('U'))
+            if (list[0].Contains('V'))
             {
                 index = 1;
             }
-            else if (list[0].Contains('V'))
+            else if (list[0].Contains('W'))
             {
                 index = 2;
             }
-            else if (list[0].Contains('W'))
+            else if (list[0].Contains('X'))
             {
                 index = 3;
             }

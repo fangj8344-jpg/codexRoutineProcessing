@@ -11,7 +11,7 @@
              d:DesignHeight="450"
              d:DesignWidth="800">
     <UserControl.Resources>
-        <cv:IntToBitBoolConverter x:Key="intToBitBoolConverter"/>
+        <cv:IntToBitBoolConverter x:Key="intToBitBoolConverter" />
         <ObjectDataProvider x:Key="enumFlowDirection"
                             MethodName="GetValues"
                             ObjectType="{x:Type model:EnumFlowDirection}">
@@ -158,6 +158,25 @@
                         CommandParameter="更新灯光状态"
                         DockPanel.Dock="Right"
                         Margin="5, 0" />
+
+                <DockPanel LastChildFill="True"
+                           VerticalAlignment="Center"
+                           DockPanel.Dock="Right"
+                           Margin="5, 0">
+                    <Label Content="{Binding MotorEnable.Name}"
+                           HorizontalContentAlignment="Center"
+                           VerticalContentAlignment="Center"
+                           DockPanel.Dock="Left" />
+                    <StackPanel Orientation="Horizontal"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Center">
+                        <TextBlock Text="关" />
+                        <ToggleButton Margin="8,0,8,0"
+                                      IsChecked="{Binding MotorEnable.Enable}" />
+                        <TextBlock Text="开" />
+                    </StackPanel>
+                </DockPanel>
+
             </DockPanel>
         </Grid>
     </GroupBox>

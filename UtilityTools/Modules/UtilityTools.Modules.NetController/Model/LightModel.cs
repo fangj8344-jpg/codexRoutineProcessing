@@ -49,6 +49,7 @@ namespace UtilityTools.Modules.NetController.Model
             FlowCount = 0;
             FlowDirect = EnumFlowDirection.LeftToRight;
             LoadValue = 0;
+            MotorEnable = new ToggleInfoModel() { Name = "电机开关", Type = "Motor", Tip = "", Channel = 1, Enable = false };
         }
         #endregion
 
@@ -61,6 +62,7 @@ namespace UtilityTools.Modules.NetController.Model
         private int _flowCount;
         private EnumFlowDirection _flowDirect;
         private int _loadValue;
+        private ToggleInfoModel _motorEnable;
         #endregion
 
         #region ------------Property------------
@@ -167,10 +169,31 @@ namespace UtilityTools.Modules.NetController.Model
                 RaisePropertyChanged();
             }
         }
+
+        /// <summary>
+        /// 电机使能
+        /// </summary>
+        public ToggleInfoModel MotorEnable
+        {
+            get { return _motorEnable; }
+            set
+            {
+                _motorEnable = value;
+                RaisePropertyChanged();
+            }
+        }
+
         #endregion
 
         #region ------------PublicMethod------------
-        
+        /// <summary>
+        /// 设置属性变更回调函数
+        /// </summary>
+        /// <param name="handler"></param>
+        public void SetPropertyChangedHandle(PropertyChangedEventHandler handler)
+        {
+            MotorEnable.PropertyChanged += handler;
+        }
         #endregion
 
         #region ------------PrivateMethod------------

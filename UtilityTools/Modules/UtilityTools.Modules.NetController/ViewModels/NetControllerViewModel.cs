@@ -197,6 +197,7 @@ namespace UtilityTools.Modules.NetController.ViewModels
             Relay.SetPropertyChangedHandle(OnPropertyChanged);
             Temperature.SetPropertyChangedHandle(OnPropertyChanged);
             Vacuum.SetPropertyChangedHandle(OnPropertyChanged);
+            Light.SetPropertyChangedHandle(OnPropertyChanged);
         }
 
         /// <summary>

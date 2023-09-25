@@ -319,12 +319,12 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
                                 }
                             case 2:
                                 {
-                                    _vacuum1.Points.Add(new DataPoint(_vacuum2.Points.Count(), vac));
+                                    _vacuum2.Points.Add(new DataPoint(_vacuum2.Points.Count(), vac));
                                     break;
                                 }
                             case 3:
                                 {
-                                    _vacuum1.Points.Add(new DataPoint(_vacuum3.Points.Count(), vac));
+                                    _vacuum3.Points.Add(new DataPoint(_vacuum3.Points.Count(), vac));
                                     break;
                                 }
                         }
@@ -373,15 +373,16 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
                         }
                     case 2:
                         {
-                            _vacuum1.Points.Add(new DataPoint(_vacuum2.Points.Count(), vac));
+                            _vacuum2.Points.Add(new DataPoint(_vacuum2.Points.Count(), vac));
                             break;
                         }
                     case 3:
                         {
-                            _vacuum1.Points.Add(new DataPoint(_vacuum3.Points.Count(), vac));
+                            _vacuum3.Points.Add(new DataPoint(_vacuum3.Points.Count(), vac));
                             break;
                         }
                 }
+                VacuumPlotModel.InvalidatePlot(true);
             }
         }
 
