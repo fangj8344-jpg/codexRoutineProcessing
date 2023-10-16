@@ -33,5 +33,7 @@ namespace UtilityTools.Core.Mvvm
                 IsOpen = IsOpen
             });
         }
+
+       
     }
 }
