@@ -54,6 +54,7 @@ namespace UtilityTools.Core.Helper
             return result;
         }
 
+      
         /// <summary>
         /// 讲16进制的消息字符串转换成byte数组，以空格为分割符
         /// </summary>

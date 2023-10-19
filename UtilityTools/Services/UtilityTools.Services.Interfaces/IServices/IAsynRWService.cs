@@ -17,6 +17,7 @@ namespace UtilityTools.Services.Interfaces.IServices
         event EventHandler<byte[]> UpdateResponse;
         #endregion
 
+
         #region publicFunction
         /// <summary>
         /// 串口数据发送接口

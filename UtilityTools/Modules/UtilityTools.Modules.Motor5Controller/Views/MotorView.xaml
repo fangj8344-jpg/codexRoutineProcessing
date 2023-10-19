@@ -3,10 +3,12 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-      xmlns:local="clr-namespace:UtilityTools.Modules.Motor5Controller.Views"
+      xmlns:ex="clr-namespace:UtilityTools.Core.Extension;assembly=UtilityTools.Core"
+      xmlns:model="clr-namespace:UtilityTools.Modules.Motor5Controller.Model"
       mc:Ignorable="d" 
       d:DesignHeight="450" 
-      d:DesignWidth="800">
+      d:DesignWidth="500">
+
 
     <GroupBox Grid.Row="0"
           Grid.ColumnSpan="2"
@@ -23,34 +25,49 @@
                 <RowDefinition />
                 <RowDefinition />
                 <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
             </Grid.RowDefinitions>
 
-            <UniformGrid Grid.Row="0" Columns="3" VerticalAlignment="Center">
-                <DockPanel>
+            <UniformGrid Grid.Row="0" Columns="2" VerticalAlignment="Center">
+                <DockPanel VerticalAlignment="Center">
                     <ItemsControl Grid.Row="0" 
                          ItemsSource="{Binding MotorStatus}"
                          ItemTemplate="{StaticResource labelInfoTemplate}">
                     </ItemsControl>
                 </DockPanel>
                 <DockPanel>
-                <Button DockPanel.Dock="Right"
-                 Content="使能"
-                 Command="{Binding  ButtonEventCommand}"
-                 CommandParameter="{Binding RelativeSource={x:Static RelativeSource.Self}}" 
-
-                 Margin="5,5" />
-                </DockPanel>
-                <DockPanel>
-                <Button DockPanel.Dock="Right"
-                 Content="失能"
-                 Command="{Binding  ButtonEventCommand}"
-                 CommandParameter="{Binding RelativeSource={x:Static RelativeSource.Self}}" 
-                 Margin="5,5" />  
+                    <Label Content="运动模式" 
+                           VerticalAlignment="Center"></Label>
+                    <ComboBox DockPanel.Dock="Right" 
+                              Margin="5,5,10,5"
+                              DisplayMemberPath="Description"
+                              SelectedValuePath="Value"
+                              SelectedValue="{Binding SportType}"
+                              ItemsSource="{Binding Source={ex:Enum {x:Type model:EnumSportsModeTypes}}}"
+                              />
                 </DockPanel>
             </UniformGrid>
 
-
             <UniformGrid Grid.Row="1" Columns="2" VerticalAlignment="Center">
+            
+                <DockPanel>
+                        <Button DockPanel.Dock="Right"
+                                Content="使能"
+                                Command="{Binding  ButtonEventCommand}"
+                                CommandParameter="{Binding RelativeSource={x:Static RelativeSource.Self}}" 
+                                Margin="5,5" />
+                </DockPanel>
+                <DockPanel>
+                    <Button DockPanel.Dock="Right"
+                            Content="失能"
+                            Command="{Binding  ButtonEventCommand}"
+                            CommandParameter="{Binding RelativeSource={x:Static RelativeSource.Self}}" 
+                            Margin="5,5" />
+                </DockPanel>
+            </UniformGrid>
+
+            <UniformGrid Grid.Row="2" Columns="2" VerticalAlignment="Center">
                 <DockPanel>
                     <Button DockPanel.Dock="Right"
                      Content="设置目标位置"
@@ -65,7 +82,7 @@
                 </DockPanel>
             </UniformGrid>
 
-            <UniformGrid Grid.Row="2" Columns="2" VerticalAlignment="Center">
+            <UniformGrid Grid.Row="3" Columns="2" VerticalAlignment="Center">
                 <DockPanel>
                     <Button DockPanel.Dock="Right"
                       Content="获取目标位置"
@@ -81,7 +98,7 @@
             </UniformGrid>
 
 
-            <UniformGrid Grid.Row="3" Columns="2" VerticalAlignment="Center">
+            <UniformGrid Grid.Row="4" Columns="2" VerticalAlignment="Center">
                 <DockPanel>
                     <Button DockPanel.Dock="Right"
                        Content="获取实时位置"
@@ -96,7 +113,7 @@
                 </DockPanel>
             </UniformGrid>
 
-            <UniformGrid Grid.Row="4" Columns="2"  VerticalAlignment="Center">
+            <UniformGrid Grid.Row="5" Columns="2"  VerticalAlignment="Center">
                 <DockPanel>
                     <Button DockPanel.Dock="Right"
                      Content="设置原点位置"
@@ -111,7 +128,7 @@
                  </DockPanel>
             </UniformGrid>
 
-            <UniformGrid Grid.Row="5" Columns="2"  VerticalAlignment="Center">
+            <UniformGrid Grid.Row="6" Columns="2"  VerticalAlignment="Center">
                 <DockPanel>
                     <Button DockPanel.Dock="Right"
                     Content="获取原点位置"
@@ -127,7 +144,7 @@
             </UniformGrid>
 
 
-            <UniformGrid Grid.Row="6" Columns="2" VerticalAlignment="Center">
+            <UniformGrid Grid.Row="7" Columns="2" VerticalAlignment="Center">
                 <DockPanel>
                     <Button DockPanel.Dock="Right"
                      Content="设置零点位置"
@@ -142,7 +159,7 @@
                  </DockPanel>
             </UniformGrid>
 
-            <UniformGrid Grid.Row="7" Columns="2" VerticalAlignment="Center">
+            <UniformGrid Grid.Row="8" Columns="2" VerticalAlignment="Center">
                 <DockPanel>
                     <Button DockPanel.Dock="Right"
                       Content="获取零点位置"
@@ -157,7 +174,53 @@
                 </DockPanel>
             </UniformGrid>
 
-            <UniformGrid Grid.Row="8" Columns="2" VerticalAlignment="Center">
+            <UniformGrid Grid.Row="9" Columns="6" VerticalAlignment="Center">
+                <DockPanel>
+                    <TextBlock Text="PID参数" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </DockPanel>
+                <DockPanel>
+                    <DockPanel>
+                        <TextBox  Margin="20, 5, 20, 5" 
+                                  TextAlignment="Center"
+                                  Text="{Binding MotorPParameter}"
+                                  />
+                    </DockPanel>
+                </DockPanel>
+                <DockPanel>
+                    <DockPanel>
+                        <TextBox  Margin="20, 5, 20, 5" 
+                                  TextAlignment="Center"
+                                  Text="{Binding MotorIParameter}"/>
+                    </DockPanel>
+                </DockPanel>
+                <DockPanel>
+                    <DockPanel>
+                        <TextBox  Margin="20, 5, 20, 5" 
+                                  TextAlignment="Center"
+                                  Text="{Binding MotorDParameter}"/>
+                    </DockPanel>
+                </DockPanel>
+                <DockPanel>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right"
+                                Content="设置PID"
+                                Margin="5,5" 
+                                Command="{Binding  ButtonEventCommand}"
+                                CommandParameter="{Binding RelativeSource={x:Static RelativeSource.Self}}" />
+                    </DockPanel>
+                </DockPanel>
+                <DockPanel>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right"
+                                Content="获取PID"
+                                Margin="5,5" 
+                                Command="{Binding  ButtonEventCommand}"
+                                CommandParameter="{Binding RelativeSource={x:Static RelativeSource.Self}}" />
+                    </DockPanel>
+                </DockPanel>
+            </UniformGrid>
+
+            <UniformGrid Grid.Row="10" Columns="2" VerticalAlignment="Center">
                 <DockPanel>
                     <Button DockPanel.Dock="Right"
                       Content="回到原点"

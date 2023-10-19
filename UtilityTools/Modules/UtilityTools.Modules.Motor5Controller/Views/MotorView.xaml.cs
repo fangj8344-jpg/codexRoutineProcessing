@@ -26,5 +26,6 @@ namespace UtilityTools.Modules.Motor5Controller.Views
             InitializeComponent();
         }
 
+       
     }
 }

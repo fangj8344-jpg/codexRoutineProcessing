@@ -150,7 +150,7 @@
                               DisplayMemberPath="Description"
                               SelectedValue="{Binding WorkType}"
                               SelectedValuePath="Value"
-                              ItemsSource="{Binding Source={ex:Enum {x:Type model:EnumLightWorkType}}}" />
+                              ItemsSource="{Binding Source={ex:Enum {x:Type model:EnumLightWorkType}}}"/>
                 </StackPanel>
 
                 <Button Content="更新灯光状态"
