@@ -66,12 +66,12 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         public Motor5ControllerViewModel(IDialogHostService dialogHostService, IContainerProvider containerProvider)
             : base(containerProvider)
         {
-            CacheCallBackDate = new List<byte>();
-            MotorList = CretetModels();
-            this._containerProvider = containerProvider;
-            this._dialogHostService = dialogHostService;
             InitCommand();
             InitProperty();
+            this._containerProvider = containerProvider;
+            this._dialogHostService = dialogHostService;
+            CacheCallBackDate = new List<byte>();
+            MotorList = CretetModels();
             //消息提示
             aggregator = containerProvider.Resolve<IEventAggregator>();
             //下位机数据回调
@@ -244,8 +244,8 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
                 case "使能":
                     ExecuteCommand(GetLengthByFunctionCode(Name), CreateFunctionCode((int)FunctionCodeEnum.使能), CreateSeatNo(Model.MotorNo),0);
                     break;
-                case "失能":
-                    ExecuteCommand(GetLengthByFunctionCode(Name), CreateFunctionCode((int)FunctionCodeEnum.失能), CreateSeatNo(Model.MotorNo), 0);
+                case "脱机":
+                    ExecuteCommand(GetLengthByFunctionCode(Name), CreateFunctionCode((int)FunctionCodeEnum.脱机), CreateSeatNo(Model.MotorNo), 0);
                     break;
                 case "设置目标位置":
                     ExecuteCommand(GetLengthByFunctionCode(Name), CreateFunctionCode((int)FunctionCodeEnum.设置目标位置), CreateSeatNo(Model.MotorNo), Model.SetTargetPosition);
@@ -298,7 +298,7 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
             foreach (byte[] item in byteList)
             {
                 SendMsg(item);
-                Thread.Sleep(500);
+                Thread.Sleep(50);
             }
         }
 
@@ -317,7 +317,7 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
             foreach (byte[] item in byteList)
             {
                 SendMsg(item);
-                Thread.Sleep(500);
+                Thread.Sleep(50);
             }
         }
 
@@ -543,7 +543,7 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
             //四位数据位对应功能
             List<string> FourList = new List<string>();
             FourList.Add("使能");
-            FourList.Add("失能");
+            FourList.Add("脱机");
             FourList.Add("获取目标位置");
             FourList.Add("获取实时位置");
             FourList.Add("获取原点位置");
@@ -574,7 +574,7 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         private enum FunctionCodeEnum
         {
             使能 = 1,
-            失能,
+            脱机,
             设置目标位置,
             获取目标位置,
             获取实时位置,
@@ -673,9 +673,12 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
             if (e.Length == 8 && DataList.Count() == 8)
             {
                 //整数型返回值
-                List<string> intCodeNum = new List<string> { "0x01", "0x02", "0x03", "0x04", "0x05", "0x06", "0x07", "0x08", "0x09", "0x0A", "0x0B", "0x0F" };
+                List<string> intCodeNum = new List<string>   { "0x03", "0x04", "0x05", "0x06", "0x07", "0x08", "0x09"};
                 //浮点型返回值
                 List<string> floatCodeNum = new List<string> { "0x0C", "0x0D", "0x0E", "0x1C", "0x1D", "0x1E"};
+                //返回值状态判断
+                List<string> stateCodeNum = new List<string> { "0x01", "0x02", "0x0A", "0x0B", "0x0F"};
+
 
 
                 if (MotorList.Where(q => q.MotorNo == Convert.ToInt32(DataList[3], 16)).Count() > 0)
@@ -683,7 +686,7 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
                     //解析机位信息（协议约束第四位为机位信息）
                     var Model = MotorList.Where(q => q.MotorNo == Convert.ToInt32(DataList[3], 16)).First();
 
-                    if (intCodeNum.IndexOf(DataList[2]) > 0)
+                    if (intCodeNum.IndexOf(DataList[2]) >= 0)
                     {
                         //解析机位相关位置信息（协议约束后四位为位置相关信息,高位为正负数标识，0表示正数，1表示负数）
                         string PositionString = DataTypeCaster.ByteArrayToBinaryStr(e.Reverse().Take(4).Reverse().ToArray());
@@ -693,43 +696,11 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
                         NewPositionString = NewPositionBuilder.ToString();
                         var PositionValue = Convert.ToInt32(NewPositionString, 2);
                         PositionValue = PositionString.Substring(0, 1) == "0" ? PositionValue : -PositionValue;
-                        //解析相关操作反馈（协议约束最后一位为操作反馈相关信息）
-                        var OperateByte = Convert.ToInt32(DataList.Last(), 16);
                         //协议约束:第三位功能码
                         try
                         {
                             switch (DataList[2])
                             {
-                                case "0x01":
-                                    if (OperateByte == 0)
-                                    {
-                                        Model.MotorStatus.First().Value = "使能";
-                                        aggregator.SendMessage($"操作成功,电机状态：使能");
-                                    }
-                                    else if (OperateByte == 1)
-                                    {
-                                        aggregator.SendMessage($"使能失败，请核实指令");
-                                    }
-                                    else
-                                    {
-                                        aggregator.SendMessage($"报文解析功能码有误，请核实指令");
-                                    }
-                                    break;
-                                case "0x02":
-                                    if (OperateByte == 0)
-                                    {
-                                        Model.MotorStatus.First().Value = "失能";
-                                        aggregator.SendMessage($"操作成功,电机状态：失能");
-                                    }
-                                    else if (OperateByte == 1)
-                                    {
-                                        aggregator.SendMessage($"失能失败，请核实指令");
-                                    }
-                                    else
-                                    {
-                                        aggregator.SendMessage($"报文解析功能码有误，请核实指令");
-                                    }
-                                    break;
                                 case "0x03":
                                     aggregator.SendMessage($"设置目标位置成功，目标位置：" + PositionValue.ToString());
                                     break;
@@ -755,32 +726,6 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
                                 case "0x09":
                                     aggregator.SendMessage($"设置零点位置成功，目标位置：" + PositionValue.ToString());
                                     break;
-                                case "0x0A":
-                                    if (OperateByte == 0) aggregator.SendMessage($"操作成功，回到原点");
-                                    else if (OperateByte == 1) aggregator.SendMessage($"操作失败，请核实指令");
-                                    break;
-                                case "0x0B":
-                                    if (OperateByte == 0) aggregator.SendMessage($"操作成功，回到零点");
-                                    else if (OperateByte == 1) aggregator.SendMessage($"操作失败，请核实指令");
-                                    break;
-                                case "0x0F":
-                                    if (OperateByte == 1)
-                                    {
-                                        aggregator.SendMessage($"操作成功,电机模式：绝对位置");
-                                    }
-                                    else if (OperateByte == 2)
-                                    {
-                                        aggregator.SendMessage($"操作成功,电机模式：相对位置");
-                                    }
-                                    else if (OperateByte == 3)
-                                    {
-                                        aggregator.SendMessage($"操作成功,电机模式：速度模式");
-                                    }
-                                    else
-                                    {
-                                        aggregator.SendMessage($"报文解析功能码有误，请核实指令");
-                                    }
-                                    break;
                                 default:
                                     aggregator.SendMessage($"报文解析功能码有误，请核实指令");
                                     break;
@@ -791,9 +736,9 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
                             aggregator.SendMessage($"报文解析机位码有误，错误信息：" + ex.ToString());
                         }
                     }
-                    else if (floatCodeNum.IndexOf(DataList[2]) > 0)
+                    else if (floatCodeNum.IndexOf(DataList[2]) >= 0)
                     {
-                        var bytes  = e.Reverse().Take(4).Reverse().ToArray();
+                        var bytes = e.Reverse().Take(4).Reverse().ToArray();
                         var floatValue = BitConverter.ToSingle(bytes, 0);
                         try
                         {
@@ -823,6 +768,78 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
                                     break;
                                 default:
                                     aggregator.SendMessage($"报文解析功能码有误，请核实指令");
+                                    break;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            aggregator.SendMessage($"报文解析机位码有误，错误信息：" + ex.ToString());
+                        }
+                    }
+                    else if (stateCodeNum.IndexOf(DataList[2]) >= 0) {
+                        //解析相关操作反馈（协议约束最后一位为操作反馈相关信息）
+                        var OperateByte = Convert.ToInt32(DataList.Last(), 16);
+                        try
+                        {
+                            //协议约束:第三位功能码
+                            switch (DataList[2])
+                            {
+                                case "0x01":
+                                    if (OperateByte == 0)
+                                    {
+                                        Model.MotorStatus.First().Value = "使能";
+                                        aggregator.SendMessage($"操作成功,电机状态：使能");
+                                    }
+                                    else if (OperateByte == 1)
+                                    {
+                                        aggregator.SendMessage($"使能失败，请核实指令");
+                                    }
+                                    break;
+                                case "0x02":
+                                    if (OperateByte == 0)
+                                    {
+                                        Model.MotorStatus.First().Value = "脱机";
+                                        aggregator.SendMessage($"操作成功,电机状态：脱机");
+                                    }
+                                    else if (OperateByte == 1)
+                                    {
+                                        aggregator.SendMessage($"脱机失败，请核实指令");
+                                    }
+                                    break;
+                                case "0x0A":
+                                    if (OperateByte == 0) {
+                                        aggregator.SendMessage($"操作成功，回到原点");
+                                    } else if (OperateByte == 1) {
+                                        aggregator.SendMessage($"操作失败，请核实指令");
+                                    }
+                                    break;
+                                case "0x0B":
+                                    if (OperateByte == 0)
+                                    {
+                                        aggregator.SendMessage($"操作成功，回到零点");
+                                    }
+                                    else if (OperateByte == 1) {
+                                        aggregator.SendMessage($"操作失败，请核实指令");
+                                    }
+                                    break;
+                                case "0x0F":
+                                    if (OperateByte == 1)
+                                    {
+                                        aggregator.SendMessage($"操作成功,电机模式：绝对位置");
+                                    }
+                                    else if (OperateByte == 2)
+
+                                    {
+                                        aggregator.SendMessage($"操作成功,电机模式：相对位置");
+                                    }
+                                    else if (OperateByte == 3)
+                                    {
+                                        aggregator.SendMessage($"操作成功,电机模式：速度模式");
+                                    }
+                                    else
+                                    {
+                                        aggregator.SendMessage($"报文解析功能码有误，请核实指令");
+                                    }
                                     break;
                             }
                         }

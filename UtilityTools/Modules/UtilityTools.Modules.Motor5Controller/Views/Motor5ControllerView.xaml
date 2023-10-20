@@ -58,11 +58,13 @@
                     <local:MotorView DataContext="{Binding MotorList[4]}" Grid.Row="1" Grid.Column="1" />
 
                     <StackPanel Orientation="Vertical" Grid.Row="1" Grid.Column="2" >
-                        <Button Content="清除" 
-                                HorizontalAlignment="Right" 
-                                Width="60" 
-                                Height="30" 
-                                Command="{Binding CleanLogCommand}"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                             <Button Content="清除" 
+                             Width="60" 
+                             Height="30" 
+                             Margin="10 0"
+                             Command="{Binding CleanLogCommand}"/>
+                        </StackPanel>
                         <ListView ItemsSource="{Binding Logs}"
                                   Height="500"
                                   VerticalAlignment="Top"

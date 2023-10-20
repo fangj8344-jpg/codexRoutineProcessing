@@ -21,7 +21,7 @@ namespace UtilityTools.Modules.Motor5Controller.Model
         {
             SportType = EnumSportsModeTypes.AbsolutePosition;
             MotorStatus = new ObservableCollection<LabelInfoModel>();
-            MotorStatus.Add(new LabelInfoModel() { Name = "状态：", Type = "MotorStatus", Channel = 1, Tip = "", Value = "失能" });
+            MotorStatus.Add(new LabelInfoModel() { Name = "状态：", Type = "MotorStatus", Channel = 1, Tip = "", Value = "脱机" });
         }
         #endregion
 

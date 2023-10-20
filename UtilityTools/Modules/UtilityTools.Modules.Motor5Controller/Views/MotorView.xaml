@@ -60,7 +60,7 @@
                 </DockPanel>
                 <DockPanel>
                     <Button DockPanel.Dock="Right"
-                            Content="失能"
+                            Content="脱机"
                             Command="{Binding  ButtonEventCommand}"
                             CommandParameter="{Binding RelativeSource={x:Static RelativeSource.Self}}" 
                             Margin="5,5" />
