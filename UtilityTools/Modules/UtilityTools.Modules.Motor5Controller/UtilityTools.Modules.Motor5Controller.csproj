@@ -12,9 +12,6 @@
     <ProjectReference Include="..\..\Services\UtilityTools.Services.Interfaces\UtilityTools.Services.Interfaces.csproj" />
     <ProjectReference Include="..\..\UtilityTools.Core\UtilityTools.Core.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Protocol\" />
-  </ItemGroup>
   <Target Name="CopyTargetFiles" AfterTargets="PostBuildEvent">
     <ItemGroup>
       <SomeFiles Include="$(OutDir)$(TargetFileName)" />

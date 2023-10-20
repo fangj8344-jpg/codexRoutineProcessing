@@ -1,4 +1,6 @@
-﻿using Prism.Events;
+﻿using MaterialDesignThemes.Wpf;
+using Prism.Events;
+using System;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
@@ -30,6 +32,7 @@ namespace UtilityTools.Views
             //注册提示消息
             aggregator.RegisterMessage(arg =>
             {
+                 
                 Snackbar.Dispatcher.BeginInvoke(() =>
                 {
                     Snackbar.MessageQueue.Enqueue(arg.Message);

@@ -66,12 +66,12 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         public Motor5ControllerViewModel(IDialogHostService dialogHostService, IContainerProvider containerProvider)
             : base(containerProvider)
         {
-            InitCommand();
-            InitProperty();
             this._containerProvider = containerProvider;
             this._dialogHostService = dialogHostService;
-            CacheCallBackDate = new List<byte>();
             MotorList = CretetModels();
+            InitCommand();
+            InitProperty();
+            CacheCallBackDate = new List<byte>();
             //消息提示
             aggregator = containerProvider.Resolve<IEventAggregator>();
             //下位机数据回调
