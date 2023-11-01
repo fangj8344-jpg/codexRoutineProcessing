@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="OpenCvSharp4" Version="4.8.0.20230708" />
+    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.8.0.20230708" />
+    <PackageReference Include="OxyPlot.Wpf" Version="2.1.2" />
+    <PackageReference Include="Prism.Wpf" Version="8.1.97" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\UtilityTools.Core\UtilityTools.Core.csproj" />
+    <ProjectReference Include="..\..\UtilityTools\UtilityTools.csproj" />
+  </ItemGroup>
+	<Target Name="CopyTargetFiles" AfterTargets="PostBuildEvent">
+		<ItemGroup>
+			<SomeFiles Include="$(OutDir)$(TargetFileName)" />
+		</ItemGroup>
+		<Copy SourceFiles="@(SomeFiles)" DestinationFolder="$(SolutionDir)UtilityTools\bin\$(ConfigurationName)\$(TargetFramework)\Modules\" SkipUnchangedFiles="true" />
+	</Target>
+</Project>
