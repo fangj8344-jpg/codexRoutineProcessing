@@ -369,23 +369,24 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         {
             if (DataLength == 8)
             {
-                //数据处理（32位INT型数据；最高位表示符号位，1表示负数，0表示正数，其余31位表示数字位，
-                //最大能表示0x 7F FF FF FF(2147483647(十进制))，最小能表示-0x 7F FF FF FF(-2147483647(十进制))）
-                bool flag = PositionNum > 0;
-                int positiveNum = flag ? PositionNum : -PositionNum;
-                byte[] data = new byte[4];
-                data[0] = (byte)((positiveNum & 0xFF000000) >> 24);
-                data[1] = (byte)((positiveNum & 0xFF0000) >> 16);
-                data[2] = (byte)((positiveNum & 0xFF00) >> 8);
-                data[3] = (byte)((positiveNum & 0xFF));
-                if (!flag)
-                {
-                    data[0] = (byte)(data[0] | 0x80);
-                }
-                else
-                {
-                    data[0] = (byte)(data[0] & 0x7F);
-                }
+                ////数据处理（32位INT型数据；最高位表示符号位，1表示负数，0表示正数，其余31位表示数字位，
+                ////最大能表示0x 7F FF FF FF(2147483647(十进制))，最小能表示-0x 7F FF FF FF(-2147483647(十进制))）
+                //bool flag = PositionNum > 0;
+                //int positiveNum = flag ? PositionNum : -PositionNum;
+                //byte[] data = new byte[4];
+                //data[0] = (byte)((positiveNum & 0xFF000000) >> 24);
+                //data[1] = (byte)((positiveNum & 0xFF0000) >> 16);
+                //data[2] = (byte)((positiveNum & 0xFF00) >> 8);
+                //data[3] = (byte)((positiveNum & 0xFF));
+                //if (!flag)
+                //{
+                //    data[0] = (byte)(data[0] | 0x80);
+                //}
+                //else
+                //{
+                //    data[0] = (byte)(data[0] & 0x7F);
+                //}
+                var data = BitConverter.GetBytes(PositionNum);
                 byte[] bytes = new byte[8];
                 bytes[0] = 0x53;
                 bytes[1] = 0x08;
@@ -688,14 +689,8 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
 
                     if (intCodeNum.IndexOf(DataList[2]) >= 0)
                     {
-                        //解析机位相关位置信息（协议约束后四位为位置相关信息,高位为正负数标识，0表示正数，1表示负数）
-                        string PositionString = DataTypeCaster.ByteArrayToBinaryStr(e.Reverse().Take(4).Reverse().ToArray());
-                        var NewPositionString = PositionString;
-                        StringBuilder NewPositionBuilder = new StringBuilder(NewPositionString);
-                        NewPositionBuilder[0] = '0';
-                        NewPositionString = NewPositionBuilder.ToString();
-                        var PositionValue = Convert.ToInt32(NewPositionString, 2);
-                        PositionValue = PositionString.Substring(0, 1) == "0" ? PositionValue : -PositionValue;
+                        var bytes = e.Reverse().Take(4).Reverse().ToArray();
+                        var PositionValue = BitConverter.ToInt32(bytes, 0);
                         //协议约束:第三位功能码
                         try
                         {
