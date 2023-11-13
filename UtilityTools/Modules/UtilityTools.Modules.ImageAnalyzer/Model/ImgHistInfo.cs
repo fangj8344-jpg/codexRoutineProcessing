@@ -18,9 +18,8 @@ namespace UtilityTools.Modules.ImageAnalyzer.Model
             if (channels != 1)
             {
                 gray = new Mat();
-                Cv2.CvtColor(src, gray, ColorConversionCodes.BGRA2BGR);
+                Cv2.CvtColor(src, gray, ColorConversionCodes.BGR2GRAY);
             }
-            var sss = new string[channels];
 
             hist = CvHelper.CalcGrayHist(gray);
             _binsCum = new List<int>();

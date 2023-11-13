@@ -17,13 +17,23 @@ using UtilityTools.Modules.ImageAnalyzer.ViewModels;
 namespace UtilityTools.Modules.ImageAnalyzer.Views
 {
     /// <summary>
-    /// Interaction logic for ViewA.xaml
+    /// ImageHistogram.xaml 的交互逻辑
     /// </summary>
-    public partial class ImageAnalyzerView : UserControl
+    public partial class ImageHistogram : UserControl
     {
-        public ImageAnalyzerView()
+        public ImageHistogram()
         {
             InitializeComponent();
+            this.Loaded += ImageAnalyzerView_Loaded;
+        }
+
+        private void ImageAnalyzerView_Loaded(object sender, RoutedEventArgs e)
+        {
+            var dataContext = this.DataContext as ImageHistogramViewModel;
+            if (dataContext == null) { return; }
+
+            dataContext.InkCanvas = this.inkCanvas;
+            dataContext.ImageViewer = this.imageViewer;
         }
     }
 }

@@ -12,16 +12,15 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using UtilityTools.Modules.ImageAnalyzer.ViewModels;
 
 namespace UtilityTools.Modules.ImageAnalyzer.Views
 {
     /// <summary>
-    /// Interaction logic for ViewA.xaml
+    /// ImageNoiseSpectrum.xaml 的交互逻辑
     /// </summary>
-    public partial class ImageAnalyzerView : UserControl
+    public partial class ImageNoiseSpectrum : UserControl
     {
-        public ImageAnalyzerView()
+        public ImageNoiseSpectrum()
         {
             InitializeComponent();
         }
