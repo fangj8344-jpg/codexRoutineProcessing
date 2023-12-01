@@ -26,7 +26,13 @@
                 <RowDefinition/>
             </Grid.RowDefinitions>
 
-            <oxy:PlotView Grid.Row="0" Grid.Column="0" Model="{Binding RowSpectrumMeanOxyModel}" />
+            <oxy:PlotView Grid.Row="0" Grid.Column="0" Model="{Binding RowSpectrumMeanOxyModel}">
+                <oxy:PlotView.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="{Binding SpectrumAxisType}" Command="{Binding ChangeSpectrumAxisTypeCommand}" />
+                    </ContextMenu>
+                </oxy:PlotView.ContextMenu>
+            </oxy:PlotView>
             <Grid Grid.Row="1" Grid.Column="0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition/>
@@ -63,7 +69,13 @@
                 <RowDefinition/>
             </Grid.RowDefinitions>
 
-            <oxy:PlotView Grid.Row="0" Grid.Column="0" Model="{Binding ColumnSpectrumMeanOxyModel}"/>
+            <oxy:PlotView Grid.Row="0" Grid.Column="0" Model="{Binding ColumnSpectrumMeanOxyModel}">
+                <oxy:PlotView.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="{Binding SpectrumAxisType}" Command="{Binding ChangeSpectrumAxisTypeCommand}" />
+                    </ContextMenu>
+                </oxy:PlotView.ContextMenu>
+            </oxy:PlotView>
             <Grid Grid.Row="1" Grid.Column="0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition/>

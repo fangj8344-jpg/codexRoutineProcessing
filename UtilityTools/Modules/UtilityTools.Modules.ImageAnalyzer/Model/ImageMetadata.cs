@@ -1,5 +1,7 @@
-﻿using MetadataExtractor;
+﻿using ImTools;
+using MetadataExtractor;
 using Newtonsoft.Json;
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -41,16 +43,52 @@ namespace UtilityTools.Modules.ImageAnalyzer.Model
 
         [JsonProperty("zoom")]
         public int Zoom { get; set; }
+
+        [JsonProperty("significant_bit")]
+        public int SignificantBit { get; set; }
+
+        public int FreqADC = 40 * 1000000; // 40MHz
+
+
+        public bool IsSignificantBitValid()
+        {
+            return 0 < SignificantBit;
+        }
     }
 
 
+    public class SignificantBitParser
+    {
+        public SignificantBitParser(int SignificantBit)
+        {
+            if (SignificantBit < 0) return;
+
+            SignificantHigh = (SignificantBit & 0xf0) >> 4;
+            SignificantLow = SignificantBit & 0x0f;
+            foreach (int j in Enumerable.Range(SignificantLow, SignificantHigh - SignificantLow + 1))
+            {
+                SignificantMask |= 1 << j;
+            }
+        }
+
+        public int SignificantMask = 0;
+        public int SignificantHigh = -1;
+        public int SignificantLow = -1;
+    }
+
     class ImageMetadata
     {
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+
+
 
         public static Zem15MetaData ParseMetadataZem15(IReadOnlyList<Directory> directories)
         {
             var descriptions = directories.Where(d => d.Name == "PNG-tEXt").Select(d => d.Tags[0].Description).ToList();
             var d = descriptions.ToDictionary(d => d.Split(':', 2)[0], d => d.Split(':', 2)[1].Trim());
+
+
+
             Dictionary<string, string> dict = new Dictionary<string, string>()
             {
                 {"acc_voltage", d["ACC Voltage"]},
@@ -67,6 +105,11 @@ namespace UtilityTools.Modules.ImageAnalyzer.Model
 
             var json = JsonConvert.SerializeObject(dict, Formatting.Indented);
             var metadata = JsonConvert.DeserializeObject<Zem15MetaData>(json);
+
+            string sbk = "Significant bit";
+            metadata.SignificantBit = d.ContainsKey(sbk) ? (int)d[sbk][0] : -1;
+
+
             return metadata;
         }
 
@@ -85,6 +128,8 @@ namespace UtilityTools.Modules.ImageAnalyzer.Model
 
             var json = JsonConvert.SerializeObject(dict, Formatting.Indented);
             var metadata = JsonConvert.DeserializeObject<Zem15MetaData>(json);
+
+            metadata.SignificantBit = -1;
             return metadata;
         }
 
@@ -96,9 +141,9 @@ namespace UtilityTools.Modules.ImageAnalyzer.Model
             {
                 return ParseMetadataZem15(directories);
             }
-            catch
+            catch (Exception ex)
             {
-
+                LOGGER.Warn(ex, $"ParseMetadataZem15 failed for {imagePath}");
             }
 
 
@@ -106,9 +151,9 @@ namespace UtilityTools.Modules.ImageAnalyzer.Model
             {
                 return ParseMetadataZem20(directories);
             }
-            catch
+            catch (Exception ex)
             {
-
+                LOGGER.Warn(ex, $"ParseMetadataZem20 failed for {imagePath}");
             }
 
             throw new Exception("未找到元数据");

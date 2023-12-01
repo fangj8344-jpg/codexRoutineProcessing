@@ -10,6 +10,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Xml.Linq;
+using UtilityTools.Modules.ImageAnalyzer.Model;
 
 namespace UtilityTools.Modules.ImageAnalyzer.Tests
 {
@@ -116,5 +117,13 @@ namespace UtilityTools.Modules.ImageAnalyzer.Tests
         }
 
 
+        [Test]
+        public void TestSignificantBitParser()
+        {
+            var sbp = new SignificantBitParser(244);
+            Assert.That(sbp.SignificantHigh, Is.EqualTo(15));
+            Assert.That(sbp.SignificantLow, Is.EqualTo(4));
+            Assert.That(sbp.SignificantMask, Is.EqualTo(0b1111111111110000));
+        }
     }
 }

@@ -1,5 +1,7 @@
-﻿using OpenCvSharp;
+﻿using DryIoc;
+using OpenCvSharp;
 using OxyPlot;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UtilityTools.Core.Helper;
@@ -9,8 +11,11 @@ namespace UtilityTools.Modules.ImageAnalyzer.Model
 {
     class ImgSpectrumInfo
     {
-        public ImgSpectrumInfo(string path, float sample_freq, bool is_column_dft = false)
+        public ImgSpectrumInfo(string path, bool is_column_dft = false)
         {
+            var _meta = ImageMetadata.ReadMetadata(path);
+            float sample_freq = _meta.FreqADC * 1.0f / _meta.AvgLength;
+
             _is_column_dft = is_column_dft;
             src = Cv2.ImRead(path, ImreadModes.Unchanged);
             int channels = src.Channels();
@@ -21,6 +26,13 @@ namespace UtilityTools.Modules.ImageAnalyzer.Model
                 Cv2.CvtColor(src, gray, ColorConversionCodes.BGR2GRAY);
             }
 
+            if (_meta.IsSignificantBitValid())
+            {
+                var sbp = new SignificantBitParser(_meta.SignificantBit);
+                gray &= sbp.SignificantMask;
+                gray /= Math.Pow(2, sbp.SignificantLow);
+            }
+
             if (_is_column_dft)
             {
                 gray = gray.T();
@@ -28,8 +40,6 @@ namespace UtilityTools.Modules.ImageAnalyzer.Model
 
             spectrum = CvHelper.CalcSpectrum(gray);
             spectrum_mean = spectrum.Reduce(ReduceDimension.Row, ReduceTypes.Avg, MatType.CV_32FC1);
-
-            var indexer = spectrum_mean.GetGenericIndexer<float>();
 
             _points = new List<DataPoint>();
             int n = src.Rows;
@@ -41,6 +51,7 @@ namespace UtilityTools.Modules.ImageAnalyzer.Model
 
             _freq_resolution = sample_freq / n;
             List<float> freqs = Enumerable.Range(-n / 2, n).Select(i => i * _freq_resolution).ToList();
+            var indexer = spectrum_mean.GetGenericIndexer<float>();
             for (int i = 0; i < freqs.Count; i++)
             {
                 if (freqs[i] > 0)
@@ -50,6 +61,7 @@ namespace UtilityTools.Modules.ImageAnalyzer.Model
             }
 
             Mat graySpectrum = new Mat(spectrum, new Rect(n / 2, 0, n / 2, n));
+            Cv2.Log(graySpectrum + Scalar.All(1), graySpectrum);
             Cv2.Normalize(graySpectrum, graySpectrum, 0, 255, NormTypes.MinMax);
             graySpectrum.ConvertTo(graySpectrum, MatType.CV_8U);
 

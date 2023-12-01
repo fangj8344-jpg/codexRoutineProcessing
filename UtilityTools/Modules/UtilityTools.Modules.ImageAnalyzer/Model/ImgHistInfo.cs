@@ -1,17 +1,25 @@
-﻿using OpenCvSharp;
+﻿using Newtonsoft.Json;
+using NLog;
+using OpenCvSharp;
 using OxyPlot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UtilityTools.Core.Helper;
-using UtilityTools.Modules.ImageAnalyzer.ViewModels;
+
 
 namespace UtilityTools.Modules.ImageAnalyzer.Model
 {
     public class ImgHistInfo
     {
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+
         public ImgHistInfo(string path)
         {
+            var _meta = ImageMetadata.ReadMetadata(path);
+            string metaJsonStr = JsonConvert.SerializeObject(_meta, Formatting.Indented);
+            LOGGER.Info($"Metadata from image({path}):\n{metaJsonStr}");
+
             src = Cv2.ImRead(path, ImreadModes.Unchanged);
             int channels = src.Channels();
             Mat gray = src;
@@ -19,6 +27,13 @@ namespace UtilityTools.Modules.ImageAnalyzer.Model
             {
                 gray = new Mat();
                 Cv2.CvtColor(src, gray, ColorConversionCodes.BGR2GRAY);
+            }
+
+            if (_meta.IsSignificantBitValid())
+            {
+                var sbp = new SignificantBitParser(_meta.SignificantBit);
+                gray &= sbp.SignificantMask;
+                gray /= Math.Pow(2, sbp.SignificantLow);
             }
 
             hist = CvHelper.CalcGrayHist(gray);

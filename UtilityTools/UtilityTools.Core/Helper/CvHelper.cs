@@ -17,6 +17,7 @@ namespace UtilityTools.Core.Helper
         public static Mat CalcSpectrum(Mat gray)
         {
             int n = gray.Rows;
+            int fft_size = Cv2.GetOptimalDFTSize(n);
             using var dft_in = new Mat();
             gray.ConvertTo(dft_in, MatType.CV_32FC1);
             Mat[] planes = { dft_in, Mat.Zeros(dft_in.Size(), MatType.CV_32F) };
@@ -31,12 +32,10 @@ namespace UtilityTools.Core.Helper
             using var magnitude = new Mat();
             Cv2.Magnitude(dftPlanes[0], dftPlanes[1], magnitude);
 
-            //Mat spectrum = magnitude.Clone(); // 幅值
+            Mat spectrum = magnitude / (fft_size / 2.0);
 
-            Mat spectrum = magnitude / 4096.0;  // DBLSB
-
-
-            //Mat spectrum = magnitude / 4096.0;  // DBFS
+            //spectrum = 20*log10(spectrum / 4096)  // DBFS
+            //Mat spectrum = magnitude + Scalar.All(1);
             //Cv2.Log(spectrum, spectrum); // Cv2.Log = ln
             //spectrum /= Math.Log(10) * 20;
 

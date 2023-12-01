@@ -1,4 +1,5 @@
-﻿using OxyPlot;
+﻿using OpenCvSharp.XImgProc;
+using OxyPlot;
 using OxyPlot.Annotations;
 using OxyPlot.Axes;
 using OxyPlot.Series;
@@ -63,10 +64,14 @@ namespace UtilityTools.Modules.ImageAnalyzer.ViewModels
         {
             DelRowPeakCommand = new DelegateCommand<object>(DelRowPeak);
             DelColumnPeakCommand = new DelegateCommand<object>(DelColumnPeak);
+
+            ChangeSpectrumAxisTypeCommand = new DelegateCommand(ChangeSpectrumAxisType);
         }
 
         private void InitProperty()
         {
+            SpectrumAxisType = "对数坐标";
+
             RowSpectrumMeanOxyModel = new PlotModel() { DefaultFont = "SimHei", Title = "高频谱图" };
 
             var pmRowSpectrum = new PlotModel();
@@ -82,6 +87,13 @@ namespace UtilityTools.Modules.ImageAnalyzer.ViewModels
         }
         #endregion
 
+
+        private string _spectrumAxisType;
+        public string SpectrumAxisType
+        {
+            get { return _spectrumAxisType; }
+            set { _spectrumAxisType = value; RaisePropertyChanged(); }
+        }
 
         private PlotModel _rowSpectrumMeanOxyModel;
         public PlotModel RowSpectrumMeanOxyModel
@@ -128,6 +140,23 @@ namespace UtilityTools.Modules.ImageAnalyzer.ViewModels
             set { _columnSpectrumPeakList = value; RaisePropertyChanged(); }
         }
 
+        public DelegateCommand ChangeSpectrumAxisTypeCommand { get; set; }
+        public void ChangeSpectrumAxisType()
+        {
+            if (SpectrumAxisType == "对数坐标")
+            {
+                SpectrumAxisType = "线性坐标";
+            }
+            else
+            {
+                SpectrumAxisType = "对数坐标";
+            }
+
+
+            UpdateImage(FilePath);
+        }
+
+
         public DelegateCommand<object> DelRowPeakCommand { get; set; }
         private void DelRowPeak(object o)
         {
@@ -143,19 +172,15 @@ namespace UtilityTools.Modules.ImageAnalyzer.ViewModels
         {
             FilePath = imagePath;
 
-            var _meta = ImageMetadata.ReadMetadata(imagePath);
-            float ad_freq = 40 * 1000000; // 40MHz
-            float sample_freq = ad_freq / _meta.AvgLength;
-
             {
-                var info = new ImgSpectrumInfo(imagePath, sample_freq);
+                var info = new ImgSpectrumInfo(imagePath);
                 updateSpectrumMean(RowSpectrumMeanOxyModel, RowSpectrumPeakList, info, "RowSpectrum");
                 updateSpectrumImg(RowSpectrumOxyModel, info);
             }
 
 
             {
-                var info = new ImgSpectrumInfo(imagePath, sample_freq, true);
+                var info = new ImgSpectrumInfo(imagePath, true);
                 updateSpectrumMean(ColumnSpectrumMeanOxyModel, ColumnSpectrumPeakList, info, "ColumnSpectrum");
                 updateSpectrumImg(ColumnSpectrumOxyModel, info);
             }
@@ -193,8 +218,14 @@ namespace UtilityTools.Modules.ImageAnalyzer.ViewModels
             }
 
             pm.Axes.Clear();
-            //pm.Axes.Add(new LinearAxis { Position = AxisPosition.Left, Title = "强度谱(DBFS)", AxislineStyle = LineStyle.Solid, MajorGridlineStyle = LineStyle.Dot, FontSize = 12, Maximum = maxY });
-            pm.Axes.Add(new LinearAxis { Position = AxisPosition.Left, Title = "幅值", AxislineStyle = LineStyle.Solid, MajorGridlineStyle = LineStyle.Dot, FontSize = 12, Maximum = maxY });
+            if (SpectrumAxisType == "对数坐标")
+            {
+                pm.Axes.Add(new LinearAxis { Position = AxisPosition.Left, Title = "幅值", AxislineStyle = LineStyle.Solid, MajorGridlineStyle = LineStyle.Dot, FontSize = 12, Maximum = maxY });
+            }
+            else
+            {
+                pm.Axes.Add(new LogarithmicAxis { Position = AxisPosition.Left, Title = "幅值", AxislineStyle = LineStyle.Solid, MajorGridlineStyle = LineStyle.Dot, FontSize = 12, Maximum = maxY });
+            }
             pm.Axes.Add(new LinearAxis { Position = AxisPosition.Bottom, Title = $"频率(Hz) df={info.FreqResolution:f3}Hz", AxislineStyle = LineStyle.Solid, MajorGridlineStyle = LineStyle.Dot, FontSize = 12 });
             pm.ResetAllAxes();
 
