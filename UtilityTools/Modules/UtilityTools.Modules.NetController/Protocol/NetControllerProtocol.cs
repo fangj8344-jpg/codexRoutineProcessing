@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UtilityTools.Core.Helper;
 
 namespace UtilityTools.Modules.NetController.Protocol
 {
@@ -81,6 +82,21 @@ namespace UtilityTools.Modules.NetController.Protocol
             string result = string.Format("${0}:{1},{2}:{3},{4:X2}%", cmd,
                 string.Join(",", paramList.ToArray()), ip, port, 0x00);
             byte[] res = Encoding.UTF8.GetBytes(result);
+            UInt16 crc = Data_GetCRC16(res, res.Length - 3);
+            res[res.Length - 3] = (byte)((crc & 0xFF00) >> 8);
+            res[res.Length - 2] = (byte)(crc & 0xFF);
+
+            return res;
+        }
+
+        public static byte[] PackageLightCmd(string cmd, byte[] cmdContent, string ip, int port)
+        {
+            ByteWriter writer = new ByteWriter(64);
+            writer.Write($"${cmd}:");
+            writer.Write((byte)cmdContent.Length);
+            writer.Write(cmdContent);
+            writer.Write($",{ip}:{port},00%");
+            byte[] res = writer.EndWrite(true);
             UInt16 crc = Data_GetCRC16(res, res.Length - 3);
             res[res.Length - 3] = (byte)((crc & 0xFF00) >> 8);
             res[res.Length - 2] = (byte)(crc & 0xFF);

@@ -21,7 +21,7 @@ namespace UtilityTools.Modules.Motor5Controller.Tests
         [Test]
         public void TestProtocol()
         {
-            byte[] bytes = Motor5Protocol.SetMotorOnCmd(EnumMotorId.MOTOR_5);
+            byte[] bytes = Motor5Protocol.SetMotorEnable(EnumMotorId.MOTOR_5, true);
             Assert.That(bytes.Length, Is.EqualTo(64));
             Console.WriteLine(HexStr(bytes));
             Console.WriteLine(Encoding.ASCII.GetString(bytes));
@@ -31,7 +31,7 @@ namespace UtilityTools.Modules.Motor5Controller.Tests
         [Test]
         public void TestParser()
         {
-            byte[] bytes = Motor5Protocol.SetMotorOnCmd(EnumMotorId.MOTOR_5);
+            byte[] bytes = Motor5Protocol.SetMotorEnable(EnumMotorId.MOTOR_5, true);
 
             var parser = new Motor5ProtocolParser();
             List<Motor5DataPacket> respList = new();
@@ -46,7 +46,7 @@ namespace UtilityTools.Modules.Motor5Controller.Tests
             Assert.True(respList.Count == 1);
             var resp = respList[0];
 
-            Assert.True(resp.CmdType == EnumMotor5CmdType.W_MOTOR_ON);
+            Assert.True(resp.CmdType == EnumMotor5CmdType.W_MOTOR_ENABLE);
             Assert.True(resp.MotorId == EnumMotorId.MOTOR_5);
 
         }

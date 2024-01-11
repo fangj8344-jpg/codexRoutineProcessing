@@ -9,7 +9,7 @@
     <PackageReference Include="MaterialDesignColors" Version="2.1.4" />
     <PackageReference Include="MaterialDesignThemes" Version="4.9.0" />
     <PackageReference Include="MetadataExtractor" Version="2.8.1" />
-	<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="7.0.0" />
     <PackageReference Include="NLog" Version="5.2.3" />
@@ -24,5 +24,12 @@
     <ProjectReference Include="..\Services\UtilityTools.Services.Interfaces\UtilityTools.Services.Interfaces.csproj" />
     <ProjectReference Include="..\Services\UtilityTools.Services\UtilityTools.Services.csproj" />
     <ProjectReference Include="..\UtilityTools.UserControls\UtilityTools.UserControls.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ContentWithTargetPath Include="$(SolutionDir)UtilityTools\bin\$(ConfigurationName)\$(TargetFramework)\Modules\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <TargetPath>Modules/%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+    </ContentWithTargetPath>
   </ItemGroup>
 </Project>

@@ -66,6 +66,10 @@ namespace UtilityTools.Core.Converter
         private string GetEnumDescription(Enum enumObj)
         {
             FieldInfo fieldInfo = enumObj.GetType().GetField(enumObj.ToString());
+            if(fieldInfo == null) 
+            {
+                return "未知枚举";
+            }
             var descriptionAttr = fieldInfo
                 .GetCustomAttributes(false)
                 .OfType<DescriptionAttribute>()

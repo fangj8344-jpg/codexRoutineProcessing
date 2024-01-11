@@ -1,0 +1,255 @@
+﻿<UserControl x:Class="UtilityTools.Modules.Motor5Controller.Views.MotorReadParamsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:cv="clr-namespace:UtilityTools.Core.Converter;assembly=UtilityTools.Core"
+             mc:Ignorable="d"
+             d:DesignHeight="800"
+             d:DesignWidth="600">
+
+    <UserControl.Resources>
+        <cv:MotorEnableConveter x:Key="motorEnableConveter" />
+        <cv:EnumDescriptionConverter x:Key="enumDescriptionConverter" />
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+
+        <Grid.RowDefinitions>
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+        </Grid.RowDefinitions>
+
+        <Label Content="电机使能"
+               Grid.Row="0"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="0"
+                     Grid.Column="1">
+            <TextBlock Text="{Binding Enable, Converter={StaticResource motorEnableConveter}}"
+                       Margin="2, 0" />
+        </UniformGrid>
+
+        <Label Content="控制类型"
+               Grid.Row="1"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="1"
+                     Grid.Column="1">
+            <TextBlock Text="{Binding CtrType, Converter={StaticResource enumDescriptionConverter}}"
+                       Margin="2, 0" />
+        </UniformGrid>
+
+        <Label Content="运行模式"
+               Grid.Row="2"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="2"
+                     Grid.Column="1">
+            <TextBlock Text="{Binding RunMode, Converter={StaticResource enumDescriptionConverter}}"
+                       Margin="2, 0" />
+        </UniformGrid>
+
+        <Label Content="转换系数"
+               Grid.Row="3"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="3"
+                     Grid.Column="1">
+            <TextBlock Text="{Binding SubRatio}"
+                       ToolTip="转换系数"
+                       Margin="2, 0" />
+        </UniformGrid>
+
+        <Label Content="电机类型"
+               Grid.Row="4"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="4"
+                     Grid.Column="1">
+            <TextBlock Text="{Binding MotorType, Converter={StaticResource enumDescriptionConverter}}"
+                       Margin="2, 0" />
+        </UniformGrid>
+
+        <Label Content="启停状态"
+               Grid.Row="5"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="5"
+                     Grid.Column="1">
+            <TextBlock Text="{Binding MoveState, Converter={StaticResource enumDescriptionConverter}}"
+                       Margin="2, 0" />
+        </UniformGrid>
+
+        <Label Content="限位状态"
+               Grid.Row="6"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="6"
+                     Grid.Column="1">
+            <TextBlock Text="{Binding LimitedState, Converter={StaticResource enumDescriptionConverter}}"
+                       Margin="2, 0" />
+        </UniformGrid>
+
+        <Label Content="零位状态"
+               Grid.Row="7"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="7"
+                     Grid.Column="1">
+            <TextBlock Text="{Binding ZeroState, StringFormat=0x{0:X2}}"
+                       ToolTip="零位状态"
+                       Margin="2, 0" />
+        </UniformGrid>
+
+        <Label Content="运动方向"
+               Grid.Row="8"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="8"
+                     Grid.Column="1">
+            <TextBlock Text="{Binding MoveDirection, Converter={StaticResource enumDescriptionConverter}}"
+                       Margin="2, 0" />
+        </UniformGrid>
+
+        <Label Content="编码器方向"
+               Grid.Row="9"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="9"
+                     Grid.Column="1">
+            <TextBlock Text="{Binding EncoderDirection, Converter={StaticResource enumDescriptionConverter}}"
+                       Margin="2, 0" />
+        </UniformGrid>
+
+        <Button Grid.Row="0"
+                Grid.Column="2"
+                Grid.RowSpan="10"
+                Content="获取"
+                Command="{Binding GetMotorStateCommand}" />
+
+        <Label Content="PID参数"
+               Grid.Row="10"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="10"
+                     Rows="1"
+                     Grid.Column="1">
+            <TextBlock Text="{Binding Pid.P}"
+                       ToolTip="P"
+                       Margin="2, 0" />
+            <TextBlock Text="{Binding Pid.I}"
+                       ToolTip="I"
+                       Margin="2, 0" />
+            <TextBlock Text="{Binding Pid.D}"
+                       ToolTip="D"
+                       Margin="2, 0" />
+        </UniformGrid>
+        
+        <Button Grid.Row="10"
+                Grid.Column="2"
+                Content="获取"
+                Command="{Binding GetMotorPidCommand}" />
+
+        <Label Content="控制参数"
+               Grid.Row="11"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="11"
+                     Rows="1"
+                     Grid.Column="1">
+            <TextBlock Text="{Binding Times}"
+                       ToolTip="补偿次数"
+                       Margin="2, 0" />
+            <TextBlock Text="{Binding Threshold}"
+                       ToolTip="停止阈值"
+                       Margin="2, 0" />
+        </UniformGrid>
+        <Button Grid.Row="11"
+                Grid.Column="2"
+                Content="获取"
+                Command="{Binding GetMotorCtrParamsComamnd}" />
+
+        <Label Content="速度参数"
+               Grid.Row="12"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="12"
+                     Rows="1"
+                     Grid.Column="1">
+            <TextBlock Text="{Binding StartSpeed}"
+                       ToolTip="起始速度"
+                       Margin="2, 0" />
+            <TextBlock Text="{Binding MaxSpeed}"
+                       ToolTip="最大速度"
+                       Margin="2, 0" />
+            <TextBlock Text="{Binding CurSpeed}"
+                       ToolTip="当前速度"
+                       Margin="2, 0" />
+        </UniformGrid>
+        <Button Grid.Row="12"
+                Grid.Column="2"
+                Content="获取"
+                Command="{Binding GetMotorSpeedParamsCommand}" />
+
+        <Label Content="加速度参数"
+               Grid.Row="13"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="13"
+                     Rows="1"
+                     Grid.Column="1">
+            <TextBlock Text="{Binding MaxAcc}"
+                       ToolTip="最大加速度"
+                       Margin="2, 0" />
+            <TextBlock Text="{Binding MaxDec}"
+                       ToolTip="最大减速度"
+                       Margin="2, 0" />
+        </UniformGrid>
+        <Button Grid.Row="13"
+                Grid.Column="2"
+                Content="获取"
+                Command="{Binding GetMotorAccParamsCommand}" />
+
+        <Label Content="目标参数"
+               Grid.Row="14"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="14"
+                     Rows="1"
+                     Grid.Column="1">
+            <TextBlock Text="{Binding TargetValue}"
+                       ToolTip="目标参数"
+                       Margin="2, 0" />
+            <TextBlock Text="{Binding CurPos}"
+                       ToolTip="当前位置"
+                       Margin="2, 0" />
+        </UniformGrid>
+        <Button Grid.Row="14"
+                Grid.Column="2"
+                Content="获取"
+                Command="{Binding GetMotorPosParamsCommand}" />
+
+        <Label Content="零点参数"
+               Grid.Row="15"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="15"
+                     Rows="1"
+                     Grid.Column="1">
+            <TextBlock Text="{Binding OriginPos}"
+                       ToolTip="原点位置"
+                       Margin="2, 0" />
+            <TextBlock Text="{Binding ZeroPos}"
+                       ToolTip="零点位置"
+                       Margin="2, 0" />
+        </UniformGrid>
+        <Button Grid.Row="15"
+                Grid.Column="2"
+                Content="获取"
+                Command="{Binding GetMotorZeroPosCommand}" />
+    </Grid>
+</UserControl>
