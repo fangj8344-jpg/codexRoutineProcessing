@@ -3,18 +3,18 @@ using NLog.Config;
 using NLog.Targets;
 using Prism.Ioc;
 using Prism.Modularity;
-using System.Threading.Tasks;
 using System;
+using System.Threading.Tasks;
 using System.Windows;
+using UtilityTools.Core.Dialog;
+using UtilityTools.Core.Helper;
 using UtilityTools.Core.Interface;
+using UtilityTools.Core.Mvvm;
 using UtilityTools.Services;
 using UtilityTools.Services.Interfaces;
-using UtilityTools.Views;
-using UtilityTools.Core.Helper;
-using UtilityTools.ViewModels;
-using UtilityTools.Core.Dialog;
-using UtilityTools.Core.Mvvm;
 using UtilityTools.UserControls.Views;
+using UtilityTools.ViewModels;
+using UtilityTools.Views;
 
 namespace UtilityTools
 {
@@ -107,18 +107,18 @@ namespace UtilityTools
             config.AddTarget("debug", debugTarget);
 
             // Step 3. Set target properties 
-            consoleTarget.Layout = @"${date:format=HH\:mm\:ss} ${logger} ${message}";
+            consoleTarget.Layout = @"${date:format=HH\:mm\:ss} ${logger}(${callsite:className=False:fileName=False:includeSourcePath=False:methodName=True}:${callsite-linenumber}) | ${message}";
 
-            debuggerTarget.Layout = @"${date:format=HH\:mm\:ss}|${level:uppercase=true}|${logger}|${message:withexception=true}";
+            debuggerTarget.Layout = @"${date:format=HH\:mm\:ss} | ${level:uppercase=true}|${logger}(${callsite:className=False:fileName=False:includeSourcePath=False:methodName=True}:${callsite-linenumber}) | ${message:withexception=true}";
 
             fileTarget.FileName = "${basedir}/logs/logfile.txt";
-            fileTarget.Layout = @"${longdate}|${level:uppercase=true}|${logger}|${message:withexception=true}";
+            fileTarget.Layout = @"${longdate} | ${level:uppercase=true} | ${logger}(${callsite:className=False:fileName=False:includeSourcePath=False:methodName=True}:${callsite-linenumber}) | ${message:withexception=true}";
             fileTarget.ArchiveFileName = "${basedir}/logs/Archive/Log{#######}.txt";
             fileTarget.MaxArchiveFiles = 30;
             fileTarget.ArchiveEvery = FileArchivePeriod.Day;
 
             debugTarget.FileName = "${basedir}/logs/debug.txt";
-            debugTarget.Layout = @"${longdate}|${level:uppercase=true}|${logger}|${message:withexception=true}";
+            debugTarget.Layout = @"${longdate} | ${level:uppercase=true} | ${logger}(${callsite:className=False:fileName=False:includeSourcePath=False:methodName=True}:${callsite-linenumber}) | ${message:withexception=true}";
             debugTarget.ArchiveFileName = "${basedir}/logs/Archive/Debug{#######}.txt";
             debugTarget.MaxArchiveFiles = 3;
             debugTarget.ArchiveEvery = FileArchivePeriod.Day;

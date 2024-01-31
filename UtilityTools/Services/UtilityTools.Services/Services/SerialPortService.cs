@@ -27,8 +27,7 @@
 using NLog;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.ComponentModel;
+using System.Diagnostics;
 using System.IO.Ports;
 using System.Text;
 using System.Threading;
@@ -46,19 +45,20 @@ namespace UtilityTools.Services.Services
             _sendThread = new Thread(SendThreadFunction);
             _sendThread.IsBackground = true;
             _sendThreadToken = new CancellationTokenSource();
-            _syncObject = new object();
             _sendQueue = new ConcurrentQueue<byte[]>();
             DeviceInstance = new SerialPortModel();
             DeviceInstance.SerialPort.DataReceived += SerialPort_DataReceived;
+            MinWriteInterval = 100;
         }
 
         #endregion
 
         #region ------------Field------------
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+
         private Thread _sendThread;
         private CancellationTokenSource _sendThreadToken;
 
-        private object _syncObject;
         private ConcurrentQueue<byte[]> _sendQueue;
         #endregion
 
@@ -100,6 +100,11 @@ namespace UtilityTools.Services.Services
         public bool IsBinary { get; set; }
 
         /// <summary>
+        /// 两次写入最小间隔 ms
+        /// </summary>
+        public int MinWriteInterval { get; set; }
+
+        /// <summary>
         /// 连接测试
         /// </summary>
         public DelegateConnectTestCommand ConnectTest { get; set; }
@@ -121,7 +126,7 @@ namespace UtilityTools.Services.Services
         {
             if (DeviceInstance == null || DeviceInstance.SerialPort == null)
             {
-                throw new Exception($"{Name}的串口设备句柄不能为NULL！");
+                throw new Exception($"{Name} 的串口设备句柄不能为NULL！");
             }
 
             if (DeviceInstance.SerialPort.IsOpen)
@@ -138,13 +143,17 @@ namespace UtilityTools.Services.Services
 
             if (string.IsNullOrEmpty(DeviceInstance.PortName))
             {
-                throw new Exception($"{Name}的串口设备名称不能为空！");
+                throw new Exception($"{Name} 的串口设备名称不能为空！");
             }
 
             if (DeviceInstance.Open())
             {
-                if(!_sendThread.IsAlive)
+                if (!_sendThread.IsAlive)
+                {
+                    _sendThread = new Thread(SendThreadFunction);
+                    _sendThread.IsBackground = true;
                     _sendThread.Start();
+                }
             }
 
             return DeviceInstance.SerialPort.IsOpen;
@@ -171,7 +180,7 @@ namespace UtilityTools.Services.Services
         {
             if (IsOpen)
             {
-                Enqueue(cmd);
+                _sendQueue.Enqueue(cmd);
             }
         }
 
@@ -211,18 +220,6 @@ namespace UtilityTools.Services.Services
         #endregion
 
         #region ------------PrivateMethod------------
-        /// <summary>
-        /// 进队操作
-        /// </summary>
-        /// <param name="data"></param>
-        private void Enqueue(byte[] data)
-        {
-            _sendQueue.Enqueue(data);
-            lock (_syncObject)
-            {
-                Monitor.Pulse(_syncObject);
-            }
-        }
 
         /// <summary>
         /// 终止发送线程
@@ -230,63 +227,48 @@ namespace UtilityTools.Services.Services
         private void StopSendThread()
         {
             _sendThreadToken.Cancel();
-            lock (_syncObject)
-            {
-                Monitor.Pulse(_syncObject);
-            }
             _sendThread.Join();
         }
 
-        /// <summary>
-        /// 出队操作
-        /// </summary>
-        /// <returns></returns>
-        private byte[] Dequeue()
-        {
-            while (true)
-            {
-                if (_sendQueue.TryDequeue(out var data))
-                    return data;
-
-                lock (_syncObject)
-                {
-                    Monitor.Wait(_syncObject);
-                }
-            }
-        }
 
         /// <summary>
         /// 发送线程
         /// </summary>
         private void SendThreadFunction()
         {
-            LogManager.GetCurrentClassLogger().Debug($"{Name}开启发送线程");
+            LOGGER.Debug($"{Name}开启发送线程");
             var token = _sendThreadToken.Token;
             try
             {
+                Stopwatch sw = new();
                 while (!token.IsCancellationRequested)
                 {
                     if (_sendQueue.TryDequeue(out var cmd))
                     {
-                        // 发送业务
+                        sw.Restart();
                         DeviceInstance.SerialPort.Write(cmd, 0, cmd.Length);
-                        LogManager.GetCurrentClassLogger().Debug($"{Name} 发送 : {GetCmdString(cmd, cmd.Length)}");
-                        //Thread.Sleep(100);
-                    }
+                        LOGGER.Debug($"{Name} 发送 : {GetCmdString(cmd, cmd.Length)}");
+                        sw.Stop();
 
-                    lock (_syncObject)
+                        int evitation = MinWriteInterval - (int)sw.ElapsedMilliseconds;
+                        if (evitation > 0)
+                        {
+                            Thread.Sleep(evitation);
+                        }
+                    }
+                    else
                     {
-                        Monitor.Wait(_syncObject);
+                        Thread.Sleep(10);
                     }
                 }
             }
             catch (Exception ex)
             {
-                LogManager.GetCurrentClassLogger().Error($"{Name}发送线程异常：{ex.Message}");
+                LOGGER.Error($"{Name} 发送线程异常：{ex.Message}");
             }
             finally
             {
-                LogManager.GetCurrentClassLogger().Debug($"{Name}结束发送线程");
+                LOGGER.Debug($"{Name} 结束发送线程");
             }
         }
 
@@ -305,13 +287,13 @@ namespace UtilityTools.Services.Services
                     byte[] response = new byte[size];
                     int realLen = dev.Read(response, 0, size);
 
-                    LogManager.GetCurrentClassLogger().Debug($"{Name} 接收 : {GetCmdString(response, realLen)}");
-                    
+                    LOGGER.Debug($"{Name} 接收 : {GetCmdString(response, realLen)}");
+
                     UpdateResponse?.Invoke(this, response);
                 }
                 catch (Exception ex)
                 {
-                    LogManager.GetCurrentClassLogger().Error(ex.Message);
+                    LOGGER.Error(ex.Message);
                     return;
                 }
             }

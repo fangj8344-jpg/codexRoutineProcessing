@@ -58,7 +58,7 @@ namespace UtilityTools.Services
         /// </summary>
         /// <param name="type">设备类型</param>
         /// <returns></returns>
-        public IAsynRWService GetAsynRWService(string type)
+        public IAsynRWService GetAsynRWService(string type, string name = null)
         {
             lock (this)
             {
@@ -67,6 +67,14 @@ namespace UtilityTools.Services
 
                 if (AsynRWServices.ContainsKey(type))
                     return AsynRWServices[type];
+
+                if (type == "GSP") // 通用串口设备
+                {
+                    string cache_key = $"GSP:{name}";
+                    if (AsynRWServices.ContainsKey(cache_key))
+                        return AsynRWServices[cache_key];
+                }
+
                 switch (type)
                 {
                     case "VirtualDevice":
@@ -97,6 +105,16 @@ namespace UtilityTools.Services
                             IAsynRWService device = new SerialPortService();
                             AsynRWServices.Add(type, device);
                             device.Name = "高压控制";
+                            device.IsBinary = true;
+                            return device;
+                        }
+                    case "GSP": // General SerialPort device 通用串口设备
+                        {
+                            IAsynRWService device = new SerialPortService();
+                            string cache_key = $"GSP-{name}";
+
+                            AsynRWServices.Add(cache_key, device);
+                            device.Name = name;
                             device.IsBinary = true;
                             return device;
                         }

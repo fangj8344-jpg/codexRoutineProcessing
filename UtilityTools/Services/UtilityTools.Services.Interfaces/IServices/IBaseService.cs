@@ -34,6 +34,11 @@ namespace UtilityTools.Services.Interfaces.IServices
         bool IsBinary { get; set; }
 
         /// <summary>
+        /// 两次写入最小间隔 ms, 特别是串口通讯需要根据设备情况进行设置
+        /// </summary>
+        int MinWriteInterval { get; set; }
+
+        /// <summary>
         /// 连接测试
         /// </summary>
         public DelegateConnectTestCommand ConnectTest { get; set; }

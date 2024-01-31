@@ -30,8 +30,9 @@ namespace UtilityTools.Services.Interfaces
         /// 获取异步读写设备
         /// </summary>
         /// <param name="type">设备类型</param>
+        /// <param name="name">设备名称</param>
         /// <returns></returns>
-        public IAsynRWService GetAsynRWService(string type);
+        public IAsynRWService GetAsynRWService(string type, string name = null);
 
         /// <summary>
         /// 获取同步读写设备

@@ -45,6 +45,12 @@ namespace UtilityTools.Services.Services
         public string Name { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public bool IsBinary { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
+
+        /// <summary>
+        /// 两次写入最小间隔 ms
+        /// </summary>
+        public int MinWriteInterval { get; set; }
+
         /// <summary>
         /// 连接测试
         /// </summary>

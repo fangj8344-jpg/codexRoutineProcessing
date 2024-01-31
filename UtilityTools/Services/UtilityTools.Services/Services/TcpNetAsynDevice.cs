@@ -38,7 +38,7 @@ namespace UtilityTools.Services.Services
         #region ------------Constructor------------
         public TcpNetAsynDevice()
         {
-            
+
         }
         #endregion
 
@@ -58,9 +58,14 @@ namespace UtilityTools.Services.Services
             }
         }
 
-        public string Name { get ; set ; }
+        public string Name { get; set; }
 
         public bool IsBinary { get; set; }
+
+        /// <summary>
+        /// 两次写入最小间隔 ms
+        /// </summary>
+        public int MinWriteInterval { get; set; }
 
         public NetConfigModel DeviceInstance { get; set; }
 

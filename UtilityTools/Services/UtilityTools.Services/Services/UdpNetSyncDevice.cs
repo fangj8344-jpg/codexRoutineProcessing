@@ -80,6 +80,11 @@ namespace UtilityTools.Services.Services
         public bool IsBinary { get; set; }
 
         /// <summary>
+        /// 两次写入最小间隔 ms
+        /// </summary>
+        public int MinWriteInterval { get; set; }
+
+        /// <summary>
         /// 连接测试
         /// </summary>
         public DelegateConnectTestCommand ConnectTest { get; set; }
@@ -100,7 +105,7 @@ namespace UtilityTools.Services.Services
             if (IsOpen)
                 return true;
 
-            return DeviceInstance.Open(); 
+            return DeviceInstance.Open();
         }
 
         /// <summary>

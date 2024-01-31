@@ -65,7 +65,7 @@ namespace UtilityTools.Core.Model
         public SerialPort SerialPort
         {
             get { return _serialPort; }
-            set { _serialPort = value;}
+            set { _serialPort = value; }
         }
 
         /// <summary>
@@ -135,8 +135,8 @@ namespace UtilityTools.Core.Model
         /// </summary>
         /// <returns>是否关闭串口成功</returns>
         public bool Close()
-        { 
-            if(!SerialPort.IsOpen) 
+        {
+            if (SerialPort.IsOpen)
             {
                 SerialPort.Close();
             }

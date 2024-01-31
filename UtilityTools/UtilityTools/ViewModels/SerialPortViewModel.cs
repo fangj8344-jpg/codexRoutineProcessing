@@ -25,6 +25,7 @@
 #endregion
 
 using MaterialDesignThemes.Wpf;
+using NLog;
 using Prism.Commands;
 using Prism.Events;
 using Prism.Ioc;
@@ -35,9 +36,8 @@ using System.Collections.Generic;
 using System.IO.Ports;
 using System.Linq;
 using UtilityTools.Core.Dialog;
-using UtilityTools.Core.Model;
 using UtilityTools.Core.Extension;
-using NLog;
+using UtilityTools.Core.Model;
 using UtilityTools.Services.Interfaces.IServices;
 
 namespace UtilityTools.ViewModels
@@ -129,7 +129,7 @@ namespace UtilityTools.ViewModels
         public void OnDialogOpend(IDialogParameters parameters)
         {
             BaseService = parameters.GetValue<IBaseService>("Value");
-            if(BaseService != null)
+            if (BaseService != null)
             {
                 Model = BaseService.GetHandle() as SerialPortModel;
                 PortNames = SerialPort.GetPortNames().ToList<string>();
@@ -145,7 +145,7 @@ namespace UtilityTools.ViewModels
                     }
                 }
             }
-            
+
         }
         #endregion
 
@@ -238,7 +238,7 @@ namespace UtilityTools.ViewModels
 
                 try
                 {
-                    if(BaseService.Open())
+                    if (BaseService.Open())
                         Status = "断开";
                 }
                 catch (Exception ex)
