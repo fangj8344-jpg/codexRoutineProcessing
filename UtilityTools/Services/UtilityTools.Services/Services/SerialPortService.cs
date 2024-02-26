@@ -43,9 +43,6 @@ namespace UtilityTools.Services.Services
         #region ------------Constructor------------
         public SerialPortService()
         {
-            _sendThread = new Thread(SendThreadFunction);
-            _sendThread.IsBackground = true;
-            _sendThreadToken = new CancellationTokenSource();
             _syncObject = new object();
             _sendQueue = new ConcurrentQueue<byte[]>();
             DeviceInstance = new SerialPortModel();
@@ -143,8 +140,21 @@ namespace UtilityTools.Services.Services
 
             if (DeviceInstance.Open())
             {
-                if(!_sendThread.IsAlive)
-                    _sendThread.Start();
+                if (_sendThreadToken != null)
+                {
+                    _sendThreadToken.Cancel();
+                    _sendThreadToken.Dispose();
+                    _sendThreadToken = null;
+                }
+                if (_sendThread != null)
+                {
+                    _sendThread.Interrupt();
+                    _sendThread = null;
+                }
+                _sendThread = new Thread(SendThreadFunction);
+                _sendThread.IsBackground = true;
+                _sendThread.Start();
+                _sendThreadToken = new CancellationTokenSource();
             }
 
             return DeviceInstance.SerialPort.IsOpen;
@@ -229,12 +239,19 @@ namespace UtilityTools.Services.Services
         /// </summary>
         private void StopSendThread()
         {
-            _sendThreadToken.Cancel();
+            if (_sendThreadToken != null)
+            {
+                _sendThreadToken.Cancel();
+            }
+
             lock (_syncObject)
             {
                 Monitor.Pulse(_syncObject);
             }
             _sendThread.Join();
+            _sendThread = null;
+            _sendThreadToken.Dispose();
+            _sendThreadToken = null;
         }
 
         /// <summary>
@@ -276,7 +293,10 @@ namespace UtilityTools.Services.Services
 
                     lock (_syncObject)
                     {
-                        Monitor.Wait(_syncObject);
+                        if (_sendQueue.Count == 0)
+                        {
+                            Monitor.Wait(_syncObject);
+                        }
                     }
                 }
             }
@@ -301,12 +321,22 @@ namespace UtilityTools.Services.Services
             {
                 try
                 {
-                    int size = dev.BytesToRead;
-                    byte[] response = new byte[size];
-                    int realLen = dev.Read(response, 0, size);
-
+                    byte[] response = null;
+                    int realLen = 0;
+                    if (IsBinary)
+                    {
+                        int size = dev.BytesToRead;
+                        response = new byte[size];
+                        realLen = dev.Read(response, 0, size);
+                    }
+                    else
+                    {
+                        string line = dev.ReadLine();
+                        response = Encoding.ASCII.GetBytes(line);
+                        realLen = response.Length;
+                    }
                     LogManager.GetCurrentClassLogger().Debug($"{Name} 接收 : {GetCmdString(response, realLen)}");
-                    
+
                     UpdateResponse?.Invoke(this, response);
                 }
                 catch (Exception ex)

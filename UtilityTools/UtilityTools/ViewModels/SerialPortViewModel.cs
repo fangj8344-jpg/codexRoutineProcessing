@@ -137,7 +137,8 @@ namespace UtilityTools.ViewModels
                 {
                     if (Model != null)
                     {
-                        Model.PortName = PortNames[0];
+                        if(string.IsNullOrEmpty(Model.PortName))
+                            Model.PortName = PortNames[0];
                         Model.SerialPort.BaudRate = Model.BaudRate;
                         Model.SerialPort.Parity = Model.Parity;
                         Model.SerialPort.StopBits = Model.StopBits;

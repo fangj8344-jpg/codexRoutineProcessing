@@ -49,6 +49,11 @@ using UtilityTools.Services.Interfaces.IServices;
 using System.Windows.Interop;
 using UtilityTools.Services.Interfaces;
 using System.Threading;
+using Microsoft.Win32;
+using OxyPlot.Wpf;
+using System.Windows.Forms;
+using System.IO;
+using OxyPlot.Axes;
 
 namespace UtilityTools.Modules.VacMonitor.ViewModels
 {
@@ -161,6 +166,8 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         public DelegateCommand ShowDeviceCommand { get; set; }
         public DelegateCommand ChangeMonitorStateCommand { get; set; }
         public DelegateCommand ClearMonitorCommand { get; set; }
+        public DelegateCommand AutoAdjustComamnd { get; set; }
+        public DelegateCommand SaveToFileCommand { get; set; }
         #endregion
 
         #region ------------PublicMethod------------
@@ -174,7 +181,9 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         {
             ShowDeviceCommand = new DelegateCommand(ShowDevice);
             ChangeMonitorStateCommand = new DelegateCommand(ChangeMonitorState); 
-            ClearMonitorCommand = new DelegateCommand(ClearMonitor); 
+            ClearMonitorCommand = new DelegateCommand(ClearMonitor);
+            AutoAdjustComamnd = new DelegateCommand(AutoAdjust);
+            SaveToFileCommand = new DelegateCommand(Save);
         }
 
         /// <summary>
@@ -190,6 +199,10 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
             // 初始化图表信息
             VacuumPlotModel = new PlotModel();
             VacuumPlotModel.Legends.Add(new Legend());
+
+            VacuumPlotModel.Axes.Add(new LinearAxis() { Title = "时间", Position = OxyPlot.Axes.AxisPosition.Bottom });
+            VacuumPlotModel.Axes.Add(new LogarithmicAxis() { Title = "真空值", Position = OxyPlot.Axes.AxisPosition.Left });
+
             _vacuum1 = new LineSeries() { Title = "Vac1", RenderInLegend = true };
             _vacuum2 = new LineSeries() { Title = "Vac2", RenderInLegend = true };
             _vacuum3 = new LineSeries() { Title = "Vac3", RenderInLegend = true };
@@ -262,6 +275,71 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         }
 
         /// <summary>
+        /// 自适应曲线
+        /// </summary>
+        private void AutoAdjust()
+        {
+            foreach (var axis in VacuumPlotModel.Axes)
+                axis.Reset();
+            VacuumPlotModel.InvalidatePlot(true);
+        }
+
+        /// <summary>
+        /// 保存到文件
+        /// </summary>
+        /// <param name="o"></param>
+        private void Save()
+        {
+            FolderBrowserDialog dialog = new FolderBrowserDialog();
+            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.Cancel)
+            {
+                var path = dialog.SelectedPath;
+
+                SaveToFile(path);
+            }
+        }
+
+        private void SaveToFile(string path)
+        {
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
+            var timeTip = DateTime.Now.ToString("HHmmss");
+            PngExporter exporter = new PngExporter();
+
+            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+            {
+                exporter.ExportToFile(VacuumPlotModel, $"{path}\\真空记录_{timeTip}.png");
+                SaveSeriesToFile(_vacuum1, $"{path}\\真空值1_{timeTip}.txt");
+                SaveSeriesToFile(_vacuum2, $"{path}\\真空值2_{timeTip}.txt");
+                SaveSeriesToFile(_vacuum3, $"{path}\\真空值3_{timeTip}.txt");
+            }));
+        }
+
+        private void SaveSeriesToFile(DataPointSeries series, string filePath)
+        {
+            string gunReport = string.Empty;
+            foreach (var report in series.Points)
+            {
+                gunReport += $"{report.X}\t{report.Y}\n";
+            }
+            try
+            {
+                using (var gunStream = File.OpenWrite(filePath))
+                {
+                    var gunData = Encoding.UTF8.GetBytes(gunReport);
+                    gunStream.Write(gunData, 0, gunData.Length);
+                }
+            }
+            catch (Exception ex)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Fatal($"保存图表数据异常：目标路径【{filePath}】，异常原因【{ex.Message}】");
+            }
+        }
+
+        /// <summary>
         /// 定时器超时处理
         /// </summary>
         /// <param name="sender"></param>
@@ -292,7 +370,7 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
                 {
                     var msg = dev.ReadLine();
 
-                    Application.Current.Dispatcher.Invoke(new Action(() =>
+                    System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
                     {
                         LogSource.Insert(0, new VacuumLogModel()
                         {
@@ -344,46 +422,54 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         /// <param name="e"></param>
         private void Service_UpdateResponse(object sender, byte[] e)
         {
-            var msg = Encoding.Default.GetString(e);
+            var sourceMsg = Encoding.Default.GetString(e);
+            var list = sourceMsg.Split((char)0x0D);
 
-            Application.Current.Dispatcher.Invoke(new Action(() =>
+            foreach( var msg in list ) 
             {
-                LogSource.Insert(0, new VacuumLogModel()
+                if (msg.Length != 0)
                 {
-                    Time = DateTime.Now,
-                    Message = msg,
-                    Direct = "R"
-                });
+                    System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+                    {
+                        LogSource.Insert(0, new VacuumLogModel()
+                        {
+                            Time = DateTime.Now,
+                            Message = msg,
+                            Direct = "R"
+                        });
 
-                int length = LogSource.Count;
-                if (length > 1000)
-                {
-                    LogSource.RemoveAt(length - 1);
-                }
-            }));
+                        int length = LogSource.Count;
+                        if (length > 1000)
+                        {
+                            LogSource.RemoveAt(length - 1);
+                        }
+                    }));
 
-            if (VacMonitorProtocol.TryParseResponse(msg, out int index, out double vac))
-            {
-                switch (index)
-                {
-                    case 1:
+                    if (VacMonitorProtocol.TryParseResponse(msg, out int index, out double vac))
+                    {
+                        switch (index)
                         {
-                            _vacuum1.Points.Add(new DataPoint(_vacuum1.Points.Count(), vac));
-                            break;
+                            case 1:
+                                {
+                                    _vacuum1.Points.Add(new DataPoint(_vacuum1.Points.Count(), vac));
+                                    break;
+                                }
+                            case 2:
+                                {
+                                    _vacuum2.Points.Add(new DataPoint(_vacuum2.Points.Count(), vac));
+                                    break;
+                                }
+                            case 3:
+                                {
+                                    _vacuum3.Points.Add(new DataPoint(_vacuum3.Points.Count(), vac));
+                                    break;
+                                }
                         }
-                    case 2:
-                        {
-                            _vacuum2.Points.Add(new DataPoint(_vacuum2.Points.Count(), vac));
-                            break;
-                        }
-                    case 3:
-                        {
-                            _vacuum3.Points.Add(new DataPoint(_vacuum3.Points.Count(), vac));
-                            break;
-                        }
+                        VacuumPlotModel.InvalidatePlot(true);
+                    }
                 }
-                VacuumPlotModel.InvalidatePlot(true);
             }
+
         }
 
         /// <summary>
@@ -407,7 +493,7 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         /// <param name="msg">消息体</param>
         private void SendMsg(byte[] msg)
         {
-            Application.Current.Dispatcher.Invoke(new Action(() =>
+            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
             {
                 LogSource.Insert(0, new VacuumLogModel()
                 {

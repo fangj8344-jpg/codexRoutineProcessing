@@ -56,16 +56,20 @@
                         </GridView>
                     </ListView.View>
                 </ListView>
-                <oxy:PlotView Model="{Binding VacuumPlotModel}" />
+                <oxy:PlotView Model="{Binding VacuumPlotModel}" Foreground="Black">
+                    <oxy:PlotView.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="清除" Command="{Binding ClearMonitorCommand}" CommandParameter="ImageParam"/>
+                            <MenuItem Header="自适应" Command="{Binding AutoAdjustComamnd}" CommandParameter="ImageParam"/>
+                            <MenuItem Header="保存到文件" Command="{Binding SaveToFileCommand}" CommandParameter="ImageParam"/>
+                        </ContextMenu>
+                    </oxy:PlotView.ContextMenu>
+                </oxy:PlotView>
             </DockPanel>
 
             <DockPanel Grid.Row="2"
                        Margin="10"
                        LastChildFill="False">
-                <Button DockPanel.Dock="Right"
-                        Command="{Binding ClearMonitorCommand}"
-                        Content="清除监控信息"
-                        Margin="5, 0, 5, 0" />
                 <Button DockPanel.Dock="Right"
                         Command="{Binding ChangeMonitorStateCommand}"
                         Content="{Binding MonitorState}"

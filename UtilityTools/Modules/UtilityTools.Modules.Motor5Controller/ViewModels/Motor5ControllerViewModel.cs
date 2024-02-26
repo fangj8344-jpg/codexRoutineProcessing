@@ -58,6 +58,13 @@ using System.Xml.Linq;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using UtilityTools.Modules.Motor5Controller.Protocol;
+using OxyPlot;
+using OxyPlot.Legends;
+using OxyPlot.Series;
+using OpenCvSharp.Flann;
+using System.Windows.Forms;
+using OxyPlot.Wpf;
+using System.IO;
 
 namespace UtilityTools.Modules.Motor5Controller.ViewModels
 {
@@ -97,6 +104,10 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         private readonly IEventAggregator aggregator;
         private ObservableCollection<string> _logs;
         private Motor5ProtocolParser _parser;
+
+        private byte[] _testBuff = new byte[256]; // 测试指令缓存区
+        private int _testLength = 0;
+        private bool _testFlag = false; // 是否已经收到测试指令头
         #endregion
 
         #region ------------Property------------
@@ -142,11 +153,24 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
             set { _logs = value; RaisePropertyChanged(); }
         }
 
+        private PlotModel _monitorPlotModel;
+        /// <summary>
+        /// 监控图表模型
+        /// </summary>
+        public PlotModel MonitorPlotModel
+        {
+            get { return _monitorPlotModel; }
+            set { _monitorPlotModel = value; RaisePropertyChanged(); }
+        }
+
         #endregion
 
         #region ------------Command------------
         public DelegateCommand CleanLogCommand { get; set; }
         public DelegateCommand ShowDeviceCommand { get; set; }
+        public DelegateCommand ClearMonitorCommand { get; set; }
+        public DelegateCommand AutoAdjustComamnd { get; set; }
+        public DelegateCommand SaveToFileCommand { get; set; }
         #endregion
 
         #region ------------PublicMethod------------
@@ -190,6 +214,9 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         {
             ShowDeviceCommand = new DelegateCommand(ShowDevice);
             CleanLogCommand = new DelegateCommand(CleanLog);
+            ClearMonitorCommand = new DelegateCommand(ClearMonitor);
+            AutoAdjustComamnd = new DelegateCommand(AutoAdjust);
+            SaveToFileCommand = new DelegateCommand(SaveToFile);
         }
 
         /// <summary>
@@ -200,6 +227,10 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
             List<byte> CacheCallBackDate = new List<byte>();
             IsConnected = false;
             Service = _containerProvider.Resolve<IServiceFactory>().GetAsynRWService("SPMC");
+
+            // 初始化图表信息
+            MonitorPlotModel = new PlotModel();
+            MonitorPlotModel.Legends.Add(new Legend());
         }
 
         /// <summary>
@@ -232,14 +263,105 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         }
 
         /// <summary>
+        /// 清除监控数据
+        /// </summary>
+        private void ClearMonitor()
+        {
+            foreach (var series in MonitorPlotModel.Series)
+            {
+                var line = series as LineSeries;
+                if (line != null)
+                { 
+                    line.Points.Clear();
+                }
+            }
+
+            MonitorPlotModel.InvalidatePlot(true);
+        }
+
+        /// <summary>
+        /// 自动调节监控数据
+        /// </summary>
+        private void AutoAdjust()
+        {
+            foreach (var axis in MonitorPlotModel.Axes)
+                axis.Reset();
+            MonitorPlotModel.InvalidatePlot(true);
+        }
+
+        /// <summary>
+        /// 保存到数据
+        /// </summary>
+        private void SaveToFile()
+        {
+            FolderBrowserDialog dialog = new FolderBrowserDialog();
+            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.Cancel)
+            {
+                var path = dialog.SelectedPath;
+
+                SaveToFile(path);
+            }
+        }
+
+        private void SaveToFile(string path)
+        {
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
+            var timeTip = DateTime.Now.ToString("HHmmss");
+            PngExporter exporter = new PngExporter();
+
+            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+            {
+                exporter.ExportToFile(MonitorPlotModel, $"{path}\\参数曲线_{timeTip}.png");
+                int index = 0;
+                foreach(var series in MonitorPlotModel.Series)
+                {
+                    var line = series as LineSeries;
+                    if (line != null)
+                    {
+                        index++;
+                        SaveSeriesToFile(line, $"{path}\\参数{index}_{timeTip}.txt");
+                    }
+                }
+            }));
+        }
+
+        private void SaveSeriesToFile(DataPointSeries series, string filePath)
+        {
+            string gunReport = string.Empty;
+            foreach (var report in series.Points)
+            {
+                gunReport += $"{report.X}\t{report.Y}\n";
+            }
+            try
+            {
+                using (var gunStream = File.OpenWrite(filePath))
+                {
+                    var gunData = Encoding.UTF8.GetBytes(gunReport);
+                    gunStream.Write(gunData, 0, gunData.Length);
+                }
+            }
+            catch (Exception ex)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Fatal($"保存图表数据异常：目标路径【{filePath}】，异常原因【{ex.Message}】");
+            }
+        }
+
+        /// <summary>
         /// 串口通信：接收回调信息
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void Service_UpdateResponse(object sender, byte[] e)
         {
-            //报文处理（缓存处理）
-            _parser.ReceiveBytes(e);
+            if (!CheckMsgIsTest(e))
+            {
+                //报文处理（缓存处理）
+                _parser.ReceiveBytes(e);
+            }
 
             ThreadPool.QueueUserWorkItem(delegate
             {
@@ -252,6 +374,88 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
             });
         }
 
+
+        /// <summary>
+        /// 检测消息是否是测试消息
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private bool CheckMsgIsTest(byte[] e)
+        {
+            if (_testFlag)
+            {
+                e.CopyTo(_testBuff, _testLength);
+                _testLength += e.Length;
+            }
+            else
+            {
+                if (e.Length < 2 || e[0] != '#' || e[1] != '#')
+                {
+                    return false;
+                }
+
+                _testFlag = true;
+                e.CopyTo(_testBuff, 0);
+                _testLength = e.Length;
+            }
+
+            if (_testFlag && _testLength > 4)
+            {
+                if ((_testBuff[_testLength - 1] == '&') && (_testBuff[_testLength - 2] == '&'))
+                {
+                    _testFlag = false;
+
+                    var testMsg = new byte[_testLength];
+                    Array.Copy(_testBuff, testMsg, _testLength);
+                    DealWithTestMsg(testMsg);
+                }
+            }
+
+            return true;
+        }
+
+        private void DealWithTestMsg(byte[] msg)
+        {
+            if (msg.Length < 4 || msg[0] != '#' || msg[1] != '#' || msg[msg.Length - 2] != '&' || msg[msg.Length - 1] != '&')
+                return;
+
+            var str = Encoding.ASCII.GetString(msg, 2, msg.Length - 4);
+
+            var msgList = str.Split("&&##");
+            foreach(var item in msgList) 
+            {
+                var paramList = item.Split(',');
+
+                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+                {
+                    for (int i = 1; i <= paramList.Length; i++)
+                    {
+                        if (MonitorPlotModel.Series.Count < i)
+                        {
+                            var series = new LineSeries() { Title = $"参数_{i}", RenderInLegend = true };
+                            MonitorPlotModel.Series.Add(series);
+                        }
+                    }
+
+                    for (int i = 0; i < paramList.Length; i++)
+                    {
+                        var p = paramList[i].Trim();
+                        if (double.TryParse(p, out var val))
+                        {
+                            LineSeries line = MonitorPlotModel.Series[i] as LineSeries;
+                            if (line != null)
+                            {
+                                line.Points.Add(new DataPoint(line.Points.Count(), val));
+                            }
+                        }
+                    }
+
+                    MonitorPlotModel.InvalidatePlot(true);
+                }));
+            }
+
+        }
+
         /// <summary>
         /// 报文解析：操作提示，页面数据动态渲染
         /// </summary>
@@ -260,7 +464,7 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         {
             var targetMotor = MotorList.First((item) => item.MotorId == e.MotorId);
 
-            switch(e.CmdType) 
+            switch (e.CmdType)
             {
                 case EnumMotor5CmdType.R_MOTOR_PID:
                     targetMotor.ReadParams.Pid.P = BitConverter.ToSingle(e.DataSource, 0);

@@ -136,7 +136,7 @@ namespace UtilityTools.Core.Model
         /// <returns>是否关闭串口成功</returns>
         public bool Close()
         { 
-            if(!SerialPort.IsOpen) 
+            if(SerialPort.IsOpen) 
             {
                 SerialPort.Close();
             }
