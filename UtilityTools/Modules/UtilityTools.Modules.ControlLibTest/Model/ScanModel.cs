@@ -42,6 +42,22 @@ namespace UtilityTools.Modules.ControlLibTest.Model
         #endregion
 
         #region ------------Property------------
+        private ushort _minValue;
+
+        public ushort MinValue
+        {
+            get { return _minValue; }
+            set { _minValue = value; RaisePropertyChanged(); }
+        }
+
+        private ushort _maxValue;
+
+        public ushort MaxValue
+        {
+            get { return _maxValue; }
+            set { _maxValue = value; RaisePropertyChanged(); }
+        }
+
         private ushort _ampX;
 
         public ushort AmpX

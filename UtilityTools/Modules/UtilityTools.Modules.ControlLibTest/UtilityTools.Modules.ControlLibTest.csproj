@@ -10,4 +10,19 @@
     <ProjectReference Include="..\..\UtilityTools.Core\UtilityTools.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="Zeptools.CommonLib">
+      <HintPath>..\..\..\..\zeptools-basiclibrary\Zeptools.ControlLib\bin\Debug\net6.0\Zeptools.CommonLib.dll</HintPath>
+    </Reference>
+    <Reference Include="Zeptools.ControlLib">
+      <HintPath>..\..\..\..\zeptools-basiclibrary\Zeptools.ControlLib\bin\Debug\net6.0\Zeptools.ControlLib.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="CopyTargetFiles" AfterTargets="PostBuildEvent">
+    <ItemGroup>
+      <SomeFiles Include="$(OutDir)$(TargetFileName)" />
+    </ItemGroup>
+    <Copy SourceFiles="@(SomeFiles)" DestinationFolder="$(SolutionDir)UtilityTools\bin\$(ConfigurationName)\$(TargetFramework)\Modules\" SkipUnchangedFiles="true" />
+  </Target>
 </Project>

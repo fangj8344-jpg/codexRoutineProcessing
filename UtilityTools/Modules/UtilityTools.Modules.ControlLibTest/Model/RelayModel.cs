@@ -43,13 +43,22 @@ namespace UtilityTools.Modules.ControlLibTest.Model
         #endregion
 
         #region ------------Property------------
-        private string _name;
+        private string _name = "";
 
         public string Name
         {
             get { return _name; }
             set { _name = value; RaisePropertyChanged(); }
         }
+
+        private byte _channel;
+
+        public byte Channel
+        {
+            get { return _channel; }
+            set { _channel = value; RaisePropertyChanged(); }
+        }
+
 
         private bool _enable;
 

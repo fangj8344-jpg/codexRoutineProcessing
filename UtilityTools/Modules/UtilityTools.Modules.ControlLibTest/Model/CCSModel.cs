@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Zeptools.CommonLib.Model;
 
 namespace UtilityTools.Modules.ControlLibTest.Model
 {
@@ -44,12 +45,22 @@ namespace UtilityTools.Modules.ControlLibTest.Model
         #region ------------Property------------
         private string _name = "";
         /// <summary>
-        /// 名称
+        /// 通道名称
         /// </summary>
         public string Name
         {
             get { return _name; }
             set { _name = value; RaisePropertyChanged(); }
+        }
+
+        private string _realName = "";
+        /// <summary>
+        /// 实际物理含义
+        /// </summary>
+        public string RealName
+        {
+            get { return _realName; }
+            set { _realName = value; RaisePropertyChanged(); }
         }
 
         private byte _channel;
@@ -60,6 +71,26 @@ namespace UtilityTools.Modules.ControlLibTest.Model
         {
             get { return _channel; }
             set { _channel = value; RaisePropertyChanged(); }
+        }
+
+        private string _relayName = "";
+        /// <summary>
+        /// 继电器名称
+        /// </summary>
+        public string RelayName
+        {
+            get { return _relayName; }
+            set { _relayName = value; RaisePropertyChanged(); }
+        }
+
+        private byte _relayChannel;
+        /// <summary>
+        /// 继电器通道
+        /// </summary>
+        public byte RelayChannel
+        {
+            get { return _relayChannel; }
+            set { _relayChannel = value; RaisePropertyChanged(); }
         }
 
         private bool _hasRelay;
@@ -112,6 +143,15 @@ namespace UtilityTools.Modules.ControlLibTest.Model
             set { _maxValue = value; RaisePropertyChanged(); }
         }
 
+        /// <summary>
+        /// 设置数值方法
+        /// </summary>
+        public Func<ushort, ResponseProto> SetValueFunc { get; set; }
+
+        /// <summary>
+        /// 设置继电器状态方法
+        /// </summary>
+        public Func<bool, ResponseProto> SetStateFunc { get; set; }
         #endregion
 
         #region ------------PublicMethod------------

@@ -30,17 +30,49 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Zeptools.CommonLib.Model;
 
 namespace UtilityTools.Modules.ControlLibTest.Model
 {
-    internal class BseChModel : BindableBase
+    internal class BseModel : BindableBase
     {
+        #region ------------Constructor------------
+        #endregion
+
+        #region ------------Field------------
+        #endregion
+
+        #region ------------Property------------
+        private string _name = "";
+
+        public string Name
+        {
+            get { return _name; }
+            set { _name = value; RaisePropertyChanged(); }
+        }
+
         private ushort _value;
 
         public ushort Value
         {
             get { return _value; }
             set { _value = value; RaisePropertyChanged(); }
+        }
+
+        private ushort _minValue;
+
+        public ushort MinValue
+        {
+            get { return _minValue; }
+            set { _minValue = value; RaisePropertyChanged(); }
+        }
+
+        private ushort _maxValue;
+
+        public ushort MaxValue
+        {
+            get { return _maxValue; }
+            set { _maxValue = value; RaisePropertyChanged(); }
         }
 
         private bool _positive;
@@ -59,50 +91,19 @@ namespace UtilityTools.Modules.ControlLibTest.Model
             set { _negative = value; RaisePropertyChanged(); }
         }
 
-    }
+        private byte _channel;
 
-    internal class BseModel : BindableBase
-    {
-        #region ------------Constructor------------
-        #endregion
-
-        #region ------------Field------------
-        #endregion
-
-        #region ------------Property------------
-        private BseChModel _ch1;
-
-        public BseChModel Ch1
+        public byte Channel
         {
-            get { return _ch1; }
-            set { _ch1 = value; RaisePropertyChanged(); }
+            get { return _channel; }
+            set { _channel = value; RaisePropertyChanged(); }
         }
 
-        private BseChModel _ch2;
+        public Func<ushort, ResponseProto> SetValueFunc { get; set; }
 
-        public BseChModel Ch2
-        {
-            get { return _ch2; }
-            set { _ch2 = value; RaisePropertyChanged(); }
-        }
+        public Func<bool, ResponseProto> SetNegStateFunc { get; set; }
 
-        private BseChModel _ch3;
-
-        public BseChModel Ch3
-        {
-            get { return _ch3; }
-            set { _ch3 = value; RaisePropertyChanged(); }
-        }
-
-        private BseChModel _ch4;
-
-        public BseChModel Ch4
-        {
-            get { return _ch4; }
-            set { _ch4 = value; RaisePropertyChanged(); }
-        }
-
-
+        public Func<bool, ResponseProto> SetPosStateFunc { get; set; }
         #endregion
 
         #region ------------PublicMethod------------
