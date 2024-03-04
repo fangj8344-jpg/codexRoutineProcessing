@@ -23,20 +23,23 @@
  * 版本：V1.0.1
  *----------------------------------------------------------------*/
 #endregion
-
+using OpenCvSharp;
 using Prism.Commands;
 using Prism.Ioc;
 using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Configuration;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Xml.Linq;
 using UtilityTools.Core.Dialog;
 using UtilityTools.Core.Mvvm;
 using UtilityTools.Modules.ControlLibTest.Model;
+using Zeptools.CommonLib.Model;
 using Zeptools.ControlLib.Entity;
 
 namespace UtilityTools.Modules.ControlLibTest.ViewModels
@@ -65,7 +68,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             set { _ccsModels = value; RaisePropertyChanged(); }
         }
 
-        private CCSModel _selectedCCSModelForValue;
+        private CCSModel _selectedCCSModelForValue; 
 
         public CCSModel SelectedCCSModelForValue
         {
@@ -198,7 +201,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
         private void InitProperty()
         {
-            CCSModels.Add(new CCSModel() { Name = "CHA0", RealName = "AligX1", RelayName = "CCSk2", RelayChannel = (byte)0x02, Channel = (byte)0xA0, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _entity.SetAligX1, SetStateFunc = _entity.SetAligX1Polarity });
+            CCSModels.Add(new CCSModel() { Name = "CHA0", RealName = "AligX1", RelayName = "CCSk2", RelayChannel = (byte)0x02, Channel = (byte)0xA0, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _entity.SetAligX1, SetStateFunc = _entity.SetAligX1Polarity});
             CCSModels.Add(new CCSModel() { Name = "CHA1", RealName = "AligX2", RelayName = "CCSk3", RelayChannel = (byte)0x03, Channel = (byte)0xA1, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _entity.SetAligX2, SetStateFunc = _entity.SetAligX2Polarity });
             CCSModels.Add(new CCSModel() { Name = "CHA2", RealName = "CompressA", RelayName = "CCSkX", RelayChannel = (byte)0x0F, Channel = (byte)0xA2, HasRelay = false, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _entity.SetCompressLensA, SetStateFunc = null });
             CCSModels.Add(new CCSModel() { Name = "CHB0", RealName = "CompressB", RelayName = "CCSkX", RelayChannel = (byte)0x0F, Channel = (byte)0xB0, HasRelay = false, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _entity.SetCompressLensB, SetStateFunc = null });
@@ -210,6 +213,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             CCSModels.Add(new CCSModel() { Name = "CHB7", RealName = "OB", RelayName = "CCSkX", RelayChannel = (byte)0x0F, Channel = (byte)0xB7, HasRelay = false, Value = 0, MinValue = 0, MaxValue = 0xFFFF, RelayState = false, SetValueFunc = _entity.SetObjectiveLens, SetStateFunc = null });
             CCSModels.Add(new CCSModel() { Name = "CHB8", RealName = "AligY2", RelayName = "CCSk1", RelayChannel = (byte)0x01, Channel = (byte)0xB8, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _entity.SetAligY2, SetStateFunc = _entity.SetAligY2Polarity });
 
+            
             SelectedCCSModelForValue = CCSModels[0];
             SelectedCCSModelForRelay = CCSModels[0];
 
@@ -341,19 +345,39 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
         private void BseModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            var model = sender as FanModel;
+            var model = sender as BseModel;  
             if (model != null)
             {
                 switch (e.PropertyName)
                 {
-                    case "Speed":
-                        if (model == SelectedFanModel)
+                    case "Value":
+                        if (model == BseModelForValue)
                         {
-                            var result = _entity.SetFan(model.Channel, model.Speed);
+                            var result = _entity.SetBSECH(model.Channel, model.Value);
                         }
                         else
                         {
-                            var result = model.SetValueFunc?.Invoke(model.Speed);
+                            var result = model.SetValueFunc?.Invoke(model.Value);
+                        }
+                        break;
+                    case "Positive":
+                        if (model == BseModelForPos)
+                        {
+                            var result = _entity.SetBSECH_P(model.Channel,model.Positive);
+                        }
+                        else
+                        {
+                            var result = model.SetPosStateFunc?.Invoke(model.Positive);
+                        }
+                        break;
+                    case "Negative":
+                        if (model == BseModelForNeg)
+                        {
+                            var result = _entity.SetBSECH_R(model.Channel,model.Negative);
+                        }
+                        else
+                        {
+                           var result = model.SetNegStateFunc?.Invoke(model.Negative);
                         }
                         break;
                 }
@@ -362,37 +386,130 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
         private void RelayModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-
-        }
+            var model = sender as RelayModel;
+            if(model != null)
+            {
+                var result = _entity.SetRelayState(model.Channel, model.Enable);
+            }
+        } 
 
         private void SetIP()
-        { 
+        {
+            string[] ip = EthModel.SetIP.Split("."); 
+            ResponseProto response = _entity.SetIP(Convert.ToByte(ip[0]), Convert.ToByte(ip[1]),Convert.ToByte(ip[2]), Convert.ToByte(ip[3]));
             
         }
 
         private void GetIP()
-        { 
-            
+        {
+            ResponseProto response = _entity.HandShake();
+            if (response!=null&&response.Params != null&&response.Result!=false)
+            {
+                 EthModel.RealIP = response.Params;
+            }
         }
 
         private void GetAllTemp()
-        { 
+        {
+            ResponseProto response=_entity.GetTemp();
+            if(response!=null&&response.Result != false&&response.Params.Split(",").Length == 2)
+            {
+                try
+                {
+                    TempModel.Value1 = float.Parse(response.Params.Split(",")[1]);
+                    TempModel.Value2 = float.Parse(response.Params.Split(",")[2]);
+                }catch (FormatException)
+                {
+                    Console.WriteLine("  param is invalid using  ");
+                }
+            }
         
         }
 
         private void GetTemp1()
-        { 
-        
+        {
+            ResponseProto response = _entity.GetTemp1();
+            if (response != null && response.Result != false && response.Params != null)
+            {
+                try
+                {
+                    TempModel.Value1 = float.Parse(response.Params);
+                }
+                catch (FormatException)
+                {
+                    Console.WriteLine("  param is invalid using  ");
+                }
+            }
         }
 
         private void GetTemp2()
-        { 
-            
+        {
+            ResponseProto response = _entity.GetTemp2();
+            if (response != null && response.Result != false && response.Params != null)
+            {
+                try
+                {
+                    TempModel.Value2 = float.Parse(response.Params);
+                }
+                catch (FormatException)
+                {
+                    Console.WriteLine("  param is invalid using  ");
+                }
+            }
         }
 
         private void GetVac(string obj)
-        { 
-            
+        {
+            byte channel= Convert.ToByte(obj);
+            ResponseProto response= _entity.GetVAC(channel);
+            if(response != null&&response.Result!=false&&response.Params.Split(",").Length==3)
+            {
+                switch (response.Params.Split(",")[0])
+                {
+                    case "01":
+                        try
+                        {
+                            VacModel.Value1 = float.Parse(response.Params.Split(",")[2]);
+                        }
+                        catch (FormatException)
+                        {
+                            Console.WriteLine("   '{0}' is invalid using  ", response.Params.Split(",")[2]);
+                        }
+
+                        break;
+                    case "02":
+                        try
+                        {
+                            VacModel.Value2 = float.Parse(response.Params.Split(",")[2]);
+                        }
+                        catch (FormatException)
+                        {
+                            Console.WriteLine("   '{0}' is invalid using  ", response.Params.Split(",")[2]);
+                        }
+                        break;
+                    case "03":
+                        try
+                        {
+                            VacModel.Value3 = float.Parse(response.Params.Split(",")[2]);
+                        }
+                        catch (FormatException)
+                        {
+                            Console.WriteLine("   '{0}' is invalid using  ", response.Params.Split(",")[2]);
+                        }
+                        break;
+                    case "04":
+                        try
+                        {
+                            VacModel.Value4 = float.Parse(response.Params.Split(",")[2]);
+                        }
+                        catch (FormatException)
+                        {
+                            Console.WriteLine("   '{0}' is invalid using  ", response.Params.Split(",")[2]);
+                        }
+                        break;
+                }
+               
+            }
         }
         #endregion
 

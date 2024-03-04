@@ -100,7 +100,7 @@ namespace UtilityTools.Modules.ControlLibTest.Model
         public bool HasRelay
         {
             get { return _hasRelay; }
-            set { _hasRelay = value; RaisePropertyChanged(); }
+            set { _hasRelay = value;  }
         }
 
         private bool _relayState;
@@ -153,7 +153,8 @@ namespace UtilityTools.Modules.ControlLibTest.Model
         /// </summary>
         public Func<bool, ResponseProto> SetStateFunc { get; set; }
         #endregion
-
+        
+        
         #region ------------PublicMethod------------
         #endregion
 

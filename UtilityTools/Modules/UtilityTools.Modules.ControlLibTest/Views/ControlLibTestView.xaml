@@ -15,27 +15,30 @@
     <TabControl>
         <TabItem Header="CCS">
             <Grid Margin="5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="51*"/>
+                    <ColumnDefinition Width="733*"/>
+                </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <DockPanel Grid.Row="0">
+                <DockPanel Grid.Row="0" Grid.ColumnSpan="2">
                     <Label Content="通用数值控制" />
                     <ComboBox ItemsSource="{Binding CCSModels}"
                               Margin="5, 0"
                               MinWidth="50"
                               DisplayMemberPath="Name"
-                              SelectedItem="{Binding SelectedCCSModelForValue}"
-                              VerticalAlignment="Center" />
+                              SelectedItem="{Binding SelectedCCSModelForValue}" Width="50" />
                     <Slider Minimum="{Binding SelectedCCSModelForValue.MinValue}"
                             Maximum="{Binding SelectedCCSModelForValue.MaxValue}"
                             Value="{Binding SelectedCCSModelForValue.Value, Mode=TwoWay}"
                             VerticalAlignment="Center" />
                 </DockPanel>
 
-                <DockPanel Grid.Row="1">
+                <DockPanel Grid.ColumnSpan="2" Margin="0,25,0,0" Grid.RowSpan="2">
                     <Label Content="通用开关控制" />
                     <ComboBox ItemsSource="{Binding CCSModels, Converter={StaticResource getRelayListConverter}}"
                               Margin="5, 0"
@@ -54,15 +57,17 @@
                     </StackPanel>
                 </DockPanel>
 
-                <Grid Grid.Row="2">
+                <Grid Grid.Row="1" Grid.ColumnSpan="2" Margin="0,25,0,0" Grid.RowSpan="2">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="4*" />
+                        <ColumnDefinition Width="109*" />
+                        <ColumnDefinition Width="19*"/>
+                        <ColumnDefinition Width="497*"/>
                         <ColumnDefinition Width="auto" />
-                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="156*" />
                     </Grid.ColumnDefinitions>
 
                     <ItemsControl Grid.Column="0"
-                                  ItemsSource="{Binding CCSModels}">
+                                  ItemsSource="{Binding CCSModels}" Grid.ColumnSpan="3" Margin="0,0,10,0">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <UniformGrid Columns="1" />
@@ -92,13 +97,12 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <GridSplitter Grid.Column="1"
+                    <GridSplitter Grid.Column="3"
                                   Width="3"
                                   HorizontalAlignment="Center"
-                                  VerticalAlignment="Stretch"
-                                  Margin="5" />
+                                  Margin="0,5,0,5" />
 
-                    <ItemsControl Grid.Column="2"
+                    <ItemsControl Grid.Column="4"
                                   ItemsSource="{Binding CCSModels, Converter={StaticResource getRelayListConverter}}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
