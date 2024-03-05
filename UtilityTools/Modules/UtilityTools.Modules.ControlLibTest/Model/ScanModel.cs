@@ -42,7 +42,7 @@ namespace UtilityTools.Modules.ControlLibTest.Model
         #endregion
 
         #region ------------Property------------
-        private ushort _minValue;
+        private ushort _minValue = 0;
 
         public ushort MinValue
         {
@@ -50,7 +50,7 @@ namespace UtilityTools.Modules.ControlLibTest.Model
             set { _minValue = value; RaisePropertyChanged(); }
         }
 
-        private ushort _maxValue;
+        private ushort _maxValue = 0xFFFF;
 
         public ushort MaxValue
         {
