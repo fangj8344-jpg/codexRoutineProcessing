@@ -20,6 +20,13 @@ namespace UtilityTools.Core.Protocol
         {
             Debug.Assert(command.Length == 2);
 
+            if (data.Length < 36)
+            {
+                var tmp = new byte[36];
+                Array.Copy(data, tmp, data.Length);
+                data = tmp;
+            }
+
             length = (UInt16)(data.Length + NONE_DATA_BYTES);
 
             this.command = command;

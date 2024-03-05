@@ -25,6 +25,7 @@
 #endregion
 using OpenCvSharp;
 using Prism.Commands;
+using Prism.Events;
 using Prism.Ioc;
 using Prism.Mvvm;
 using System;
@@ -37,6 +38,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Xml.Linq;
 using UtilityTools.Core.Dialog;
+using UtilityTools.Core.Extension;
 using UtilityTools.Core.Mvvm;
 using UtilityTools.Modules.ControlLibTest.Model;
 using Zeptools.CommonLib.Model;
@@ -50,12 +52,17 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
         public ControlLibTestViewModel(IDialogHostService dialogHostService, IContainerProvider containerProvider)
             :base(containerProvider)
         {
+            _dialogHostService = dialogHostService;
+            //消息提示
+            _aggregator = containerProvider.Resolve<IEventAggregator>();
             _entity = new ServerEntity();
             InitProperty();
         }
         #endregion
 
         #region ------------Field------------
+        private IDialogHostService _dialogHostService; 
+        private readonly IEventAggregator _aggregator;
         ServerEntity _entity;
         #endregion
 
@@ -302,20 +309,24 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                         if (model == SelectedCCSModelForValue)
                         {
                             var result = _entity.SetCCSCHValue(model.Channel, model.Value);
+                            ShowResponseResult(result);
                         }
                         else
                         {
                             var result = model.SetValueFunc?.Invoke(model.Value);
+                            ShowResponseResult(result);
                         }
                         break;
                     case "RelayState":
                         if (model == SelectedCCSModelForRelay)
                         {
-                            var result = _entity.SetCCSk(model.Channel, model.RelayState);
+                            var result = _entity.SetCCSk(model.RelayChannel, model.RelayState);
+                            ShowResponseResult(result);
                         }
                         else
                         {
                             var result = model.SetStateFunc?.Invoke(model.RelayState);
+                            ShowResponseResult(result);
                         }
                         break;
                 }
@@ -333,10 +344,12 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                         if (model == SelectedFanModel)
                         {
                             var result = _entity.SetFan(model.Channel, model.Speed);
+                            ShowResponseResult(result);
                         }
                         else
                         {
                             var result = model.SetValueFunc?.Invoke(model.Speed);
+                            ShowResponseResult(result);
                         }
                         break;
                 }
@@ -354,30 +367,36 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                         if (model == BseModelForValue)
                         {
                             var result = _entity.SetBSECH(model.Channel, model.Value);
+                            ShowResponseResult(result);
                         }
                         else
                         {
                             var result = model.SetValueFunc?.Invoke(model.Value);
+                            ShowResponseResult(result);
                         }
                         break;
                     case "Positive":
                         if (model == BseModelForPos)
                         {
                             var result = _entity.SetBSECH_P(model.Channel,model.Positive);
+                            ShowResponseResult(result);
                         }
                         else
                         {
                             var result = model.SetPosStateFunc?.Invoke(model.Positive);
+                            ShowResponseResult(result);
                         }
                         break;
                     case "Negative":
                         if (model == BseModelForNeg)
                         {
                             var result = _entity.SetBSECH_R(model.Channel,model.Negative);
+                            ShowResponseResult(result);
                         }
                         else
                         {
                            var result = model.SetNegStateFunc?.Invoke(model.Negative);
+                            ShowResponseResult(result);
                         }
                         break;
                 }
@@ -390,6 +409,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             if(model != null)
             {
                 var result = _entity.SetRelayState(model.Channel, model.Enable);
+                ShowResponseResult(result);
             }
         } 
 
@@ -397,7 +417,8 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
         {
             string[] ip = EthModel.SetIP.Split("."); 
             ResponseProto response = _entity.SetIP(Convert.ToByte(ip[0]), Convert.ToByte(ip[1]),Convert.ToByte(ip[2]), Convert.ToByte(ip[3]));
-            
+
+            ShowResponseResult(response);
         }
 
         private void GetIP()
@@ -407,6 +428,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             {
                  EthModel.RealIP = response.Params;
             }
+            ShowResponseResult(response);
         }
 
         private void GetAllTemp()
@@ -416,14 +438,15 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             {
                 try
                 {
-                    TempModel.Value1 = float.Parse(response.Params.Split(",")[1]);
-                    TempModel.Value2 = float.Parse(response.Params.Split(",")[2]);
+                    TempModel.Value1 = float.Parse(response.Params.Split(",")[0]);
+                    TempModel.Value2 = float.Parse(response.Params.Split(",")[1]);
                 }catch (FormatException)
                 {
                     Console.WriteLine("  param is invalid using  ");
                 }
             }
-        
+            ShowResponseResult(response);
+
         }
 
         private void GetTemp1()
@@ -440,6 +463,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                     Console.WriteLine("  param is invalid using  ");
                 }
             }
+            ShowResponseResult(response);
         }
 
         private void GetTemp2()
@@ -456,6 +480,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                     Console.WriteLine("  param is invalid using  ");
                 }
             }
+            ShowResponseResult(response);
         }
 
         private void GetVac(string obj)
@@ -508,7 +533,16 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                         }
                         break;
                 }
-               
+
+            }
+            ShowResponseResult(response);
+        }
+
+        private void ShowResponseResult(ResponseProto response)
+        {
+            if (response != null && response.Result == false)
+            {
+                _aggregator.SendMessage(response.Message);
             }
         }
         #endregion
