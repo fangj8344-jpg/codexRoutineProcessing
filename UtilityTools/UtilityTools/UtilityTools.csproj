@@ -35,10 +35,10 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Zeptools.CommonLib">
-      <HintPath>..\..\..\zeptools-basiclibrary\Zeptools.ControlLib\bin\Debug\net6.0\Zeptools.CommonLib.dll</HintPath>
+      <HintPath>..\..\..\..\work\zeptools-basiclibrary\Zeptools.ControlLib\bin\Debug\net6.0\Zeptools.CommonLib.dll</HintPath>
     </Reference>
     <Reference Include="Zeptools.ControlLib">
-      <HintPath>..\..\..\zeptools-basiclibrary\Zeptools.ControlLib\bin\Debug\net6.0\Zeptools.ControlLib.dll</HintPath>
+      <HintPath>..\..\..\..\work\zeptools-basiclibrary\Zeptools.ControlLib\bin\Debug\net6.0\Zeptools.ControlLib.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>

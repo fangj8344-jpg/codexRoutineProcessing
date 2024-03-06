@@ -119,6 +119,8 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
         public DelegateCommand GetIPCommand { get; set; }
 
+      
+
         private TempModel _tempModel;
 
         public TempModel TempModel
@@ -132,6 +134,8 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
         public DelegateCommand GetTemp1Command { get; set; }
 
         public DelegateCommand GetTemp2Command { get; set; }
+
+       
 
         private VacModel _vacModel;
 
@@ -199,6 +203,31 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             set { _relayModels = value; RaisePropertyChanged(); }
         }
 
+        private ObservableCollection<UARTModel> _UartModels = new ObservableCollection<UARTModel>();
+
+        public ObservableCollection<UARTModel> UartModels
+        {
+            get { return _UartModels; }
+            set { _UartModels = value; RaisePropertyChanged(); }
+        }
+
+        
+
+        private ObservableCollection<DACModel> _dacModels = new ObservableCollection<DACModel>();
+
+        public ObservableCollection<DACModel> DacModels
+        {
+            get { return _dacModels; }
+            set { _dacModels = value; RaisePropertyChanged(); }
+        }
+
+        private DACModel _selectedDacModel;
+
+        public DACModel SelectedDacModel
+        {
+            get { return _selectedDacModel; }
+            set { _selectedDacModel = value; RaisePropertyChanged(); }
+        }
         #endregion
 
         #region ------------PublicMethod------------
@@ -238,6 +267,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             GetAllTempCommand = new DelegateCommand(GetAllTemp);
             GetTemp1Command = new DelegateCommand(GetTemp1);
             GetTemp2Command = new DelegateCommand(GetTemp2);
+            //SetUartCommand = new DelegateCommand<string>(SetUart);
 
             VacModel = new VacModel();
             GetVacCommand = new DelegateCommand<string>(GetVac);
@@ -272,6 +302,17 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             RelayModels.Add(new RelayModel() { Name = "CHE", Channel = (byte)0x0E, Enable = false });
             RelayModels.Add(new RelayModel() { Name = "CHF", Channel = (byte)0x0F, Enable = false });
 
+
+            DacModels.Add(new DACModel() { Name = "CHA" , Channel = (byte)0x00, Value = 0, MinValue = 0, MaxValue = 0x0FFF, SetValueFunc = _entity.SetDACCHA });
+            DacModels.Add(new DACModel() { Name = "CHB" , Channel = (byte)0x01, Value = 0, MinValue = 0, MaxValue = 0x0FFF, SetValueFunc = _entity.SetDACCHB });
+            DacModels.Add(new DACModel() { Name = "CHC",  Channel = (byte)0x02, Value = 0, MinValue = 0, MaxValue = 0x0FFF, SetValueFunc = _entity.SetDACCHC });
+            DacModels.Add(new DACModel() { Name = "CHD",  Channel = (byte)0x03, Value = 0, MinValue = 0, MaxValue = 0x0FFF, SetValueFunc = _entity.SetDACCHD });
+            SelectedDacModel = DacModels[0];
+
+            UartModels.Add(new UARTModel() { Name = "光耦串口", Series = (byte)0x00,  Value = "115200" , SetBaudRateFunc= this.SetUart });
+            UartModels.Add(new UARTModel() { Name = "RS485_1",  Series = (byte)0x01,  Value = "115200", SetBaudRateFunc = this.SetUart });
+            UartModels.Add(new UARTModel() { Name = "RS485_2",  Series = (byte)0x02,  Value = "115200", SetBaudRateFunc = this.SetUart });
+            UartModels.Add(new UARTModel() { Name = "RS485_3",  Series = (byte)0x03,  Value = "115200", SetBaudRateFunc = this.SetUart });
             BindPropertyChanged();
         }
 
@@ -296,6 +337,15 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             {
                 model.PropertyChanged += RelayModel_PropertyChanged;
             }
+
+            foreach (var model in DacModels)
+            {
+                model.PropertyChanged += DacModel_PropertyChanged;
+            }
+            //foreach (var model in UartModels)
+            //{
+            //    model.PropertyChanged += UartModel_PropertyChanged;
+            //}           
         }
 
         private void CCSModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -411,7 +461,47 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                 var result = _entity.SetRelayState(model.Channel, model.Enable);
                 ShowResponseResult(result);
             }
-        } 
+        }
+        private void DacModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            var model = sender as DACModel;
+            if (model != null)
+            {
+                switch (e.PropertyName)
+                {
+                    case "Value":
+                        if (model == SelectedDacModel)
+                        {
+                            var result = _entity.SetDAC(model.Channel, model.Value);
+                            ShowResponseResult(result);
+                        }
+                        else
+                        {
+                            var result = model.SetValueFunc?.Invoke(model.Value);
+                            ShowResponseResult(result);
+                        }
+                        break;
+                }
+            }
+        }
+
+        //private void UartModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        //{
+        //    var model = sender as UARTModel;
+        //    if (model != null)
+        //    {
+        //        uint Value = Convert.ToUInt32(model.Value.Split(":")[1]);
+        //        var result = _entity.SetBaudRate(model.Series, Value);
+        //        ShowResponseResult(result);
+        //    }
+        //}
+
+        private ResponseProto SetUart(byte Series,uint BaudRate)
+        {
+            var result = _entity.SetBaudRate(Series, BaudRate);
+            ShowResponseResult(result);
+            return result;
+        }
 
         private void SetIP()
         {
@@ -430,7 +520,6 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             }
             ShowResponseResult(response);
         }
-
         private void GetAllTemp()
         {
             ResponseProto response=_entity.GetTemp();

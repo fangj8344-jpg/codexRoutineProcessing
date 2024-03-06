@@ -887,14 +887,11 @@
                                        VerticalAlignment="Center" />
                         </StackPanel>
                     </DockPanel>
-
-
                 </Grid>
-
             </Grid>
-
         </TabItem>
-        <TabItem Header="RELAY">
+
+        <TabItem Header="RELAY" HorizontalAlignment="Right" Margin="0,-2,-2,0" Width="52">
             <Grid Margin="5">
                 <ItemsControl Grid.Column="2"
                               ItemsSource="{Binding RelayModels}">
@@ -926,7 +923,103 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </Grid>
+        </TabItem>
+        <TabItem Header="DAC"  VerticalAlignment="Top">
+            <Grid Margin="5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="293*"/>
+                    <ColumnDefinition Width="99*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto" />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
 
+                <DockPanel Grid.Row="0" Grid.ColumnSpan="2">
+                    <Label Content="DAC数值控制" />
+                    <ComboBox ItemsSource="{Binding DacModels}"
+                   Margin="5, 0"
+                   MinWidth="50"
+                   DisplayMemberPath="Name"
+                   SelectedItem="{Binding SelectedDacModel}"
+                   VerticalAlignment="Center" />
+                    <Slider Minimum="{Binding SelectedDacModel.MinValue}"
+                 Maximum="{Binding SelectedDacModel.MaxValue}"
+                 Value="{Binding SelectedDacModel.Value, Mode=TwoWay}"
+                 VerticalAlignment="Center" />
+                </DockPanel>
+
+                <ItemsControl
+                   ItemsSource="{Binding DacModels}" Grid.ColumnSpan="2" Margin="0,25,0,0" Grid.RowSpan="2">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="1" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel LastChildFill="True">
+                                <Label Content="{Binding Name}"
+                            Width="80" HorizontalContentAlignment="Center"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            DockPanel.Dock="Left" />
+                            <Slider Minimum="{Binding MinValue}"
+                             Maximum="{Binding MaxValue}"
+                             Value="{Binding Value, Mode=TwoWay}"
+                             VerticalAlignment="Center" />
+                            </DockPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
+        </TabItem>
+        <TabItem Header="UART">
+            <Grid>
+                <ItemsControl
+                     ItemsSource="{Binding UartModels}"  Margin="0,5,0,0" >
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="1" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel LastChildFill="True">
+                                <Label Content="{Binding Name}"
+                                    Width="80" HorizontalContentAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    DockPanel.Dock="Left" />
+                                <Button Content="设置"
+                                    Command="{Binding SetUartCommand}"
+                                    DockPanel.Dock="Right"
+                                    HorizontalAlignment="Center"
+                                    HorizontalContentAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    VerticalContentAlignment="Center" >
+                                </Button>
+                                <ComboBox VerticalAlignment="Center" Margin="0, 0" MinWidth="50"  
+                                    SelectedItem="{Binding Value}">
+                                    <ComboBoxItem Content="600"  />
+                                    <ComboBoxItem Content="1200" />
+                                    <ComboBoxItem Content="2400" />
+                                    <ComboBoxItem Content="4800" />
+                                    <ComboBoxItem Content="9600" />
+                                    <ComboBoxItem Content="14400"/>
+                                    <ComboBoxItem Content="19200"/>
+                                    <ComboBoxItem Content="28800"/>
+                                    <ComboBoxItem Content="38400"/>
+                                    <ComboBoxItem Content="57600"/>
+                                    <ComboBoxItem Content="115200"/>
+                                    <ComboBoxItem Content="230400"/>
+                                    <ComboBoxItem Content="460800"/>
+                                </ComboBox>
+                                
+                            </DockPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
         </TabItem>
     </TabControl>
 </UserControl>
