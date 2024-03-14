@@ -57,6 +57,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             //消息提示
             _aggregator = containerProvider.Resolve<IEventAggregator>();
             _entity = new ServerEntity();
+
             InitProperty();
         }
 

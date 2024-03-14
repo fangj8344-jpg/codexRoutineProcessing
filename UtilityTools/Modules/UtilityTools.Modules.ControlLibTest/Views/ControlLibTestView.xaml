@@ -11,7 +11,7 @@
              d:DesignWidth="800">
     <UserControl.Resources>
         <mt:GetRelayListConverter x:Key="getRelayListConverter" />
-        
+
         <ObjectDataProvider x:Key="enumModels"
                      MethodName="GetValues"
                      ObjectType="{x:Type model:EnumModels}">
@@ -19,7 +19,7 @@
                 <x:Type Type="model:EnumModels" />
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
-        
+
         <ObjectDataProvider x:Key="enumFlash"
              MethodName="GetValues"
              ObjectType="{x:Type model:EnumFlash}">
@@ -36,17 +36,20 @@
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
     </UserControl.Resources>
-    
+
 
     <TabControl>
         <TabItem Header="CCS">
             <Grid Margin="5">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition />
-                    <ColumnDefinition Width="389.98" />
-                    <ColumnDefinition Width="343.02"/>
+                    <ColumnDefinition Width="45.297" />
+                    <ColumnDefinition Width="14.062"/>
+                    <ColumnDefinition Width="330.621"/>
+                    <ColumnDefinition Width="8.051"/>
+                    <ColumnDefinition Width="334.969"/>
                 </Grid.ColumnDefinitions>
-                
+
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -54,7 +57,7 @@
                 </Grid.RowDefinitions>
 
                 <DockPanel Grid.Row="0"
-                           Grid.ColumnSpan="3" Margin="0,0,0,12" Grid.RowSpan="2">
+                           Grid.ColumnSpan="6" Margin="0,0,0,12" Grid.RowSpan="2">
                     <Label Content="通用数值控制" />
                     <ComboBox ItemsSource="{Binding CCSModels}"
                               Margin="5, 0"
@@ -68,7 +71,7 @@
                             VerticalAlignment="Center" />
                 </DockPanel>
 
-                <DockPanel Grid.ColumnSpan="3"
+                <DockPanel Grid.ColumnSpan="6"
                            Margin="0,25,0,0"
                            Grid.RowSpan="2">
                     <Label Content="通用开关控制" />
@@ -90,7 +93,7 @@
                 </DockPanel>
 
                 <Grid Grid.Row="2"
-                      Grid.ColumnSpan="3"
+                      Grid.ColumnSpan="6"
                       Margin="0,13,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="109*" />
@@ -246,7 +249,7 @@
                         <TextBlock VerticalAlignment="Center" Text="呼吸灯周期" />
                         <TextBox Text="{Binding LedModels.TimeCycle}"
                          TextAlignment="Center" />
-                    </DockPanel> 
+                    </DockPanel>
 
                     <DockPanel Margin="5, 0, 0, 0">
                         <TextBlock VerticalAlignment="Center" Text="静态分段点亮" />
@@ -320,7 +323,7 @@
                             Command="{Binding LedModels.UpdateLightCommand}"
                             DockPanel.Dock="Right" Margin="10,0,0,0">更新灯光状态</Button>
                         <ComboBox SelectedItem="{Binding LedModels.Name}" >
-                            <ComboBoxItem>静态全亮</ComboBoxItem>
+                            <ComboBoxItem IsSelected="True">静态全亮</ComboBoxItem>
                             <ComboBoxItem>静态全灭</ComboBoxItem>
                             <ComboBoxItem>全亮闪烁</ComboBoxItem>
                             <ComboBoxItem>分段闪烁</ComboBoxItem>
@@ -386,6 +389,10 @@
         </TabItem>
         <TabItem Header="TEMP">
             <Grid Margin="5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="55*"/>
+                    <ColumnDefinition Width="337*"/>
+                </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto" />
                     <RowDefinition />
@@ -393,13 +400,13 @@
                 </Grid.RowDefinitions>
 
                 <DockPanel Grid.Row="0"
-                           LastChildFill="False">
+                           LastChildFill="False" Grid.ColumnSpan="2">
                     <Button Content="读取所有"
                             Command="{Binding GetAllTempCommand}"
                             DockPanel.Dock="Right" />
                 </DockPanel>
 
-                <DockPanel Grid.Row="1">
+                <DockPanel Grid.ColumnSpan="2" Margin="0,19,0,0" Grid.RowSpan="2">
                     <Label Content="温度传感器1"
                            HorizontalContentAlignment="Center"
                            VerticalContentAlignment="Center"
@@ -419,7 +426,7 @@
                                HorizontalAlignment="Center" />
                 </DockPanel>
 
-                <DockPanel Grid.Row="2">
+                <DockPanel Grid.Row="2" Grid.ColumnSpan="2">
                     <Label Content="温度传感器2"
                            HorizontalContentAlignment="Center"
                            VerticalContentAlignment="Center"
@@ -1143,7 +1150,7 @@
                                 </Button>
                                 <ComboBox VerticalAlignment="Center" Margin="0, 0" MinWidth="50"  
                                     SelectedItem="{Binding Value}">
-                                    <ComboBoxItem Content="600"  />
+                                    <ComboBoxItem IsSelected="True" Content="600"  />
                                     <ComboBoxItem Content="1200" />
                                     <ComboBoxItem Content="2400" />
                                     <ComboBoxItem Content="4800" />

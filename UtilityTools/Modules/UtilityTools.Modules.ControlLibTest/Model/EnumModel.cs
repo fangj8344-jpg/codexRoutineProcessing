@@ -46,11 +46,11 @@ namespace UtilityTools.Modules.ControlLibTest.Model
         /// <summary>
         /// 奇数闪灯
         /// </summary>
-        Left = 0x01,
+        Left = 0x00,
 
         /// <summary>
         /// 偶数闪灯
         /// </summary>
-        Right = 0x02
+        Right = 0x01
     }
 }

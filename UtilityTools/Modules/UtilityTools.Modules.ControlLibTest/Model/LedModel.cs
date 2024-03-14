@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Zeptools.CommonLib.Method;
 using Zeptools.CommonLib.Model;
 
 namespace UtilityTools.Modules.ControlLibTest.Model
@@ -83,7 +84,7 @@ namespace UtilityTools.Modules.ControlLibTest.Model
                     content[1] = 0x05;
                     content[2] = 0x04;
                     Array.Copy(BitConverter.GetBytes(this.TimeCycle), 0, content, 3, 2);
-                    Array.Copy(BitConverter.GetBytes((ushort)this.StaticLightModel), 0, content, 5, 2);
+                    Array.Copy(BitConverter.GetBytes(((ushort)this.DivideLightModel).Revert()), 0, content, 5, 2);
                     content[7] = 0xCE;
                     byte len3 = (byte)content.Length;
                     UpdateLightFunc?.Invoke(len3, content);
@@ -104,8 +105,8 @@ namespace UtilityTools.Modules.ControlLibTest.Model
                     content[1] = 0x05;
                     content[2] = 0x06;
                     Array.Copy(BitConverter.GetBytes(this.TimeCycle), 0, content, 3, 2);
-                    content[5] = (byte)this.Orient;
-                    content[6] = this.LightNumber;
+                    content[5] = this.LightNumber;
+                    content[6] = (byte)this.Orient; 
                     content[7] = 0xEC;
                     byte len5 = (byte)content.Length;
                     UpdateLightFunc?.Invoke(len5, content);
@@ -116,13 +117,13 @@ namespace UtilityTools.Modules.ControlLibTest.Model
                     content[1] = 0x04;
                     content[2] = 0x07;
                     Array.Copy(BitConverter.GetBytes(this.TimeCycle), 0, content, 3, 2);
-                    content[6] = 0x00;
-                    content[7] = 0xEC;
+                    content[5] = 0x00;
+                    content[6] = 0xEC;
                     byte len6 = (byte)content.Length;
                     UpdateLightFunc?.Invoke(len6, content);
                     break;
                 case "进度条":
-                    content = new byte[4];
+                    content = new byte[5];
                     content[0] = 0xCE;
                     content[1] = 0x02;
                     content[2] = 0x08;
@@ -136,7 +137,7 @@ namespace UtilityTools.Modules.ControlLibTest.Model
                     content[0] = 0xCE;
                     content[1] = 0x03;
                     content[2] = 0x09;
-                    Array.Copy(BitConverter.GetBytes((ushort)this.StaticLightModel), 0, content, 3, 2);
+                    Array.Copy(BitConverter.GetBytes(((ushort)this.StaticLightModel).Revert()), 0, content, 3, 2);
                     content[5] = 0xEC;
                     byte len8 = (byte)content.Length;
                     UpdateLightFunc?.Invoke(len8, content);
@@ -237,7 +238,7 @@ namespace UtilityTools.Modules.ControlLibTest.Model
             set { _value = value; RaisePropertyChanged(); }
         }
 
-        private EnumOrient _orient;
+        private EnumOrient _orient = EnumOrient.Left;
 
         public EnumOrient Orient
         {
@@ -246,7 +247,7 @@ namespace UtilityTools.Modules.ControlLibTest.Model
 
         }
 
-        private EnumModels _staticLightModel;
+        private EnumModels _staticLightModel = EnumModels.Left;
 
         public EnumModels StaticLightModel
         {
@@ -255,7 +256,7 @@ namespace UtilityTools.Modules.ControlLibTest.Model
 
         }
 
-        private EnumFlash _divideLightModel;
+        private EnumFlash _divideLightModel = EnumFlash.OddFlash;
         
         public EnumFlash DivideLightModel
         {
