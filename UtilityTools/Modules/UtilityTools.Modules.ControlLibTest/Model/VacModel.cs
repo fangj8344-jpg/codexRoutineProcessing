@@ -44,7 +44,7 @@ namespace UtilityTools.Modules.ControlLibTest.Model
         #region ------------Property------------
         private float _value1;
 
-        public float Value1
+        public float Value1 
         {
             get { return _value1; }
             set { _value1 = value; RaisePropertyChanged(); }

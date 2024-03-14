@@ -36,6 +36,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Data;
 using System.Xml.Linq;
 using UtilityTools.Core.Dialog;
 using UtilityTools.Core.Extension;
@@ -58,6 +59,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             _entity = new ServerEntity();
             InitProperty();
         }
+
         #endregion
 
         #region ------------Field------------
@@ -76,7 +78,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
         }
 
         private CCSModel _selectedCCSModelForValue; 
-
+       
         public CCSModel SelectedCCSModelForValue
         {
             get { return _selectedCCSModelForValue; }
@@ -145,6 +147,9 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             set { _vacModel = value; RaisePropertyChanged(); }
         }
 
+
+
+       
         public DelegateCommand<string> GetVacCommand { get; set; }
 
         private ObservableCollection<BseModel> _bseModels = new ObservableCollection<BseModel>();
@@ -193,6 +198,14 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
         {
             get { return _scanModel; }
             set { _scanModel = value; RaisePropertyChanged(); }
+        }
+
+        private LedModel _ledModels;
+
+        public LedModel LedModels
+        {
+            get { return _ledModels ;}
+            set { _ledModels = value; RaisePropertyChanged();  }
         }
 
         private ObservableCollection<RelayModel> _relayModels = new ObservableCollection<RelayModel>();
@@ -313,7 +326,12 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             UartModels.Add(new UARTModel() { Name = "RS485_1",  Series = (byte)0x01,  Value = "115200", SetBaudRateFunc = this.SetUart });
             UartModels.Add(new UARTModel() { Name = "RS485_2",  Series = (byte)0x02,  Value = "115200", SetBaudRateFunc = this.SetUart });
             UartModels.Add(new UARTModel() { Name = "RS485_3",  Series = (byte)0x03,  Value = "115200", SetBaudRateFunc = this.SetUart });
+
+
+            LedModels = new LedModel();
+
             BindPropertyChanged();
+
         }
 
         private void BindPropertyChanged()
@@ -346,6 +364,9 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             //{
             //    model.PropertyChanged += UartModel_PropertyChanged;
             //}           
+            LedModels.UpdateLightFunc += SetLedModel;
+
+
         }
 
         private void CCSModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -484,7 +505,8 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                 }
             }
         }
-
+        
+        
         //private void UartModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         //{
         //    var model = sender as UARTModel;
@@ -502,6 +524,16 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             ShowResponseResult(result);
             return result;
         }
+ 
+        
+        private ResponseProto SetLedModel(byte ContentLength, byte[] Content)
+        {
+            var result = _entity.SetLightMsg(ContentLength, Content);
+            ShowResponseResult(result);
+            return result;
+        }
+
+
 
         private void SetIP()
         {
@@ -529,13 +561,13 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                 {
                     TempModel.Value1 = float.Parse(response.Params.Split(",")[0]);
                     TempModel.Value2 = float.Parse(response.Params.Split(",")[1]);
-                }catch (FormatException)
+                }
+                catch (FormatException)
                 {
                     Console.WriteLine("  param is invalid using  ");
                 }
             }
             ShowResponseResult(response);
-
         }
 
         private void GetTemp1()
@@ -570,6 +602,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                 }
             }
             ShowResponseResult(response);
+           
         }
 
         private void GetVac(string obj)

@@ -24,6 +24,7 @@ namespace UtilityTools.Modules.ControlLibTest.Views
         public ControlLibTestView()
         {
             InitializeComponent();
+ 
         }
     }
 }
