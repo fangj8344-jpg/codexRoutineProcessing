@@ -56,7 +56,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             _dialogHostService = dialogHostService;
             //消息提示
             _aggregator = containerProvider.Resolve<IEventAggregator>();
-            _entity = new ServerEntity();
+            _entity = ServerEntity.Instance;
 
             InitProperty();
         }
