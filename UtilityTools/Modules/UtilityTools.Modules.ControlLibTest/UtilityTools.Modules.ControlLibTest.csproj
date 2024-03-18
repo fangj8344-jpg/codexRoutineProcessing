@@ -14,15 +14,10 @@
   </Target>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\UtilityTools.Core\UtilityTools.Core.csproj" />
+    <PackageReference Include="PackageControlLib" Version="1.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Zeptools.CommonLib">
-      <HintPath>..\..\..\..\..\work\zeptools-basiclibrary\Zeptools.ControlLib\bin\Debug\net6.0\Zeptools.CommonLib.dll</HintPath>
-    </Reference>
-    <Reference Include="Zeptools.ControlLib">
-      <HintPath>..\..\..\..\..\work\zeptools-basiclibrary\Zeptools.ControlLib\bin\Debug\net6.0\Zeptools.ControlLib.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\..\UtilityTools.Core\UtilityTools.Core.csproj" />
   </ItemGroup>
 </Project>
