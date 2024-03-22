@@ -146,6 +146,7 @@
                         <ColumnDefinition />
                         <ColumnDefinition />
                         <ColumnDefinition />
+                        <ColumnDefinition />
                     </Grid.ColumnDefinitions>
 
                     <Label Content="加速电压"
@@ -247,6 +248,14 @@
                            HorizontalAlignment="Center"
                            HorizontalContentAlignment="Center"
                            VerticalContentAlignment="Center" />
+                    
+                    <Label Content="高压状态"
+                           Grid.Row="2"
+                           Grid.Column="4"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           VerticalContentAlignment="Center" />
 
                     <Label Content="{Binding ReadRegAddr}"
                            Foreground="LightBlue"
@@ -279,6 +288,15 @@
                            Foreground="LightBlue"
                            Grid.Row="3"
                            Grid.Column="3"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           VerticalContentAlignment="Center" />
+                    
+                    <Label Content="{Binding ReadFilaState, Converter={StaticResource enumDescriptionConverter}}"
+                           Foreground="LightBlue"
+                           Grid.Row="3"
+                           Grid.Column="4"
                            VerticalAlignment="Center"
                            HorizontalAlignment="Center"
                            HorizontalContentAlignment="Center"

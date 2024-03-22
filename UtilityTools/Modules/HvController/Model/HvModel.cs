@@ -614,7 +614,11 @@ namespace UtilityTools.Modules.HvController.Model
             var cmd = HvControllerProtocol.GetReadHvParamCmd();
             SendMsg(cmd);
 
-            foreach(var custom in CustomCmds) 
+            Thread.Sleep(100);
+            cmd = HvControllerProtocol.GetCheckHvStatusCmd();
+            SendMsg(cmd);
+
+            foreach (var custom in CustomCmds) 
             {
                 if (custom != null && custom.IsAutoSend)
                 {
