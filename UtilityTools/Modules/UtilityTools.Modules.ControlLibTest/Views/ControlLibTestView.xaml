@@ -1030,7 +1030,7 @@
                             <TextBlock Text="关"
                                        VerticalAlignment="Center" />
                             <ToggleButton Margin="8,0,8,0"
-                                          IsChecked="{Binding ScanModel.SW}" />
+                                          IsChecked="{Binding ScanModel.Sw}" />
                             <TextBlock Text="开"
                                        VerticalAlignment="Center" />
                         </StackPanel>

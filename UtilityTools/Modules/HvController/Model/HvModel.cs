@@ -30,6 +30,7 @@ using OxyPlot.Legends;
 using OxyPlot.Series;
 using Prism.Commands;
 using Prism.Events;
+using Prism.Ioc;
 using Prism.Mvvm;
 using System;
 using System.Collections.ObjectModel;
@@ -39,6 +40,7 @@ using System.Threading.Tasks;
 using System.Timers;
 using UtilityTools.Core.Helper;
 using UtilityTools.Modules.HvController.Protocol;
+using UtilityTools.Services.Interfaces;
 using UtilityTools.Services.Interfaces.IServices;
 
 namespace UtilityTools.Modules.HvController.Model
@@ -46,13 +48,14 @@ namespace UtilityTools.Modules.HvController.Model
     public class HvModel : BindableBase
     {
         #region ------------Constructor------------
-        public HvModel(IAsynRWService device, IEventAggregator aggregator)
+        public HvModel(IContainerProvider containerProvider)
         {
-            _device = device;
-            _aggregator = aggregator;
+            _containerProvider = containerProvider;
+            Service = _containerProvider.Resolve<IServiceFactory>().GetAsynRWService("SPHV");
+            Service.UpdateResponse += Device_UpdateResponse;
+
             InitProperty();
             InitCommand();
-            _device.UpdateResponse += Device_UpdateResponse;
 
             _response = new byte[256];
             _responseLength = 0;
@@ -61,8 +64,7 @@ namespace UtilityTools.Modules.HvController.Model
         #endregion
 
         #region ------------Field------------
-        private readonly IAsynRWService _device;
-        private readonly IEventAggregator _aggregator;
+        private readonly IContainerProvider _containerProvider;
 
         EventWaitHandle _operateHvWaitHandle = new AutoResetEvent(false);
         EventWaitHandle _setFilaParamWaitHandle = new AutoResetEvent(false);
@@ -81,6 +83,16 @@ namespace UtilityTools.Modules.HvController.Model
         #endregion
 
         #region ------------Property------------
+        private IAsynRWService _service;
+        /// <summary>
+        /// 异步通信服务
+        /// </summary>
+        public IAsynRWService Service
+        {
+            get { return _service; }
+            set { _service = value; RaisePropertyChanged(); }
+        }
+
         private bool _isNewFila;
         /// <summary>
         /// 是否是新灯丝
@@ -342,9 +354,10 @@ namespace UtilityTools.Modules.HvController.Model
         public DelegateCommand CloseHvCommand { get; set; }
         public DelegateCommand OpenHvCommand { get; set; }
         public DelegateCommand ChangeHvCommand { get; set; }
-        public DelegateCommand ClearMonitorCommand { get; set; }
         public DelegateCommand ChangeMonitorStateCommand { get; set; }
         public DelegateCommand<object> SendCmdStringCommand { get; set; }
+        public DelegateCommand AutoAdjustCommand { get; set; }
+        public DelegateCommand ClearMonitorCommand { get; set; }
         public DelegateCommand SaveMonitorInfoCommand { get; set; }
         #endregion
 
@@ -377,8 +390,8 @@ namespace UtilityTools.Modules.HvController.Model
         /// <param name="bytes"></param>
         public void SendMsg(byte[] bytes)
         {
-            _device.SendMsg(bytes);
-            AddLog(_device.GetCmdString(bytes, bytes.Length), false);
+            Service.SendMsg(bytes);
+            AddLog(Service.GetCmdString(bytes, bytes.Length), false);
         }
 
         /// <summary>
@@ -465,6 +478,19 @@ namespace UtilityTools.Modules.HvController.Model
         }
 
         /// <summary>
+        /// 图表自适应显示
+        /// </summary>
+        public void AutoAdjust()
+        {
+            foreach (var axis in HvPlotModel.Axes)
+            { 
+                axis.Reset();
+            }
+
+            HvPlotModel.InvalidatePlot(false);
+        }
+
+        /// <summary>
         /// 改变监控状态
         /// </summary>
         public async void ChangeMonitorState()
@@ -544,20 +570,16 @@ namespace UtilityTools.Modules.HvController.Model
             HvPlotModel.Series.Add(_gridVolLineSeries);
 
             Logs = new ObservableCollection<string>();
-            Logs.Add("test1");
-            Logs.Add("test2");
-            Logs.Add("test3");
-            Logs.Add("test4");
 
             CustomCmds = new ObservableCollection<CustomCmdModel>();
-            CustomCmds.Add(new CustomCmdModel());
-            CustomCmds.Add(new CustomCmdModel());
-            CustomCmds.Add(new CustomCmdModel());
-            CustomCmds.Add(new CustomCmdModel());
-            CustomCmds.Add(new CustomCmdModel());
-            CustomCmds.Add(new CustomCmdModel());
-            CustomCmds.Add(new CustomCmdModel());
-            CustomCmds.Add(new CustomCmdModel());
+            CustomCmds.Add(new CustomCmdModel(SendMsg));
+            CustomCmds.Add(new CustomCmdModel(SendMsg));
+            CustomCmds.Add(new CustomCmdModel(SendMsg));
+            CustomCmds.Add(new CustomCmdModel(SendMsg));
+            CustomCmds.Add(new CustomCmdModel(SendMsg));
+            CustomCmds.Add(new CustomCmdModel(SendMsg));
+            CustomCmds.Add(new CustomCmdModel(SendMsg));
+            CustomCmds.Add(new CustomCmdModel(SendMsg));
         }
 
         /// <summary>
@@ -574,6 +596,7 @@ namespace UtilityTools.Modules.HvController.Model
             OpenHvCommand = new DelegateCommand(OpenHv);
             ChangeHvCommand = new DelegateCommand(ChangeHv);
             ClearMonitorCommand = new DelegateCommand(ClearMonitor);
+            AutoAdjustCommand = new DelegateCommand(AutoAdjust);
             ChangeMonitorStateCommand = new DelegateCommand(ChangeMonitorState);
             SendCmdStringCommand = new DelegateCommand<object>(SendCmdString);
             SaveMonitorInfoCommand = new DelegateCommand(SaveMonitorInfo);
@@ -590,6 +613,15 @@ namespace UtilityTools.Modules.HvController.Model
             // Work
             var cmd = HvControllerProtocol.GetReadHvParamCmd();
             SendMsg(cmd);
+
+            foreach(var custom in CustomCmds) 
+            {
+                if (custom != null && custom.IsAutoSend)
+                {
+                    Thread.Sleep(100);
+                    custom.Send();
+                }
+            }
         }
 
         /// <summary>
@@ -623,7 +655,7 @@ namespace UtilityTools.Modules.HvController.Model
                 // 判断回复内容
                 if (response.Length <= 13)
                 {
-                    AddLog(_device.GetCmdString(response, size));
+                    AddLog(Service.GetCmdString(response, size));
                     switch (response[4])
                     {
                         case 0x70:

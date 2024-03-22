@@ -79,17 +79,6 @@ namespace UtilityTools.Modules.HvController.ViewModels
             get { return _model; }
             set { _model = value; RaisePropertyChanged(); }
         }
-
-        private IAsynRWService _service;
-        /// <summary>
-        /// 异步通信服务
-        /// </summary>
-        public IAsynRWService Service
-        {
-            get { return _service; }
-            set { _service = value; RaisePropertyChanged(); }
-        }
-
         #endregion
 
         #region ------------Command------------
@@ -113,8 +102,7 @@ namespace UtilityTools.Modules.HvController.ViewModels
         /// </summary>
         private void InitProperty()
         {
-            Service = containerProvider.Resolve<IServiceFactory>().GetAsynRWService("SPHV");
-            Model = new HvModel(Service, containerProvider.Resolve<IEventAggregator>());
+            Model = new HvModel(containerProvider);
         }
 
         /// <summary>
@@ -123,7 +111,7 @@ namespace UtilityTools.Modules.HvController.ViewModels
         private async void ShowDevice()
         {
             DialogParameters parameter = new DialogParameters();
-            parameter.Add("Value", Service);
+            parameter.Add("Value", Model.Service);
             var diaglogResult = await this._dialogHostService.ShowDialog("SerialPortView", parameter, CommonModel.HvControllerRegionName);
             if (diaglogResult == null)
                 return;
@@ -132,8 +120,8 @@ namespace UtilityTools.Modules.HvController.ViewModels
                 var value = diaglogResult.Parameters.GetValue<IAsynRWService>("Value");
                 if (value != null)
                 {
-                    Service = value;
-                    IsConnected = Service.IsOpen;
+                    Model.Service = value;
+                    IsConnected = Model.Service.IsOpen;
                 }
             }
         }

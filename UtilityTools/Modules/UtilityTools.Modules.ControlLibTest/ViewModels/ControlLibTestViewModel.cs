@@ -51,7 +51,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
     {
         #region ------------Constructor------------
         public ControlLibTestViewModel(IDialogHostService dialogHostService, IContainerProvider containerProvider)
-            :base(containerProvider)
+            : base(containerProvider)
         {
             _dialogHostService = dialogHostService;
             //消息提示
@@ -64,7 +64,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
         #endregion
 
         #region ------------Field------------
-        private IDialogHostService _dialogHostService; 
+        private IDialogHostService _dialogHostService;
         private readonly IEventAggregator _aggregator;
         ServerEntity _entity;
         #endregion
@@ -78,8 +78,8 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             set { _ccsModels = value; RaisePropertyChanged(); }
         }
 
-        private CCSModel _selectedCCSModelForValue; 
-       
+        private CCSModel _selectedCCSModelForValue;
+
         public CCSModel SelectedCCSModelForValue
         {
             get { return _selectedCCSModelForValue; }
@@ -122,7 +122,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
         public DelegateCommand GetIPCommand { get; set; }
 
-      
+
 
         private TempModel _tempModel;
 
@@ -138,7 +138,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
         public DelegateCommand GetTemp2Command { get; set; }
 
-       
+
 
         private VacModel _vacModel;
 
@@ -150,7 +150,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
 
 
-       
+
         public DelegateCommand<string> GetVacCommand { get; set; }
 
         private ObservableCollection<BseModel> _bseModels = new ObservableCollection<BseModel>();
@@ -205,8 +205,8 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
         public LedModel LedModels
         {
-            get { return _ledModels ;}
-            set { _ledModels = value; RaisePropertyChanged();  }
+            get { return _ledModels; }
+            set { _ledModels = value; RaisePropertyChanged(); }
         }
 
         private ObservableCollection<RelayModel> _relayModels = new ObservableCollection<RelayModel>();
@@ -225,7 +225,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             set { _UartModels = value; RaisePropertyChanged(); }
         }
 
-        
+
 
         private ObservableCollection<DACModel> _dacModels = new ObservableCollection<DACModel>();
 
@@ -251,7 +251,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
         private void InitProperty()
         {
-            CCSModels.Add(new CCSModel() { Name = "CHA0", RealName = "AligX1", RelayName = "CCSk2", RelayChannel = (byte)0x02, Channel = (byte)0xA0, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _entity.SetAligX1, SetStateFunc = _entity.SetAligX1Polarity});
+            CCSModels.Add(new CCSModel() { Name = "CHA0", RealName = "AligX1", RelayName = "CCSk2", RelayChannel = (byte)0x02, Channel = (byte)0xA0, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _entity.SetAligX1, SetStateFunc = _entity.SetAligX1Polarity });
             CCSModels.Add(new CCSModel() { Name = "CHA1", RealName = "AligX2", RelayName = "CCSk3", RelayChannel = (byte)0x03, Channel = (byte)0xA1, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _entity.SetAligX2, SetStateFunc = _entity.SetAligX2Polarity });
             CCSModels.Add(new CCSModel() { Name = "CHA2", RealName = "CompressA", RelayName = "CCSkX", RelayChannel = (byte)0x0F, Channel = (byte)0xA2, HasRelay = false, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _entity.SetCompressLensA, SetStateFunc = null });
             CCSModels.Add(new CCSModel() { Name = "CHB0", RealName = "CompressB", RelayName = "CCSkX", RelayChannel = (byte)0x0F, Channel = (byte)0xB0, HasRelay = false, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _entity.SetCompressLensB, SetStateFunc = null });
@@ -263,7 +263,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             CCSModels.Add(new CCSModel() { Name = "CHB7", RealName = "OB", RelayName = "CCSkX", RelayChannel = (byte)0x0F, Channel = (byte)0xB7, HasRelay = false, Value = 0, MinValue = 0, MaxValue = 0xFFFF, RelayState = false, SetValueFunc = _entity.SetObjectiveLens, SetStateFunc = null });
             CCSModels.Add(new CCSModel() { Name = "CHB8", RealName = "AligY2", RelayName = "CCSk1", RelayChannel = (byte)0x01, Channel = (byte)0xB8, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _entity.SetAligY2, SetStateFunc = _entity.SetAligY2Polarity });
 
-            
+
             SelectedCCSModelForValue = CCSModels[0];
             SelectedCCSModelForRelay = CCSModels[0];
 
@@ -317,16 +317,16 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             RelayModels.Add(new RelayModel() { Name = "CHF", Channel = (byte)0x0F, Enable = false });
 
 
-            DacModels.Add(new DACModel() { Name = "CHA" , Channel = (byte)0x00, Value = 0, MinValue = 0, MaxValue = 0x0FFF, SetValueFunc = _entity.SetDACCHA });
-            DacModels.Add(new DACModel() { Name = "CHB" , Channel = (byte)0x01, Value = 0, MinValue = 0, MaxValue = 0x0FFF, SetValueFunc = _entity.SetDACCHB });
-            DacModels.Add(new DACModel() { Name = "CHC",  Channel = (byte)0x02, Value = 0, MinValue = 0, MaxValue = 0x0FFF, SetValueFunc = _entity.SetDACCHC });
-            DacModels.Add(new DACModel() { Name = "CHD",  Channel = (byte)0x03, Value = 0, MinValue = 0, MaxValue = 0x0FFF, SetValueFunc = _entity.SetDACCHD });
+            DacModels.Add(new DACModel() { Name = "CHA", Channel = (byte)0x00, Value = 0, MinValue = 0, MaxValue = 0x0FFF, SetValueFunc = _entity.SetDACCHA });
+            DacModels.Add(new DACModel() { Name = "CHB", Channel = (byte)0x01, Value = 0, MinValue = 0, MaxValue = 0x0FFF, SetValueFunc = _entity.SetDACCHB });
+            DacModels.Add(new DACModel() { Name = "CHC", Channel = (byte)0x02, Value = 0, MinValue = 0, MaxValue = 0x0FFF, SetValueFunc = _entity.SetDACCHC });
+            DacModels.Add(new DACModel() { Name = "CHD", Channel = (byte)0x03, Value = 0, MinValue = 0, MaxValue = 0x0FFF, SetValueFunc = _entity.SetDACCHD });
             SelectedDacModel = DacModels[0];
 
-            UartModels.Add(new UARTModel() { Name = "光耦串口", Series = (byte)0x00,  Value = "115200" , SetBaudRateFunc= this.SetUart });
-            UartModels.Add(new UARTModel() { Name = "RS485_1",  Series = (byte)0x01,  Value = "115200", SetBaudRateFunc = this.SetUart });
-            UartModels.Add(new UARTModel() { Name = "RS485_2",  Series = (byte)0x02,  Value = "115200", SetBaudRateFunc = this.SetUart });
-            UartModels.Add(new UARTModel() { Name = "RS485_3",  Series = (byte)0x03,  Value = "115200", SetBaudRateFunc = this.SetUart });
+            UartModels.Add(new UARTModel() { Name = "光耦串口", Series = (byte)0x00, Value = "115200", SetBaudRateFunc = this.SetUart });
+            UartModels.Add(new UARTModel() { Name = "RS485_1", Series = (byte)0x01, Value = "115200", SetBaudRateFunc = this.SetUart });
+            UartModels.Add(new UARTModel() { Name = "RS485_2", Series = (byte)0x02, Value = "115200", SetBaudRateFunc = this.SetUart });
+            UartModels.Add(new UARTModel() { Name = "RS485_3", Series = (byte)0x03, Value = "115200", SetBaudRateFunc = this.SetUart });
 
 
             LedModels = new LedModel();
@@ -352,6 +352,10 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                 model.PropertyChanged += BseModel_PropertyChanged;
             }
 
+            SeModel.PropertyChanged += SeModel_PropertyChanged;
+
+            ScanModel.PropertyChanged += ScanModel_PropertyChanged;
+
             foreach (var model in RelayModels)
             {
                 model.PropertyChanged += RelayModel_PropertyChanged;
@@ -370,12 +374,128 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
         }
 
+        private void ScanModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            var model = sender as ScanModel;
+            if (model != null)
+            {
+                switch (e.PropertyName)
+                {
+                    case "AmpX":
+                        {
+                            var result = _entity.SetAmpX(model.AmpX);
+                            ShowResponseResult(result);
+                        }
+                        break;
+                    case "AmpY":
+                        {
+                            var result = _entity.SetAmpY(model.AmpY);
+                            ShowResponseResult(result);
+                        }
+                        break;
+                    case "AmpTX":
+                        {
+                            var result = _entity.SetTAmpX(model.AmpTX);
+                            ShowResponseResult(result);
+                        }
+                        break;
+                    case "AmpTY":
+                        {
+                            var result = _entity.SetTAmpY(model.AmpTY);
+                            ShowResponseResult(result);
+                        }
+                        break;
+                    case "AnalogSpinA":
+                        {
+                            var result = _entity.SetAnalogSpinCHA(model.AnalogSpinA);
+                            ShowResponseResult(result);
+                        }
+                        break;
+                    case "AnalogSpinB":
+                        {
+                            var result = _entity.SetAnalogSpinCHB(model.AnalogSpinB);
+                            ShowResponseResult(result);
+                        }
+                        break;
+                    case "AnalogSpinC":
+                        {
+                            var result = _entity.SetAnalogSpinCHC(model.AnalogSpinC);
+                            ShowResponseResult(result);
+                        }
+                        break;
+                    case "AnalogSpinD":
+                        {
+                            var result = _entity.SetAnalogSpinCHD(model.AnalogSpinD);
+                            ShowResponseResult(result);
+                        }
+                        break;
+                    case "K1":
+                        {
+                            var result = _entity.SetSCANK1(model.K1);
+                            ShowResponseResult(result);
+                        }
+                        break;
+                    case "K2":
+                        {
+                            var result = _entity.SetSCANK2(model.K2);
+                            ShowResponseResult(result);
+                        }
+                        break;
+                    case "K3":
+                        {
+                            var result = _entity.SetSCANK3(model.K3);
+                            ShowResponseResult(result);
+                        }
+                        break;
+                    case "K4":
+                        {
+                            var result = _entity.SetSCANK4(model.K4);
+                            ShowResponseResult(result);
+                        }
+                        break;
+                    case "Sw":
+                        {
+                            var result = _entity.SetSCANSW(model.Sw);
+                            ShowResponseResult(result);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+
+        private void SeModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            var model = sender as SeModel;
+            if (model != null)
+            {
+                switch (e.PropertyName)
+                {
+                    case "Value":
+                        {
+                            var result = _entity.SetSECH0(model.Value);
+                            ShowResponseResult(result);
+                        }
+                        break;
+                    case "Enable":
+                        {
+                            var result = _entity.SetSEEnable(model.Enable);
+                            ShowResponseResult(result);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+
         private void CCSModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             var model = sender as CCSModel;
-            if(model != null) 
+            if (model != null)
             {
-                switch(e.PropertyName) 
+                switch (e.PropertyName)
                 {
                     case "Value":
                         if (model == SelectedCCSModelForValue)
@@ -430,7 +550,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
         private void BseModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            var model = sender as BseModel;  
+            var model = sender as BseModel;
             if (model != null)
             {
                 switch (e.PropertyName)
@@ -450,7 +570,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                     case "Positive":
                         if (model == BseModelForPos)
                         {
-                            var result = _entity.SetBSECH_P(model.Channel,model.Positive);
+                            var result = _entity.SetBSECH_P(model.Channel, model.Positive);
                             ShowResponseResult(result);
                         }
                         else
@@ -462,12 +582,12 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                     case "Negative":
                         if (model == BseModelForNeg)
                         {
-                            var result = _entity.SetBSECH_R(model.Channel,model.Negative);
+                            var result = _entity.SetBSECH_R(model.Channel, model.Negative);
                             ShowResponseResult(result);
                         }
                         else
                         {
-                           var result = model.SetNegStateFunc?.Invoke(model.Negative);
+                            var result = model.SetNegStateFunc?.Invoke(model.Negative);
                             ShowResponseResult(result);
                         }
                         break;
@@ -478,7 +598,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
         private void RelayModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             var model = sender as RelayModel;
-            if(model != null)
+            if (model != null)
             {
                 var result = _entity.SetRelayState(model.Channel, model.Enable);
                 ShowResponseResult(result);
@@ -506,8 +626,8 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                 }
             }
         }
-        
-        
+
+
         //private void UartModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         //{
         //    var model = sender as UARTModel;
@@ -519,14 +639,14 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
         //    }
         //}
 
-        private ResponseProto SetUart(byte Series,uint BaudRate)
+        private ResponseProto SetUart(byte Series, uint BaudRate)
         {
             var result = _entity.SetBaudRate(Series, BaudRate);
             ShowResponseResult(result);
             return result;
         }
- 
-        
+
+
         private ResponseProto SetLedModel(byte ContentLength, byte[] Content)
         {
             var result = _entity.SetLightMsg(ContentLength, Content);
@@ -538,8 +658,8 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
         private void SetIP()
         {
-            string[] ip = EthModel.SetIP.Split("."); 
-            ResponseProto response = _entity.SetIP(Convert.ToByte(ip[0]), Convert.ToByte(ip[1]),Convert.ToByte(ip[2]), Convert.ToByte(ip[3]));
+            string[] ip = EthModel.SetIP.Split(".");
+            ResponseProto response = _entity.SetIP(Convert.ToByte(ip[0]), Convert.ToByte(ip[1]), Convert.ToByte(ip[2]), Convert.ToByte(ip[3]));
 
             ShowResponseResult(response);
         }
@@ -547,16 +667,16 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
         private void GetIP()
         {
             ResponseProto response = _entity.HandShake();
-            if (response!=null&&response.Params != null&&response.Result!=false)
+            if (response != null && response.Params != null && response.Result != false)
             {
-                 EthModel.RealIP = response.Params;
+                EthModel.RealIP = response.Params;
             }
             ShowResponseResult(response);
         }
         private void GetAllTemp()
         {
-            ResponseProto response=_entity.GetTemp();
-            if(response!=null&&response.Result != false&&response.Params.Split(",").Length == 2)
+            ResponseProto response = _entity.GetTemp();
+            if (response != null && response.Result != false && response.Params.Split(",").Length == 2)
             {
                 try
                 {
@@ -603,14 +723,14 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                 }
             }
             ShowResponseResult(response);
-           
+
         }
 
         private void GetVac(string obj)
         {
-            byte channel= Convert.ToByte(obj);
-            ResponseProto response= _entity.GetVAC(channel);
-            if(response != null&&response.Result!=false&&response.Params.Split(",").Length==3)
+            byte channel = Convert.ToByte(obj);
+            ResponseProto response = _entity.GetVAC(channel);
+            if (response != null && response.Result != false && response.Params.Split(",").Length == 3)
             {
                 switch (response.Params.Split(",")[0])
                 {

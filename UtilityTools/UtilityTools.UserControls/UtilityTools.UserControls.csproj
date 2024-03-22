@@ -10,4 +10,10 @@
     <ProjectReference Include="..\UtilityTools.Core\UtilityTools.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="Microsoft.Expression.Drawing">
+      <HintPath>..\..\Third\Microsoft.Expression.Drawing.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>
