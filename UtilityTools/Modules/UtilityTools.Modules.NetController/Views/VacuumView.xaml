@@ -12,7 +12,7 @@
         <Grid>
             <ItemsControl Grid.Row="0"
                           ItemsSource="{Binding Vacuums}"
-                          ItemTemplate="{StaticResource labelInfoTemplate}">
+                          ItemTemplate="{StaticResource labelInfoUpdateTemplate}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <UniformGrid Rows="4" />

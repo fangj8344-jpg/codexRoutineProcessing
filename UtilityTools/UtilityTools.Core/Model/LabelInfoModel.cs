@@ -24,6 +24,7 @@
  *----------------------------------------------------------------*/
 #endregion
 
+using Prism.Commands;
 using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
@@ -90,6 +91,10 @@ namespace UtilityTools.Core.Model
             set { _value = value; RaisePropertyChanged(); }
         }
 
+        /// <summary>
+        /// 控制指令
+        /// </summary>
+        public DelegateCommand<object> ControlCommand { get; set; }
         #endregion
 
         #region ------------Property------------

@@ -602,7 +602,7 @@ namespace UtilityTools.Modules.NetController.Extension
                 }
             }
 
-            return false;
+            return true;
         }
     }
 }
