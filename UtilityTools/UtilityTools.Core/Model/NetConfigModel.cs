@@ -58,8 +58,8 @@ namespace UtilityTools.Core.Model
         private string _hostIp;
         private int _hostPort;
 
-        protected IPEndPoint _sendEndPoint;                           // UDP发送节点
-        protected IPEndPoint _recvEndPoint;                           // UDP接收节点
+        protected EndPoint _sendEndPoint;                           // UDP发送节点
+        protected EndPoint _recvEndPoint;                           // UDP接收节点
         #endregion
 
         #region ------------Property------------
@@ -163,7 +163,7 @@ namespace UtilityTools.Core.Model
         /// <returns></returns>
         public int Send(byte[] data)
         {
-            if (Socket == null || !Socket.Connected)
+            if (!IsOpen())
                 return 0;
             return Socket.SendTo(data, _sendEndPoint);
         }
@@ -255,12 +255,12 @@ namespace UtilityTools.Core.Model
             if (Socket != null)
                 return true;
 
-            Socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
+            Socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             Socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, IsSupportBroadcast);
             _sendEndPoint = new IPEndPoint(IPAddress.Parse(TargetIp), TargetPort);
             _recvEndPoint = new IPEndPoint(IPAddress.Parse(HostIp), HostPort);
             Socket.Bind(_recvEndPoint);
-            Socket.BeginReceive(_dataBuff, 0, _dataBuff.Length, SocketFlags.None, ReceiveCallback, null);
+            Socket.BeginReceiveFrom(_dataBuff, 0, _dataBuff.Length, SocketFlags.None, ref _sendEndPoint, ReceiveCallback, null);
             return true;
         }
 
@@ -283,17 +283,16 @@ namespace UtilityTools.Core.Model
         {
             try
             {
-                EndPoint remoteEndPoint = new IPEndPoint(IPAddress.Parse(TargetIp), TargetPort);
-                var buffSize = Socket.EndReceiveFrom(ar, ref remoteEndPoint);
+                var buffSize = Socket.EndReceiveFrom(ar, ref _sendEndPoint);
                 if (buffSize > 0)
                 {
                     var buffer = new byte[buffSize];
                     Array.Copy(_dataBuff, buffer, buffSize);
-                    LogManager.GetCurrentClassLogger().Debug($"接收来自{remoteEndPoint.ToString()}：{ParseMsgToString(buffer)}");
+                    LogManager.GetCurrentClassLogger().Debug($"接收来自{_sendEndPoint.ToString()}：{ParseMsgToString(buffer)}");
                     ReceiveBuffer(buffer);
                 }
             }
-            catch (Exception ex)
+            catch (SocketException ex)
             {
                 LogManager.GetCurrentClassLogger().Fatal($"接收回调异常：{ex.Message}");
             }
@@ -301,7 +300,7 @@ namespace UtilityTools.Core.Model
             {
                 if(Socket != null )
                 {
-                    Socket.BeginReceive(_dataBuff, 0, _dataBuff.Length, SocketFlags.None, ReceiveCallback, null);
+                    Socket.BeginReceiveFrom(_dataBuff, 0, _dataBuff.Length, SocketFlags.None, ref _recvEndPoint, ReceiveCallback, null);
                 }
             }
         }

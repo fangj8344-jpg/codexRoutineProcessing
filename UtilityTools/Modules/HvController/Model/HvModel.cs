@@ -417,7 +417,15 @@ namespace UtilityTools.Modules.HvController.Model
         /// <param name="bytes"></param>
         public void SendMsg(byte[] bytes)
         {
-            SerialPortService.SendMsg(bytes);
+            if (SerialPortService.IsOpen)
+                SerialPortService.SendMsg(bytes);
+            else if (NetUdpService.IsOpen)
+                NetUdpService.SendMsg(bytes);
+            else
+            {
+                AddLog("无设备连接", false);
+                return;
+            }
             AddLog(SerialPortService.GetCmdString(bytes, bytes.Length), false);
         }
 

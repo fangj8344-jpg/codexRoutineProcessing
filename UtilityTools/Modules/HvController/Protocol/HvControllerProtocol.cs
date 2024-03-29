@@ -226,7 +226,6 @@ namespace UtilityTools.Modules.HvController.Protocol
                 ePos = Array.IndexOf(response, (byte)0xEE, ePos, length - ePos);
                 if (ePos < 0 || ePos > length - 4)
                 {
-                    length = 0;
                     return null;
                 }
                 if (response[ePos + 1] == 0xEE && response[ePos + 2] == 0xEE
