@@ -62,9 +62,9 @@ namespace UtilityTools.Modules.HvController.Model
             if (NetUdpService.GetHandle() is NetConfigModel netConfig)
             {
                 netConfig.HostIp = "192.168.1.33";
-                netConfig.HostPort = 5005;
+                netConfig.HostPort = 5010;
                 netConfig.TargetIp = "192.168.1.88";
-                netConfig.TargetPort = 5010;
+                netConfig.TargetPort = 5000;
             }
 
             InitProperty();
