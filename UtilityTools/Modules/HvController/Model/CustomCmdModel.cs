@@ -86,6 +86,8 @@ namespace UtilityTools.Modules.HvController.Model
         #region ------------PublicMethod------------
         public void Send()
         {
+            if (string.IsNullOrWhiteSpace(CmdString))
+                return;
             byte[] cmd = DataTypeCaster.StringToByteArray(CmdString);
             SendMethod?.Invoke(cmd);
         }
