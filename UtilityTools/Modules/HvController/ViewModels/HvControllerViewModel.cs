@@ -70,6 +70,17 @@ namespace UtilityTools.Modules.HvController.ViewModels
             set { _isConnected = value; RaisePropertyChanged(); }
         }
 
+        private bool _netIsConnected;
+        /// <summary>
+        /// 网络设备是否连接
+        /// </summary>
+        public bool NetIsConnected
+        {
+            get { return _netIsConnected; }
+            set { _netIsConnected = value; RaisePropertyChanged(); }
+        }
+
+
         private HvModel _model;
         /// <summary>
         /// 高压模型
@@ -83,6 +94,8 @@ namespace UtilityTools.Modules.HvController.ViewModels
 
         #region ------------Command------------
         public DelegateCommand ShowDeviceCommand { get; set; }
+
+        public DelegateCommand ShowNetDeviceCommand { get; set; }
         #endregion
 
         #region ------------PublicMethod------------
@@ -95,6 +108,7 @@ namespace UtilityTools.Modules.HvController.ViewModels
         private void InitCommand()
         {
             ShowDeviceCommand = new DelegateCommand(ShowDevice);
+            ShowNetDeviceCommand = new DelegateCommand(ShowNetDevice);
         }
 
         /// <summary>
@@ -111,7 +125,7 @@ namespace UtilityTools.Modules.HvController.ViewModels
         private async void ShowDevice()
         {
             DialogParameters parameter = new DialogParameters();
-            parameter.Add("Value", Model.Service);
+            parameter.Add("Value", Model.SerialPortService);
             var diaglogResult = await this._dialogHostService.ShowDialog("SerialPortView", parameter, CommonModel.HvControllerRegionName);
             if (diaglogResult == null)
                 return;
@@ -120,8 +134,29 @@ namespace UtilityTools.Modules.HvController.ViewModels
                 var value = diaglogResult.Parameters.GetValue<IAsynRWService>("Value");
                 if (value != null)
                 {
-                    Model.Service = value;
-                    IsConnected = Model.Service.IsOpen;
+                    Model.SerialPortService = value;
+                    IsConnected = Model.SerialPortService.IsOpen;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 显示设备连接弹窗
+        /// </summary>
+        private async void ShowNetDevice()
+        {
+            DialogParameters parameter = new DialogParameters();
+            parameter.Add("Value", Model.NetUdpService);
+            var diaglogResult = await this._dialogHostService.ShowDialog("NetConfigView", parameter, CommonModel.HvControllerRegionName);
+            if (diaglogResult == null)
+                return;
+            if (diaglogResult.Result == ButtonResult.OK && diaglogResult.Parameters.ContainsKey("Value"))
+            {
+                var value = diaglogResult.Parameters.GetValue<IAsynRWService>("Value");
+                if (value != null)
+                {
+                    Model.NetUdpService = value;
+                    NetIsConnected = Model.NetUdpService.IsOpen;
                 }
             }
         }

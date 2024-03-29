@@ -100,6 +100,14 @@ namespace UtilityTools.Services
                             device.IsBinary = true;
                             return device;
                         }
+                    case "UNHV":    // Udp Net of High Vol
+                        {
+                            IAsynRWService device = new UdpNetAsyncDevice();
+                            AsynRWServices.Add(type, device);
+                            device.Name = "高压控制";
+                            device.IsBinary = true;
+                            return device;
+                        }
                     default:
                         return null;
                 }

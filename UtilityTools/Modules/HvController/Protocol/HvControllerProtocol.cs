@@ -207,7 +207,7 @@ namespace UtilityTools.Modules.HvController.Protocol
 
             while (!isStart)
             {
-                sPos = Array.IndexOf(response, (byte)0xFF, sPos);
+                sPos = Array.IndexOf(response, (byte)0xFF, sPos, length - sPos);
                 if (sPos < 0 || sPos > length - 8)
                 {
                     length = 0;
@@ -223,7 +223,7 @@ namespace UtilityTools.Modules.HvController.Protocol
 
             while (!isEnd)
             {
-                ePos = Array.IndexOf(response, (byte)0xEE, ePos);
+                ePos = Array.IndexOf(response, (byte)0xEE, ePos, length - ePos);
                 if (ePos < 0 || ePos > length - 4)
                 {
                     length = 0;
@@ -237,7 +237,7 @@ namespace UtilityTools.Modules.HvController.Protocol
             }
 
             var res = response.Skip(sPos).Take(ePos - sPos + 4).ToArray();
-            Array.Copy(response, ePos + 4, response, 0, length - ePos - 4);
+            Array.Copy(response, ePos + 4, response, 0, response.Length - ePos - 4);
             length = length - ePos - 4;
 
             return res;

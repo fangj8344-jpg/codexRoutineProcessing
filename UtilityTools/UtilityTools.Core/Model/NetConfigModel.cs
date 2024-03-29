@@ -30,10 +30,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Navigation;
+using System.Xml.Linq;
 using UtilityTools.Core.Converter;
 
 namespace UtilityTools.Core.Model
@@ -118,6 +120,22 @@ namespace UtilityTools.Core.Model
             }
         }
 
+        /// <summary>
+        /// 通讯报文是否是二进制
+        /// </summary>
+        public bool IsBinary { get; set; }
+        #endregion
+
+        #region ------------Event------------
+        /// <summary>
+        /// 连接状态修改事件
+        /// </summary>
+        public event EventHandler<bool> ConnectStateChangedEvent;
+
+        /// <summary>
+        /// 接收到数据事件
+        /// </summary>
+        public event EventHandler<byte[]> ReceiveDataEvent;
         #endregion
 
         #region ------------PublicMethod------------
@@ -145,6 +163,8 @@ namespace UtilityTools.Core.Model
         /// <returns></returns>
         public int Send(byte[] data)
         {
+            if (Socket == null || !Socket.Connected)
+                return 0;
             return Socket.SendTo(data, _sendEndPoint);
         }
 
@@ -157,13 +177,46 @@ namespace UtilityTools.Core.Model
             Socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, timeout);
         }
 
-        public int Receive(byte[] buffer)
+        /// <summary>
+        /// 将消息解析成字符串
+        /// </summary>
+        /// <param name="data">消息报文</param>
+        /// <param name="offset">消息偏置</param>
+        /// <param name="length">消息长度</param>
+        /// <returns></returns>
+        public string ParseMsgToString(byte[] data, int offset, int length)
         {
-            return Socket.Receive(buffer);
+            if (IsBinary)
+            {
+                string result = "";
+                for (int i = offset; i < length; i++)
+                {
+                    result += String.Format(" 0x{0:X2}", data[i]);
+                }
+                return result;
+            }
+            else
+            {
+                return Encoding.Default.GetString(data, offset, length).Trim('\n');
+            }
+        }
+
+        public string ParseMsgToString(byte[] data, int length)
+        {
+            return ParseMsgToString(data, 0, length);
+        }
+
+        public string ParseMsgToString(byte[] data)
+        {
+            return ParseMsgToString(data, data.Length);
         }
         #endregion
 
-        #region ------------PrivateMethod------------
+        #region ------------ProtectedMethod------------
+        protected void ReceiveBuffer(byte[] data)
+        {
+            ReceiveDataEvent?.Invoke(this, data);
+        }
         #endregion
 
         #region ------------StaticMethod------------
@@ -172,6 +225,10 @@ namespace UtilityTools.Core.Model
 
     public class UdpNetConfigModel : NetConfigModel
     {
+        #region ------------Property------------
+        private byte[] _dataBuff = new byte[4096];
+        #endregion
+
         #region ------------Property------------
         /// <summary>
         /// 是否支持广播
@@ -203,6 +260,7 @@ namespace UtilityTools.Core.Model
             _sendEndPoint = new IPEndPoint(IPAddress.Parse(TargetIp), TargetPort);
             _recvEndPoint = new IPEndPoint(IPAddress.Parse(HostIp), HostPort);
             Socket.Bind(_recvEndPoint);
+            Socket.BeginReceive(_dataBuff, 0, _dataBuff.Length, SocketFlags.None, ReceiveCallback, null);
             return true;
         }
 
@@ -215,10 +273,47 @@ namespace UtilityTools.Core.Model
             Socket = null;
         }
         #endregion
+
+        #region ------------PrivateMethod------------
+        /// <summary>
+        /// 异步读取回调函数
+        /// </summary>
+        /// <param name="ar"></param>
+        private void ReceiveCallback(IAsyncResult ar)
+        {
+            try
+            {
+                EndPoint remoteEndPoint = new IPEndPoint(IPAddress.Parse(TargetIp), TargetPort);
+                var buffSize = Socket.EndReceiveFrom(ar, ref remoteEndPoint);
+                if (buffSize > 0)
+                {
+                    var buffer = new byte[buffSize];
+                    Array.Copy(_dataBuff, buffer, buffSize);
+                    LogManager.GetCurrentClassLogger().Debug($"接收来自{remoteEndPoint.ToString()}：{ParseMsgToString(buffer)}");
+                    ReceiveBuffer(buffer);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.GetCurrentClassLogger().Fatal($"接收回调异常：{ex.Message}");
+            }
+            finally
+            {
+                if(Socket != null )
+                {
+                    Socket.BeginReceive(_dataBuff, 0, _dataBuff.Length, SocketFlags.None, ReceiveCallback, null);
+                }
+            }
+        }
+        #endregion
     }
 
     public class TcpNetConfigModel : NetConfigModel
     {
+        #region ------------Property------------
+        private byte[] _dataBuff = new byte[4096];
+        #endregion
+
         #region ------------Property------------
         #endregion
 
@@ -229,7 +324,7 @@ namespace UtilityTools.Core.Model
         /// <returns></returns>
         public override bool IsOpen()
         {
-            if(Socket != null) 
+            if (Socket != null)
                 return Socket.Connected;
             return false;
         }
@@ -248,15 +343,15 @@ namespace UtilityTools.Core.Model
                 return true;
             _recvEndPoint = new IPEndPoint(IPAddress.Parse(HostIp), HostPort);
             _sendEndPoint = new IPEndPoint(IPAddress.Parse(TargetIp), TargetPort);
-            if (Socket.LocalEndPoint == null)
+            Socket.Bind(_recvEndPoint);
+            Socket.Connect(_sendEndPoint);
+            if (Socket.Connected)
             {
-                Socket.Bind(_recvEndPoint);
+                Socket.BeginReceive(_dataBuff, 0, _dataBuff.Length, SocketFlags.None, ReceiveCallback, null);
+                return true;
             }
-            if (Socket.RemoteEndPoint == null)
-            { 
-                Socket.Connect(_sendEndPoint);
-            }
-            return true;
+            
+            return false;
         }
 
         /// <summary>
@@ -269,6 +364,40 @@ namespace UtilityTools.Core.Model
                 Socket.Shutdown(SocketShutdown.Both);
                 Socket.Close();
                 Socket = null;
+            }
+        }
+        #endregion
+
+        #region
+        /// <summary>
+        /// 异步读取回调函数
+        /// </summary>
+        /// <param name="ar"></param>
+        private void ReceiveCallback(IAsyncResult ar)
+        {
+            try
+            {
+                if(Socket == null || !Socket.Connected) 
+                {
+                    return;
+                }
+                EndPoint remoteEndPoint = new IPEndPoint(IPAddress.Parse(TargetIp), TargetPort);
+                var buffSize = Socket.EndReceiveFrom(ar, ref remoteEndPoint);
+                if (buffSize > 0)
+                {
+                    var buffer = new byte[buffSize];
+                    Array.Copy(_dataBuff, buffer, buffSize);
+                    LogManager.GetCurrentClassLogger().Debug($"接收来自{remoteEndPoint.ToString()}：{ParseMsgToString(buffer)}");
+                    ReceiveBuffer(buffer);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.GetCurrentClassLogger().Fatal($"接收回调异常：{ex.Message}");
+            }
+            finally
+            {
+                Socket.BeginReceive(_dataBuff, 0, _dataBuff.Length, SocketFlags.None, ReceiveCallback, null);
             }
         }
         #endregion

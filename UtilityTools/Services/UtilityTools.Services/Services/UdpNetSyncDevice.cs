@@ -29,6 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using UtilityTools.Core.Helper;
 using UtilityTools.Core.Model;
 using UtilityTools.Services.Interfaces.IServices;
@@ -41,11 +42,17 @@ namespace UtilityTools.Services.Services
         public UdpNetSyncDevice()
         {
             DeviceInstance = new UdpNetConfigModel();
+            DeviceInstance.ReceiveDataEvent += DeviceInstance_ReceiveDataEvent;
         }
+
         #endregion
 
         #region ------------Field------------
         private static readonly object _obj = new object();         // 加锁对象
+        private byte[] _receiveBuff;
+        private int _receiveLen;
+
+        EventWaitHandle _waitResponseHandle = new AutoResetEvent(false);
         #endregion
 
         #region ------------Property------------
@@ -140,12 +147,15 @@ namespace UtilityTools.Services.Services
                     throw new Exception($"{Name} 发送长度异常: {sendSize}/{cmd.Length}");
                 }
                 LogManager.GetCurrentClassLogger().Debug($"{Name} 发送 : {GetCmdString(cmd, sendSize)}");
-                DeviceInstance.SetWaitTimeOut(waitTime);
-                response = new byte[128];
                 try
                 {
-                    length = DeviceInstance.Receive(response);
-                    if(length > 0)
+                    if (_waitResponseHandle.WaitOne(waitTime))
+                    {
+                        length = _receiveLen;
+                        response = new byte[_receiveLen];
+                        Array.Copy(_receiveBuff, response, length);
+                    }
+                    if (length > 0)
                         LogManager.GetCurrentClassLogger().Debug($"{Name} 接收 : {GetCmdString(response, length)}");
                     else
                         LogManager.GetCurrentClassLogger().Debug($"{Name} 未接收到数据");
@@ -195,6 +205,12 @@ namespace UtilityTools.Services.Services
         #endregion
 
         #region ------------PrivateMethod------------
+        private void DeviceInstance_ReceiveDataEvent(object sender, byte[] e)
+        {
+            _receiveLen = e.Length;
+            Array.Copy(e, _receiveBuff, _receiveLen);
+            _waitResponseHandle.Set();
+        }
         #endregion
 
         #region ------------StaticMethod------------
