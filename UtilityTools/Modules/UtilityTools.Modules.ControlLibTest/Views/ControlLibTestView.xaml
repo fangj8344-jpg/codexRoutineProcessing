@@ -194,7 +194,6 @@
                             Value="{Binding SelectedFanModel.Speed, Mode=TwoWay}"
                             VerticalAlignment="Center" />
                 </DockPanel>
-
                 <ItemsControl Grid.Row="1"
                               ItemsSource="{Binding FanModels}">
                     <ItemsControl.ItemsPanel>

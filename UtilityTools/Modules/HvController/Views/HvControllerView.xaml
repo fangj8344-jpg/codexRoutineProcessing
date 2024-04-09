@@ -42,9 +42,7 @@
                         Style="{StaticResource MaterialDesignToolButton}"
                         Foreground="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             </DockPanel>
-
             <local:HvModelView Grid.Row="1" DataContext="{Binding Model}"/>
-
         </Grid>
     </md:DialogHost>
 </UserControl>

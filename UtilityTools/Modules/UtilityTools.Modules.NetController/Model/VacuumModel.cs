@@ -49,7 +49,7 @@ namespace UtilityTools.Modules.NetController.Model
             Vacuums.Add(new LabelInfoModel() { Name = "真空读数2", Type="Vacuum", Channel = 2, Tip = "通道2真空读数", Value = "未知", ControlCommand = new DelegateCommand<object>(UpdateVacInfo) });
             Vacuums.Add(new LabelInfoModel() { Name = "真空读数3", Type="Vacuum", Channel = 3, Tip = "通道3真空读数", Value = "未知", ControlCommand = new DelegateCommand<object>(UpdateVacInfo) });
             Vacuums.Add(new LabelInfoModel() { Name = "真空读数4", Type="Vacuum", Channel = 4, Tip = "通道4真空读数", Value = "未知", ControlCommand = new DelegateCommand<object>(UpdateVacInfo) });
-
+   
             Motor = new ToggleInfoModel() { Name = "Motor", Type="Motor", Tip="电机", Channel = 0, Enable = false};
         }
         #endregion

@@ -51,8 +51,7 @@ namespace UtilityTools.Modules.HvController.ViewModels
             _dialogHostService = dialogHostService;
             InitProperty();
             InitCommand();
-        }
-
+        }   
         #endregion
 
         #region ------------Field------------
@@ -64,11 +63,11 @@ namespace UtilityTools.Modules.HvController.ViewModels
         /// <summary>
         /// 设备是否连接
         /// </summary>
-        public bool IsConnected
-        {
-            get { return _isConnected; }
-            set { _isConnected = value; RaisePropertyChanged(); }
-        }
+            public bool IsConnected
+            {
+                get { return _isConnected; }
+                set { _isConnected = value; RaisePropertyChanged(); }
+            }
 
         private bool _netIsConnected;
         /// <summary>

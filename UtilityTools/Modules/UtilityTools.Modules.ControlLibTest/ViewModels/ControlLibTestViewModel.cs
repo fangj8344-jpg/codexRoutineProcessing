@@ -148,9 +148,6 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             set { _vacModel = value; RaisePropertyChanged(); }
         }
 
-
-
-
         public DelegateCommand<string> GetVacCommand { get; set; }
 
         private ObservableCollection<BseModel> _bseModels = new ObservableCollection<BseModel>();
