@@ -210,7 +210,6 @@ namespace UtilityTools.Modules.HvController.Protocol
                 sPos = Array.IndexOf(response, (byte)0xFF, sPos, length - sPos);
                 if (sPos < 0 || sPos > length - 8)
                 {
-                    length = 0;
                     return null;
                 }
                 if (response[sPos + 1] == 0xFF && response[sPos + 2] == 0xFF
