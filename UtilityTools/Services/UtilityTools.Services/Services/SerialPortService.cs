@@ -323,18 +323,21 @@ namespace UtilityTools.Services.Services
                 {
                     byte[] response = null;
                     int realLen = 0;
-                    if (IsBinary)
-                    {
-                        int size = dev.BytesToRead;
-                        response = new byte[size];
-                        realLen = dev.Read(response, 0, size);
-                    }
-                    else
-                    {
-                        string line = dev.ReadLine();
-                        response = Encoding.ASCII.GetBytes(line);
-                        realLen = response.Length;
-                    }
+                    //if (IsBinary)
+                    //{
+                    //    int size = dev.BytesToRead;
+                    //    response = new byte[size];
+                    //    realLen = dev.Read(response, 0, size);
+                    //}
+                    //else
+                    //{
+                    //    string line = dev.ReadLine();
+                    //    response = Encoding.ASCII.GetBytes(line);
+                    //    realLen = response.Length;
+                    //}
+                    int size = dev.BytesToRead;
+                    response = new byte[size];
+                    realLen = dev.Read(response, 0, size);
                     LogManager.GetCurrentClassLogger().Debug($"{Name} 接收 : {GetCmdString(response, realLen)}");
 
                     UpdateResponse?.Invoke(this, response);

@@ -16,6 +16,7 @@ namespace UtilityTools.Modules.FZBPumpController.Protocol
     internal class FZBPumpControllerProtocol
     {        
         public static string desAddress = "001";
+        public static string ReadCommand = "00";
         public static string ControlCommand = "10";
 
         /// <summary>
@@ -111,7 +112,7 @@ namespace UtilityTools.Modules.FZBPumpController.Protocol
             string message = "";
             string data = "=?";
             string length = data.Length.ToString("D2");
-            message = Destination + ControlCommand + Param + length+ data;
+            message = Destination + ReadCommand + Param + length+ data;
             message += ASCIIModulo(message);
             message += "\r";
             byte[] bytes = System.Text.Encoding.UTF8.GetBytes(message);

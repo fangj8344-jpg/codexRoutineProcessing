@@ -113,10 +113,10 @@
                                  Grid.Column="1"
                                  Rows="1"
                                  VerticalAlignment="Center">
-                        <TextBox Text="{Binding UserParam4, StringFormat=0x{0:X2}}"
+                        <TextBox Text="{Binding UserParam1, StringFormat=0x{0:X2}}"
                                  VerticalAlignment="Center" />
 
-                        <TextBox Text="{Binding UserParam3, StringFormat=0x{0:X2}}"
+                        <TextBox Text="{Binding UserParam2, StringFormat=0x{0:X2}}"
                                  VerticalAlignment="Center" />
                     </UniformGrid>
 
@@ -124,10 +124,10 @@
                                  Grid.Column="2"
                                  Rows="1"
                                  VerticalAlignment="Center">
-                        <TextBox Text="{Binding UserParam2, StringFormat=0x{0:X2}}"
+                        <TextBox Text="{Binding UserParam3, StringFormat=0x{0:X2}}"
                                  VerticalAlignment="Center" />
 
-                        <TextBox Text="{Binding UserParam1, StringFormat=0x{0:X2}}"
+                        <TextBox Text="{Binding UserParam4, StringFormat=0x{0:X2}}"
                                  VerticalAlignment="Center" />
                     </UniformGrid>
                 </Grid>

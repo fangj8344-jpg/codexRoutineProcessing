@@ -11,13 +11,16 @@
         <TabControl>
             <TabItem Header="数据发送">
                 <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
-                        <RowDefinition />
                         <RowDefinition />
                         <RowDefinition />
                     </Grid.RowDefinitions>
 
-                    <ScrollViewer Grid.Column="0" Grid.Row="0"  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer Grid.Row="0" Grid.Column="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                         <ItemsControl Grid.Row="0" 
                            ItemsSource="{Binding SendSwitchControlModels}">
                             <ItemsControl.ItemsPanel>
@@ -44,7 +47,7 @@
                         </ItemsControl>
                     </ScrollViewer>
 
-                    <ScrollViewer  Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer  Grid.Row="0" Grid.Column="1" Grid.RowSpan="2"  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                         <ItemsControl  ItemsSource="{Binding DataReadbackControlModels}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -68,7 +71,7 @@
                     </ScrollViewer>
 
 
-                    <ScrollViewer Grid.Row="2"   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer Grid.Row="1" Grid.Column="0"  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                         <ItemsControl ItemsSource="{Binding DataDeliveryControlModels}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
