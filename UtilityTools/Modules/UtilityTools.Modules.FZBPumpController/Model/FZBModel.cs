@@ -35,11 +35,11 @@ namespace UtilityTools.Modules.FZBPumpController.Model
             DataReadbackControlModels = new ObservableCollection<AllLabelsModel>();
             DataDeliveryControlModels = new ObservableCollection<AllLabelsModel>();
 
-
             SendSwitchControlModels.Add(new AllLabelsModel() { Name = "待机", Destination = "001", Value = false, Data = "", Param = "002", SetSendSwitchAction = SendSwitchControlMessage });
             SendSwitchControlModels.Add(new AllLabelsModel() { Name = "泵组", Destination = "001", Value = false, Data = "", Param = "010", SetSendSwitchAction = SendSwitchControlMessage });
             SendSwitchControlModels.Add(new AllLabelsModel() { Name = "电动泵", Destination = "001", Value = false, Data = "", Param = "023", SetSendSwitchAction = SendSwitchControlMessage });
             SendSwitchControlModels.Add(new AllLabelsModel() { Name = "转速设置模式", Destination = "001", Value = false, Data = "", Param = "026", SetSendSwitchAction = SendSwitchControlMessage });
+
             DataReadbackControlModels.Add(new AllLabelsModel() { Name = "错误代码", Destination = "001", Value = false, Data = "", Param = "303", DataReadbackControlAction = DataReadbackControlMessage });
             DataReadbackControlModels.Add(new AllLabelsModel() { Name = "设定转速(Hz)", Destination = "001", Value = false, Data = "", Param = "308", DataReadbackControlAction = DataReadbackControlMessage });
             DataReadbackControlModels.Add(new AllLabelsModel() { Name = "实际转速 (Hz)", Destination = "001", Value = false, Data = "", Param = "309", DataReadbackControlAction = DataReadbackControlMessage });
@@ -60,9 +60,12 @@ namespace UtilityTools.Modules.FZBPumpController.Model
             DataReadbackControlModels.Add(new AllLabelsModel() { Name = "设定转速(转/分)", Destination = "001", Value = false, Data = "", Param = "397", DataReadbackControlAction = DataReadbackControlMessage });
             DataReadbackControlModels.Add(new AllLabelsModel() { Name = "实际转速(转/分)", Destination = "001", Value = false, Data = "", Param = "398", DataReadbackControlAction = DataReadbackControlMessage });
             DataReadbackControlModels.Add(new AllLabelsModel() { Name = "额定转速(转/分)", Destination = "001", Value = false, Data = "", Param = "399", DataReadbackControlAction = DataReadbackControlMessage });
+            
             DataDeliveryControlModels.Add(new AllLabelsModel() { Name = "转速设置模式中的设定值", Destination = "001", Value = false, Data = "0", Param = "707", DataDeliveryControlAction = DataDeliveryControlMessage });
             DataDeliveryControlModels.Add(new AllLabelsModel() { Name = "待机时转速设定值", Destination = "001", Value = false, Data = "0", Param = "717", DataDeliveryControlAction = DataDeliveryControlMessage });
             DataDeliveryControlModels.Add(new AllLabelsModel() { Name = "RS-485 接口地址", Destination = "001", Value = false, Data = "0", Param = "797", DataDeliveryControlAction = DataDeliveryControlMessage });
+            DataDeliveryControlModels.Add(new AllLabelsModel() { Name = "急停", Destination = "001", Value = false, Data = "000001", Param = "902", DataDeliveryControlAction = DataDeliveryControlMessage });
+            DataDeliveryControlModels.Add(new AllLabelsModel() { Name = "取消急停", Destination = "001", Value = false, Data = "000000", Param = "902", DataDeliveryControlAction = DataDeliveryControlMessage });
         }
         #endregion
 
@@ -227,33 +230,24 @@ namespace UtilityTools.Modules.FZBPumpController.Model
         /// </summary>
         /// <param name="param">功能参数</param>
         /// <returns></returns>
-        private AllLabelsModel SerachObject(string param)
+        private AllLabelsModel? SerachObject(string param)
         {
-            if (param.Equals("002") || param.Equals("010") || param.Equals("023") || param.Equals("026"))
+            foreach (AllLabelsModel allLabelsModel in SendSwitchControlModels)
             {
-                foreach (AllLabelsModel allLabelsModel in SendSwitchControlModels)
-                {
-                    if (allLabelsModel.Param.Equals(param)) return allLabelsModel;
-                }
+                if (allLabelsModel.Param.Equals(param)) return allLabelsModel;
             }
 
-            else if (param.Equals("707") || param.Equals("717") || param.Equals("797"))
+            foreach (AllLabelsModel allLabelsModel in DataDeliveryControlModels)
             {
-                foreach (AllLabelsModel allLabelsModel in DataDeliveryControlModels)
-                {
-                    if (allLabelsModel.Param.Equals(param)) return allLabelsModel;
-                }
+                if (allLabelsModel.Param.Equals(param)) return allLabelsModel;
             }
-            else
+
+            foreach (AllLabelsModel allLabelsModel in DataReadbackControlModels)
             {
-                foreach (AllLabelsModel allLabelsModel in DataReadbackControlModels)
-                {
-                    if (allLabelsModel.Param.Equals(param)) return allLabelsModel;
-                }
+                if (allLabelsModel.Param.Equals(param)) return allLabelsModel;
             }
+
             return null;
-
-
         }
         /// <summary>
         /// 数据回包
@@ -274,6 +268,7 @@ namespace UtilityTools.Modules.FZBPumpController.Model
 
             Array.Copy(_response, 0, frame, 0, firstnumber + 1);
             Array.Copy(_response, firstnumber + 1, _response, 0, _response.Length - frame.Length - 1);
+            _responseLength -= frame.Length;
 
             bool examine = FZBPumpControllerProtocol.Examine(frame);
 
@@ -291,134 +286,17 @@ namespace UtilityTools.Modules.FZBPumpController.Model
             Array.Copy(frame, 10, data, 0, data.Length);
             string receiverdata;
             string ParamsValue = Convert.ToInt16(Encoding.UTF8.GetString(param)).ToString("D3");
-            AllLabelsModel allLabelsModel = SerachObject(ParamsValue);
+            AllLabelsModel? allLabelsModel = SerachObject(ParamsValue);
+
+            if(allLabelsModel == null) 
+            {
+                return;
+            }
+
             receiverdata = Encoding.UTF8.GetString(data);
             allLabelsModel.Data = receiverdata;
-            //switch (ParamsValue)
-            //{
-            //    case "303":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "306":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "308":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "309":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "310":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "311":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "312":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "313":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "314":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "315":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "316":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "326":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "330":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "342":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "346":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "349":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "354":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "360":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "361":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "362":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "363":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "364":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "365":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "366":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "367":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "368":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "369":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "397":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "398":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //    case "399":
-            //        receiverdata = Encoding.UTF8.GetString(data);
-            //        allLabelsModel.Data += receiverdata;
-            //        break;
-            //}
+            
             AddLog(SerialPortService.GetCmdString(frame, frame.Length));
-            _responseLength -= frame.Length;
         }
         #endregion
 
