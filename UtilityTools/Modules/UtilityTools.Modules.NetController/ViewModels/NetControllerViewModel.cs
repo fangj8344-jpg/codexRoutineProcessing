@@ -198,6 +198,23 @@ namespace UtilityTools.Modules.NetController.ViewModels
             Temperature.SetPropertyChangedHandle(OnPropertyChanged);
             Vacuum.SetPropertyChangedHandle(OnPropertyChanged);
             Light.SetPropertyChangedHandle(OnPropertyChanged);
+
+            Vacuum.GetVacInfoEvent += UpdateLabelInfoEvent;
+            Temperature.GetTempInfoEvent += UpdateLabelInfoEvent;
+        }
+
+        /// <summary>
+        /// 更新Label信息事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void UpdateLabelInfoEvent(object sender, object e)
+        {
+            LabelInfoModel model = e as LabelInfoModel;
+            if (model != null && GetLabelValue(model.Type, model.Channel, out string value))
+            {
+                model.Value = value;
+            }
         }
 
         /// <summary>

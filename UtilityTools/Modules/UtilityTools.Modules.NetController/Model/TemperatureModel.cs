@@ -24,6 +24,7 @@
  *----------------------------------------------------------------*/
 #endregion
 
+using Prism.Commands;
 using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
@@ -43,8 +44,8 @@ namespace UtilityTools.Modules.NetController.Model
         public TemperatureModel()
         {
             Temperatures = new ObservableCollection<LabelInfoModel>();
-            Temperatures.Add(new LabelInfoModel() { Name = "温度读数1", Type="Temperature", Channel = 1, Tip = "", Value = "未知" });
-            Temperatures.Add(new LabelInfoModel() { Name = "温度读数2", Type="Temperature", Channel = 2, Tip = "", Value = "未知" });
+            Temperatures.Add(new LabelInfoModel() { Name = "温度读数1", Type="Temperature", Channel = 1, Tip = "", Value = "未知", ControlCommand = new DelegateCommand<object>(UpdateTempInfo) });
+            Temperatures.Add(new LabelInfoModel() { Name = "温度读数2", Type="Temperature", Channel = 2, Tip = "", Value = "未知", ControlCommand = new DelegateCommand<object>(UpdateTempInfo) });
 
             Fans = new ObservableCollection<IntSliderInfoModel>();
             Fans.Add(new IntSliderInfoModel() { Title = "风扇1", Type="Fans", Tip="可调速风扇", Value = 0, Channel = 1, MinValue = 0, MaxValue = 100, Interval = 500 });
@@ -79,6 +80,13 @@ namespace UtilityTools.Modules.NetController.Model
 
         #endregion
 
+        #region ------------Property------------
+        /// <summary>
+        /// 获取真空信息事件
+        /// </summary>
+        public event EventHandler<object> GetTempInfoEvent;
+        #endregion
+
         #region ------------PublicMethod------------
         /// <summary>
         /// 设置属性变更回调函数
@@ -86,11 +94,6 @@ namespace UtilityTools.Modules.NetController.Model
         /// <param name="handler"></param>
         public void SetPropertyChangedHandle(PropertyChangedEventHandler handler)
         {
-            foreach (LabelInfoModel valueItem in Temperatures)
-            {
-                valueItem.PropertyChanged += handler;
-            }
-
             foreach (IntSliderInfoModel sliderItem in Fans)
             {
                 sliderItem.PropertyChanged += handler;
@@ -99,6 +102,10 @@ namespace UtilityTools.Modules.NetController.Model
         #endregion
 
         #region ------------PrivateMethod------------
+        private void UpdateTempInfo(object obj)
+        {
+            GetTempInfoEvent?.Invoke(this, obj);
+        }
         #endregion
 
         #region ------------StaticMethod------------

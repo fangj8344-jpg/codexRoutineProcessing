@@ -363,6 +363,49 @@ namespace UtilityTools.Modules.NetController.Extension
             return false;
         }
 
+        public static bool SendLightCommand(this ISyncRWService service, string cmdName, byte[] cmdContent, int outTime = 2000)
+        {
+            var netConfig = service.GetHandle() as NetConfigModel;
+            if (netConfig == null)
+            {
+                LogManager.GetCurrentClassLogger().Error($"{service.Name} is NOT Net Service!");
+                return false;
+            }
+
+            byte[] cmd = NetControllerProtocol.PackageLightCmd(cmdName, cmdContent, netConfig.HostIp, netConfig.HostPort);
+            byte[] response;
+            int resLen;
+            service.Request(cmdName, cmd, out response, out resLen, outTime);
+            if (resLen > 0)
+            {
+                if (!NetControllerProtocol.CheckResponse(response, resLen))
+                {
+                    LogManager.GetCurrentClassLogger().Error($"{service.Name} CheckResponse Failed: {service.GetCmdString(response, resLen)}");
+                    return false;
+                }
+
+                string responseStr = Encoding.UTF8.GetString(response, 0, resLen);
+                if (responseStr.Contains("Error Code"))
+                {
+                    string[] errList = responseStr.Split(':', ',');
+                    if (errList.Length < 4)
+                    {
+                        LogManager.GetCurrentClassLogger().Error($"{service.Name} Response Format Error: {service.GetCmdString(response, resLen)}");
+                        return false;
+                    }
+
+                    int errCode = int.Parse(errList[2], System.Globalization.NumberStyles.HexNumber);
+                    return NetControllerProtocol.ParseErrCode(errCode);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// 发送设置指令
         /// </summary>
@@ -393,6 +436,7 @@ namespace UtilityTools.Modules.NetController.Extension
                 }
 
                 string responseStr = Encoding.UTF8.GetString(response, 0, resLen);
+
                 if (responseStr.Contains("Error Code"))
                 {
                     string[] errList = responseStr.Split(':', ',');
@@ -558,7 +602,7 @@ namespace UtilityTools.Modules.NetController.Extension
                 }
             }
 
-            return false;
+            return true;
         }
     }
 }

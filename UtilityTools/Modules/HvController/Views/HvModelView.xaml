@@ -16,7 +16,365 @@
         <cv:EnumDescriptionConverter x:Key="enumDescriptionConverter" />
     </UserControl.Resources>
 
-    <Grid>
+    <TabControl>
+        <TabItem Header="高压控制">
+            <Grid Margin="10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto" />
+                    <RowDefinition Height="auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="auto" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition />
+                        <RowDefinition />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox Text="{Binding SetAccVol}"
+                             VerticalAlignment="Center"
+                             HorizontalContentAlignment="Center"
+                             Grid.Row="0"
+                             Grid.Column="0" />
+                    <Button Content="电压设置"
+                            Command="{Binding SetAccVolCommand}"
+                            VerticalAlignment="Center"
+                            Grid.Row="1"
+                            Grid.Column="0"
+                            Margin="2" />
+
+                    <CheckBox Content="是否新灯丝"
+                              IsChecked="{Binding IsNewFila}"
+                              VerticalAlignment="Center"
+                              Grid.Row="0"
+                              Grid.Column="1" />
+                    <Button Content="开枪"
+                            Command="{Binding OpenHvCommand}"
+                            VerticalAlignment="Center"
+                            Grid.Row="1"
+                            Grid.Column="1"
+                            Margin="2" />
+
+                    <TextBox Text="{Binding ChangeAccVol}"
+                             VerticalAlignment="Center"
+                             HorizontalContentAlignment="Center"
+                             Grid.Row="0"
+                             Grid.Column="2" />
+                    <Button Content="切换电压"
+                            Command="{Binding ChangeHvCommand}"
+                            VerticalAlignment="Center"
+                            Grid.Row="1"
+                            Grid.Column="2"
+                            Margin="2" />
+
+                    <Button Content="关枪"
+                            Command="{Binding CloseHvCommand}"
+                            Grid.Row="1"
+                            Grid.Column="3"
+                            Margin="2" />
+
+                    <Button Content="错误清除"
+                            Command="{Binding ClearErrorCommand}"
+                            Grid.Row="3"
+                            Grid.Column="0"
+                            Margin="2" />
+
+                    <Button Content="读取继电器"
+                            Command="{Binding ReadRegisterCommand}"
+                            Grid.Row="2"
+                            Grid.Column="0"
+                            Margin="2" />
+
+                    <Button Content="重置"
+                            Command="{Binding ReDefaultCommand}"
+                            Grid.Row="3"
+                            Grid.Column="3"
+                            Margin="2" />
+
+                    <Button Content="参数设置"
+                            Command="{Binding SetUserParamCommand}"
+                            VerticalAlignment="Center"
+                            Grid.Row="3"
+                            Grid.Column="1"
+                            Grid.ColumnSpan="2"
+                            Margin="2" />
+
+                    <UniformGrid Grid.Row="2"
+                                 Grid.Column="1"
+                                 Rows="1"
+                                 VerticalAlignment="Center">
+                        <TextBox Text="{Binding UserParam1, StringFormat=0x{0:X2}}"
+                                 VerticalAlignment="Center" />
+
+                        <TextBox Text="{Binding UserParam2, StringFormat=0x{0:X2}}"
+                                 VerticalAlignment="Center" />
+                    </UniformGrid>
+
+                    <UniformGrid Grid.Row="2"
+                                 Grid.Column="2"
+                                 Rows="1"
+                                 VerticalAlignment="Center">
+                        <TextBox Text="{Binding UserParam3, StringFormat=0x{0:X2}}"
+                                 VerticalAlignment="Center" />
+
+                        <TextBox Text="{Binding UserParam4, StringFormat=0x{0:X2}}"
+                                 VerticalAlignment="Center" />
+                    </UniformGrid>
+                </Grid>
+
+                <Grid Grid.Row="1">
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition />
+                        <RowDefinition />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+
+                    <Label Content="加速电压"
+                           Grid.Row="0"
+                           Grid.Column="0"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           VerticalContentAlignment="Center" />
+
+                    <Label Content="发射电流"
+                           Grid.Row="0"
+                           Grid.Column="1"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           VerticalContentAlignment="Center" />
+
+                    <Label Content="灯丝电阻"
+                           Grid.Row="0"
+                           Grid.Column="2"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           VerticalContentAlignment="Center" />
+
+                    <Label Content="栅极电压"
+                           Grid.Row="0"
+                           Grid.Column="3"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           VerticalContentAlignment="Center" />
+
+                    <Label Content="{Binding ReadAccVol}"
+                           Foreground="LightBlue"
+                           Grid.Row="1"
+                           Grid.Column="0"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           VerticalContentAlignment="Center" />
+
+                    <Label Content="{Binding ReadEmissCur}"
+                           Foreground="LightBlue"
+                           Grid.Row="1"
+                           Grid.Column="1"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           VerticalContentAlignment="Center" />
+
+                    <Label Content="{Binding ReadFilaR}"
+                           Foreground="LightBlue"
+                           Grid.Row="1"
+                           Grid.Column="2"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           VerticalContentAlignment="Center" />
+
+                    <Label Content="{Binding ReadGridVol}"
+                           Foreground="LightBlue"
+                           Grid.Row="1"
+                           Grid.Column="3"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           VerticalContentAlignment="Center" />
+
+                    <Label Content="物理地址"
+                           Grid.Row="2"
+                           Grid.Column="0"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           VerticalContentAlignment="Center" />
+
+                    <Label Content="灯丝参数"
+                           Grid.Row="2"
+                           Grid.Column="1"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           VerticalContentAlignment="Center" />
+
+                    <Label Content="使用时间"
+                           Grid.Row="2"
+                           Grid.Column="2"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           VerticalContentAlignment="Center" />
+
+                    <Label Content="灯丝类型"
+                           Grid.Row="2"
+                           Grid.Column="3"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           VerticalContentAlignment="Center" />
+                    
+                    <Label Content="高压状态"
+                           Grid.Row="2"
+                           Grid.Column="4"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           VerticalContentAlignment="Center" />
+
+                    <Label Content="{Binding ReadRegAddr}"
+                           Foreground="LightBlue"
+                           Grid.Row="3"
+                           Grid.Column="0"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           VerticalContentAlignment="Center" />
+
+                    <Label Content="{Binding ReadFilaParam}"
+                           Foreground="LightBlue"
+                           Grid.Row="3"
+                           Grid.Column="1"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           VerticalContentAlignment="Center" />
+
+                    <Label Content="{Binding ReadFilaUsedTime}"
+                           Foreground="LightBlue"
+                           Grid.Row="3"
+                           Grid.Column="2"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           VerticalContentAlignment="Center" />
+
+                    <Label Content="{Binding ReadFilaType, Converter={StaticResource enumDescriptionConverter}}"
+                           Foreground="LightBlue"
+                           Grid.Row="3"
+                           Grid.Column="3"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           VerticalContentAlignment="Center" />
+                    
+                    <Label Content="{Binding ReadFilaState, Converter={StaticResource enumDescriptionConverter}}"
+                           Foreground="LightBlue"
+                           Grid.Row="3"
+                           Grid.Column="4"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           VerticalContentAlignment="Center" />
+                </Grid>
+
+                <oxy:PlotView Model="{Binding HvPlotModel}"
+                              Grid.Row="2">
+                    <oxy:PlotView.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="自适应"
+                                      Command="{Binding AutoAdjustCommand}" />
+                            <MenuItem Header="清除"
+                                      Command="{Binding ClearMonitorCommand}" />
+                            <MenuItem Header="另存为"
+                                      Command="{Binding SaveMonitorInfoCommand}" />
+                        </ContextMenu>
+                    </oxy:PlotView.ContextMenu>
+                </oxy:PlotView>
+
+                <DockPanel Grid.Row="3"
+                           Margin="10"
+                           LastChildFill="False">
+                    <Button DockPanel.Dock="Right"
+                            Command="{Binding ChangeMonitorStateCommand}"
+                            Content="{Binding MonitorState}"
+                            Margin="5, 0, 5, 0" />
+                    <Label Content="采样间隔(ms):"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           DockPanel.Dock="Left"
+                           Margin="5, 0, 5, 0" />
+                    <TextBox Text="{Binding MonitorInterval}"
+                             VerticalAlignment="Center"
+                             Padding="10, 0, 12, 0"
+                             attach:TextBoxAttached.IsEnterEndEdit="True"
+                             attach:TextBoxAttached.IsOnlyNumbers="True"
+                             attach:TextBoxAttached.IsSupportWheel="True"
+                             DockPanel.Dock="Left"
+                             Margin="5, 0, 5, 0" />
+                </DockPanel>
+            </Grid>
+        </TabItem>
+
+        <TabItem Header="自定义指令">
+            <ItemsControl ItemsSource="{Binding CustomCmds}"
+                          Margin="0,0,10,0">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="2" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <DockPanel LastChildFill="True">
+                            <CheckBox Content="自动发送"
+                                      IsChecked="{Binding IsAutoSend}"
+                                      DockPanel.Dock="Left" />
+                            <Button Content="单条发送"
+                                    MinWidth="60"
+                                    HorizontalContentAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    DockPanel.Dock="Right" />
+                            <TextBox Text="{Binding CmdString}"
+                                     VerticalAlignment="Center" 
+                                     HorizontalContentAlignment="Center"/>
+                        </DockPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </TabItem>
+
+        <TabItem Header="日志信息">
+            <ListView ItemsSource="{Binding Logs}" />
+        </TabItem>
+    </TabControl>
+
+    <!--<Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="auto" />
@@ -357,5 +715,5 @@
                       DockPanel.Dock="Right"
                       IsChecked="{Binding IsNewFila}" />
         </DockPanel>
-    </Grid>
+    </Grid>-->
 </UserControl>

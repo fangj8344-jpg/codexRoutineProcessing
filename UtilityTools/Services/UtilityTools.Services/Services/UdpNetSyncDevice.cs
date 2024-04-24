@@ -29,6 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using UtilityTools.Core.Helper;
 using UtilityTools.Core.Model;
 using UtilityTools.Services.Interfaces.IServices;
@@ -41,11 +42,17 @@ namespace UtilityTools.Services.Services
         public UdpNetSyncDevice()
         {
             DeviceInstance = new UdpNetConfigModel();
+            DeviceInstance.ReceiveDataEvent += DeviceInstance_ReceiveDataEvent;
         }
+
         #endregion
 
         #region ------------Field------------
         private static readonly object _obj = new object();         // 加锁对象
+        private byte[] _receiveBuff;
+        private int _receiveLen;
+
+        EventWaitHandle _waitResponseHandle = new AutoResetEvent(false);
         #endregion
 
         #region ------------Property------------
@@ -145,31 +152,23 @@ namespace UtilityTools.Services.Services
                     throw new Exception($"{Name} 发送长度异常: {sendSize}/{cmd.Length}");
                 }
                 LogManager.GetCurrentClassLogger().Debug($"{Name} 发送 : {GetCmdString(cmd, sendSize)}");
-                DeviceInstance.SetWaitTimeOut(waitTime);
-                response = new byte[128];
-                length = 0;
-                string debug = Encoding.UTF8.GetString(cmd);
-                string resStr = string.Empty;
-                string backStr = cmdName;
-                if (cmdName.Contains("SendHandshake"))
+                try
                 {
-                    backStr = "Handshake";
-                }
-                while (!resStr.Contains(backStr))
-                {
-                    try
+                    if (_waitResponseHandle.WaitOne(waitTime))
                     {
-                        length = DeviceInstance.Receive(response);
-                        resStr = Encoding.UTF8.GetString(response, 0, length);
-
+                        length = _receiveLen;
+                        response = new byte[_receiveLen];
+                        Array.Copy(_receiveBuff, response, length);
+                    }
+                    if (length > 0)
                         LogManager.GetCurrentClassLogger().Debug($"{Name} 接收 : {GetCmdString(response, length)}");
-                    }
-                    catch (Exception ex)
-                    {
-                        LogManager.GetCurrentClassLogger().Error($"{Name} 接收失败: {ex.Message}");
-                        length = 0;
-                        break;
-                    }
+                    else
+                        LogManager.GetCurrentClassLogger().Debug($"{Name} 未接收到数据");
+
+                }
+                catch (Exception e) 
+                {
+                    LogManager.GetCurrentClassLogger().Error($"{Name}设备接收数据异常");
                 }
                 return;
             }
@@ -211,6 +210,12 @@ namespace UtilityTools.Services.Services
         #endregion
 
         #region ------------PrivateMethod------------
+        private void DeviceInstance_ReceiveDataEvent(object sender, byte[] e)
+        {
+            _receiveLen = e.Length;
+            Array.Copy(e, _receiveBuff, _receiveLen);
+            _waitResponseHandle.Set();
+        }
         #endregion
 
         #region ------------StaticMethod------------

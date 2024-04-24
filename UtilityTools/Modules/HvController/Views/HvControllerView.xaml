@@ -32,14 +32,17 @@
                            DockPanel.Dock="Left"
                            VerticalAlignment="Center" />
                 <Button DockPanel.Dock="Right"
+                        Command="{Binding ShowNetDeviceCommand}"
+                        Content="{md:PackIcon Kind=EthernetCable, Size=24}"
+                        Style="{StaticResource MaterialDesignToolButton}"
+                        Foreground="{Binding NetIsConnected, Converter={StaticResource BoolToColorConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <Button DockPanel.Dock="Right"
                         Command="{Binding ShowDeviceCommand}"
                         Content="{md:PackIcon Kind=UsbPort, Size=24}"
                         Style="{StaticResource MaterialDesignToolButton}"
                         Foreground="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             </DockPanel>
-            
             <local:HvModelView Grid.Row="1" DataContext="{Binding Model}"/>
-            
         </Grid>
     </md:DialogHost>
 </UserControl>

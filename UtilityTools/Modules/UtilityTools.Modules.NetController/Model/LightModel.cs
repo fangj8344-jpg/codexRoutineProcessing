@@ -24,23 +24,39 @@
  *----------------------------------------------------------------*/
 #endregion
 
+using NLog;
+using Prism.Commands;
+using Prism.Events;
+using Prism.Ioc;
 using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Input;
+using UtilityTools.Core.Dialog;
+using UtilityTools.Core.Extension;
+using UtilityTools.Core.Helper;
 using UtilityTools.Core.Model;
 using UtilityTools.Core.Mvvm;
+using UtilityTools.Modules.NetController.Extension;
+using UtilityTools.Services.Interfaces;
+using UtilityTools.Services.Interfaces.IServices;
 
 namespace UtilityTools.Modules.NetController.Model
 {
     public class LightModel : BindableBase
     {
         #region ------------Constructor------------
-        public LightModel()
+        public LightModel(IContainerProvider containerProvider)
         {
+            _containerProvider = containerProvider;
+            _aggregator = containerProvider.Resolve<IEventAggregator>();
+            _service = _containerProvider.Resolve<IServiceFactory>().GetSyncRWService("UNCB");
             WorkType = EnumLightWorkType.Default;
             BlinkPeriod = 1000;
             NumMask = 0;
@@ -50,10 +66,15 @@ namespace UtilityTools.Modules.NetController.Model
             FlowDirect = EnumFlowDirection.LeftToRight;
             LoadValue = 0;
             MotorEnable = new ToggleInfoModel() { Name = "电机开关", Type = "Motor", Tip = "", Channel = 1, Enable = false };
+
+            UpdateLightCommand = new DelegateCommand(UpdateLight);
         }
         #endregion
 
         #region ------------Field------------
+        private readonly IContainerProvider _containerProvider;
+        public readonly IEventAggregator _aggregator;
+        private ISyncRWService _service;
         private EnumLightWorkType _workType;
         private int _blinkPeriod;
         private int _numMask;
@@ -183,6 +204,144 @@ namespace UtilityTools.Modules.NetController.Model
             }
         }
 
+        #endregion
+
+        #region ------------PublicMethod------------
+        public DelegateCommand UpdateLightCommand { get; set; }
+
+        private void NewUpdateLight()
+        {
+            string cmdName = "SetLightMsg";
+            ByteWriter writer = new ByteWriter(16);
+            writer.Write((byte)0xCE);
+            switch (WorkType)
+            {
+                case EnumLightWorkType.AllOn:
+                    writer.Write((byte)0x01);
+                    writer.Write((byte)0x01);
+                    break;
+                case EnumLightWorkType.AllOff:
+                    writer.Write((byte)0x01);
+                    writer.Write((byte)0x02);
+                    break;
+                case EnumLightWorkType.AllBlink:
+                    writer.Write((byte)0x03);
+                    writer.Write((byte)0x03);
+                    writer.Write((ushort)BlinkPeriod);
+                    break;
+                case EnumLightWorkType.PartBlink:
+                    writer.Write((byte)0x05);
+                    writer.Write((byte)0x04);
+                    writer.Write((ushort)BlinkPeriod);
+                    writer.Write((byte)0x03);
+                    break;
+                case EnumLightWorkType.Breath:
+                    writer.Write((byte)0x03);
+                    writer.Write((byte)0x05);
+                    writer.Write((ushort)BreathPeriod);
+                    break;
+                case EnumLightWorkType.SingleFlow:
+                    writer.Write((byte)0x05);
+                    writer.Write((byte)0x06);
+                    writer.Write((ushort)FlowPeriod);
+                    writer.Write((byte)FlowCount);
+                    writer.Write((byte)FlowDirect);
+                    break;
+                case EnumLightWorkType.BothwayFlow:
+                    writer.Write((byte)0x04);
+                    writer.Write((byte)0x07);
+                    writer.Write((ushort)BlinkPeriod);
+                    writer.Write((byte)0x00);
+                    break;
+                case EnumLightWorkType.Loading:
+                    writer.Write((byte)0x02);
+                    writer.Write((byte)0x08);
+                    writer.Write((byte)LoadValue);
+                    break;
+                case EnumLightWorkType.PartOn:
+                    writer.Write((byte)0x03);
+                    writer.Write((byte)0x09);
+                    writer.Write((ushort)2);
+                    break;
+                case EnumLightWorkType.Default:
+                    writer.Write((byte)0x01);
+                    writer.Write((byte)0x0A);
+                    break;
+            }
+            writer.Write((byte)0xEC);
+            try
+            {
+                var result = _service.SendLightCommand(cmdName, writer.EndWrite(true));
+            }
+            catch (Exception e)
+            {
+                LogManager.GetCurrentClassLogger().Error($"更新灯光状态失败：{e.Message}");
+            }
+        }
+
+        private void UpdateLight()
+        {
+            string cmdName = "SetAllLight";
+            List<string> inParams = new List<string>();
+            switch (WorkType)
+            {
+                case EnumLightWorkType.AllOn:
+                    cmdName = "SetAllLight";
+                    break;
+                case EnumLightWorkType.AllOff:
+                    cmdName = "SetAllOFF";
+                    break;
+                case EnumLightWorkType.AllBlink:
+                    cmdName = "SetAllBlink";
+                    inParams.Add(string.Format("{0}", BlinkPeriod));
+                    break;
+                case EnumLightWorkType.PartBlink:
+                    cmdName = "SetPartBlink";
+                    inParams.Add(string.Format("{0}", BlinkPeriod));
+                    inParams.Add(string.Format("{0}", NumMask));
+                    break;
+                case EnumLightWorkType.PartOn:
+                    cmdName = "SetPartLight";
+                    inParams.Add(string.Format("{0}", NumMask));
+                    break;
+                case EnumLightWorkType.Breath:
+                    cmdName = "SetBreath";
+                    inParams.Add(string.Format("{0}", BreathPeriod));
+                    break;
+                case EnumLightWorkType.SingleFlow:
+                    cmdName = "SetFlow";
+                    inParams.Add(string.Format("{0}", FlowPeriod));
+                    inParams.Add(string.Format("{0}", FlowCount));
+                    inParams.Add(string.Format("{0}", (int)FlowDirect));
+                    break;
+                case EnumLightWorkType.BothwayFlow:
+                    cmdName = "SetTwoWayFlow";
+                    inParams.Add(string.Format("{0}", FlowPeriod));
+                    inParams.Add(string.Format("{0}", FlowCount));
+                    break;
+                case EnumLightWorkType.Loading:
+                    cmdName = "SetLoad";
+                    inParams.Add(string.Format("{0}", LoadValue));
+                    break;
+                case EnumLightWorkType.Default:
+                    cmdName = "SetDefault";
+                    break;
+            }
+            try
+            {
+                bool result = _service.SendSetCommand(cmdName, inParams);
+                if (result == false)
+                {
+                    LogManager.GetCurrentClassLogger().Error(String.Format("SendGetCommand({0}) return false", cmdName));
+                    this._aggregator.SendMessage("更新灯光状态失败!");
+                }
+            }
+            catch (Exception e)
+            {
+                LogManager.GetCurrentClassLogger().Error(e.Message);
+                this._aggregator.SendMessage(e.Message);
+            }
+        }
         #endregion
 
         #region ------------PublicMethod------------

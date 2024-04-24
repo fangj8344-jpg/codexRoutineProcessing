@@ -26,10 +26,12 @@
 
 using NLog;
 using OxyPlot;
+using OxyPlot.Axes;
 using OxyPlot.Legends;
 using OxyPlot.Series;
 using Prism.Commands;
 using Prism.Events;
+using Prism.Ioc;
 using Prism.Mvvm;
 using System;
 using System.Collections.ObjectModel;
@@ -37,8 +39,11 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
+using System.Windows;
 using UtilityTools.Core.Helper;
+using UtilityTools.Core.Model;
 using UtilityTools.Modules.HvController.Protocol;
+using UtilityTools.Services.Interfaces;
 using UtilityTools.Services.Interfaces.IServices;
 
 namespace UtilityTools.Modules.HvController.Model
@@ -46,23 +51,33 @@ namespace UtilityTools.Modules.HvController.Model
     public class HvModel : BindableBase
     {
         #region ------------Constructor------------
-        public HvModel(IAsynRWService device, IEventAggregator aggregator)
+        public HvModel(IContainerProvider containerProvider)
         {
-            _device = device;
-            _aggregator = aggregator;
+            _containerProvider = containerProvider;
+            SerialPortService = _containerProvider.Resolve<IServiceFactory>().GetAsynRWService("SPHV");
+            SerialPortService.UpdateResponse += Device_UpdateResponse;
+            NetUdpService = _containerProvider.Resolve<IServiceFactory>().GetAsynRWService("UNHV");
+            NetUdpService.UpdateResponse += Device_UpdateResponse;
+
+            if (NetUdpService.GetHandle() is NetConfigModel netConfig)
+            {
+                netConfig.HostIp = "192.168.1.33";
+                netConfig.HostPort = 5010;
+                netConfig.TargetIp = "192.168.1.88";
+                netConfig.TargetPort = 5000;
+            }
+
             InitProperty();
             InitCommand();
-            _device.UpdateResponse += Device_UpdateResponse;
 
-            _response = new byte[256];
+            _response = new byte[4096];
             _responseLength = 0;
         }
 
         #endregion
 
         #region ------------Field------------
-        private readonly IAsynRWService _device;
-        private readonly IEventAggregator _aggregator;
+        private readonly IContainerProvider _containerProvider;
 
         EventWaitHandle _operateHvWaitHandle = new AutoResetEvent(false);
         EventWaitHandle _setFilaParamWaitHandle = new AutoResetEvent(false);
@@ -81,6 +96,26 @@ namespace UtilityTools.Modules.HvController.Model
         #endregion
 
         #region ------------Property------------
+        private IAsynRWService _serialPortService;
+        /// <summary>
+        /// 串口异步通信服务
+        /// </summary>
+        public IAsynRWService SerialPortService
+        {
+            get { return _serialPortService; }
+            set { _serialPortService = value; RaisePropertyChanged(); }
+        }
+
+        private IAsynRWService _netUdpService;
+        /// <summary>
+        /// 串口异步通信服务
+        /// </summary>
+        public IAsynRWService NetUdpService
+        {
+            get { return _netUdpService; }
+            set { _netUdpService = value; RaisePropertyChanged(); }
+        }
+
         private bool _isNewFila;
         /// <summary>
         /// 是否是新灯丝
@@ -111,11 +146,11 @@ namespace UtilityTools.Modules.HvController.Model
             set { _changeAccVol = value; RaisePropertyChanged(); }
         }
 
-        private int _userParam1;
+        private byte _userParam1;
         /// <summary>
         /// 用户参数1
         /// </summary>
-        public int UserParam1
+        public byte UserParam1
         {
             get { return _userParam1; }
             set { _userParam1 = value; RaisePropertyChanged(); }
@@ -342,9 +377,10 @@ namespace UtilityTools.Modules.HvController.Model
         public DelegateCommand CloseHvCommand { get; set; }
         public DelegateCommand OpenHvCommand { get; set; }
         public DelegateCommand ChangeHvCommand { get; set; }
-        public DelegateCommand ClearMonitorCommand { get; set; }
         public DelegateCommand ChangeMonitorStateCommand { get; set; }
         public DelegateCommand<object> SendCmdStringCommand { get; set; }
+        public DelegateCommand AutoAdjustCommand { get; set; }
+        public DelegateCommand ClearMonitorCommand { get; set; }
         public DelegateCommand SaveMonitorInfoCommand { get; set; }
         #endregion
 
@@ -356,19 +392,23 @@ namespace UtilityTools.Modules.HvController.Model
         /// <param name="isRead">是否是读取</param>
         public void AddLog(string log, bool isRead = true)
         {
-            if(Logs == null) 
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                Logs = new ObservableCollection<string>();
-            }
+                if (Logs == null)
+                {
+                    Logs = new ObservableCollection<string>();
+                }
 
-            if (isRead)
-            {
-                Logs.Add($"{DateTime.Now.ToString("t")} 读取: {log}");
-            }
-            else
-            {
-                Logs.Add($"{DateTime.Now.ToString("t")} 发送: {log}");
-            }
+                if (isRead)
+                {
+                    Logs.Add($"{DateTime.Now.ToString("t")} 读取: {log}");
+                }
+                else
+                {
+                    Logs.Add($"{DateTime.Now.ToString("t")} 发送: {log}");
+                }
+            });
+            
         }
 
         /// <summary>
@@ -377,8 +417,16 @@ namespace UtilityTools.Modules.HvController.Model
         /// <param name="bytes"></param>
         public void SendMsg(byte[] bytes)
         {
-            _device.SendMsg(bytes);
-            AddLog(_device.GetCmdString(bytes, bytes.Length), false);
+            if (SerialPortService.IsOpen)
+                SerialPortService.SendMsg(bytes);
+            else if (NetUdpService.IsOpen)
+                NetUdpService.SendMsg(bytes);
+            else
+            {
+                AddLog("无设备连接", false);
+                return;
+            }
+            AddLog(SerialPortService.GetCmdString(bytes, bytes.Length), false);
         }
 
         /// <summary>
@@ -422,8 +470,8 @@ namespace UtilityTools.Modules.HvController.Model
         /// </summary>
         public void SetUserParam()
         {
-            //byte[] bytes = HvControllerProtocol.GetSetFilaParamCmd();
-            //SendMsg(bytes);
+            byte[] bytes = HvControllerProtocol.GetSetFilaParamCmd(UserParam1, UserParam2, UserParam3, UserParam4);
+            SendMsg(bytes);
         }
 
         /// <summary>
@@ -462,6 +510,19 @@ namespace UtilityTools.Modules.HvController.Model
             _emissLineSeries.Points.Clear();
             _filaRLineSeries.Points.Clear();
             _gridVolLineSeries.Points.Clear();
+        }
+
+        /// <summary>
+        /// 图表自适应显示
+        /// </summary>
+        public void AutoAdjust()
+        {
+            foreach (var axis in HvPlotModel.Axes)
+            { 
+                axis.Reset();
+            }
+
+            HvPlotModel.InvalidatePlot(true);
         }
 
         /// <summary>
@@ -534,6 +595,8 @@ namespace UtilityTools.Modules.HvController.Model
             // 初始化图表信息
             HvPlotModel = new PlotModel();
             HvPlotModel.Legends.Add(new Legend());
+            HvPlotModel.Axes.Add(new LinearAxis() { Title = "时间", Position = OxyPlot.Axes.AxisPosition.Bottom });
+            HvPlotModel.Axes.Add(new LogarithmicAxis() { Title = "数值", Position = OxyPlot.Axes.AxisPosition.Left });
             _accVolLineSeries = new LineSeries() { Title = "加速电压", RenderInLegend = true };
             _emissLineSeries = new LineSeries() { Title = "发射电流", RenderInLegend = true };
             _filaRLineSeries = new LineSeries() { Title = "灯丝电阻", RenderInLegend = true };
@@ -544,20 +607,16 @@ namespace UtilityTools.Modules.HvController.Model
             HvPlotModel.Series.Add(_gridVolLineSeries);
 
             Logs = new ObservableCollection<string>();
-            Logs.Add("test1");
-            Logs.Add("test2");
-            Logs.Add("test3");
-            Logs.Add("test4");
 
             CustomCmds = new ObservableCollection<CustomCmdModel>();
-            CustomCmds.Add(new CustomCmdModel());
-            CustomCmds.Add(new CustomCmdModel());
-            CustomCmds.Add(new CustomCmdModel());
-            CustomCmds.Add(new CustomCmdModel());
-            CustomCmds.Add(new CustomCmdModel());
-            CustomCmds.Add(new CustomCmdModel());
-            CustomCmds.Add(new CustomCmdModel());
-            CustomCmds.Add(new CustomCmdModel());
+            CustomCmds.Add(new CustomCmdModel(SendMsg));
+            CustomCmds.Add(new CustomCmdModel(SendMsg));
+            CustomCmds.Add(new CustomCmdModel(SendMsg));
+            CustomCmds.Add(new CustomCmdModel(SendMsg));
+            CustomCmds.Add(new CustomCmdModel(SendMsg));
+            CustomCmds.Add(new CustomCmdModel(SendMsg));
+            CustomCmds.Add(new CustomCmdModel(SendMsg));
+            CustomCmds.Add(new CustomCmdModel(SendMsg));
         }
 
         /// <summary>
@@ -574,6 +633,7 @@ namespace UtilityTools.Modules.HvController.Model
             OpenHvCommand = new DelegateCommand(OpenHv);
             ChangeHvCommand = new DelegateCommand(ChangeHv);
             ClearMonitorCommand = new DelegateCommand(ClearMonitor);
+            AutoAdjustCommand = new DelegateCommand(AutoAdjust);
             ChangeMonitorStateCommand = new DelegateCommand(ChangeMonitorState);
             SendCmdStringCommand = new DelegateCommand<object>(SendCmdString);
             SaveMonitorInfoCommand = new DelegateCommand(SaveMonitorInfo);
@@ -590,6 +650,19 @@ namespace UtilityTools.Modules.HvController.Model
             // Work
             var cmd = HvControllerProtocol.GetReadHvParamCmd();
             SendMsg(cmd);
+
+            Thread.Sleep(100);
+            cmd = HvControllerProtocol.GetCheckHvStatusCmd();
+            SendMsg(cmd);
+
+            foreach (var custom in CustomCmds) 
+            {
+                if (custom != null && custom.IsAutoSend)
+                {
+                    Thread.Sleep(100);
+                    custom.Send();
+                }
+            }
         }
 
         /// <summary>
@@ -607,10 +680,10 @@ namespace UtilityTools.Modules.HvController.Model
 
             var response = HvControllerProtocol.FindResponse(ref _response, ref _responseLength);
 
-            int size = response.Length;
-
             if (response != null)
             {
+                int size = response.Length;
+
                 // 检查数据头尾
                 for (int i = 0; i < 4; i++)
                 {
@@ -623,7 +696,7 @@ namespace UtilityTools.Modules.HvController.Model
                 // 判断回复内容
                 if (response.Length <= 13)
                 {
-                    AddLog(_device.GetCmdString(response, size));
+                    AddLog(SerialPortService.GetCmdString(response, size));
                     switch (response[4])
                     {
                         case 0x70:
@@ -887,6 +960,8 @@ namespace UtilityTools.Modules.HvController.Model
                     {
                         ReadGridVol = gridVol;
                     }
+
+                    HvPlotModel.InvalidatePlot(true);
                 }
                 else if (response.Contains("NUM_"))
                 {

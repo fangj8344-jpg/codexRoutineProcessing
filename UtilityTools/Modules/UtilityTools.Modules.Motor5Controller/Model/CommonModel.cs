@@ -24,6 +24,7 @@
  *----------------------------------------------------------------*/
 #endregion
 
+using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -52,5 +53,32 @@ namespace UtilityTools.Modules.Motor5Controller.Model
         #region ------------StaticMethod------------
         public const string Motor5ControllerRegionName = "Motor5Controller";
         #endregion
+    }
+
+    public class PIDModel : BindableBase
+    {
+        private float _p;
+
+        public float P
+        {
+            get { return _p; }
+            set { _p = value; RaisePropertyChanged(); }
+        }
+
+        private float _i;
+
+        public float I
+        {
+            get { return _i; }
+            set { _i = value; RaisePropertyChanged(); }
+        }
+
+        private float _d;
+
+        public float D
+        {
+            get { return _d; }
+            set { _d = value; RaisePropertyChanged(); }
+        }
     }
 }

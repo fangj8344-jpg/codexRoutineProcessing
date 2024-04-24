@@ -24,18 +24,25 @@
  *----------------------------------------------------------------*/
 #endregion
 
+using Prism.Commands;
 using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UtilityTools.Core.Helper;
 
 namespace UtilityTools.Modules.HvController.Model
 {
     public class CustomCmdModel : BindableBase
     {
         #region ------------Constructor------------
+        public CustomCmdModel(Action<byte[]> sendMethod)
+        {
+            SendMethod = sendMethod;
+            SendCommand = new DelegateCommand(Send);
+        }
         #endregion
 
         #region ------------Field------------
@@ -62,13 +69,32 @@ namespace UtilityTools.Modules.HvController.Model
             set { _cmdString = value; RaisePropertyChanged(); }
         }
 
+        /// <summary>
+        /// 发送指令回调函数
+        /// </summary>
+        public Action<byte[]>? SendMethod { get; set; }
 
+        #endregion
+
+        #region ------------Command------------
+        /// <summary>
+        /// 发送代理函数
+        /// </summary>
+        public DelegateCommand SendCommand { get; set; }
         #endregion
 
         #region ------------PublicMethod------------
+        public void Send()
+        {
+            if (string.IsNullOrWhiteSpace(CmdString))
+                return;
+            byte[] cmd = DataTypeCaster.StringToByteArray(CmdString);
+            SendMethod?.Invoke(cmd);
+        }
         #endregion
 
         #region ------------PrivateMethod------------
+
         #endregion
 
         #region ------------StaticMethod------------

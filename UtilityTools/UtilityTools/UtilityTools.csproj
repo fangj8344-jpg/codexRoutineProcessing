@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net6.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
   </PropertyGroup>
   <ItemGroup>
@@ -9,20 +10,31 @@
     <PackageReference Include="MaterialDesignColors" Version="2.1.4" />
     <PackageReference Include="MaterialDesignThemes" Version="4.9.0" />
     <PackageReference Include="MetadataExtractor" Version="2.8.1" />
-	<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="7.0.0" />
-    <PackageReference Include="NLog" Version="5.2.3" />
-    <PackageReference Include="NLog.Extensions.Logging" Version="5.3.3" />
-    <PackageReference Include="OpenCvSharp4" Version="4.8.0.20230708" />
-    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.8.0.20230708" />
+    <PackageReference Include="NLog" Version="5.2.8" />
+    <PackageReference Include="NLog.Extensions.Logging" Version="5.3.8" />
+    <PackageReference Include="OpenCvSharp4" Version="4.9.0.20240103" />
+    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.9.0.20240103" />
     <PackageReference Include="OxyPlot.Wpf" Version="2.1.2" />
+    <PackageReference Include="PackageCommonLib" Version="1.0.2" />
+    <PackageReference Include="PackageControlLib" Version="1.0.2" />
     <PackageReference Include="Prism.DryIoc" Version="8.1.97" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
+    <PackageReference Include="System.Management" Version="8.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\UtilityTools.Core\UtilityTools.Core.csproj" />
     <ProjectReference Include="..\Services\UtilityTools.Services.Interfaces\UtilityTools.Services.Interfaces.csproj" />
     <ProjectReference Include="..\Services\UtilityTools.Services\UtilityTools.Services.csproj" />
     <ProjectReference Include="..\UtilityTools.UserControls\UtilityTools.UserControls.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ContentWithTargetPath Include="$(SolutionDir)UtilityTools\bin\$(ConfigurationName)\$(TargetFramework)\Modules\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <TargetPath>Modules/%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+    </ContentWithTargetPath>
   </ItemGroup>
 </Project>

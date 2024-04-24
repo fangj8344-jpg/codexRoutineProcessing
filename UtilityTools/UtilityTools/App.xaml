@@ -75,11 +75,34 @@
                 </DockPanel>
             </DataTemplate>
 
+            <!--显示读取参数模板-->
+            <DataTemplate x:Key="labelInfoUpdateTemplate"
+                          DataType="{x:Type model:LabelInfoModel}">
+                <DockPanel LastChildFill="True"
+                           VerticalAlignment="Center">
+                    <Label Content="{Binding Name}"
+                           HorizontalContentAlignment="Center"
+                           VerticalContentAlignment="Center"
+                           DockPanel.Dock="Left" />
+                    <Button Content="更新"
+                            Command="{Binding ControlCommand}"
+                            CommandParameter="{Binding}"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            DockPanel.Dock="Right" />
+                    <Label Content="{Binding Value}"
+                           HorizontalContentAlignment="Center"
+                           VerticalContentAlignment="Center"
+                           DockPanel.Dock="Left" />
+                </DockPanel>
+            </DataTemplate>
+
             <!--显示滑块参数模板-->
             <DataTemplate x:Key="intSliderInfoTemplate"
                           DataType="{x:Type model:IntSliderInfoModel}">
                 <DockPanel LastChildFill="True"
-                           VerticalAlignment="Center" Margin="5,0">
+                           VerticalAlignment="Center"
+                           Margin="5,0">
                     <TextBlock Text="{Binding Title}"
                                VerticalAlignment="Center"
                                HorizontalAlignment="Center"
@@ -102,7 +125,8 @@
             <DataTemplate x:Key="doubleSliderInfoTemplate"
                           DataType="{x:Type model:DoubleSliderInfoModel}">
                 <DockPanel LastChildFill="True"
-                           VerticalAlignment="Center" Margin="5,0">
+                           VerticalAlignment="Center"
+                           Margin="5,0">
                     <TextBlock Text="{Binding Title}"
                                VerticalAlignment="Center"
                                HorizontalAlignment="Center"
@@ -125,7 +149,8 @@
             <DataTemplate x:Key="floatSliderInfoTemplate"
                           DataType="{x:Type model:FloatSliderInfoModel}">
                 <DockPanel LastChildFill="True"
-                           VerticalAlignment="Center" Margin="5,0">
+                           VerticalAlignment="Center"
+                           Margin="5,0">
                     <TextBlock Text="{Binding Title}"
                                VerticalAlignment="Center"
                                HorizontalAlignment="Center"

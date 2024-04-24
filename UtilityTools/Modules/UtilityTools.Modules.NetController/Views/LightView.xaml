@@ -154,7 +154,7 @@
                 </StackPanel>
 
                 <Button Content="更新灯光状态"
-                        Command="{Binding ExecuteCommand}"
+                        Command="{Binding UpdateLightCommand}"
                         CommandParameter="更新灯光状态"
                         DockPanel.Dock="Right"
                         Margin="5, 0" />

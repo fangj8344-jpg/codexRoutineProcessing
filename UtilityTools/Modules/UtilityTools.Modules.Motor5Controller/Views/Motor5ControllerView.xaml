@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:oxy="http://oxyplot.org/wpf"
              xmlns:cv="clr-namespace:UtilityTools.Core.Converter;assembly=UtilityTools.Core"
              xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:model="clr-namespace:UtilityTools.Modules.Motor5Controller.Model"
@@ -13,7 +14,7 @@
 
     <UserControl.Resources>
         <cv:BoolToColorConverter x:Key="BoolToColorConverter" />
-        <cv:BoolToVisibilityConverter x:Key="boolToVisibilityConverter"/>
+        <cv:BoolToVisibilityConverter x:Key="boolToVisibilityConverter" />
     </UserControl.Resources>
 
     <md:DialogHost Identifier="{x:Static model:CommonModel.Motor5ControllerRegionName}"
@@ -24,62 +25,95 @@
                 <RowDefinition />
             </Grid.RowDefinitions>
             <DockPanel Grid.Row="0"
-                Margin="10"
-                LastChildFill="False">
+                       Margin="10"
+                       LastChildFill="False">
                 <TextBlock Text="五轴电机控制"
-                FontSize="20"
-                FontWeight="Bold"
-                DockPanel.Dock="Left"
-                VerticalAlignment="Center" />
+                           FontSize="20"
+                           FontWeight="Bold"
+                           DockPanel.Dock="Left"
+                           VerticalAlignment="Center" />
                 <Button DockPanel.Dock="Right"
-                Command="{Binding ShowDeviceCommand}"
-                CommandParameter="ShowNetConf"
-                Content="{md:PackIcon Kind=UsbPort, Size=24}"
-                Style="{StaticResource MaterialDesignToolButton}"
-                Foreground="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        Command="{Binding ShowDeviceCommand}"
+                        CommandParameter="ShowNetConf"
+                        Content="{md:PackIcon Kind=UsbPort, Size=24}"
+                        Style="{StaticResource MaterialDesignToolButton}"
+                        Foreground="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             </DockPanel>
 
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Grid.Row="1">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition/>
-                        <RowDefinition/>
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition />
-                        <ColumnDefinition />
-                        <ColumnDefinition />
-                    </Grid.ColumnDefinitions>
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="auto" />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <TabControl Grid.Column="0"
+                            ItemsSource="{Binding MotorList}">
+                    <TabControl.ContentTemplate>
+                        <DataTemplate>
+                            <ScrollViewer VerticalScrollBarVisibility="Hidden">
+                                <local:MotorView />
+                            </ScrollViewer>
+                        </DataTemplate>
+                    </TabControl.ContentTemplate>
+                    <TabControl.ItemContainerStyle>
+                        <Style TargetType="TabItem">
+                            <Setter Property="Header"
+                                    Value="{Binding MotorId}" />
+                        </Style>
+                    </TabControl.ItemContainerStyle>
+                </TabControl>
 
-                    <local:MotorView DataContext="{Binding MotorList[0]}" Grid.Row="0" Grid.Column="0" />
-                    <local:MotorView DataContext="{Binding MotorList[1]}" Grid.Row="0" Grid.Column="1" />
-                    <local:MotorView DataContext="{Binding MotorList[2]}" Grid.Row="0" Grid.Column="2" />
-                    <local:MotorView DataContext="{Binding MotorList[3]}" Grid.Row="1" Grid.Column="0" />
-                    <local:MotorView DataContext="{Binding MotorList[4]}" Grid.Row="1" Grid.Column="1" />
+                <GridSplitter Grid.Column="1"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Stretch"
+                              Background="Black"
+                              ShowsPreview="True"
+                              Width="5" />
+                
+                <TabControl Grid.Column="2">
+                    <TabItem Header="监控数据">
+                        <oxy:PlotView Model="{Binding MonitorPlotModel}"
+                                      Foreground="Black">
+                            <oxy:PlotView.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="清除"
+                                              Command="{Binding ClearMonitorCommand}"
+                                              CommandParameter="ImageParam" />
+                                    <MenuItem Header="自适应"
+                                              Command="{Binding AutoAdjustComamnd}"
+                                              CommandParameter="ImageParam" />
+                                    <MenuItem Header="保存到文件"
+                                              Command="{Binding SaveToFileCommand}"
+                                              CommandParameter="ImageParam" />
+                                </ContextMenu>
+                            </oxy:PlotView.ContextMenu>
+                        </oxy:PlotView>
+                    </TabItem>
+                    <TabItem Header="日志数据">
+                        <DockPanel LastChildFill="True">
+                            <StackPanel Orientation="Horizontal"
+                                        DockPanel.Dock="Top"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Center">
+                                <Button Content="清除"
+                                        Width="60"
+                                        Height="30"
+                                        Margin="10 0"
+                                        Command="{Binding CleanLogCommand}" />
+                            </StackPanel>
+                            <ListView ItemsSource="{Binding Logs}"
+                                      VerticalAlignment="Top">
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn  Header="报文信息" />
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                        </DockPanel>
+                    </TabItem>
+                </TabControl>
+            </Grid>
 
-                    <StackPanel Orientation="Vertical" Grid.Row="1" Grid.Column="2" >
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                             <Button Content="清除" 
-                             Width="60" 
-                             Height="30" 
-                             Margin="10 0"
-                             Command="{Binding CleanLogCommand}"/>
-                        </StackPanel>
-                        <ListView ItemsSource="{Binding Logs}"
-                                  Height="500"
-                                  VerticalAlignment="Top"
-                                  >
-                            <ListView.View>
-                                <GridView>
-                                    <GridViewColumn  Header="报文信息" Width="380" />
-                                </GridView>
-                            </ListView.View>
-                        </ListView>
-                    </StackPanel>
-                    
-                </Grid>
-            </ScrollViewer>
-            
         </Grid>
     </md:DialogHost>
 

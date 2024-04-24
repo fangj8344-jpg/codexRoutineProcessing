@@ -1,0 +1,329 @@
+﻿<UserControl x:Class="UtilityTools.Modules.Motor5Controller.Views.MotorSetParamsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:hp="clr-namespace:UtilityTools.Core.Helper;assembly=UtilityTools.Core"
+             xmlns:ptl="clr-namespace:UtilityTools.Modules.Motor5Controller.Protocol"
+             xmlns:cv="clr-namespace:UtilityTools.Core.Converter;assembly=UtilityTools.Core"
+             xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
+             mc:Ignorable="d"
+             d:DesignHeight="450"
+             d:DesignWidth="800">
+
+    <UserControl.Resources>
+        <cv:MotorEnableConveter x:Key="motorEnableConveter" />
+        <cv:EnumDescriptionConverter x:Key="enumDescriptionConverter" />
+
+        <ObjectDataProvider x:Key="EnumMotorCtrType"
+                            MethodName="EnumToDescList"
+                            ObjectType="{x:Type hp:EnumMethod}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="ptl:EnumMotorCtrType" />
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+
+        <ObjectDataProvider x:Key="EnumMotorRunMode"
+                            MethodName="EnumToDescList"
+                            ObjectType="{x:Type hp:EnumMethod}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="ptl:EnumMotorRunMode" />
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+        
+        <ObjectDataProvider x:Key="EnumMotorMoveType"
+                            MethodName="EnumToDescList"
+                            ObjectType="{x:Type hp:EnumMethod}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="ptl:EnumMotorMoveType" />
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+
+        <ObjectDataProvider x:Key="EmumMotorMoveDirection"
+                            MethodName="EnumToDescList"
+                            ObjectType="{x:Type hp:EnumMethod}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="ptl:EmumMotorMoveDirection" />
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="100" />
+            <ColumnDefinition />
+            <ColumnDefinition  Width="100" />
+        </Grid.ColumnDefinitions>
+
+        <Grid.RowDefinitions>
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition />
+        </Grid.RowDefinitions>
+
+        <Label Content="电机使能"
+               Grid.Row="0"
+               Grid.Column="0" />
+        <StackPanel Orientation="Horizontal"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    Grid.Row="0"
+                    Grid.Column="1">
+            <TextBlock Text="关" />
+            <ToggleButton Margin="8,0,8,0"
+                          IsChecked="{Binding Enable}" />
+            <TextBlock Text="开" />
+        </StackPanel>
+        <Button Grid.Row="0"
+                Grid.Column="2"
+                Content="设置"
+                Command="{Binding SetMotorEnableCommand}" />
+
+        <Label Content="电机停止"
+               Grid.Row="1"
+               Grid.Column="0" />
+        <Button Grid.Row="1"
+                Grid.Column="2"
+                Content="设置"
+                Command="{Binding SetMotorStopCommand}" />
+
+        <Label Content="控制类型"
+               Grid.Row="2"
+               Grid.Column="0" />
+        <ComboBox Grid.Row="2"
+                  Grid.Column="1"
+                  HorizontalContentAlignment="Center"
+                  VerticalContentAlignment="Center"
+                  SelectedValue="{Binding CtrType}"
+                  ItemsSource="{Binding Source={StaticResource EnumMotorCtrType}}"
+                  DisplayMemberPath="Value"
+                  SelectedValuePath="Key" />
+        <Button Grid.Row="2"
+                Grid.Column="2"
+                Content="设置"
+                Command="{Binding SetMotorCtlTypeCommand}" />
+
+        <Label Content="运行模式"
+               Grid.Row="3"
+               Grid.Column="0" />
+        <ComboBox Grid.Row="3"
+                  Grid.Column="1"
+                  SelectedValue="{Binding RunMode}"
+                  ItemsSource="{Binding Source={StaticResource EnumMotorRunMode}}"
+                  DisplayMemberPath="Value"
+                  SelectedValuePath="Key" />
+        <Button Grid.Row="3"
+                Grid.Column="2"
+                Content="设置"
+                Command="{Binding SetMotorRunModeCommand}" />
+
+        <Label Content="PID配置"
+               Grid.Row="4"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="4"
+                     Rows="1"
+                     Grid.Column="1">
+            <TextBox Text="{Binding Pid.P}"
+                     md:HintAssist.Hint="P"
+                     VerticalContentAlignment="Center"
+                     ToolTip="P"
+                     Margin="2, 0" />
+            <TextBox Text="{Binding Pid.I}"
+                     md:HintAssist.Hint="I"
+                     VerticalContentAlignment="Center"
+                     ToolTip="I"
+                     Margin="2, 0" />
+            <TextBox Text="{Binding Pid.D}"
+                     md:HintAssist.Hint="D"
+                     VerticalContentAlignment="Center"
+                     ToolTip="D"
+                     Margin="2, 0" />
+        </UniformGrid>
+        <Button Grid.Row="4"
+                Grid.Column="2"
+                Content="设置"
+                Command="{Binding SetMotorPidCommand}" />
+
+        <Label Content="转换系数"
+               Grid.Row="5"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="5"
+                     Rows="1"
+                     Grid.Column="1">
+            <ComboBox SelectedValue="{Binding MotorMoveType}"
+                      ItemsSource="{Binding Source={StaticResource EnumMotorMoveType}}"
+                      DisplayMemberPath="Value"
+                      SelectedValuePath="Key" />
+            <TextBox Text="{Binding PulseByCycle}"
+                     md:HintAssist.Hint="P"
+                     VerticalContentAlignment="Center"
+                     ToolTip="P"
+                     Margin="2, 0" />
+            <TextBox Text="{Binding LeadDis}"
+                     md:HintAssist.Hint="P"
+                     VerticalContentAlignment="Center"
+                     ToolTip="P"
+                     Margin="2, 0" />
+        </UniformGrid>
+        <Button Grid.Row="5"
+                Grid.Column="2"
+                Content="设置"
+                Command="{Binding SetMotorFactorCommand}" />
+
+        <Label Content="控制参数"
+               Grid.Row="6"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="6"
+                     Rows="1"
+                     Grid.Column="1">
+            <TextBox Text="{Binding Times}"
+                     VerticalContentAlignment="Center"
+                     md:HintAssist.Hint="调节次数"
+                     ToolTip="调节次数"
+                     Margin="2, 0" />
+            <TextBox Text="{Binding Threshold}"
+                     VerticalContentAlignment="Center"
+                     md:HintAssist.Hint="调节阈值"
+                     ToolTip="调节阈值"
+                     Margin="2, 0" />
+            <TextBox Text="{Binding InchThreshold}"
+                     VerticalContentAlignment="Center"
+                     md:HintAssist.Hint="点动阈值"
+                     ToolTip="点动阈值"
+                     Margin="2, 0" />
+        </UniformGrid>
+        <Button Grid.Row="6"
+                Grid.Column="2"
+                Content="设置"
+                Command="{Binding SetMotorCtrParamsCommand}" />
+
+        <Label Content="速度参数"
+               Grid.Row="7"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="7"
+                     Rows="1"
+                     Grid.Column="1">
+            <TextBox Text="{Binding StartSpeed}"
+                     VerticalContentAlignment="Center"
+                     md:HintAssist.Hint="起始速度"
+                     ToolTip="起始速度"
+                     Margin="2, 0" />
+            <TextBox Text="{Binding MaxSpeed}"
+                     VerticalContentAlignment="Center"
+                     md:HintAssist.Hint="最大速度"
+                     ToolTip="最大速度"
+                     Margin="2, 0" />
+        </UniformGrid>
+        <Button Grid.Row="7"
+                Grid.Column="2"
+                Content="设置"
+                Command="{Binding SetMotorSpeedParamsCommand}" />
+
+        <Label Content="加速度参数"
+               Grid.Row="8"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="8"
+                     Rows="1"
+                     Grid.Column="1">
+            <TextBox Text="{Binding MaxAcc}"
+                     VerticalContentAlignment="Center"
+                     md:HintAssist.Hint="最大加速度"
+                     ToolTip="最大加速度"
+                     Margin="2, 0" />
+            <TextBox Text="{Binding MaxDec}"
+                     VerticalContentAlignment="Center"
+                     md:HintAssist.Hint="最大减速度"
+                     ToolTip="最大减速度"
+                     Margin="2, 0" />
+        </UniformGrid>
+        <Button Grid.Row="8"
+                Grid.Column="2"
+                Content="设置"
+                Command="{Binding SetMotorAccParamsCommand}" />
+
+        <Label Content="目标参数设置"
+               Grid.Row="9"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="9"
+                     Rows="1"
+                     Grid.Column="1">
+            <TextBox Text="{Binding TargetValue}"
+                     md:HintAssist.Hint="目标值"
+                     VerticalContentAlignment="Center"
+                     ToolTip="目标值"
+                     Margin="2, 0" />
+        </UniformGrid>
+        <Button Grid.Row="9"
+                Grid.Column="2"
+                Content="设置"
+                Command="{Binding SetMotorPosParamsCommand}" />
+
+        <Label Content="全速运动"
+               Grid.Row="10"
+               Grid.Column="0" />
+        <ComboBox Grid.Row="10"
+                  Grid.Column="1"
+                  SelectedValue="{Binding AllSpeedDirection}"
+                  ItemsSource="{Binding Source={StaticResource EmumMotorMoveDirection}}"
+                  DisplayMemberPath="Value"
+                  SelectedValuePath="Key" />
+        <Button Grid.Row="10"
+                Grid.Column="2"
+                Content="设置"
+                Command="{Binding SetMotorAllSpeedCommand}" />
+
+        <Label Content="零点设置"
+               Grid.Row="11"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="11"
+                     Rows="1"
+                     Grid.Column="1">
+            <TextBox Text="{Binding OriginPos}"
+                     md:HintAssist.Hint="原点位置"
+                     VerticalContentAlignment="Center"
+                     ToolTip="原点位置"
+                     Margin="2, 0" />
+            <TextBox Text="{Binding ZeroPos}"
+                     md:HintAssist.Hint="零点位置"
+                     VerticalContentAlignment="Center"
+                     ToolTip="零点位置"
+                     Margin="2, 0" />
+        </UniformGrid>
+        <Button Grid.Row="11"
+                Grid.Column="2"
+                Content="设置"
+                Command="{Binding SetMotorZeroPosCommand}" />
+
+        <Label Content="软限位设置"
+               Grid.Row="12"
+               Grid.Column="0" />
+        <UniformGrid Grid.Row="12"
+                     Rows="1"
+                     Grid.Column="1">
+            <TextBox Text="{Binding MinLimitedPos}"
+                     md:HintAssist.Hint="最小限位"
+                     VerticalContentAlignment="Center"
+                     ToolTip="最小限位"
+                     Margin="2, 0" />
+            <TextBox Text="{Binding MaxLimitedPos}"
+                     md:HintAssist.Hint="最大限位"
+                     VerticalContentAlignment="Center"
+                     ToolTip="最大限位"
+                     Margin="2, 0" />
+        </UniformGrid>
+        <Button Grid.Row="12"
+                Grid.Column="2"
+                Content="设置"
+                Command="{Binding SetMotorSoftLimitedCommand}" />
+    </Grid>
+</UserControl>
