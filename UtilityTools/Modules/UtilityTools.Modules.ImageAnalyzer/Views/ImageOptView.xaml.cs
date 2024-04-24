@@ -1,5 +1,4 @@
-﻿using OxyPlot;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,22 +12,17 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using UtilityTools.Core.OxyPlot;
 
-namespace UtilityTools.Modules.FlyDataTool.Views
+namespace UtilityTools.Modules.ImageAnalyzer.Views
 {
     /// <summary>
-    /// FlyDataToolView.xaml 的交互逻辑
+    /// ImageOptView.xaml 的交互逻辑
     /// </summary>
-    public partial class FlyDataToolView : UserControl
+    public partial class ImageOptView : UserControl
     {
-        public FlyDataToolView()
+        public ImageOptView()
         {
             InitializeComponent();
-            
-            //var controller = this.plotView.Controller;
-            //controller.BindMouseDown(OxyMouseButton.Left, CustomPlotCommands.SelectRectCommand);
         }
-
     }
 }

@@ -13,7 +13,10 @@ namespace UtilityTools.Modules.Motor5Controller.Protocol
     public enum EnumMotor5CmdType
     {
         [Description("电机使能状态")]
-        W_MOTOR_ENABLE = 0x0000,
+        W_MOTOR_ENABLE = 0x0001,
+
+        [Description("电机停止")]
+        W_MOTOR_STOP = 0x0002,
 
         [Description("设置电机控制方式")]
         W_MOTOR_CTLTYPE = 0x0010,
@@ -109,6 +112,18 @@ namespace UtilityTools.Modules.Motor5Controller.Protocol
     }
 
     /// <summary>
+    /// 电机运动类型
+    /// </summary>
+    public enum EnumMotorMoveType : ushort
+    {
+        [Description("旋转轴")]
+        Rotation = 0x00,
+
+        [Description("移动轴")]
+        Move = 0x01,
+    }
+
+    /// <summary>
     /// 电机移动状态
     /// </summary>
     public enum EnumMotorMoveState
@@ -195,6 +210,18 @@ namespace UtilityTools.Modules.Motor5Controller.Protocol
         }
 
         /// <summary>
+        /// 设置电机停止
+        /// </summary>
+        /// <param name="motorId">电机编号</param>
+        /// <returns></returns>
+        public static byte[] SetMotorStop(EnumMotorId motorId)
+        {
+            byte[] param = new byte[1];
+            param[0] = 0x01;
+            return GetCmd(EnumMotor5CmdType.W_MOTOR_STOP, motorId, param);
+        }
+
+        /// <summary>
         /// 设置电机的控制类型
         /// </summary>
         /// <param name="motorId">电机编号</param>
@@ -251,12 +278,16 @@ namespace UtilityTools.Modules.Motor5Controller.Protocol
         /// 设置电机的换算比
         /// </summary>
         /// <param name="motorId">电机编号</param>
-        /// <param name="ratio">换算比，单位为 pluse/μm</param>
+        /// <param name="type">电机运动类型</param>
+        /// <param name="pulseByCycle">电机转动一圈的脉冲数，单位为 pluse</param>
+        /// <param name="leadDis">丝杆导程，单位为 μm</param>
         /// <returns></returns>
-        public static byte[] SetMotorSubRatio(EnumMotorId motorId, float ratio)
+        public static byte[] SetMotorSubRatio(EnumMotorId motorId, EnumMotorMoveType type, int pulseByCycle, int leadDis)
         {
             ByteWriter writer = new ByteWriter(36);
-            writer.Write(ratio);
+            writer.Write((int)type);
+            writer.Write(pulseByCycle);
+            writer.Write(leadDis);
             return GetCmd(EnumMotor5CmdType.W_MOTOR_SUBRATIO, motorId, writer.EndWrite());
         }
 
@@ -266,12 +297,14 @@ namespace UtilityTools.Modules.Motor5Controller.Protocol
         /// <param name="motorId">电机编号</param>
         /// <param name="times">最大补偿次数</param>
         /// <param name="threshold">停止阈值，单位为pluse</param>
+        /// <param name="inchThreshold">点动阈值，单位为pluse</param>
         /// <returns></returns>
-        public static byte[] SetMotorCtrParams(EnumMotorId motorId, int times, int threshold) 
+        public static byte[] SetMotorCtrParams(EnumMotorId motorId, int times, int threshold, int inchThreshold) 
         {
             ByteWriter writer = new ByteWriter(36);
             writer.Write(times);
             writer.Write(threshold);
+            writer.Write(inchThreshold);
             return GetCmd(EnumMotor5CmdType.W_MOTOR_CTLPARAMS, motorId, writer.EndWrite());
         }
 

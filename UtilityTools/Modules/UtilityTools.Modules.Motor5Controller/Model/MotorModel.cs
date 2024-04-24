@@ -95,6 +95,17 @@ namespace UtilityTools.Modules.Motor5Controller.Model
             set { _threshold = value; RaisePropertyChanged(); }
         }
 
+        private int _inchThreshold;
+        /// <summary>
+        /// 点动阈值
+        /// </summary>
+        public int InchThreshold
+        {
+            get { return _inchThreshold; }
+            set { _inchThreshold = value; RaisePropertyChanged(); }
+        }
+
+
         private int _startSpeed;
         /// <summary>
         /// 起始速度
@@ -178,6 +189,11 @@ namespace UtilityTools.Modules.Motor5Controller.Model
         public DelegateCommand SetMotorEnableCommand { get; set; }
 
         /// <summary>
+        /// 设置电机停止命令
+        /// </summary>
+        public DelegateCommand SetMotorStopCommand { get; set; }
+
+        /// <summary>
         /// 设置电机控制类型命令
         /// </summary>
         public DelegateCommand SetMotorCtlTypeCommand { get; set; }
@@ -236,6 +252,36 @@ namespace UtilityTools.Modules.Motor5Controller.Model
         /// 设置电机零点位置指令
         /// </summary>
         public DelegateCommand SetMotorZeroPosCommand { get; set; }
+
+        private EnumMotorMoveType _motorMoveType;
+        /// <summary>
+        /// 电机移动类型 
+        /// </summary>
+        public EnumMotorMoveType MotorMoveType
+        {
+            get { return _motorMoveType; }
+            set { _motorMoveType = value; RaisePropertyChanged(); }
+        }
+
+        private int _pulseByCycle;
+        /// <summary>
+        /// 旋转一周的脉冲数
+        /// </summary>
+        public int PulseByCycle
+        {
+            get { return _pulseByCycle; }
+            set { _pulseByCycle = value; RaisePropertyChanged(); }
+        }
+
+        private int _leadDis;
+        /// <summary>
+        /// 丝杆导程
+        /// </summary>
+        public int LeadDis
+        {
+            get { return _leadDis; }
+            set { _leadDis = value; RaisePropertyChanged(); }
+        }
 
         private int _minLimitedPos;
         /// <summary>
@@ -399,6 +445,7 @@ namespace UtilityTools.Modules.Motor5Controller.Model
 
             SetParams = new MotorSetParams();
             SetParams.SetMotorEnableCommand = new DelegateCommand(SetMotorEnable);
+            SetParams.SetMotorStopCommand = new DelegateCommand(SetMotorStop);
             SetParams.SetMotorCtlTypeCommand = new DelegateCommand(SetMotorCtlType);
             SetParams.SetMotorRunModeCommand = new DelegateCommand(SetMotorRunMode);
             SetParams.SetMotorPidCommand = new DelegateCommand(SetMotorPid);
@@ -487,6 +534,12 @@ namespace UtilityTools.Modules.Motor5Controller.Model
             _sendMsgFunc?.Invoke(msg);
         }
 
+        public void SetMotorStop()
+        {
+            var msg = Motor5Protocol.SetMotorStop(MotorId);
+            _sendMsgFunc?.Invoke(msg);
+        }
+
         public void SetMotorCtlType()
         {
             var msg = Motor5Protocol.SetMotorCtrType(MotorId, SetParams.CtrType);
@@ -507,13 +560,13 @@ namespace UtilityTools.Modules.Motor5Controller.Model
 
         public void SetMotorFactor()
         {
-            var msg = Motor5Protocol.SetMotorSubRatio(MotorId, SetParams.SubRatio);
+            var msg = Motor5Protocol.SetMotorSubRatio(MotorId, SetParams.MotorMoveType, SetParams.PulseByCycle, SetParams.LeadDis);
             _sendMsgFunc?.Invoke(msg);
         }
 
         public void SetMotorCtrParams()
         {
-            var msg = Motor5Protocol.SetMotorCtrParams(MotorId, SetParams.Times, SetParams.Threshold);
+            var msg = Motor5Protocol.SetMotorCtrParams(MotorId, SetParams.Times, SetParams.Threshold, SetParams.InchThreshold);
             _sendMsgFunc?.Invoke(msg);
         }
 

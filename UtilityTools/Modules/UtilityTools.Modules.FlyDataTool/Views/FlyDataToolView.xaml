@@ -39,6 +39,7 @@
         </DockPanel>
 
         <oxy:PlotView Grid.Row="1"
+                      Name="plotView"
                       Model="{Binding FlyDataPlotModel}">
             <oxy:PlotView.ContextMenu>
                 <ContextMenu>

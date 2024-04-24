@@ -42,6 +42,7 @@ using UtilityTools.Core.Dialog;
 using UtilityTools.Core.Extension;
 using UtilityTools.Core.Mvvm;
 using UtilityTools.Modules.ControlLibTest.Model;
+using Zeptools.CommonLib.Help;
 using Zeptools.CommonLib.Model;
 using Zeptools.ControlLib.Entity;
 
@@ -56,7 +57,8 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             _dialogHostService = dialogHostService;
             //消息提示
             _aggregator = containerProvider.Resolve<IEventAggregator>();
-            _entity = ServerEntity.Instance;
+            var device = DeviceFactory.GetSynRWDevice("Protocol");
+            _entity = new ServerEntity(device);
 
             InitProperty();
         }

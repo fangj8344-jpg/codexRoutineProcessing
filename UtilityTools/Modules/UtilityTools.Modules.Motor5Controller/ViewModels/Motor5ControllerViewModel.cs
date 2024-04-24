@@ -474,6 +474,7 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
                 case EnumMotor5CmdType.R_MOTOR_CTLPARAMS:
                     targetMotor.ReadParams.Times = BitConverter.ToInt32(e.DataSource, 0);
                     targetMotor.ReadParams.Threshold = BitConverter.ToInt32(e.DataSource, 4);
+                    targetMotor.ReadParams.InchThreshold = BitConverter.ToInt32(e.DataSource, 8);
                     break;
                 case EnumMotor5CmdType.R_MOTOR_SPDPARAMS:
                     targetMotor.ReadParams.StartSpeed = BitConverter.ToInt32(e.DataSource, 0);

@@ -230,6 +230,7 @@ namespace UtilityTools.Modules.FlyDataTool.ViewModels
             LineTypeModels.Add(new LineTypeModel() { Name = "灯丝电流", Field = "FilaCur", YAxisKey = "Y2", AxisType = 0, MarkerType = 0 });
             //LineTypeModels.Add(new LineTypeModel() { Name = "灯丝电阻", Field="FilaR", YAxisKey = "Y3", AxisType = 0, MarkerType = 0 });
             LineTypeModels.Add(new LineTypeModel() { Name = "栅极电压", Field = "GridVol", YAxisKey = "Y4", AxisType = 0, MarkerType = 0 });
+
         }
 
         /// <summary>
@@ -270,61 +271,107 @@ namespace UtilityTools.Modules.FlyDataTool.ViewModels
             var SelectionChanged = (System.Windows.Controls.SelectionChangedEventArgs)obj;
             var Items = SelectionChanged.AddedItems;
             var RemoveItems = SelectionChanged.RemovedItems;
-            if (Items.Count > 0 || RemoveItems.Count > 0)
-            {
-                var Item = Items.Count > 0 ? Items[0] : RemoveItems[0];
-                var Model = (SingleOptModel)Item;
-                var Index = Model.FlyIndex - 1;
-                if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
-                {
-                    //键盘ctrl键触发时
-                    if (!_dataIndex.Contains(Index))
-                    {
-                        _dataIndex.Add(Index);
-                    }
-                    else
-                    {
-                        _dataIndex.Remove(Index);
-                    }
-                    _dataIndex.Sort();
-                    CurFlyDataModels = new ObservableCollection<FlyDataModel>();
-                    foreach (var dataindex in _dataIndex)
-                    {
-                        SingleOptModel model = this.SingleFlyDataModels[dataindex];
-                        if (model == null)
-                            return;
-                        for (int i = 0; i < model.FlyDataModels.Count; i++)
-                        {
-                            CurFlyDataModels.Add(model.FlyDataModels[i]);
-                        }
-                    }
-                    for (int j = 0; j < CurFlyDataModels.Count; j++)
-                    {
-                        CurFlyDataModels[j].Index = j;
-                    }
 
-                    CreateAllLine();
-                }
-                else
+            foreach (var addItem in Items)
+            {
+                var model = addItem as SingleOptModel;
+                if (model != null)
                 {
-                    if (Index is int i)
+                    var index = model.FlyIndex - 1;
+                    if (!_dataIndex.Contains(index))
                     {
-                        _dataIndex.Clear();
-                        _dataIndex.Add(Index);
-                        if (this.SingleFlyDataModels.Count <= i || i < 0)
-                            return;
-                        SingleOptModel model = this.SingleFlyDataModels[i];
-                        if (model == null)
-                            return;
-                        CurFlyDataModels = model.FlyDataModels;
-                        for (int j = 0; j < CurFlyDataModels.Count; j++)
-                        {
-                            CurFlyDataModels[j].Index = j;
-                        }
-                        CreateAllLine();
+                        _dataIndex.Add(index);
                     }
                 }
             }
+
+            foreach (var removeItem in RemoveItems)
+            {
+                var model = removeItem as SingleOptModel;
+                if (model != null)
+                {
+                    var index = model.FlyIndex - 1;
+                    if (_dataIndex.Contains(index))
+                    {
+                        _dataIndex.Remove(index);
+                    }
+                }
+            }
+
+            _dataIndex.Sort();
+            CurFlyDataModels = new ObservableCollection<FlyDataModel>();
+            foreach (var dataindex in _dataIndex)
+            {
+                SingleOptModel model = this.SingleFlyDataModels[dataindex];
+                if (model == null)
+                    return;
+                for (int i = 0; i < model.FlyDataModels.Count; i++)
+                {
+                    CurFlyDataModels.Add(model.FlyDataModels[i]);
+                }
+            }
+            for (int j = 0; j < CurFlyDataModels.Count; j++)
+            {
+                CurFlyDataModels[j].Index = j;
+            }
+
+            CreateAllLine();
+
+            //if (Items.Count > 0 || RemoveItems.Count > 0)
+            //{
+            //    var Item = Items.Count > 0 ? Items[0] : RemoveItems[0];
+            //    var Model = (SingleOptModel)Item;
+            //    var Index = Model.FlyIndex - 1;
+            //    if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+            //    {
+            //        //键盘ctrl键触发时
+            //        if (!_dataIndex.Contains(Index))
+            //        {
+            //            _dataIndex.Add(Index);
+            //        }
+            //        else
+            //        {
+            //            _dataIndex.Remove(Index);
+            //        }
+            //        _dataIndex.Sort();
+            //        CurFlyDataModels = new ObservableCollection<FlyDataModel>();
+            //        foreach (var dataindex in _dataIndex)
+            //        {
+            //            SingleOptModel model = this.SingleFlyDataModels[dataindex];
+            //            if (model == null)
+            //                return;
+            //            for (int i = 0; i < model.FlyDataModels.Count; i++)
+            //            {
+            //                CurFlyDataModels.Add(model.FlyDataModels[i]);
+            //            }
+            //        }
+            //        for (int j = 0; j < CurFlyDataModels.Count; j++)
+            //        {
+            //            CurFlyDataModels[j].Index = j;
+            //        }
+
+            //        CreateAllLine();
+            //    }
+            //    else
+            //    {
+            //        if (Index is int i)
+            //        {
+            //            _dataIndex.Clear();
+            //            _dataIndex.Add(Index);
+            //            if (this.SingleFlyDataModels.Count <= i || i < 0)
+            //                return;
+            //            SingleOptModel model = this.SingleFlyDataModels[i];
+            //            if (model == null)
+            //                return;
+            //            CurFlyDataModels = model.FlyDataModels;
+            //            for (int j = 0; j < CurFlyDataModels.Count; j++)
+            //            {
+            //                CurFlyDataModels[j].Index = j;
+            //            }
+            //            CreateAllLine();
+            //        }
+            //    }
+            //}
         }
 
         /// <summary>
