@@ -3,47 +3,117 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:model="clr-namespace:UtilityTools.Core.Model;assembly=UtilityTools.Core"
+             xmlns:views="clr-namespace:UtilityTools.UserControls.Views;assembly=UtilityTools.UserControls"
              xmlns:local="clr-namespace:UtilityTools.Modules.ImageAnalyzer.Views"
              mc:Ignorable="d"
              d:DesignHeight="450"
              d:DesignWidth="800">
+    <UserControl.Resources>
+        <!--显示元数据属性模板-->
+        <DataTemplate x:Key="MetadataItemDataTemplate"
+                      DataType="{x:Type model:PropertyInfoModel}">
+            <DockPanel LastChildFill="True"
+                       VerticalAlignment="Center">
+                <Label Content="{Binding Description}"
+                       DockPanel.Dock="Left"
+                       HorizontalContentAlignment="Center"
+                       VerticalContentAlignment="Center" />
+                <Label Content="{Binding Value}"
+                       DockPanel.Dock="Right"
+                       HorizontalContentAlignment="Left"
+                       VerticalContentAlignment="Center" />
+            </DockPanel>
+        </DataTemplate>
+
+    </UserControl.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
-            <RowDefinition Height="*" />
+            <RowDefinition />
         </Grid.RowDefinitions>
 
-        <UniformGrid Grid.Row="0">
-            <TextBlock Text="扫描场大小" />
-            <TextBox Text="{Binding ImgMetaData.FieldSize}" />
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="auto"/>
+            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="auto"/>
+            <ColumnDefinition Width="1*"/>
+        </Grid.ColumnDefinitions>
 
-            <TextBlock Text="放大倍数" />
-            <TextBox Text="{Binding ImgMetaData.Zoom}" />
+        <DockPanel LastChildFill="False"
+                   Margin="5"
+                   Grid.Row="0"
+                   Grid.Column="0"
+                   Grid.ColumnSpan="5">
+            <Button Content="保存结果"
+                    Margin="3"
+                    DockPanel.Dock="Right"
+                    Command="{Binding ExecuteCommand}"
+                    CommandParameter="Save" />
+            <Button Content="清除变更"
+                    Margin="3"
+                    DockPanel.Dock="Right"
+                    Command="{Binding ExecuteCommand}"
+                    CommandParameter="Clear" />
+            <Button Content="添加丝印"
+                    Margin="3"
+                    DockPanel.Dock="Right"
+                    Command="{Binding ExecuteCommand}"
+                    CommandParameter="Silk" />
+            <Button Content="图像拉伸"
+                    Margin="3"
+                    DockPanel.Dock="Right"
+                    Command="{Binding ExecuteCommand}"
+                    CommandParameter="Reset" />
+        </DockPanel>
 
-            <TextBlock Text="加速电压" />
-            <TextBox Text="{Binding ImgMetaData.AccVoltage}" />
+        <views:ImageViewer ImageSource="{Binding SrcBitmap}"
+                           Grid.Column="0"
+                           Grid.Row="1" />
 
-            <TextBlock Text="物镜值" />
-            <TextBox Text="{Binding ImgMetaData}" />
+        <GridSplitter Grid.Row="1"
+                      Grid.Column="1"
+                      VerticalAlignment="Stretch"/>
 
-            <TextBlock Text="探测器" />
-            <TextBox Text="{Binding ImgMetaData.Detector}" />
+        <views:ImageViewer ImageSource="{Binding FilterBitmap}"
+                           Grid.Column="2"
+                           Grid.Row="1" />
 
-            <TextBlock Text="机器名称" />
-            <TextBox Text="{Binding ImgMetaData.Model}" />
+        <GridSplitter Grid.Row="1"
+                      Grid.Column="3"
+                      VerticalAlignment="Stretch" />
 
-            <TextBlock Text="拍照日期" />
-            <TextBox Text="{Binding ImgMetaData.Date}" />
+        <DockPanel Grid.Column="4"
+                    Grid.Row="1">
+            <!--<ItemsControl DockPanel.Dock="Top"
+                          ItemsSource="{Binding Items}"
+                          ItemTemplate="{StaticResource MetadataItemDataTemplate}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="1" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>-->
+            <DataGrid Grid.Column="0"
+                      VirtualizingStackPanel.IsVirtualizing="True"
+                      ItemsSource="{Binding Items}"
+                      IsReadOnly="False"
+                      CanUserAddRows="False"
+                      AutoGenerateColumns="False">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="属性名称"
+                                        Width="1*"
+                                        IsReadOnly="True"
+                                        Binding="{Binding Description}" />
+                    <DataGridTextColumn Header="属性值"
+                                        Width="2*"
+                                        Binding="{Binding Value}" />
+                </DataGrid.Columns>
+            </DataGrid>
             
-            <TextBlock Text="是否拉伸" />
-            <CheckBox Text="{Binding ImgMetaData}" />
-        </UniformGrid>
+        </DockPanel>
 
-        <UniformGrid Grid.Row="1" Rows="1">
-            <Image VerticalAlignment="Stretch"
-                   HorizontalAlignment="Stretch" />
-            <Image VerticalAlignment="Stretch"
-                   HorizontalAlignment="Stretch" />
-        </UniformGrid>
     </Grid>
 </UserControl>

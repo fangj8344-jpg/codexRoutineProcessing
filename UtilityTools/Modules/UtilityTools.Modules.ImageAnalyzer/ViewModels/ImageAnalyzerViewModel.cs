@@ -1,6 +1,8 @@
 ﻿using Microsoft.Win32;
+using NLog;
 using Prism.Commands;
 using Prism.Ioc;
+using System;
 using UtilityTools.Core.Dialog;
 using UtilityTools.Core.Mvvm;
 
@@ -52,7 +54,14 @@ namespace UtilityTools.Modules.ImageAnalyzer.ViewModels
             {
                 var path = dialog.FileName;
                 FilePath = path;
-                ImagePathUpdated(path);
+                try
+                {
+                    ImagePathUpdated(path);
+                }
+                catch (Exception ex)
+                { 
+                    LogManager.GetCurrentClassLogger().Error($"加载图像{FilePath}异常：{ex.Message}");
+                }
             }
         }
 
@@ -88,6 +97,14 @@ namespace UtilityTools.Modules.ImageAnalyzer.ViewModels
             set { _imageHistogramVM = value; RaisePropertyChanged(); }
         }
 
+        private ImageOptViewModel _imageOptVM;
+
+        public ImageOptViewModel ImageOptVM
+        {
+            get { return _imageOptVM; }
+            set { _imageOptVM = value; RaisePropertyChanged(); }
+        }
+
         #endregion
 
         #region ------------PublicMethod------------
@@ -110,7 +127,9 @@ namespace UtilityTools.Modules.ImageAnalyzer.ViewModels
             ImagePathUpdated += ImageHistogramVM.UpdateImage;
             SaveResultTriggered += ImageHistogramVM.SaveResult;
 
-
+            ImageOptVM = new ImageOptViewModel(this._containerProvider);
+            ImagePathUpdated += ImageOptVM.UpdateImage;
+            SaveResultTriggered += ImageOptVM.SaveResult;
         }
         #endregion
 

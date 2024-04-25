@@ -49,6 +49,7 @@ namespace UtilityTools.Services.Services
             _sendQueue = new ConcurrentQueue<byte[]>();
             DeviceInstance = new UdpNetConfigModel();
             DeviceInstance.ReceiveDataEvent += DeviceInstance_ReceiveDataEvent;
+            MinWriteInterval = 100;
         }
 
         #endregion
@@ -97,6 +98,11 @@ namespace UtilityTools.Services.Services
         /// 连接测试
         /// </summary>
         public DelegateConnectTestCommand ConnectTest { get; set; }
+
+        /// <summary>
+        /// 两次写入最小间隔 ms, 特别是串口通讯需要根据设备情况进行设置
+        /// </summary>
+        public int MinWriteInterval { get; set; }
         #endregion
 
         #region ------------Event------------
@@ -264,7 +270,7 @@ namespace UtilityTools.Services.Services
                         // 发送业务
                         DeviceInstance.Send(cmd);
                         LogManager.GetCurrentClassLogger().Debug($"{Name} 发送 : {GetCmdString(cmd, cmd.Length)}");
-                        //Thread.Sleep(100);
+                        Thread.Sleep(MinWriteInterval);
                     }
 
                     lock (_syncObject)

@@ -41,11 +41,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.Modules.Contro
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.Modules.FlyDataTool", "Modules\UtilityTools.Modules.FlyDataTool\UtilityTools.Modules.FlyDataTool.csproj", "{B65A337F-F362-47BC-AC43-F75EDF18AAE4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UtilityTools.Modules.FZBPumpController", "Modules\UtilityTools.Modules.FZBPumpController\UtilityTools.Modules.FZBPumpController.csproj", "{542CD1C4-8A7F-438E-B7AA-25E9ADE55C81}"
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UtilityTools.Modules.ImageAnalyzer.Tests", "Tests\UtilityTools.Modules.ImageAnalyzer.Tests\UtilityTools.Modules.ImageAnalyzer.Tests.csproj", "{FFE94774-B333-4B85-B6E1-B2DB258E5F54}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.Modules.FZBPumpController", "Modules\UtilityTools.Modules.FZBPumpController\UtilityTools.Modules.FZBPumpController.csproj", "{542CD1C4-8A7F-438E-B7AA-25E9ADE55C81}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.Modules.IonPump", "Modules\UtilityTools.Modules.IonPump\UtilityTools.Modules.IonPump.csproj", "{AA3522D2-0D9E-4231-9812-3A7B52AFC96C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UtilityTools.Modules.IonPump.Tests", "Tests\UtilityTools.Modules.IonPump.Tests\UtilityTools.Modules.IonPump.Tests.csproj", "{4E2D4D3D-94FC-4C5E-A815-C1099A4322CC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.Modules.IonPump.Tests", "Tests\UtilityTools.Modules.IonPump.Tests\UtilityTools.Modules.IonPump.Tests.csproj", "{4E2D4D3D-94FC-4C5E-A815-C1099A4322CC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
