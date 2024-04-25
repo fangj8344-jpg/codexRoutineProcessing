@@ -14,7 +14,6 @@
   </Target>
 
   <ItemGroup>
-    <PackageReference Include="Zeptools.CommonLib" Version="1.0.4" />
     <PackageReference Include="Zeptools.ControlLib" Version="1.0.4" />
   </ItemGroup>
 
