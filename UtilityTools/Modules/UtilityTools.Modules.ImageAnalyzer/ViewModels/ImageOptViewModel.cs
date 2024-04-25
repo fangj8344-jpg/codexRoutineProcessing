@@ -26,6 +26,7 @@
 
 using Microsoft.Win32;
 using NLog;
+using OpenCvSharp;
 using OpenCvSharp.WpfExtensions;
 using Prism.Commands;
 using Prism.Ioc;
@@ -35,12 +36,15 @@ using System.Diagnostics.Metrics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Security.Cryptography;
 using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
 using UtilityTools.Core.Helper;
 using UtilityTools.Core.Model;
 using UtilityTools.Core.Mvvm;
 using UtilityTools.Modules.ImageAnalyzer.Model;
 using XmpCore.Impl;
+using Rectangle = System.Drawing.Rectangle;
 
 namespace UtilityTools.Modules.ImageAnalyzer.ViewModels
 {
@@ -54,17 +58,17 @@ namespace UtilityTools.Modules.ImageAnalyzer.ViewModels
             Items = new ObservableCollection<PropertyInfoModel>();
 
             Items.Add(new PropertyInfoModel(Property_Name, "Name", string.Empty));
-            Items.Add(new PropertyInfoModel(Property_AccVol, "HighVol", string.Empty));
+            Items.Add(new PropertyInfoModel(Property_AccVol, "HighVol", "kV"));
             Items.Add(new PropertyInfoModel(Property_Date, "Date", string.Empty));
             Items.Add(new PropertyInfoModel(Property_Detector, "Detecter", string.Empty));
-            Items.Add(new PropertyInfoModel(Property_FieldSize, "FieldSize", string.Empty));
+            Items.Add(new PropertyInfoModel(Property_FieldSize, "FieldSize", "μm"));
             Items.Add(new PropertyInfoModel(Property_Position, "Position", string.Empty));
             Items.Add(new PropertyInfoModel(Property_Zoom, "Mag", string.Empty));
-            Items.Add(new PropertyInfoModel(Property_OB, "OB", string.Empty));
+            Items.Add(new PropertyInfoModel(Property_OB, "OB", "mm"));
             Items.Add(new PropertyInfoModel(Property_AvgLen, "AveragePoints", string.Empty));
-            Items.Add(new PropertyInfoModel(Property_PixelLength, "PixelLength", string.Empty));
+            Items.Add(new PropertyInfoModel(Property_PixelLength, "PixelLength", "μm"));
             Items.Add(new PropertyInfoModel(Property_Pressure, "Pressure", string.Empty));
-            Items.Add(new PropertyInfoModel(Property_Freq, "Frequency", string.Empty));
+            Items.Add(new PropertyInfoModel(Property_Freq, "Frequency", "Hz"));
             Items.Add(new PropertyInfoModel(Property_SignificantBit, "DataFlag", string.Empty));
             Items.Add(new PropertyInfoModel(Property_FirmwareVersion, "FirmwareVersion", string.Empty));
             Items.Add(new PropertyInfoModel(Property_SoftwareVersion, "Version", string.Empty));
@@ -147,16 +151,9 @@ namespace UtilityTools.Modules.ImageAnalyzer.ViewModels
         {
             FilePath = imagePath;
 
-            // 创建一个新的 BitmapImage 对象
-            var tmp = new BitmapImage();
+            var src = Cv2.ImRead(imagePath, ImreadModes.Unchanged);
 
-            // 指定图像文件的路径
-            tmp.BeginInit();
-            tmp.CacheOption = BitmapCacheOption.OnLoad;
-            tmp.UriSource = new Uri(imagePath);
-            tmp.EndInit();
-
-            SrcBitmap = new WriteableBitmap(tmp);
+            SrcBitmap = src.ToWriteableBitmap();
 
             _zemMetaData = Model.ImageMetadata.ReadMetadata(imagePath);
 
@@ -220,7 +217,7 @@ namespace UtilityTools.Modules.ImageAnalyzer.ViewModels
                                 item.Value = metaData.Version;
                                 break;
                             case Property_Position:
-                                item.Value = metaData.Position.ToString();
+                                item.Value = metaData.Position;
                                 break;
                             case Property_Pressure:
                                 item.Value = metaData.Pressure;
@@ -419,8 +416,9 @@ namespace UtilityTools.Modules.ImageAnalyzer.ViewModels
             {
                 var source = FilterBitmap == null ? SrcBitmap : FilterBitmap;
                 var mat = source.ToMat();
-                mat.Normalize();
-                FilterBitmap = mat.ToWriteableBitmap();
+                var result = new Mat();
+                Cv2.Normalize(mat, result, ushort.MinValue, ushort.MaxValue, NormTypes.MinMax);
+                FilterBitmap = result.ToWriteableBitmap();
             }
 
         }

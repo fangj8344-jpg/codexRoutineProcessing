@@ -48,7 +48,7 @@ namespace UtilityTools.Modules.ImageAnalyzer.ViewModels
         {
             var dialog = new OpenFileDialog();
             dialog.Title = "Image File";
-            dialog.Filter = "imageFile|*.png";
+            dialog.Filter = "imageFile|*.png;*.tiff;*jpeg;*.jpg;*.bmp";
 
             if (dialog.ShowDialog() == true)
             {

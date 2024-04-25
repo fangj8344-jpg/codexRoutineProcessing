@@ -1,4 +1,5 @@
-﻿using OxyPlot;
+﻿using NLog;
+using OxyPlot;
 using OxyPlot.Annotations;
 using OxyPlot.Axes;
 using OxyPlot.Legends;
@@ -169,25 +170,32 @@ namespace UtilityTools.Modules.ImageAnalyzer.ViewModels
 
         public void UpdateImage(string imagePath)
         {
-            FilePath = imagePath;
+            try
+            {
+                FilePath = imagePath;
 
-            // 加载图像
-            var img = new BitmapImage();
-            img.BeginInit();
-            img.CacheOption = BitmapCacheOption.OnLoad; // 设置为不占用的方式
-            img.UriSource = new Uri(imagePath, UriKind.RelativeOrAbsolute); // 指定图片文件路径
-            img.EndInit();
-            SrcBitmap = img;
+                // 加载图像
+                var img = new BitmapImage();
+                img.BeginInit();
+                img.CacheOption = BitmapCacheOption.OnLoad; // 设置为不占用的方式
+                img.UriSource = new Uri(imagePath, UriKind.RelativeOrAbsolute); // 指定图片文件路径
+                img.EndInit();
+                SrcBitmap = img;
 
-            // 清理状态信息
-            _imghistSeries.Points.Clear();
-            ImgHistInfoListVo.Clear();
+                // 清理状态信息
+                _imghistSeries.Points.Clear();
+                ImgHistInfoListVo.Clear();
 
-            _imgHistInfo = new ImgHistInfo(imagePath);
-            _imghistSeries.Points.AddRange(_imgHistInfo.Points);
+                _imgHistInfo = new ImgHistInfo(imagePath);
+                _imghistSeries.Points.AddRange(_imgHistInfo.Points);
 
-            // 默认添加96%区间像素信息
-            AddImgHistInfo(96);
+                // 默认添加96%区间像素信息
+                AddImgHistInfo(96);
+            }
+            catch (Exception ex) 
+            {
+                LogManager.GetCurrentClassLogger().Error(ex.Message);
+            }
         }
         #endregion
 

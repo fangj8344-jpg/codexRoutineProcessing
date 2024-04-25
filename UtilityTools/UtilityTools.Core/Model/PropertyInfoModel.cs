@@ -41,11 +41,11 @@ namespace UtilityTools.Core.Model
 
         }
 
-        public PropertyInfoModel(string des, string name, string value)
+        public PropertyInfoModel(string des, string name, string unit)
         {
             Description = des;
             Name = name;
-            Value = value;
+            Unit = unit;
         }
 
         public PropertyInfoModel(int key)
@@ -62,7 +62,7 @@ namespace UtilityTools.Core.Model
         #endregion
 
         #region ------------Property------------
-        private string _name;
+        private string _name = string.Empty;
         /// <summary>
         /// 属性名称
         /// </summary>
@@ -82,7 +82,7 @@ namespace UtilityTools.Core.Model
             set { _key = value; RaisePropertyChanged(); }
         }
 
-        private string _description;
+        private string _description = string.Empty;
         /// <summary>
         /// 中文描述
         /// </summary>
@@ -93,7 +93,7 @@ namespace UtilityTools.Core.Model
         }
 
 
-        private string _value;
+        private string _value = string.Empty;
         /// <summary>
         /// 属性值
         /// </summary>
@@ -101,6 +101,16 @@ namespace UtilityTools.Core.Model
         {
             get { return _value; }
             set { _value = value; RaisePropertyChanged(); }
+        }
+
+        private string _unit = string.Empty;
+        /// <summary>
+        /// 数值单位
+        /// </summary>
+        public string Unit
+        {
+            get { return _unit; }
+            set { _unit = value; RaisePropertyChanged(); }
         }
 
         #endregion

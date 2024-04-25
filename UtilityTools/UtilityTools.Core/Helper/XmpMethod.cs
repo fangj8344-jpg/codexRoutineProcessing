@@ -226,13 +226,14 @@ namespace UtilityTools.Core.Helper
                 string destFilename = "tmp" + ext;
                 using (var image = new MagickImage(fileName))
                 {
-                    XDocument document = new XDocument(new XDeclaration("1.0", "utf-8", "yes"));
+                    XDocument document = new XDocument();
 
                     var root = new XElement("Zeptools");
                     foreach (PropertyInfoModel info in metadatas)
                     {
                         var child = new XElement(info.Name);
-                        child.Value = info.Value.ToString();
+                        child.Value = info.Value == null ? string.Empty : info.Value.ToString();
+                        child.Value += info.Unit;
                         child.SetAttributeValue("ID", info.Key);
                         root.Add(child);
                     }

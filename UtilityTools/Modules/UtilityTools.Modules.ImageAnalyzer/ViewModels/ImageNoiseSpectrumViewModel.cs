@@ -1,4 +1,5 @@
-﻿using OpenCvSharp.XImgProc;
+﻿using NLog;
+using OpenCvSharp.XImgProc;
 using OxyPlot;
 using OxyPlot.Annotations;
 using OxyPlot.Axes;
@@ -170,19 +171,26 @@ namespace UtilityTools.Modules.ImageAnalyzer.ViewModels
 
         public void UpdateImage(string imagePath)
         {
-            FilePath = imagePath;
-
+            try
             {
-                var info = new ImgSpectrumInfo(imagePath);
-                updateSpectrumMean(RowSpectrumMeanOxyModel, RowSpectrumPeakList, info, "RowSpectrum");
-                updateSpectrumImg(RowSpectrumOxyModel, info);
+                FilePath = imagePath;
+
+                {
+                    var info = new ImgSpectrumInfo(imagePath);
+                    updateSpectrumMean(RowSpectrumMeanOxyModel, RowSpectrumPeakList, info, "RowSpectrum");
+                    updateSpectrumImg(RowSpectrumOxyModel, info);
+                }
+
+
+                {
+                    var info = new ImgSpectrumInfo(imagePath, true);
+                    updateSpectrumMean(ColumnSpectrumMeanOxyModel, ColumnSpectrumPeakList, info, "ColumnSpectrum");
+                    updateSpectrumImg(ColumnSpectrumOxyModel, info);
+                }
             }
-
-
-            {
-                var info = new ImgSpectrumInfo(imagePath, true);
-                updateSpectrumMean(ColumnSpectrumMeanOxyModel, ColumnSpectrumPeakList, info, "ColumnSpectrum");
-                updateSpectrumImg(ColumnSpectrumOxyModel, info);
+            catch (Exception ex)
+            { 
+                LogManager.GetCurrentClassLogger().Error(ex);
             }
         }
 
