@@ -64,6 +64,8 @@ namespace UtilityTools
 
             containerRegistry.RegisterDialog<SerialPortView>();
             containerRegistry.RegisterDialog<NetConfigView>();
+            containerRegistry.RegisterDialog<CommonNetConfigView>();
+            containerRegistry.RegisterDialog<CommonNetConfigView>();
 
         }
 
