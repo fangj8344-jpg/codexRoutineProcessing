@@ -7,7 +7,7 @@ using UtilityTools.Modules.FZBPumpController.Views;
 
 namespace UtilityTools.Modules.FZBPumpController
 {
-    [CustomModule(ModuleName = "FZBPumpController", Title = "ÎĞÂÖ±Ã¿ØÖÆ", Tip = "´®¿ÚÍ¨Ñ¶", Icon = "FlashTriangle")]
+    [CustomModule(ModuleName = "FZBPumpController", Title = "æ¶¡è½®æ³µæ§åˆ¶", Tip = "ä¸²å£é€šè®¯", Icon = "FlashTriangle")]
     public class FZBPumpControllerModule : IModule
     {
         public void OnInitialized(IContainerProvider containerProvider)

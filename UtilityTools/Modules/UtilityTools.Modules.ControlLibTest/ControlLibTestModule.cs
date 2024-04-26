@@ -6,7 +6,7 @@ using UtilityTools.Modules.ControlLibTest.Views;
 
 namespace UtilityTools.Modules.ControlLibTest
 {
-    [CustomModule(ModuleName = "ControlLibTest", Title = "Í¨Ñ¶¿â²âÊÔ", Tip = "´®¿ÚÍ¨Ñ¶", Icon = "FlashTriangle")]
+    [CustomModule(ModuleName = "ControlLibTest", Title = "é€šè®¯åº“æµ‹è¯•", Tip = "ä¸²å£é€šè®¯", Icon = "FlashTriangle")]
     public class ControlLibTestModule : IModule
     {
         public void OnInitialized(IContainerProvider containerProvider)
