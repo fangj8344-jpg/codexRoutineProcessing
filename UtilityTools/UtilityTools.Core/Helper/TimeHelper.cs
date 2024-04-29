@@ -41,7 +41,21 @@ namespace UtilityTools.Core.Helper
             long difVal = (years - leapYears) * 365 * 24 * 60 * 60 + leapYears * 366 * 24 * 60 * 60 - 8 * 60 * 60;
 
             double realTimestamp = time - difVal;
-            return DateTimeOffset.FromUnixTimeSeconds((long)realTimestamp).DateTime;
+            return DateTimeOffset.FromUnixTimeSeconds((long)realTimestamp).LocalDateTime;
+        }
+
+
+        /// <summary>
+        /// 获取Labview的时间标签
+        /// </summary>
+        /// <returns></returns>
+        public static double GetLabviewTime()
+        {
+            long years = (1970 - 1904);
+            long leapYears = years / 4 + 1;
+            long difVal = (years - leapYears) * 365 * 24 * 60 * 60 + leapYears * 366 * 24 * 60 * 60 - 8 * 60 * 60;
+
+            return DateTimeOffset.Now.ToUnixTimeSeconds() + difVal;
         }
     }
 }
