@@ -104,8 +104,8 @@
                            FontSize="16"
                            Margin="0, 0, 10, 0" />
                 <ComboBox DockPanel.Dock="Left"
-                          ItemsSource="{Binding SerialPortInfo.DataBits, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                          SelectedItem="{Binding Model.DataBits, Converter={StaticResource StringToIntConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          ItemsSource="{Binding DataBits, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          SelectedItem="{Binding SerialPortInfo.DataBits, Converter={StaticResource StringToIntConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                           Style="{StaticResource MaterialDesignComboBox}" />
             </DockPanel>
             <DockPanel DockPanel.Dock="Top"

@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Prism.Core" Version="8.1.97" />
+    <PackageReference Include="Zeptools.CommonLib" Version="1.1.0" />
+    <PackageReference Include="Zeptools.VacuumLib" Version="1.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UtilityTools.Core\UtilityTools.Core.csproj" />
+  </ItemGroup>
+
+  <Target Name="CopyTargetFiles" AfterTargets="PostBuildEvent">
+    <ItemGroup>
+      <SomeFiles Include="$(OutDir)$(TargetFileName)" />
+    </ItemGroup>
+    <Copy SourceFiles="@(SomeFiles)" DestinationFolder="$(SolutionDir)UtilityTools\bin\$(ConfigurationName)\$(TargetFramework)\Modules\" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

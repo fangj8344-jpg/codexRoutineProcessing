@@ -146,6 +146,7 @@ namespace UtilityTools.ViewModels
                     {
                         if (SerialPortInfo != null)
                         {
+                            SerialPortInfo.DataBits = 8;
                             if (string.IsNullOrEmpty(SerialPortInfo.PortName))
                                 SerialPortInfo.PortName = PortNames[0];
                         }
@@ -162,7 +163,7 @@ namespace UtilityTools.ViewModels
             if (DialogHost.IsDialogOpen(DialogHostName))
             {
                 DialogParameters parameters = new DialogParameters();
-                parameters.Add("Value", SerialPortDevice);
+                parameters.Add("Value", ComDevice);
                 DialogHost.Close(DialogHostName, new DialogResult(ButtonResult.OK, parameters));
             }
         }
@@ -172,7 +173,7 @@ namespace UtilityTools.ViewModels
             if (DialogHost.IsDialogOpen(DialogHostName))
             {
                 DialogParameters parameters = new DialogParameters();
-                parameters.Add("Value", SerialPortDevice);
+                parameters.Add("Value", ComDevice);
                 DialogHost.Close(DialogHostName, new DialogResult(ButtonResult.Cancel, parameters));
             }
         }

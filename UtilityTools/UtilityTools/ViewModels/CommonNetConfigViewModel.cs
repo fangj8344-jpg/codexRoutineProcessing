@@ -159,7 +159,7 @@ namespace UtilityTools.ViewModels
             if (DialogHost.IsDialogOpen(DialogHostName))
             {
                 DialogParameters parameters = new DialogParameters();
-                parameters.Add("Value", NetDevice);
+                parameters.Add("Value", ComDevice);
                 DialogHost.Close(DialogHostName, new DialogResult(ButtonResult.OK, parameters));
             }
         }
@@ -169,7 +169,7 @@ namespace UtilityTools.ViewModels
             if (DialogHost.IsDialogOpen(DialogHostName))
             {
                 DialogParameters parameters = new DialogParameters();
-                parameters.Add("Value", NetDevice);
+                parameters.Add("Value", ComDevice);
                 DialogHost.Close(DialogHostName, new DialogResult(ButtonResult.Cancel, parameters));
             }
         }
