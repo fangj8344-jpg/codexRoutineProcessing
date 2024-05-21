@@ -144,6 +144,15 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
             set { _cachecallbackdate = value; RaisePropertyChanged(); }
         }
 
+        private int _selectedIndex;
+
+        public int SelectedIndex
+        {
+            get { return _selectedIndex; }
+            set { _selectedIndex = value; RaisePropertyChanged(); }
+        }
+
+
         /// <summary>
         /// 通讯日志
         /// </summary>
@@ -167,6 +176,7 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
 
         #region ------------Command------------
         public DelegateCommand CleanLogCommand { get; set; }
+        public DelegateCommand CopyLogCommand { get; set; }
         public DelegateCommand ShowDeviceCommand { get; set; }
         public DelegateCommand ClearMonitorCommand { get; set; }
         public DelegateCommand AutoAdjustComamnd { get; set; }
@@ -184,7 +194,7 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
 
             System.Threading.SynchronizationContext.Current.Post(p1 =>
             {
-                Logs.Add($"{DateTime.Now.ToString("t")} 发送: {DataTypeCaster.ByteArrayToString(msg, msg.Length)}");
+                Logs.Add($"{DateTime.Now.ToString("hh:mm:ss")} 发送: {DataTypeCaster.ByteArrayToString(msg, msg.Length)}");
             }, null);
             return true;
         }
@@ -214,6 +224,7 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         {
             ShowDeviceCommand = new DelegateCommand(ShowDevice);
             CleanLogCommand = new DelegateCommand(CleanLog);
+            CopyLogCommand = new DelegateCommand(CopyLog);
             ClearMonitorCommand = new DelegateCommand(ClearMonitor);
             AutoAdjustComamnd = new DelegateCommand(AutoAdjust);
             SaveToFileCommand = new DelegateCommand(SaveToFile);
@@ -260,6 +271,22 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         private void CleanLog()
         {
             Logs = new ObservableCollection<string>();
+        }
+
+        private void CopyLog()
+        {
+            if (SelectedIndex >= 0 && SelectedIndex < Logs.Count)
+            {
+                var item = Logs[SelectedIndex];
+
+                var list = item.Split(':');
+                if (list.Length > 1)
+                {
+                    var cmd = list.Last();
+                    cmd = cmd.Replace("0x", "");
+                    System.Windows.Clipboard.SetText(cmd);
+                }
+            }
         }
 
         /// <summary>
@@ -369,7 +396,7 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
                 System.Windows.Threading.DispatcherSynchronizationContext(System.Windows.Application.Current.Dispatcher));
                 System.Threading.SynchronizationContext.Current.Post(p1 =>
                 {
-                    Logs.Add($"{DateTime.Now.ToString("t")} 读取: {DataTypeCaster.ByteArrayToString(e, e.Length)}");
+                    Logs.Add($"{DateTime.Now.ToString("hh:mm:ss")} 读取: {DataTypeCaster.ByteArrayToString(e, e.Length)}");
                 }, null);
             });
         }

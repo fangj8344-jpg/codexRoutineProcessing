@@ -29,17 +29,21 @@ using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Legends;
 using OxyPlot.Series;
+using OxyPlot.Wpf;
 using Prism.Commands;
 using Prism.Events;
 using Prism.Ioc;
 using Prism.Mvvm;
 using System;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
+using System.Windows.Forms;
 using UtilityTools.Core.Helper;
 using UtilityTools.Core.Model;
 using UtilityTools.Modules.HvController.Protocol;
@@ -316,6 +320,17 @@ namespace UtilityTools.Modules.HvController.Model
             set { _lastError = value; RaisePropertyChanged(); }
         }
 
+        private int _selectedIndex;
+        /// <summary>
+        /// 选中的日志
+        /// </summary>
+        public int SelectedIndex
+        {
+            get { return _selectedIndex; }
+            set { _selectedIndex = value; RaisePropertyChanged(); }
+        }
+
+
         private ObservableCollection<string> _logs;
         /// <summary>
         /// 通讯日志
@@ -382,6 +397,8 @@ namespace UtilityTools.Modules.HvController.Model
         public DelegateCommand AutoAdjustCommand { get; set; }
         public DelegateCommand ClearMonitorCommand { get; set; }
         public DelegateCommand SaveMonitorInfoCommand { get; set; }
+        public DelegateCommand ClearLogCommand { get; set; }
+        public DelegateCommand CopyLogCommand { get; set; }
         #endregion
 
         #region ------------PublicMethod------------
@@ -392,7 +409,7 @@ namespace UtilityTools.Modules.HvController.Model
         /// <param name="isRead">是否是读取</param>
         public void AddLog(string log, bool isRead = true)
         {
-            Application.Current.Dispatcher.Invoke(() =>
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
                 if (Logs == null)
                 {
@@ -401,12 +418,13 @@ namespace UtilityTools.Modules.HvController.Model
 
                 if (isRead)
                 {
-                    Logs.Add($"{DateTime.Now.ToString("t")} 读取: {log}");
+                    Logs.Add($"{DateTime.Now.ToString("hh:mm:ss")} 读取: {log}");
                 }
                 else
                 {
-                    Logs.Add($"{DateTime.Now.ToString("t")} 发送: {log}");
+                    Logs.Add($"{DateTime.Now.ToString("hh:mm:ss")} 发送: {log}");
                 }
+
             });
             
         }
@@ -571,8 +589,83 @@ namespace UtilityTools.Modules.HvController.Model
         /// 保存图表数据
         /// </summary>
         public void SaveMonitorInfo()
-        { 
+        {
             // 借鉴已经存在表格数据
+            FolderBrowserDialog dialog = new FolderBrowserDialog();
+            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.Cancel)
+            {
+                var path = dialog.SelectedPath;
+
+                SaveToFile(path);
+            }
+        }
+
+        private void SaveToFile(string path)
+        {
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
+            var timeTip = DateTime.Now.ToString("HHmmss");
+            PngExporter exporter = new PngExporter();
+
+            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+            {
+                exporter.ExportToFile(HvPlotModel, $"{path}\\高压监控_{timeTip}.png");
+                SaveSeriesToFile(_accVolLineSeries, $"{path}\\加速电压_{timeTip}.txt");
+                SaveSeriesToFile(_emissLineSeries, $"{path}\\发射电流_{timeTip}.txt");
+                SaveSeriesToFile(_filaRLineSeries, $"{path}\\灯丝电阻_{timeTip}.txt");
+                SaveSeriesToFile(_gridVolLineSeries, $"{path}\\栅极电压_{timeTip}.txt");
+            }));
+        }
+
+        private void SaveSeriesToFile(DataPointSeries series, string filePath)
+        {
+            string gunReport = string.Empty;
+            foreach (var report in series.Points)
+            {
+                gunReport += $"{report.X}\t{report.Y}\n";
+            }
+            try
+            {
+                using (var gunStream = File.OpenWrite(filePath))
+                {
+                    var gunData = Encoding.UTF8.GetBytes(gunReport);
+                    gunStream.Write(gunData, 0, gunData.Length);
+                }
+            }
+            catch (Exception ex)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Fatal($"保存图表数据异常：目标路径【{filePath}】，异常原因【{ex.Message}】");
+            }
+        }
+
+        /// <summary>
+        /// 清除日志
+        /// </summary>
+        public void ClearLog()
+        {
+            Logs.Clear();
+        }
+        
+        /// <summary>
+        /// 保存图表数据
+        /// </summary>
+        public void CopyLog()
+        {
+            if(SelectedIndex >= 0 && SelectedIndex < Logs.Count) 
+            {
+                var item = Logs[SelectedIndex];
+
+                var list = item.Split(':');
+                if(list.Length > 1) 
+                {
+                    var cmd = list.Last();
+                    cmd = cmd.Replace("0x", "");
+                    System.Windows.Clipboard.SetText(cmd);
+                }
+            }
         }
         #endregion
 
@@ -637,6 +730,8 @@ namespace UtilityTools.Modules.HvController.Model
             ChangeMonitorStateCommand = new DelegateCommand(ChangeMonitorState);
             SendCmdStringCommand = new DelegateCommand<object>(SendCmdString);
             SaveMonitorInfoCommand = new DelegateCommand(SaveMonitorInfo);
+            ClearLogCommand = new DelegateCommand(ClearLog);
+            CopyLogCommand = new DelegateCommand(CopyLog);
         }
 
         /// <summary>
@@ -674,6 +769,11 @@ namespace UtilityTools.Modules.HvController.Model
         {
             if (e == null)
                 return;
+
+            if (_responseLength + e.Length > _response.Length)
+            {
+                _responseLength = 0;
+            }
 
             Array.Copy(e, 0, _response, _responseLength, e.Length);
             _responseLength += e.Length;

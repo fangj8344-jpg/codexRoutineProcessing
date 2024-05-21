@@ -14,7 +14,19 @@
   </Target>
 
   <ItemGroup>
+    <PackageReference Include="Zeptools.BseControlLib" Version="1.0.1" />
+    <PackageReference Include="Zeptools.CCSControlLib" Version="1.0.2" />
     <PackageReference Include="Zeptools.ControlLib" Version="1.0.4" />
+    <PackageReference Include="Zeptools.DacControlLib" Version="1.0.1" />
+    <PackageReference Include="Zeptools.EthControlLib" Version="1.0.1" />
+    <PackageReference Include="Zeptools.FanControllib" Version="1.0.1" />
+    <PackageReference Include="Zeptools.LedControlLib" Version="1.0.0" />
+    <PackageReference Include="Zeptools.RelayControlLib" Version="1.0.0" />
+    <PackageReference Include="Zeptools.ScanControlLib" Version="1.0.0" />
+    <PackageReference Include="Zeptools.SeControlLib" Version="1.0.0" />
+    <PackageReference Include="Zeptools.TempControlLib" Version="1.0.0" />
+    <PackageReference Include="Zeptools.UartControlLib" Version="1.0.0" />
+    <PackageReference Include="Zeptools.VacuumLib" Version="1.0.1" />
   </ItemGroup>
 
   <ItemGroup>

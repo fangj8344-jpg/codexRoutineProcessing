@@ -54,7 +54,7 @@ namespace UtilityTools.Modules.ControlLibTest.Model
         
         public DelegateCommand SetUartCommand { get; set; }
 
-        public Func<byte,uint,ResponseProto> SetBaudRateFunc { get; set; }
+        public Func<byte,uint,ResponseProto?> SetBaudRateFunc { get; set; }
         #endregion
 
         #region ------------PublicMethod------------

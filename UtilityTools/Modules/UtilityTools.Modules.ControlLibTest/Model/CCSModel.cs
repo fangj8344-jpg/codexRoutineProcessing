@@ -146,15 +146,15 @@ namespace UtilityTools.Modules.ControlLibTest.Model
         /// <summary>
         /// 设置数值方法
         /// </summary>
-        public Func<ushort, ResponseProto> SetValueFunc { get; set; }
+        public Func<ushort, ResponseProto>? SetValueFunc { get; set; } = null;
 
         /// <summary>
         /// 设置继电器状态方法
         /// </summary>
-        public Func<bool, ResponseProto> SetStateFunc { get; set; }
+        public Func<bool, ResponseProto>? SetStateFunc { get; set; } = null;
         #endregion
-        
-        
+
+
         #region ------------PublicMethod------------
         #endregion
 

@@ -58,13 +58,13 @@
 
                 <DockPanel Grid.Row="0"
                            Grid.ColumnSpan="6" Margin="0,0,0,12" Grid.RowSpan="2">
-                    <Label Content="通用数值控制" />
+                    <Label Content="通用数值控制"/>
                     <ComboBox ItemsSource="{Binding CCSModels}"
                               Margin="5, 0"
                               MinWidth="50"
                               DisplayMemberPath="Name"
                               SelectedItem="{Binding SelectedCCSModelForValue}"
-                              Width="50" />
+                              Width="80" />
                     <Slider Minimum="{Binding SelectedCCSModelForValue.MinValue}"
                             Maximum="{Binding SelectedCCSModelForValue.MaxValue}"
                             Value="{Binding SelectedCCSModelForValue.Value, Mode=TwoWay}"
@@ -77,7 +77,7 @@
                     <Label Content="通用开关控制" />
                     <ComboBox ItemsSource="{Binding CCSModels, Converter={StaticResource getRelayListConverter}}"
                               Margin="5, 0"
-                              MinWidth="50"
+                              Width="80"
                               DisplayMemberPath="Name"
                               SelectedItem="{Binding SelectedCCSModelForRelay}"
                               VerticalAlignment="Center" />

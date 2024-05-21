@@ -42,9 +42,23 @@ using UtilityTools.Core.Dialog;
 using UtilityTools.Core.Extension;
 using UtilityTools.Core.Mvvm;
 using UtilityTools.Modules.ControlLibTest.Model;
+using Zeptools.BseControlLib.Entity;
+using Zeptools.CCSControlLib.Entity;
+using Zeptools.CommonLib.ComDevice;
 using Zeptools.CommonLib.Help;
+using Zeptools.CommonLib.Interface;
 using Zeptools.CommonLib.Model;
 using Zeptools.ControlLib.Entity;
+using Zeptools.DacControlLib.Entity;
+using Zeptools.EthControlLib.Entity;
+using Zeptools.FanControlLib.Entity;
+using Zeptools.LedControlLib.Entity;
+using Zeptools.RelayControlLib.Entity;
+using Zeptools.ScanControlLib.Entity;
+using Zeptools.SeControlLib.Entity;
+using Zeptools.TempControlLib.Entity;
+using Zeptools.UartControlLib.Entity;
+using Zeptools.VacuumLib.Entity;
 
 namespace UtilityTools.Modules.ControlLibTest.ViewModels
 {
@@ -57,8 +71,25 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             _dialogHostService = dialogHostService;
             //消息提示
             _aggregator = containerProvider.Resolve<IEventAggregator>();
-            var device = DeviceFactory.GetSynRWDevice("Protocol");
-            _entity = new ServerEntity(device);
+
+            _device = DeviceFactory.GetAsyRWDevice("Protocol");
+            if (_device != null)
+            {
+                _device.Name = "协议主控板";
+                _device.Open();
+                _bseControl = new BseEntity(_device);
+                _ccsControl = new CCSEntity(_device);
+                _dacControl = new DacEntity(_device);
+                _ethControl = new EthEntity(_device);
+                _fanControl = new FanEntity(_device);
+                _ledControl = new LedEntity(_device);
+                _relayControl = new RelayEntity(_device);
+                _scanControl = new ScanEntity(_device);
+                _seControl = new SeEntity(_device);
+                _tempControl = new TempEntity(_device);
+                _uartControl = new UartEntity(_device);
+                _vacControl = new VacuumEntity(_device);
+            }
 
             InitProperty();
         }
@@ -66,9 +97,21 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
         #endregion
 
         #region ------------Field------------
-        private IDialogHostService _dialogHostService;
-        private readonly IEventAggregator _aggregator;
-        ServerEntity _entity;
+        private IDialogHostService? _dialogHostService = null;
+        private IEventAggregator? _aggregator = null;
+        private IAsynRWDevice? _device = null;
+        private IBseControl? _bseControl = null;
+        private ICCSControl? _ccsControl = null;
+        private IDacControl? _dacControl = null;
+        private IEthControl? _ethControl = null;
+        private IFanControl? _fanControl = null;
+        private ILedControl? _ledControl = null;
+        private IRelayControl? _relayControl = null;
+        private IScanControl? _scanControl = null;
+        private ISeControl? _seControl = null;
+        private ITempControl? _tempControl = null;
+        private IUartControl? _uartControl = null;
+        private IVacControl? _vacControl = null;
         #endregion
 
         #region ------------Property------------
@@ -80,17 +123,17 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             set { _ccsModels = value; RaisePropertyChanged(); }
         }
 
-        private CCSModel _selectedCCSModelForValue;
+        private CCSModel? _selectedCCSModelForValue = null;
 
-        public CCSModel SelectedCCSModelForValue
+        public CCSModel? SelectedCCSModelForValue
         {
             get { return _selectedCCSModelForValue; }
             set { _selectedCCSModelForValue = value; RaisePropertyChanged(); }
         }
 
-        private CCSModel _selectedCCSModelForRelay;
+        private CCSModel? _selectedCCSModelForRelay = null;
 
-        public CCSModel SelectedCCSModelForRelay
+        public CCSModel? SelectedCCSModelForRelay
         {
             get { return _selectedCCSModelForRelay; }
             set { _selectedCCSModelForRelay = value; RaisePropertyChanged(); }
@@ -104,53 +147,49 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             set { _fanModels = value; RaisePropertyChanged(); }
         }
 
-        private FanModel _selectedFanModel;
+        private FanModel? _selectedFanModel = null;
 
-        public FanModel SelectedFanModel
+        public FanModel? SelectedFanModel
         {
             get { return _selectedFanModel; }
             set { _selectedFanModel = value; RaisePropertyChanged(); }
         }
 
-        private EthModel _ethModel;
+        private EthModel? _ethModel = null;
 
-        public EthModel EthModel
+        public EthModel? EthModel
         {
             get { return _ethModel; }
             set { _ethModel = value; RaisePropertyChanged(); }
         }
 
-        public DelegateCommand SetIPCommand { get; set; }
+        public DelegateCommand? SetIPCommand { get; set; } = null;
 
-        public DelegateCommand GetIPCommand { get; set; }
+        public DelegateCommand? GetIPCommand { get; set; } = null;
 
+        private TempModel? _tempModel = null;
 
-
-        private TempModel _tempModel;
-
-        public TempModel TempModel
+        public TempModel? TempModel
         {
             get { return _tempModel; }
             set { _tempModel = value; RaisePropertyChanged(); }
         }
 
-        public DelegateCommand GetAllTempCommand { get; set; }
+        public DelegateCommand? GetAllTempCommand { get; set; } = null;
 
-        public DelegateCommand GetTemp1Command { get; set; }
+        public DelegateCommand? GetTemp1Command { get; set; } = null;
 
-        public DelegateCommand GetTemp2Command { get; set; }
+        public DelegateCommand? GetTemp2Command { get; set; } = null;
 
+        private VacModel? _vacModel = null;
 
-
-        private VacModel _vacModel;
-
-        public VacModel VacModel
+        public VacModel? VacModel
         {
             get { return _vacModel; }
             set { _vacModel = value; RaisePropertyChanged(); }
         }
 
-        public DelegateCommand<string> GetVacCommand { get; set; }
+        public DelegateCommand<string>? GetVacCommand { get; set; } = null;
 
         private ObservableCollection<BseModel> _bseModels = new ObservableCollection<BseModel>();
 
@@ -160,49 +199,49 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             set { _bseModels = value; RaisePropertyChanged(); }
         }
 
-        private BseModel _bseModelForValue;
+        private BseModel? _bseModelForValue = null;
 
-        public BseModel BseModelForValue
+        public BseModel? BseModelForValue
         {
             get { return _bseModelForValue; }
             set { _bseModelForValue = value; RaisePropertyChanged(); }
         }
 
-        private BseModel _bseModelForNeg;
+        private BseModel? _bseModelForNeg = null;
 
-        public BseModel BseModelForNeg
+        public BseModel? BseModelForNeg
         {
             get { return _bseModelForNeg; }
             set { _bseModelForNeg = value; RaisePropertyChanged(); }
         }
 
-        private BseModel _bseModelForPos;
+        private BseModel? _bseModelForPos = null;
 
-        public BseModel BseModelForPos
+        public BseModel? BseModelForPos
         {
             get { return _bseModelForPos; }
             set { _bseModelForPos = value; RaisePropertyChanged(); }
         }
 
-        private SeModel _seModel;
+        private SeModel? _seModel = null;
 
-        public SeModel SeModel
+        public SeModel? SeModel
         {
             get { return _seModel; }
             set { _seModel = value; RaisePropertyChanged(); }
         }
 
-        private ScanModel _scanModel;
+        private ScanModel? _scanModel = null;
 
-        public ScanModel ScanModel
+        public ScanModel? ScanModel
         {
             get { return _scanModel; }
             set { _scanModel = value; RaisePropertyChanged(); }
         }
 
-        private LedModel _ledModels;
+        private LedModel? _ledModels = null;
 
-        public LedModel LedModels
+        public LedModel? LedModels
         {
             get { return _ledModels; }
             set { _ledModels = value; RaisePropertyChanged(); }
@@ -224,8 +263,6 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             set { _UartModels = value; RaisePropertyChanged(); }
         }
 
-
-
         private ObservableCollection<DACModel> _dacModels = new ObservableCollection<DACModel>();
 
         public ObservableCollection<DACModel> DacModels
@@ -234,9 +271,9 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             set { _dacModels = value; RaisePropertyChanged(); }
         }
 
-        private DACModel _selectedDacModel;
+        private DACModel? _selectedDacModel = null;
 
-        public DACModel SelectedDacModel
+        public DACModel? SelectedDacModel
         {
             get { return _selectedDacModel; }
             set { _selectedDacModel = value; RaisePropertyChanged(); }
@@ -250,25 +287,30 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
         private void InitProperty()
         {
-            CCSModels.Add(new CCSModel() { Name = "CHA0", RealName = "AligX1", RelayName = "CCSk2", RelayChannel = (byte)0x02, Channel = (byte)0xA0, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _entity.SetAligX1, SetStateFunc = _entity.SetAligX1Polarity });
-            CCSModels.Add(new CCSModel() { Name = "CHA1", RealName = "AligX2", RelayName = "CCSk3", RelayChannel = (byte)0x03, Channel = (byte)0xA1, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _entity.SetAligX2, SetStateFunc = _entity.SetAligX2Polarity });
-            CCSModels.Add(new CCSModel() { Name = "CHA2", RealName = "CompressA", RelayName = "CCSkX", RelayChannel = (byte)0x0F, Channel = (byte)0xA2, HasRelay = false, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _entity.SetCompressLensA, SetStateFunc = null });
-            CCSModels.Add(new CCSModel() { Name = "CHB0", RealName = "CompressB", RelayName = "CCSkX", RelayChannel = (byte)0x0F, Channel = (byte)0xB0, HasRelay = false, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _entity.SetCompressLensB, SetStateFunc = null });
-            CCSModels.Add(new CCSModel() { Name = "CHB1", RealName = "AstigA", RelayName = "CCSk6", RelayChannel = (byte)0x06, Channel = (byte)0xB1, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _entity.SetAstigA, SetStateFunc = _entity.SetAstigAPolarity });
-            CCSModels.Add(new CCSModel() { Name = "CHB2", RealName = "AstigB", RelayName = "CCSk7", RelayChannel = (byte)0x07, Channel = (byte)0xB2, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _entity.SetAstigB, SetStateFunc = _entity.SetAstigBPolarity });
-            CCSModels.Add(new CCSModel() { Name = "CHB3", RealName = "AstigC", RelayName = "CCSk5", RelayChannel = (byte)0x05, Channel = (byte)0xB3, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _entity.SetAstigC, SetStateFunc = _entity.SetAstigCPolarity });
-            CCSModels.Add(new CCSModel() { Name = "CHB4", RealName = "AstigD", RelayName = "CCSk4", RelayChannel = (byte)0x04, Channel = (byte)0xB4, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _entity.SetAstigD, SetStateFunc = _entity.SetAstigDPolarity });
-            CCSModels.Add(new CCSModel() { Name = "CHB5", RealName = "AligY1", RelayName = "CCSk0", RelayChannel = (byte)0x00, Channel = (byte)0xB5, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _entity.SetAligY1, SetStateFunc = _entity.SetAligY1Polarity });
-            CCSModels.Add(new CCSModel() { Name = "CHB7", RealName = "OB", RelayName = "CCSkX", RelayChannel = (byte)0x0F, Channel = (byte)0xB7, HasRelay = false, Value = 0, MinValue = 0, MaxValue = 0xFFFF, RelayState = false, SetValueFunc = _entity.SetObjectiveLens, SetStateFunc = null });
-            CCSModels.Add(new CCSModel() { Name = "CHB8", RealName = "AligY2", RelayName = "CCSk1", RelayChannel = (byte)0x01, Channel = (byte)0xB8, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _entity.SetAligY2, SetStateFunc = _entity.SetAligY2Polarity });
-
+            if (_ccsControl != null)
+            {
+                CCSModels.Add(new CCSModel() { Name = "CHA0", RealName = "AligX1", RelayName = "CCSk2", RelayChannel = (byte)0x02, Channel = (byte)0xA0, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _ccsControl.SetAligX1, SetStateFunc = _ccsControl.SetAligX1Polarity });
+                CCSModels.Add(new CCSModel() { Name = "CHA1", RealName = "AligX2", RelayName = "CCSk3", RelayChannel = (byte)0x03, Channel = (byte)0xA1, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _ccsControl.SetAligX2, SetStateFunc = _ccsControl.SetAligX2Polarity });
+                CCSModels.Add(new CCSModel() { Name = "CHA2", RealName = "CompressA", RelayName = "CCSkX", RelayChannel = (byte)0x0F, Channel = (byte)0xA2, HasRelay = false, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _ccsControl.SetCompressLensA, SetStateFunc = null });
+                CCSModels.Add(new CCSModel() { Name = "CHB0", RealName = "CompressB", RelayName = "CCSkX", RelayChannel = (byte)0x0F, Channel = (byte)0xB0, HasRelay = false, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _ccsControl.SetCompressLensB, SetStateFunc = null });
+                CCSModels.Add(new CCSModel() { Name = "CHB1", RealName = "AstigA", RelayName = "CCSk6", RelayChannel = (byte)0x06, Channel = (byte)0xB1, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _ccsControl.SetAstigA, SetStateFunc = _ccsControl.SetAstigAPolarity });
+                CCSModels.Add(new CCSModel() { Name = "CHB2", RealName = "AstigB", RelayName = "CCSk7", RelayChannel = (byte)0x07, Channel = (byte)0xB2, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _ccsControl.SetAstigB, SetStateFunc = _ccsControl.SetAstigBPolarity });
+                CCSModels.Add(new CCSModel() { Name = "CHB3", RealName = "AstigC", RelayName = "CCSk5", RelayChannel = (byte)0x05, Channel = (byte)0xB3, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _ccsControl.SetAstigC, SetStateFunc = _ccsControl.SetAstigCPolarity });
+                CCSModels.Add(new CCSModel() { Name = "CHB4", RealName = "AstigD", RelayName = "CCSk4", RelayChannel = (byte)0x04, Channel = (byte)0xB4, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _ccsControl.SetAstigD, SetStateFunc = _ccsControl.SetAstigDPolarity });
+                CCSModels.Add(new CCSModel() { Name = "CHB5", RealName = "AligY1", RelayName = "CCSk0", RelayChannel = (byte)0x00, Channel = (byte)0xB5, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _ccsControl.SetAligY1, SetStateFunc = _ccsControl.SetAligY1Polarity });
+                CCSModels.Add(new CCSModel() { Name = "CHB7", RealName = "OB", RelayName = "CCSkX", RelayChannel = (byte)0x0F, Channel = (byte)0xB7, HasRelay = false, Value = 0, MinValue = 0, MaxValue = 0xFFFF, RelayState = false, SetValueFunc = _ccsControl.SetObjectiveLens, SetStateFunc = null });
+                CCSModels.Add(new CCSModel() { Name = "CHB8", RealName = "AligY2", RelayName = "CCSk1", RelayChannel = (byte)0x01, Channel = (byte)0xB8, HasRelay = true, Value = 0, MinValue = 0, MaxValue = 0x0FFF, RelayState = false, SetValueFunc = _ccsControl.SetAligY2, SetStateFunc = _ccsControl.SetAligY2Polarity });
+            }
 
             SelectedCCSModelForValue = CCSModels[0];
             SelectedCCSModelForRelay = CCSModels[0];
 
-            FanModels.Add(new FanModel() { Name = "风扇1", Channel = (byte)0x01, MinSpeed = 0, MaxSpeed = 100, Speed = 0, SetValueFunc = _entity.SetFan1 });
-            FanModels.Add(new FanModel() { Name = "风扇2", Channel = (byte)0x02, MinSpeed = 0, MaxSpeed = 100, Speed = 0, SetValueFunc = _entity.SetFan2 });
-            FanModels.Add(new FanModel() { Name = "风扇3", Channel = (byte)0x03, MinSpeed = 0, MaxSpeed = 100, Speed = 0, SetValueFunc = _entity.SetFan3 });
+            if (_fanControl != null)
+            {
+                FanModels.Add(new FanModel() { Name = "风扇1", Channel = (byte)0x01, MinSpeed = 0, MaxSpeed = 100, Speed = 0, SetValueFunc = _fanControl.SetFan1 });
+                FanModels.Add(new FanModel() { Name = "风扇2", Channel = (byte)0x02, MinSpeed = 0, MaxSpeed = 100, Speed = 0, SetValueFunc = _fanControl.SetFan2 });
+                FanModels.Add(new FanModel() { Name = "风扇3", Channel = (byte)0x03, MinSpeed = 0, MaxSpeed = 100, Speed = 0, SetValueFunc = _fanControl.SetFan3 });
+            }
 
             SelectedFanModel = FanModels[0];
 
@@ -285,10 +327,13 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             VacModel = new VacModel();
             GetVacCommand = new DelegateCommand<string>(GetVac);
 
-            BseModels.Add(new BseModel() { Name = "CH1", Channel = (byte)0x01, Value = 0, MinValue = 0, MaxValue = 0x0FFF, Negative = false, Positive = false, SetValueFunc = _entity.SetBSECH1, SetNegStateFunc = _entity.SetBSECH1_R, SetPosStateFunc = _entity.SetBSECH1_P });
-            BseModels.Add(new BseModel() { Name = "CH2", Channel = (byte)0x02, Value = 0, MinValue = 0, MaxValue = 0x0FFF, Negative = false, Positive = false, SetValueFunc = _entity.SetBSECH2, SetNegStateFunc = _entity.SetBSECH2_R, SetPosStateFunc = _entity.SetBSECH2_P });
-            BseModels.Add(new BseModel() { Name = "CH3", Channel = (byte)0x03, Value = 0, MinValue = 0, MaxValue = 0x0FFF, Negative = false, Positive = false, SetValueFunc = _entity.SetBSECH3, SetNegStateFunc = _entity.SetBSECH3_R, SetPosStateFunc = _entity.SetBSECH3_P });
-            BseModels.Add(new BseModel() { Name = "CH4", Channel = (byte)0x04, Value = 0, MinValue = 0, MaxValue = 0x0FFF, Negative = false, Positive = false, SetValueFunc = _entity.SetBSECH4, SetNegStateFunc = _entity.SetBSECH4_R, SetPosStateFunc = _entity.SetBSECH4_P });
+            if (_bseControl != null)
+            {
+                BseModels.Add(new BseModel() { Name = "CH1", Channel = (byte)0x01, Value = 0, MinValue = 0, MaxValue = 0x0FFF, Negative = false, Positive = false, SetValueFunc = _bseControl.SetBSECH1, SetNegStateFunc = _bseControl.SetBSECH1_R, SetPosStateFunc = _bseControl.SetBSECH1_P });
+                BseModels.Add(new BseModel() { Name = "CH2", Channel = (byte)0x02, Value = 0, MinValue = 0, MaxValue = 0x0FFF, Negative = false, Positive = false, SetValueFunc = _bseControl.SetBSECH2, SetNegStateFunc = _bseControl.SetBSECH2_R, SetPosStateFunc = _bseControl.SetBSECH2_P });
+                BseModels.Add(new BseModel() { Name = "CH3", Channel = (byte)0x03, Value = 0, MinValue = 0, MaxValue = 0x0FFF, Negative = false, Positive = false, SetValueFunc = _bseControl.SetBSECH3, SetNegStateFunc = _bseControl.SetBSECH3_R, SetPosStateFunc = _bseControl.SetBSECH3_P });
+                BseModels.Add(new BseModel() { Name = "CH4", Channel = (byte)0x04, Value = 0, MinValue = 0, MaxValue = 0x0FFF, Negative = false, Positive = false, SetValueFunc = _bseControl.SetBSECH4, SetNegStateFunc = _bseControl.SetBSECH4_R, SetPosStateFunc = _bseControl.SetBSECH4_P });
+            }
 
             BseModelForValue = BseModels[0];
             BseModelForNeg = BseModels[0];
@@ -315,11 +360,14 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             RelayModels.Add(new RelayModel() { Name = "CHE", Channel = (byte)0x0E, Enable = false });
             RelayModels.Add(new RelayModel() { Name = "CHF", Channel = (byte)0x0F, Enable = false });
 
+            if (_dacControl != null)
+            {
+                DacModels.Add(new DACModel() { Name = "CHA", Channel = (byte)0x00, Value = 0, MinValue = 0, MaxValue = 0x0FFF, SetValueFunc = _dacControl.SetDACCHA });
+                DacModels.Add(new DACModel() { Name = "CHB", Channel = (byte)0x01, Value = 0, MinValue = 0, MaxValue = 0x0FFF, SetValueFunc = _dacControl.SetDACCHB });
+                DacModels.Add(new DACModel() { Name = "CHC", Channel = (byte)0x02, Value = 0, MinValue = 0, MaxValue = 0x0FFF, SetValueFunc = _dacControl.SetDACCHC });
+                DacModels.Add(new DACModel() { Name = "CHD", Channel = (byte)0x03, Value = 0, MinValue = 0, MaxValue = 0x0FFF, SetValueFunc = _dacControl.SetDACCHD });
+            }
 
-            DacModels.Add(new DACModel() { Name = "CHA", Channel = (byte)0x00, Value = 0, MinValue = 0, MaxValue = 0x0FFF, SetValueFunc = _entity.SetDACCHA });
-            DacModels.Add(new DACModel() { Name = "CHB", Channel = (byte)0x01, Value = 0, MinValue = 0, MaxValue = 0x0FFF, SetValueFunc = _entity.SetDACCHB });
-            DacModels.Add(new DACModel() { Name = "CHC", Channel = (byte)0x02, Value = 0, MinValue = 0, MaxValue = 0x0FFF, SetValueFunc = _entity.SetDACCHC });
-            DacModels.Add(new DACModel() { Name = "CHD", Channel = (byte)0x03, Value = 0, MinValue = 0, MaxValue = 0x0FFF, SetValueFunc = _entity.SetDACCHD });
             SelectedDacModel = DacModels[0];
 
             UartModels.Add(new UARTModel() { Name = "光耦串口", Series = (byte)0x00, Value = "115200", SetBaudRateFunc = this.SetUart });
@@ -375,6 +423,8 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
         private void ScanModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
+            if (_scanControl == null)
+                return;
             var model = sender as ScanModel;
             if (model != null)
             {
@@ -382,79 +432,79 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                 {
                     case "AmpX":
                         {
-                            var result = _entity.SetAmpX(model.AmpX);
+                            var result = _scanControl.SetAmpX(model.AmpX);
                             ShowResponseResult(result);
                         }
                         break;
                     case "AmpY":
                         {
-                            var result = _entity.SetAmpY(model.AmpY);
+                            var result = _scanControl.SetAmpY(model.AmpY);
                             ShowResponseResult(result);
                         }
                         break;
                     case "AmpTX":
                         {
-                            var result = _entity.SetTAmpX(model.AmpTX);
+                            var result = _scanControl.SetTAmpX(model.AmpTX);
                             ShowResponseResult(result);
                         }
                         break;
                     case "AmpTY":
                         {
-                            var result = _entity.SetTAmpY(model.AmpTY);
+                            var result = _scanControl.SetTAmpY(model.AmpTY);
                             ShowResponseResult(result);
                         }
                         break;
                     case "AnalogSpinA":
                         {
-                            var result = _entity.SetAnalogSpinCHA(model.AnalogSpinA);
+                            var result = _scanControl.SetAnalogSpinCHA(model.AnalogSpinA);
                             ShowResponseResult(result);
                         }
                         break;
                     case "AnalogSpinB":
                         {
-                            var result = _entity.SetAnalogSpinCHB(model.AnalogSpinB);
+                            var result = _scanControl.SetAnalogSpinCHB(model.AnalogSpinB);
                             ShowResponseResult(result);
                         }
                         break;
                     case "AnalogSpinC":
                         {
-                            var result = _entity.SetAnalogSpinCHC(model.AnalogSpinC);
+                            var result = _scanControl.SetAnalogSpinCHC(model.AnalogSpinC);
                             ShowResponseResult(result);
                         }
                         break;
                     case "AnalogSpinD":
                         {
-                            var result = _entity.SetAnalogSpinCHD(model.AnalogSpinD);
+                            var result = _scanControl.SetAnalogSpinCHD(model.AnalogSpinD);
                             ShowResponseResult(result);
                         }
                         break;
                     case "K1":
                         {
-                            var result = _entity.SetSCANK1(model.K1);
+                            var result = _scanControl.SetSCANK1(model.K1);
                             ShowResponseResult(result);
                         }
                         break;
                     case "K2":
                         {
-                            var result = _entity.SetSCANK2(model.K2);
+                            var result = _scanControl.SetSCANK2(model.K2);
                             ShowResponseResult(result);
                         }
                         break;
                     case "K3":
                         {
-                            var result = _entity.SetSCANK3(model.K3);
+                            var result = _scanControl.SetSCANK3(model.K3);
                             ShowResponseResult(result);
                         }
                         break;
                     case "K4":
                         {
-                            var result = _entity.SetSCANK4(model.K4);
+                            var result = _scanControl.SetSCANK4(model.K4);
                             ShowResponseResult(result);
                         }
                         break;
                     case "Sw":
                         {
-                            var result = _entity.SetSCANSW(model.Sw);
+                            var result = _scanControl.SetSCANSW(model.Sw);
                             ShowResponseResult(result);
                         }
                         break;
@@ -466,6 +516,8 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
         private void SeModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
+            if (_seControl == null)
+                return;
             var model = sender as SeModel;
             if (model != null)
             {
@@ -473,13 +525,13 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                 {
                     case "Value":
                         {
-                            var result = _entity.SetSECH0(model.Value);
+                            var result = _seControl.SetSECH0(model.Value);
                             ShowResponseResult(result);
                         }
                         break;
                     case "Enable":
                         {
-                            var result = _entity.SetSEEnable(model.Enable);
+                            var result = _seControl.SetSEEnable(model.Enable);
                             ShowResponseResult(result);
                         }
                         break;
@@ -491,6 +543,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
         private void CCSModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
+            if(_ccsControl == null) return;
             var model = sender as CCSModel;
             if (model != null)
             {
@@ -499,7 +552,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                     case "Value":
                         if (model == SelectedCCSModelForValue)
                         {
-                            var result = _entity.SetCCSCHValue(model.Channel, model.Value);
+                            var result = _ccsControl.SetCCSCHValue(model.Channel, model.Value);
                             ShowResponseResult(result);
                         }
                         else
@@ -511,7 +564,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                     case "RelayState":
                         if (model == SelectedCCSModelForRelay)
                         {
-                            var result = _entity.SetCCSk(model.RelayChannel, model.RelayState);
+                            var result = _ccsControl.SetCCSk(model.RelayChannel, model.RelayState);
                             ShowResponseResult(result);
                         }
                         else
@@ -526,6 +579,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
         private void FanModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
+            if(_fanControl == null) return;
             var model = sender as FanModel;
             if (model != null)
             {
@@ -534,7 +588,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                     case "Speed":
                         if (model == SelectedFanModel)
                         {
-                            var result = _entity.SetFan(model.Channel, model.Speed);
+                            var result = _fanControl.SetFan(model.Channel, model.Speed);
                             ShowResponseResult(result);
                         }
                         else
@@ -549,6 +603,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
         private void BseModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
+            if(_bseControl == null) return;
             var model = sender as BseModel;
             if (model != null)
             {
@@ -557,7 +612,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                     case "Value":
                         if (model == BseModelForValue)
                         {
-                            var result = _entity.SetBSECH(model.Channel, model.Value);
+                            var result = _bseControl.SetBSECH(model.Channel, model.Value);
                             ShowResponseResult(result);
                         }
                         else
@@ -569,7 +624,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                     case "Positive":
                         if (model == BseModelForPos)
                         {
-                            var result = _entity.SetBSECH_P(model.Channel, model.Positive);
+                            var result = _bseControl.SetBSECH_P(model.Channel, model.Positive);
                             ShowResponseResult(result);
                         }
                         else
@@ -581,7 +636,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                     case "Negative":
                         if (model == BseModelForNeg)
                         {
-                            var result = _entity.SetBSECH_R(model.Channel, model.Negative);
+                            var result = _bseControl.SetBSECH_R(model.Channel, model.Negative);
                             ShowResponseResult(result);
                         }
                         else
@@ -596,15 +651,18 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
         private void RelayModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
+            if (_relayControl == null)
+                return;
             var model = sender as RelayModel;
             if (model != null)
             {
-                var result = _entity.SetRelayState(model.Channel, model.Enable);
+                var result = _relayControl.SetRelayState(model.Channel, model.Enable);
                 ShowResponseResult(result);
             }
         }
         private void DacModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
+            if(_dacControl == null) return;
             var model = sender as DACModel;
             if (model != null)
             {
@@ -613,7 +671,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                     case "Value":
                         if (model == SelectedDacModel)
                         {
-                            var result = _entity.SetDAC(model.Channel, model.Value);
+                            var result = _dacControl.SetDAC(model.Channel, model.Value);
                             ShowResponseResult(result);
                         }
                         else
@@ -638,17 +696,21 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
         //    }
         //}
 
-        private ResponseProto SetUart(byte Series, uint BaudRate)
+        private ResponseProto? SetUart(byte Series, uint BaudRate)
         {
-            var result = _entity.SetBaudRate(Series, BaudRate);
+            if (_uartControl == null)
+                return null;
+            var result = _uartControl.SetBaudRate(Series, BaudRate);
             ShowResponseResult(result);
             return result;
         }
 
 
-        private ResponseProto SetLedModel(byte ContentLength, byte[] Content)
+        private ResponseProto? SetLedModel(byte ContentLength, byte[] Content)
         {
-            var result = _entity.SetLightMsg(ContentLength, Content);
+            if (_ledControl == null)
+                return null;
+            var result = _ledControl.SetLightMsg(ContentLength, Content);
             ShowResponseResult(result);
             return result;
         }
@@ -657,15 +719,19 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
         private void SetIP()
         {
+            if (_ethControl == null || EthModel == null)
+                return;
             string[] ip = EthModel.SetIP.Split(".");
-            ResponseProto response = _entity.SetIP(Convert.ToByte(ip[0]), Convert.ToByte(ip[1]), Convert.ToByte(ip[2]), Convert.ToByte(ip[3]));
+            ResponseProto response = _ethControl.SetIP(Convert.ToByte(ip[0]), Convert.ToByte(ip[1]), Convert.ToByte(ip[2]), Convert.ToByte(ip[3]));
 
             ShowResponseResult(response);
         }
 
         private void GetIP()
         {
-            ResponseProto response = _entity.HandShake();
+            if (_ethControl == null || EthModel == null)
+                return;
+            ResponseProto response = _ethControl.HandShake();
             if (response != null && response.Params != null && response.Result != false)
             {
                 EthModel.RealIP = response.Params;
@@ -674,7 +740,9 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
         }
         private void GetAllTemp()
         {
-            ResponseProto response = _entity.GetTemp();
+            if (_tempControl == null || TempModel == null)
+                return;
+            ResponseProto response = _tempControl.GetTemp();
             if (response != null && response.Result != false && response.Params.Split(",").Length == 2)
             {
                 try
@@ -692,7 +760,9 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
         private void GetTemp1()
         {
-            ResponseProto response = _entity.GetTemp1();
+            if (_tempControl == null || TempModel == null)
+                return;
+            ResponseProto response = _tempControl.GetTemp1();
             if (response != null && response.Result != false && response.Params != null)
             {
                 try
@@ -709,7 +779,9 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
         private void GetTemp2()
         {
-            ResponseProto response = _entity.GetTemp2();
+            if (_tempControl == null || TempModel == null)
+                return;
+            ResponseProto response = _tempControl.GetTemp2();
             if (response != null && response.Result != false && response.Params != null)
             {
                 try
@@ -727,8 +799,10 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
         private void GetVac(string obj)
         {
+            if (_vacControl == null || VacModel == null)
+                return;
             byte channel = Convert.ToByte(obj);
-            ResponseProto response = _entity.GetVAC(channel);
+            ResponseProto response = _vacControl.GetVAC(channel);
             if (response != null && response.Result != false && response.Params.Split(",").Length == 3)
             {
                 switch (response.Params.Split(",")[0])
@@ -780,7 +854,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             ShowResponseResult(response);
         }
 
-        private void ShowResponseResult(ResponseProto response)
+        private void ShowResponseResult(ResponseProto? response)
         {
             if (response != null && response.Result == false)
             {

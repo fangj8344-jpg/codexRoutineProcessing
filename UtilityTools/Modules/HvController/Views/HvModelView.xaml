@@ -8,6 +8,8 @@
              xmlns:oxy="http://oxyplot.org/wpf"
              xmlns:cv="clr-namespace:UtilityTools.Core.Converter;assembly=UtilityTools.Core"
              xmlns:xc="http://schemas.xceed.com/wpf/xaml/toolkit"
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+             xmlns:bh="clr-namespace:UtilityTools.Core.Behavior;assembly=UtilityTools.Core"
              mc:Ignorable="d"
              d:DesignHeight="450"
              d:DesignWidth="800">
@@ -248,7 +250,7 @@
                            HorizontalAlignment="Center"
                            HorizontalContentAlignment="Center"
                            VerticalContentAlignment="Center" />
-                    
+
                     <Label Content="高压状态"
                            Grid.Row="2"
                            Grid.Column="4"
@@ -292,7 +294,7 @@
                            HorizontalAlignment="Center"
                            HorizontalContentAlignment="Center"
                            VerticalContentAlignment="Center" />
-                    
+
                     <Label Content="{Binding ReadFilaState, Converter={StaticResource enumDescriptionConverter}}"
                            Foreground="LightBlue"
                            Grid.Row="3"
@@ -361,8 +363,8 @@
                                     VerticalAlignment="Center"
                                     DockPanel.Dock="Right" />
                             <TextBox Text="{Binding CmdString}"
-                                     VerticalAlignment="Center" 
-                                     HorizontalContentAlignment="Center"/>
+                                     VerticalAlignment="Center"
+                                     HorizontalContentAlignment="Center" />
                         </DockPanel>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
@@ -370,7 +372,25 @@
         </TabItem>
 
         <TabItem Header="日志信息">
-            <ListView ItemsSource="{Binding Logs}" />
+            <ListView x:Name="logList"
+                     SelectionMode="Single"
+                     VirtualizingPanel.IsVirtualizing="True"
+                     VirtualizingPanel.VirtualizationMode="Recycling"
+                     VirtualizingPanel.ScrollUnit="Item"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     ScrollViewer.VerticalScrollBarVisibility="Visible"
+                     SelectedIndex="{Binding SelectedIndex, Mode=TwoWay}"
+                     ItemsSource="{Binding Logs}">
+                <i:Interaction.Behaviors>
+                    <bh:AutoScrollBehavior />
+                </i:Interaction.Behaviors>
+                <ListView.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="清除" Command="{Binding ClearLogCommand}"/>
+                        <MenuItem Header="复制" Command="{Binding CopyLogCommand}"/>
+                    </ContextMenu>
+                </ListView.ContextMenu>
+            </ListView>
         </TabItem>
     </TabControl>
 

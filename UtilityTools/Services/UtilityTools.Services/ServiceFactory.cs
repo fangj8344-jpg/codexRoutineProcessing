@@ -92,6 +92,15 @@ namespace UtilityTools.Services
                             device.IsBinary = false;
                             return device;
                         }
+                    case "SPCCS":    // SerialPort of CCS(串口真空监控设备)
+                        {
+                            IAsynRWService device = new SerialPortService();
+                            AsynRWServices.Add(type, device);
+                            device.Name = "CCS控制设备";
+                            device.IsBinary = true;
+                            device.MinWriteInterval = 0;
+                            return device;
+                        }
                     case "SPMC":    // SerialPort of Motor Controller
                         {
                             IAsynRWService device = new SerialPortService();

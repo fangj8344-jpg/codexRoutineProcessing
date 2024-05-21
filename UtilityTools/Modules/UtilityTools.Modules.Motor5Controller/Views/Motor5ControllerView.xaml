@@ -8,6 +8,8 @@
              xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:model="clr-namespace:UtilityTools.Modules.Motor5Controller.Model"
              xmlns:local="clr-namespace:UtilityTools.Modules.Motor5Controller.Views"
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+             xmlns:bh="clr-namespace:UtilityTools.Core.Behavior;assembly=UtilityTools.Core"
              mc:Ignorable="d"
              d:DesignHeight="450"
              d:DesignWidth="800">
@@ -91,23 +93,23 @@
                     </TabItem>
                     <TabItem Header="日志数据">
                         <DockPanel LastChildFill="True">
-                            <StackPanel Orientation="Horizontal"
-                                        DockPanel.Dock="Top"
-                                        HorizontalAlignment="Right"
-                                        VerticalAlignment="Center">
-                                <Button Content="清除"
-                                        Width="60"
-                                        Height="30"
-                                        Margin="10 0"
-                                        Command="{Binding CleanLogCommand}" />
-                            </StackPanel>
                             <ListView ItemsSource="{Binding Logs}"
+                                      SelectedIndex="{Binding SelectedIndex}"
                                       VerticalAlignment="Top">
                                 <ListView.View>
                                     <GridView>
                                         <GridViewColumn  Header="报文信息" />
                                     </GridView>
                                 </ListView.View>
+                                <ListView.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="清除" Command="{Binding CleanLogCommand}"/>
+                                        <MenuItem Header="复制" Command="{Binding CopyLogCommand}"/>
+                                    </ContextMenu>
+                                </ListView.ContextMenu>
+                                <i:Interaction.Behaviors>
+                                    <bh:AutoScrollBehavior/>
+                                </i:Interaction.Behaviors>
                             </ListView>
                         </DockPanel>
                     </TabItem>
