@@ -312,13 +312,19 @@ namespace UtilityTools.Modules.ImageAnalyzer.Model
                 {"acc_voltage", d["HighVol"][0..^2]},
                 {"PixelLength", d["PixelLength"][0..^2]},
                 {"field_size", d.ContainsKey("FieldSize") ? d["FieldSize"][0..^2] : "0" },
-                {"Title", d["Title"]},
-                {"Note", d["Note"]},
                 {"position", d["Position"]},
                 {"avg_length", d.TryGetValue("AvLenth", out var result) ? result : "8"}, // 默认给8点平均，后续需要保持该值
                 {"Frequency", d["Frequency"][0..^2]},
                 {"significant_bit", d["DataFlag"]},
             };
+            if (d.ContainsKey("Title"))
+            { 
+                dict.Add("Title", d["Title"]);
+            }
+            if (d.ContainsKey("Note"))
+            {
+                dict.Add("Note", d["Note"]);
+            }
 
             var json = JsonConvert.SerializeObject(dict, Formatting.Indented);
             var metadata = JsonConvert.DeserializeObject<ZemMetaData>(json);

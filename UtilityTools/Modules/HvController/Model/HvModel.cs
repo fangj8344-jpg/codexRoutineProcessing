@@ -145,6 +145,7 @@ namespace UtilityTools.Modules.HvController.Model
         /// 修改灯丝高压
         /// </summary>
         public int ChangeAccVol
+
         {
             get { return _changeAccVol; }
             set { _changeAccVol = value; RaisePropertyChanged(); }

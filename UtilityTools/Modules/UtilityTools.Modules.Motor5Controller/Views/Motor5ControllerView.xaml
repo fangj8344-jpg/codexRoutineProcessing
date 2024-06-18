@@ -71,49 +71,61 @@
                               Background="Black"
                               ShowsPreview="True"
                               Width="5" />
-                
-                <TabControl Grid.Column="2">
-                    <TabItem Header="监控数据">
-                        <oxy:PlotView Model="{Binding MonitorPlotModel}"
-                                      Foreground="Black">
-                            <oxy:PlotView.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem Header="清除"
-                                              Command="{Binding ClearMonitorCommand}"
-                                              CommandParameter="ImageParam" />
-                                    <MenuItem Header="自适应"
-                                              Command="{Binding AutoAdjustComamnd}"
-                                              CommandParameter="ImageParam" />
-                                    <MenuItem Header="保存到文件"
-                                              Command="{Binding SaveToFileCommand}"
-                                              CommandParameter="ImageParam" />
-                                </ContextMenu>
-                            </oxy:PlotView.ContextMenu>
-                        </oxy:PlotView>
-                    </TabItem>
-                    <TabItem Header="日志数据">
-                        <DockPanel LastChildFill="True">
-                            <ListView ItemsSource="{Binding Logs}"
-                                      SelectedIndex="{Binding SelectedIndex}"
-                                      VerticalAlignment="Top">
-                                <ListView.View>
-                                    <GridView>
-                                        <GridViewColumn  Header="报文信息" />
-                                    </GridView>
-                                </ListView.View>
-                                <ListView.ContextMenu>
+
+                <Grid Grid.Column="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <DockPanel Grid.Row="0">
+                        <Button Content="一键设置目标位置" Command="{Binding SetAllTargetPosCommand}"/>
+                    </DockPanel>
+                    
+                    <TabControl Grid.Row="1">
+                        <TabItem Header="监控数据">
+                            <oxy:PlotView Model="{Binding MonitorPlotModel}"
+                                          Foreground="Black">
+                                <oxy:PlotView.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="清除" Command="{Binding CleanLogCommand}"/>
-                                        <MenuItem Header="复制" Command="{Binding CopyLogCommand}"/>
+                                        <MenuItem Header="清除"
+                                                  Command="{Binding ClearMonitorCommand}"
+                                                  CommandParameter="ImageParam" />
+                                        <MenuItem Header="自适应"
+                                                  Command="{Binding AutoAdjustComamnd}"
+                                                  CommandParameter="ImageParam" />
+                                        <MenuItem Header="保存到文件"
+                                                  Command="{Binding SaveToFileCommand}"
+                                                  CommandParameter="ImageParam" />
                                     </ContextMenu>
-                                </ListView.ContextMenu>
-                                <i:Interaction.Behaviors>
-                                    <bh:AutoScrollBehavior/>
-                                </i:Interaction.Behaviors>
-                            </ListView>
-                        </DockPanel>
-                    </TabItem>
-                </TabControl>
+                                </oxy:PlotView.ContextMenu>
+                            </oxy:PlotView>
+                        </TabItem>
+                        <TabItem Header="日志数据">
+                            <DockPanel LastChildFill="True">
+                                <ListView ItemsSource="{Binding Logs}"
+                                          SelectedIndex="{Binding SelectedIndex}"
+                                          VerticalAlignment="Top">
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn  Header="报文信息" />
+                                        </GridView>
+                                    </ListView.View>
+                                    <ListView.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="清除"
+                                                      Command="{Binding CleanLogCommand}" />
+                                            <MenuItem Header="复制"
+                                                      Command="{Binding CopyLogCommand}" />
+                                        </ContextMenu>
+                                    </ListView.ContextMenu>
+                                    <i:Interaction.Behaviors>
+                                        <bh:AutoScrollBehavior />
+                                    </i:Interaction.Behaviors>
+                                </ListView>
+                            </DockPanel>
+                        </TabItem>
+                    </TabControl>
+                </Grid>
             </Grid>
 
         </Grid>

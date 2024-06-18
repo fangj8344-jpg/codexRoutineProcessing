@@ -181,6 +181,7 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
         public DelegateCommand ClearMonitorCommand { get; set; }
         public DelegateCommand AutoAdjustComamnd { get; set; }
         public DelegateCommand SaveToFileCommand { get; set; }
+        public DelegateCommand SetAllTargetPosCommand { get; set; }
         #endregion
 
         #region ------------PublicMethod------------
@@ -228,6 +229,7 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
             ClearMonitorCommand = new DelegateCommand(ClearMonitor);
             AutoAdjustComamnd = new DelegateCommand(AutoAdjust);
             SaveToFileCommand = new DelegateCommand(SaveToFile);
+            SetAllTargetPosCommand = new DelegateCommand(SetAllTargetPos);
         }
 
         /// <summary>
@@ -374,6 +376,14 @@ namespace UtilityTools.Modules.Motor5Controller.ViewModels
             catch (Exception ex)
             {
                 NLog.LogManager.GetCurrentClassLogger().Fatal($"保存图表数据异常：目标路径【{filePath}】，异常原因【{ex.Message}】");
+            }
+        }
+
+        private void SetAllTargetPos()
+        {
+            foreach (var motor in MotorList)
+            { 
+                motor.SetMotorPosParams();
             }
         }
 
