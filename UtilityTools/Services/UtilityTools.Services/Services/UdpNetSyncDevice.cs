@@ -43,6 +43,8 @@ namespace UtilityTools.Services.Services
         {
             DeviceInstance = new UdpNetConfigModel();
             DeviceInstance.ReceiveDataEvent += DeviceInstance_ReceiveDataEvent;
+
+            _receiveBuff = new byte[1024];
         }
 
         #endregion
