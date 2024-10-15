@@ -14,6 +14,25 @@ namespace UtilityTools.Core.Extension
     public static class DialogExtension
     {
         /// <summary>
+        /// 提示信息窗窗口
+        /// </summary>
+        /// <param name="dialogHost">指定的DialogHost会话主机</param>
+        /// <param name="title">标题</param>
+        /// <param name="content">内容</param>
+        /// <param name="dialogHostName">会话主机名称（唯一的）</param>
+        /// <returns></returns>
+        public static async Task<IDialogResult> Information(this IDialogHostService dialogHost, string title, string content, string dialogHostName = "Root")
+        {
+            DialogParameters dialogParameters = new DialogParameters();
+            dialogParameters.Add("Title", title);
+            dialogParameters.Add("Content", content);
+            dialogParameters.Add("dialogHostName", dialogHostName);
+
+            var dialogResult = await dialogHost.ShowDialog("InformationView", dialogParameters, dialogHostName);
+            return dialogResult;
+        }
+
+        /// <summary>
         /// 询问窗口
         /// </summary>
         /// <param name="dialogHost">指定的DialogHost会话主机</param>
@@ -28,7 +47,7 @@ namespace UtilityTools.Core.Extension
             dialogParameters.Add("Content", content);
             dialogParameters.Add("dialogHostName", dialogHostName);
 
-            var dialogResult = await dialogHost.ShowDialog("MsgView", dialogParameters, dialogHostName);
+            var dialogResult = await dialogHost.ShowDialog("QuestionView", dialogParameters, dialogHostName);
             return dialogResult;
         }
 
