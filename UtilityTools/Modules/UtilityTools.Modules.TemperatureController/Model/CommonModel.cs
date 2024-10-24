@@ -4,14 +4,14 @@
  * CLR版本：4.0.30319.42000
  * 机器名称：XJC
  * 公司名称：
- * 命名空间：UtilityTools.Modules.OtaTool.Model
- * 唯一标识：57eb7917-a5a6-4885-95ad-8cef3d3a75bf
+ * 命名空间：UtilityTools.Modules.TemperatureController.Model
+ * 唯一标识：ae60fef8-2d81-4e38-9f96-5127ecab37b4
  * 文件名：CommonModel
  * 当前用户域：XJC
  * 
  * 创建者：xjc
  * 电子邮箱：xxxx@hotmail.com
- * 创建时间：2024/10/12 13:35:30
+ * 创建时间：2024/10/23 15:07:31
  * 版本：V1.0.0
  * 描述：
  *
@@ -30,27 +30,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace UtilityTools.Modules.OtaTool.Model
+namespace UtilityTools.Modules.TemperatureController.Model
 {
-    public class CommonModel
+    internal class CommonModel
     {
-        #region ------------Constructor------------
-        #endregion
-
-        #region ------------Field------------
-        #endregion
-
-        #region ------------Property------------
-        #endregion
-
-        #region ------------PublicMethod------------
-        #endregion
-
-        #region ------------PrivateMethod------------
-        #endregion
-
-        #region ------------StaticMethod------------
-        public static string OtaToolRegionName = "OtaTool";
+        #region ------------Static------------
+        public static string TemperatureControllerRegionName = "TemperatureController";
         #endregion
     }
 }

@@ -40,7 +40,7 @@ using UtilityTools.Services.Interfaces.IServices;
 
 namespace UtilityTools.Services.Services
 {
-    internal class UdpNetAsyncDevice : INetService, IAsynRWService
+    public class UdpNetAsyncDevice : INetService, IAsynRWService
     {
         #region ------------Constructor------------
         public UdpNetAsyncDevice()

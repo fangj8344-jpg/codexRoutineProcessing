@@ -4,14 +4,14 @@
  * CLR版本：4.0.30319.42000
  * 机器名称：XJC
  * 公司名称：
- * 命名空间：UtilityTools.Modules.OtaTool.ViewModels
- * 唯一标识：920de0b4-f1ff-46f3-b733-143f88169bf7
- * 文件名：OtaToolViewModel
+ * 命名空间：UtilityTools.Modules.TemperatureController.ViewModels
+ * 唯一标识：7606eb56-e540-4f61-bf18-724c9e043c45
+ * 文件名：TemperatureControllerViewModel
  * 当前用户域：XJC
  * 
  * 创建者：xjc
  * 电子邮箱：xxxx@hotmail.com
- * 创建时间：2024/10/12 11:56:47
+ * 创建时间：2024/10/23 15:30:12
  * 版本：V1.0.0
  * 描述：
  *
@@ -34,15 +34,15 @@ using System.Text;
 using System.Threading.Tasks;
 using UtilityTools.Core.Dialog;
 using UtilityTools.Core.Mvvm;
-using UtilityTools.Modules.OtaTool.Model;
+using UtilityTools.Modules.TemperatureController.Model;
 using UtilityTools.Services.Interfaces.IServices;
 
-namespace UtilityTools.Modules.OtaTool.ViewModels
+namespace UtilityTools.Modules.TemperatureController.ViewModels
 {
-    public class OtaToolViewModel : RegionViewModelBase
+    public class TemperatureControllerViewModel : RegionViewModelBase
     {
         #region ------------Constructor------------
-        public OtaToolViewModel(IContainerProvider containerProvider, IDialogHostService dialogHostService)
+        public TemperatureControllerViewModel(IContainerProvider containerProvider, IDialogHostService dialogHostService)
             : base(containerProvider)
         {
             _dialogHostService = dialogHostService;
@@ -63,8 +63,8 @@ namespace UtilityTools.Modules.OtaTool.ViewModels
         public bool IsConnected
         {
             get { return _isConnected; }
-            set 
-            { 
+            set
+            {
                 _isConnected = value;
                 RaisePropertyChanged();
             }
@@ -77,18 +77,16 @@ namespace UtilityTools.Modules.OtaTool.ViewModels
         public bool NetIsConnected
         {
             get { return _netIsConnected; }
-            set 
-            { 
+            set
+            {
                 _netIsConnected = value;
                 RaisePropertyChanged();
             }
         }
 
-        private OtaModel _model;
-        /// <summary>
-        /// OTA升级模型
-        /// </summary>
-        public OtaModel Model
+        private ControllerModel _model;
+
+        public ControllerModel Model
         {
             get { return _model; }
             set { _model = value; RaisePropertyChanged(); }
@@ -120,7 +118,7 @@ namespace UtilityTools.Modules.OtaTool.ViewModels
         /// </summary>
         private void InitProperty()
         {
-            Model = containerProvider.Resolve<OtaModel>();
+            Model = containerProvider.Resolve<ControllerModel>();
         }
 
         /// <summary>
@@ -130,7 +128,7 @@ namespace UtilityTools.Modules.OtaTool.ViewModels
         {
             DialogParameters parameter = new DialogParameters();
             parameter.Add("Value", Model.SerialPortService);
-            var diaglogResult = await this._dialogHostService.ShowDialog("SerialPortView", parameter, CommonModel.OtaToolRegionName);
+            var diaglogResult = await this._dialogHostService.ShowDialog("SerialPortView", parameter, CommonModel.TemperatureControllerRegionName);
             if (diaglogResult == null)
                 return;
             if (diaglogResult.Result == ButtonResult.OK && diaglogResult.Parameters.ContainsKey("Value"))
@@ -151,7 +149,7 @@ namespace UtilityTools.Modules.OtaTool.ViewModels
         {
             DialogParameters parameter = new DialogParameters();
             parameter.Add("Value", Model.NetUdpService);
-            var diaglogResult = await this._dialogHostService.ShowDialog("NetConfigView", parameter, CommonModel.OtaToolRegionName);
+            var diaglogResult = await this._dialogHostService.ShowDialog("NetConfigView", parameter, CommonModel.TemperatureControllerRegionName);
             if (diaglogResult == null)
                 return;
             if (diaglogResult.Result == ButtonResult.OK && diaglogResult.Parameters.ContainsKey("Value"))

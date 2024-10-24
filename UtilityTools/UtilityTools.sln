@@ -51,7 +51,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.VacuumLibTest"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.Modules.CCSTool", "Modules\UtilityTools.Modules.CCSTool\UtilityTools.Modules.CCSTool.csproj", "{8FA106CB-EE67-4312-8FAF-1EAF1B3919FB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UtilityTools.Modules.OtaTool", "Modules\UtilityTools.Modules.OtaTool\UtilityTools.Modules.OtaTool.csproj", "{BEEFC6F1-4269-4C44-B969-B79E9DB34ED8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.Modules.OtaTool", "Modules\UtilityTools.Modules.OtaTool\UtilityTools.Modules.OtaTool.csproj", "{BEEFC6F1-4269-4C44-B969-B79E9DB34ED8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UtilityTools.Modules.TemperatureController", "Modules\UtilityTools.Modules.TemperatureController\UtilityTools.Modules.TemperatureController.csproj", "{24A26B70-70D4-45E8-8DA9-057CA30898E2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -147,6 +149,10 @@ Global
 		{BEEFC6F1-4269-4C44-B969-B79E9DB34ED8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BEEFC6F1-4269-4C44-B969-B79E9DB34ED8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BEEFC6F1-4269-4C44-B969-B79E9DB34ED8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{24A26B70-70D4-45E8-8DA9-057CA30898E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{24A26B70-70D4-45E8-8DA9-057CA30898E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{24A26B70-70D4-45E8-8DA9-057CA30898E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{24A26B70-70D4-45E8-8DA9-057CA30898E2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -171,6 +177,7 @@ Global
 		{82C744AB-3F2C-4903-868A-8EBEB114C634} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
 		{8FA106CB-EE67-4312-8FAF-1EAF1B3919FB} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
 		{BEEFC6F1-4269-4C44-B969-B79E9DB34ED8} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
+		{24A26B70-70D4-45E8-8DA9-057CA30898E2} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {4877E460-1ABE-4B63-8221-9202D7477E25}

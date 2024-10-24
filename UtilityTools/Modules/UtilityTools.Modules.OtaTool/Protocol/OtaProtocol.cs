@@ -37,9 +37,10 @@ using UtilityTools.Core.Helper;
 using UtilityTools.Core.Protocol;
 
 namespace UtilityTools.Modules.OtaTool.Protocol
-{/// <summary>
- /// OTA升级指令类型
- /// </summary>
+{
+    /// <summary>
+    /// OTA升级指令类型
+    /// </summary>
     public enum EnumOtaCommandType
     {
         [Description("升级请求")]
