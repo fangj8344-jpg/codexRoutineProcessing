@@ -1,75 +1,113 @@
 ﻿<UserControl x:Class="UtilityTools.Modules.ImageAnalyzer.Views.ImageHistogram"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:oxy="http://oxyplot.org/wpf"
              xmlns:cm="clr-namespace:UtilityTools.Views;assembly=UtilityTools"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
-             xmlns:attach="clr-namespace:UtilityTools.Core.Attach;assembly=UtilityTools.Core" 
+             xmlns:attach="clr-namespace:UtilityTools.Core.Attach;assembly=UtilityTools.Core"
              xmlns:cv="clr-namespace:UtilityTools.Core.Converter;assembly=UtilityTools.Core"
              xmlns:local="clr-namespace:UtilityTools.Modules.ImageAnalyzer.Views"
-             mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             mc:Ignorable="d"
+             d:DesignHeight="450"
+             d:DesignWidth="800">
     <UserControl.Resources>
         <cv:Obj2BoolConverter x:Key="obj2BoolConverter" />
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="auto"/>
-            <RowDefinition/>
-            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto" />
+            <RowDefinition />
+            <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
 
-        <DockPanel Grid.Row="0" Margin="10" LastChildFill="False">
-            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                <StackPanel Orientation="Horizontal">
-                    <TextBox Text="{Binding ImghistPercentage}" attach:TextBoxAttached.IsEnterEndEdit="True" attach:TextBoxAttached.IsOnlyNumbers="True" attach:TextBoxAttached.IsSupportWheel="True"/>
-                    <Label Content="%区间"/>
+        <DockPanel Grid.Row="0"
+                   Margin="10"
+                   LastChildFill="False">
+            <StackPanel DockPanel.Dock="Right"
+                        Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal" Margin="10, 0">
+                    <Label Content="直方系数：" />
+                    <TextBox Text="{Binding HistWindowSize}"
+                             Width="50"
+                             TextAlignment="Center"
+                             attach:TextBoxAttached.IsEnterEndEdit="True"
+                             attach:TextBoxAttached.IsSupportWheel="True" />
                 </StackPanel>
-                <Button Content="添加" Command="{Binding AddImgHistPercentageCommand}" Margin="5, 0" IsEnabled="{Binding FilePath, Converter={StaticResource obj2BoolConverter}}"/>
+                <StackPanel Orientation="Horizontal">
+                    <TextBox Text="{Binding ImghistPercentage}"
+                             Width="50"
+                             TextAlignment="Center"
+                             attach:TextBoxAttached.IsEnterEndEdit="True"
+                             attach:TextBoxAttached.IsOnlyNumbers="True"
+                             attach:TextBoxAttached.IsSupportWheel="True" />
+                    <Label Content="%区间" />
+                </StackPanel>
+                <Button Content="添加"
+                        Command="{Binding AddImgHistPercentageCommand}"
+                        Margin="5, 0"
+                        IsEnabled="{Binding FilePath, Converter={StaticResource obj2BoolConverter}}" />
             </StackPanel>
 
             <!--<Button Content="{md:PackIcon Kind=RectangleOutline, Size=24}" ToolTip="选取ROI" DockPanel.Dock="Right" Command="{Binding SelectRoiCommand}"/>-->
 
         </DockPanel>
 
-        <Grid Grid.Row="1" Grid.Column="0">
+        <Grid Grid.Row="1"
+              Grid.Column="0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
-                <ColumnDefinition/>
+                <ColumnDefinition />
+                <ColumnDefinition />
             </Grid.ColumnDefinitions>
-            <Grid Grid.Row="0" Grid.Column="0" >
-                <cm:ImageViewer x:Name="imageViewer" ImageSource="{Binding SrcBitmap}"/>
+            <Grid Grid.Row="0"
+                  Grid.Column="0">
+                <cm:ImageViewer x:Name="imageViewer"
+                                ImageSource="{Binding SrcBitmap}" />
 
-                <InkCanvas x:Name="inkCanvas" Background="Transparent" EditingMode="None">
+                <InkCanvas x:Name="inkCanvas"
+                           Background="Transparent"
+                           EditingMode="None">
                     <i:Interaction.Triggers>
                         <i:EventTrigger EventName="MouseLeftButtonDown">
-                            <i:InvokeCommandAction Command="{Binding ImageMouseLeftButtonDownEventCommand}" PassEventArgsToCommand="True" />
+                            <i:InvokeCommandAction Command="{Binding ImageMouseLeftButtonDownEventCommand}"
+                                                   PassEventArgsToCommand="True" />
                         </i:EventTrigger>
                         <i:EventTrigger EventName="MouseLeftButtonUp">
-                            <i:InvokeCommandAction Command="{Binding ImageMouseLeftButtonUpEventCommand}" PassEventArgsToCommand="True" />
+                            <i:InvokeCommandAction Command="{Binding ImageMouseLeftButtonUpEventCommand}"
+                                                   PassEventArgsToCommand="True" />
                         </i:EventTrigger>
                         <i:EventTrigger EventName="MouseMove">
-                            <i:InvokeCommandAction Command="{Binding ImageMouseMoveEventCommand}" PassEventArgsToCommand="True" />
+                            <i:InvokeCommandAction Command="{Binding ImageMouseMoveEventCommand}"
+                                                   PassEventArgsToCommand="True" />
                         </i:EventTrigger>
                     </i:Interaction.Triggers>
                 </InkCanvas>
             </Grid>
 
-            <GridSplitter Width="5" IsEnabled="False"/>
-            <oxy:PlotView Grid.Row="0" Grid.Column="1" Model="{Binding ImgInfoPlotModel}">
+            <GridSplitter Width="5"
+                          IsEnabled="False" />
+            <oxy:PlotView Grid.Row="0"
+                          Grid.Column="1"
+                          Model="{Binding ImgInfoPlotModel}">
                 <oxy:PlotView.TrackerDefinitions>
                     <oxy:TrackerDefinition TrackerKey="TrackerHistgram">
                         <oxy:TrackerDefinition.TrackerTemplate>
                             <ControlTemplate>
-                                <oxy:TrackerControl Position="{Binding Position}" LineExtents="{Binding PlotModel.PlotArea}" Background="LightBlue">
+                                <oxy:TrackerControl Position="{Binding Position}"
+                                                    LineExtents="{Binding PlotModel.PlotArea}"
+                                                    Background="LightBlue">
                                     <oxy:TrackerControl.Content>
-                                        <UniformGrid Columns="2" Canvas.Left="{Binding Position.X}" Canvas.Top="{Binding Position.Y}" Margin="6">
-                                            <TextBlock Text="X:" FontWeight="Bold" />
+                                        <UniformGrid Columns="2"
+                                                     Canvas.Left="{Binding Position.X}"
+                                                     Canvas.Top="{Binding Position.Y}"
+                                                     Margin="6">
+                                            <TextBlock Text="X:"
+                                                       FontWeight="Bold" />
                                             <TextBlock Text="{Binding DataPoint.X, StringFormat='{}{0:0}'}" />
-                                            <TextBlock Text="Y:" FontWeight="Bold" />
+                                            <TextBlock Text="Y:"
+                                                       FontWeight="Bold" />
                                             <TextBlock Text="{Binding DataPoint.Y, StringFormat='{}{0:0}'}" />
                                         </UniformGrid>
                                     </oxy:TrackerControl.Content>
@@ -81,32 +119,66 @@
             </oxy:PlotView>
         </Grid>
 
-        <Grid Grid.Row="2" Grid.Column="0">
-            <DataGrid Grid.Column="0" AutoGenerateColumns="False" ItemsSource="{Binding ImgHistInfoListVo}" Width="auto" IsReadOnly="True">
+        <Grid Grid.Row="2"
+              Grid.Column="0">
+            <DataGrid Grid.Column="0"
+                      AutoGenerateColumns="False"
+                      ItemsSource="{Binding ImgHistInfoListVo}"
+                      Width="auto"
+                      IsReadOnly="True">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Binding="{Binding Width}" ClipboardContentBinding="{x:Null}" Header="宽度"/>
-                    <DataGridTextColumn Binding="{Binding Height}" ClipboardContentBinding="{x:Null}" Header="高度"/>
-                    <DataGridTextColumn Binding="{Binding Channels}" ClipboardContentBinding="{x:Null}" Header="通道"/>
-                    <DataGridTextColumn Binding="{Binding Depth}" ClipboardContentBinding="{x:Null}" Header="位深"/>
-                    <DataGridTextColumn Binding="{Binding PixelMin}" ClipboardContentBinding="{x:Null}" Header="最小值"/>
-                    <DataGridTextColumn Binding="{Binding PixelMax}" ClipboardContentBinding="{x:Null}" Header="最大值"/>
-                    <DataGridTextColumn Binding="{Binding PixelMode}" ClipboardContentBinding="{x:Null}" Header="众数"/>
-                    <DataGridTextColumn Binding="{Binding PixelMedian}" ClipboardContentBinding="{x:Null}" Header="中位数"/>
-                    <DataGridTextColumn Binding="{Binding PixelMean}" ClipboardContentBinding="{x:Null}" Header="均值"/>
-                    <DataGridTextColumn Binding="{Binding PixelStd}" ClipboardContentBinding="{x:Null}" Header="标准差"/>
-                    <DataGridTextColumn Binding="{Binding PixelVar}" ClipboardContentBinding="{x:Null}" Header="方差"/>
-                    <DataGridTextColumn Binding="{Binding PixelSpan}" ClipboardContentBinding="{x:Null}" Header="跨度"/>
-                    <DataGridTextColumn Binding="{Binding PixelSpanPercentage}" ClipboardContentBinding="{x:Null}" Header="区间(%)"/>
+                    <DataGridTextColumn Binding="{Binding Width}"
+                                        ClipboardContentBinding="{x:Null}"
+                                        Header="宽度" />
+                    <DataGridTextColumn Binding="{Binding Height}"
+                                        ClipboardContentBinding="{x:Null}"
+                                        Header="高度" />
+                    <DataGridTextColumn Binding="{Binding Channels}"
+                                        ClipboardContentBinding="{x:Null}"
+                                        Header="通道" />
+                    <DataGridTextColumn Binding="{Binding Depth}"
+                                        ClipboardContentBinding="{x:Null}"
+                                        Header="位深" />
+                    <DataGridTextColumn Binding="{Binding PixelMin}"
+                                        ClipboardContentBinding="{x:Null}"
+                                        Header="最小值" />
+                    <DataGridTextColumn Binding="{Binding PixelMax}"
+                                        ClipboardContentBinding="{x:Null}"
+                                        Header="最大值" />
+                    <DataGridTextColumn Binding="{Binding PixelMode}"
+                                        ClipboardContentBinding="{x:Null}"
+                                        Header="众数" />
+                    <DataGridTextColumn Binding="{Binding PixelMedian}"
+                                        ClipboardContentBinding="{x:Null}"
+                                        Header="中位数" />
+                    <DataGridTextColumn Binding="{Binding PixelMean}"
+                                        ClipboardContentBinding="{x:Null}"
+                                        Header="均值" />
+                    <DataGridTextColumn Binding="{Binding PixelStd}"
+                                        ClipboardContentBinding="{x:Null}"
+                                        Header="标准差" />
+                    <DataGridTextColumn Binding="{Binding PixelVar}"
+                                        ClipboardContentBinding="{x:Null}"
+                                        Header="方差" />
+                    <DataGridTextColumn Binding="{Binding PixelSpan}"
+                                        ClipboardContentBinding="{x:Null}"
+                                        Header="跨度" />
+                    <DataGridTextColumn Binding="{Binding PixelSpanPercentage}"
+                                        ClipboardContentBinding="{x:Null}"
+                                        Header="区间(%)" />
                     <DataGridTemplateColumn>
                         <DataGridTemplateColumn.Header>
-                            <TextBlock Text="操作"/>
+                            <TextBlock Text="操作" />
                         </DataGridTemplateColumn.Header>
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <Button Content="{md:PackIcon Kind=TrashCanOutline}" 
-                                            Command="{Binding DataContext.DelImgHistPercentageCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}" 
-                                            CommandParameter="{Binding}"
-                                            Style="{StaticResource MaterialDesignToolButton}" Padding="0" Margin="0" Height="20"/>
+                                <Button Content="{md:PackIcon Kind=TrashCanOutline}"
+                                        Command="{Binding DataContext.DelImgHistPercentageCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}"
+                                        CommandParameter="{Binding}"
+                                        Style="{StaticResource MaterialDesignToolButton}"
+                                        Padding="0"
+                                        Margin="0"
+                                        Height="20" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>

@@ -274,6 +274,7 @@ namespace UtilityTools.Modules.TemperatureController.Model
                     return;
                 }
 
+
                 BtnContent = "关闭";
                 if (SerialPortService.IsOpen)
                 {
@@ -305,8 +306,42 @@ namespace UtilityTools.Modules.TemperatureController.Model
                                 Pid.Kp, Pid.Ki, Pid.Kd);
                             SerialPortService.SendMsg(cmd);
                         }
-                        StartPidTimer();
                     }
+
+                    if (NetUdpService.IsOpen)
+                    {
+                        if (IsManual)
+                        {
+                            var cmd = TemperatureControllerProtocol.SetManualCurrentCommand(
+                                SetCurrent,
+                                MaxCurrent);
+                            NetUdpService.SendMsg(cmd);
+                            StartManualTimer();
+                        }
+                        else
+                        {
+                            if (IsKelvin)
+                            {
+                                var cmd = TemperatureControllerProtocol.SetKelvinPidCommand(
+                                    TargetTemperature,
+                                    SetCurrent,
+                                    MaxCurrent,
+                                    Pid.Kp, Pid.Ki, Pid.Kd);
+                                NetUdpService.SendMsg(cmd);
+                            }
+                            else
+                            {
+                                var cmd = TemperatureControllerProtocol.SetCentigradePidCommand(
+                                    TargetTemperature,
+                                    SetCurrent,
+                                    MaxCurrent,
+                                    Pid.Kp, Pid.Ki, Pid.Kd);
+                                NetUdpService.SendMsg(cmd);
+                            }
+                        }
+                    }
+
+                    StartPidTimer();
                 }
             }
             else
@@ -314,6 +349,12 @@ namespace UtilityTools.Modules.TemperatureController.Model
                 BtnContent = "开始";
                 StopManualTimer();
                 StopPidTimer();
+
+                var cmd = TemperatureControllerProtocol.ReleaseCommand();
+                if (SerialPortService.IsOpen)
+                    SerialPortService.SendMsg(cmd);
+                if (NetUdpService.IsOpen)
+                    NetUdpService.SendMsg(cmd);
             }
         }
         #endregion
@@ -348,17 +389,29 @@ namespace UtilityTools.Modules.TemperatureController.Model
             if (IsKelvin)
             {
                 var cmd = TemperatureControllerProtocol.SetKelvinCommand(TargetTemperature);
-                SerialPortService.SendMsg(cmd);
+                if(SerialPortService.IsOpen)
+                    SerialPortService.SendMsg(cmd);
+                if(NetUdpService.IsOpen)
+                    NetUdpService.SendMsg(cmd);
             }
             else
             {
                 var cmd = TemperatureControllerProtocol.SetCentigradeCommand(TargetTemperature);
-                SerialPortService.SendMsg(cmd);
+                if (SerialPortService.IsOpen)
+                    SerialPortService.SendMsg(cmd);
+                if (NetUdpService.IsOpen)
+                    NetUdpService.SendMsg(cmd);
             }
         }
 
         private void StartManualTimer()
         {
+            var cmd = TemperatureControllerProtocol.StopCommand();
+            if (SerialPortService.IsOpen)
+                SerialPortService.SendMsg(cmd);
+            if (NetUdpService.IsOpen)
+                NetUdpService.SendMsg(cmd);
+
             if (_manualTimer != null)
             {
                 _manualTimer = new Timer();
