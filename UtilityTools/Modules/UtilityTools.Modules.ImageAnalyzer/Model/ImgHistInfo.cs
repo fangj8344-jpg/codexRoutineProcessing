@@ -14,7 +14,7 @@ namespace UtilityTools.Modules.ImageAnalyzer.Model
     {
         private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
 
-        public ImgHistInfo(string path)
+        public ImgHistInfo(string path, int histWindowSize)
         {
             var _meta = ImageMetadata.ReadMetadata(path);
             string metaJsonStr = JsonConvert.SerializeObject(_meta, Formatting.Indented);
@@ -28,15 +28,14 @@ namespace UtilityTools.Modules.ImageAnalyzer.Model
                 gray = new Mat();
                 Cv2.CvtColor(src, gray, ColorConversionCodes.BGR2GRAY);
             }
-
-            if (_meta.IsSignificantBitValid())
+            else if (_meta.IsSignificantBitValid())
             {
                 var sbp = new SignificantBitParser(_meta.SignificantBit);
                 gray &= sbp.SignificantMask;
                 gray /= Math.Pow(2, sbp.SignificantLow);
             }
 
-            hist = CvHelper.CalcGrayHist(gray);
+            hist = CvHelper.CalcGrayHist(gray, histWindowSize);
             _binsCum = new List<int>();
             _points = new List<DataPoint>();
             graySum = gray.Sum()[0];

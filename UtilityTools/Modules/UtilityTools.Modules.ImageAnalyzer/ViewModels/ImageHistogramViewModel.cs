@@ -50,6 +50,17 @@ namespace UtilityTools.Modules.ImageAnalyzer.ViewModels
             }
         }
 
+        private int _histWindowSize = 1;
+        /// <summary>
+        /// 直方图统计窗宽度
+        /// </summary>
+        public int HistWindowSize
+        {
+            get { return _histWindowSize; }
+            set { _histWindowSize = value; RaisePropertyChanged(); }
+        }
+
+
         public DelegateCommand SelectRoiCommand { get; set; }
         private void SelectRoi()
         {
@@ -186,7 +197,7 @@ namespace UtilityTools.Modules.ImageAnalyzer.ViewModels
                 _imghistSeries.Points.Clear();
                 ImgHistInfoListVo.Clear();
 
-                _imgHistInfo = new ImgHistInfo(imagePath);
+                _imgHistInfo = new ImgHistInfo(imagePath, HistWindowSize);
                 _imghistSeries.Points.AddRange(_imgHistInfo.Points);
 
                 // 默认添加96%区间像素信息

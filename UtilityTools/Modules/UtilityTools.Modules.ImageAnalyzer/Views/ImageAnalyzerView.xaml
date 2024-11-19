@@ -26,7 +26,7 @@
                 <StackPanel Grid.Row="0" Orientation="Horizontal" DockPanel.Dock="Right">
                     <StackPanel Orientation="Horizontal">
                         <Label Content="图片路径:" VerticalAlignment="Center"/>
-                        <TextBox IsReadOnly="True" Text="{Binding FilePath}" MaxWidth="300" VerticalAlignment="Center" Width="auto"/>
+                        <TextBox IsReadOnly="True" Text="{Binding FilePath}" MaxWidth="900" VerticalAlignment="Center" Width="auto"/>
                     </StackPanel>
                     <Button Content="打开图片" Command="{Binding OpenImageFileCommand}" Margin="10, 0"/>
                     <Button Content="保存结果" Command="{Binding SaveResultCommand}" Margin="5, 0" IsEnabled="{Binding FilePath, Converter={StaticResource obj2BoolConverter}}"/>

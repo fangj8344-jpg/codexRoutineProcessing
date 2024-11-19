@@ -8,7 +8,7 @@ using UtilityTools.Modules.OtaTool.Views;
 
 namespace UtilityTools.Modules.OtaTool
 {
-    [CustomModule(ModuleName = "OtaTool", Title = "远程升级工具", Tip = "串口/网络通讯", Icon = "FlashTriangle")]
+    [CustomModule(ModuleName = "OtaTool", Title = "远程升级工具", Tip = "串口/网络通讯", Icon = "RotateOrbit")]
     public class OtaToolModule : IModule
     {
         public void OnInitialized(IContainerProvider containerProvider)
