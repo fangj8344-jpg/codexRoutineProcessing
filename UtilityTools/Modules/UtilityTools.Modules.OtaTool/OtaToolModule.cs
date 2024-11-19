@@ -18,7 +18,7 @@ namespace UtilityTools.Modules.OtaTool
 
         public void RegisterTypes(IContainerRegistry containerRegistry)
         {
-            containerRegistry.RegisterForNavigation<OtaToolView>();
+            containerRegistry.RegisterForNavigation<OtaToolView>(); 
             containerRegistry.RegisterSingleton<OtaModel>();
         }
     }

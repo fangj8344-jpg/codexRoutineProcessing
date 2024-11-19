@@ -29,9 +29,10 @@
                     Grid.RowSpan="2"
                     Grid.Column="0"
                     Margin="5"
-                    Content="升级"
+                    Content="{Binding UpgradeButtonName}"
                     Width="120"
-                    Height="120" />
+                    Height="120"
+                    Command="{Binding UpdateCommand}"/>
 
             <ProgressBar Grid.Row="0"
                          Grid.Column="1"
@@ -41,26 +42,49 @@
                          Maximum="{Binding MaxFrameCount}"
                          Value="{Binding CurFrameIndex}" />
 
-            <DockPanel Grid.Row="1"
+            <Grid Grid.Row="1"
                        Grid.Column="1"
-                       Margin="5"
-                       LastChildFill="True">
-                <Label Content="升级状态："
-                       DockPanel.Dock="Left"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center" />
-                <Label Content="{Binding Status}"
-                       DockPanel.Dock="Right"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center" />
-            </DockPanel>
+                  >
+                <Grid.RowDefinitions >
+                    <RowDefinition />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <DockPanel Grid.Row="0"
+                           Grid.Column="0"
+                           Margin="5"
+                           LastChildFill="True">
+                    <Label Content="升级状态："
+                           DockPanel.Dock="Left"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+                    <Label Content="{Binding Status}"
+                           DockPanel.Dock="Right"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+                </DockPanel>
+                <DockPanel Grid.Row="1"
+                           Grid.Column="1"
+                           Margin="5"
+                           LastChildFill="True">
+                    <Label Content="提示："
+                           DockPanel.Dock="Left"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+                    <Label Content="{Binding Tips}"
+                           DockPanel.Dock="Right"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+                </DockPanel>
+            </Grid>
+            
         </Grid>
 
         <DockPanel Grid.Row="1"
                    Margin="5">
             <Button Content="加载升级文件"
-                    Width="120" />
-            <Label Content="{Binding UpdateFile}"
+                    Width="120" 
+                    Command="{Binding LoadPackFileCommand}"/>
+            <Label Content="{Binding SourcePath}"
                    Margin="5, 0"
                    VerticalAlignment="Center"
                    HorizontalAlignment="Left" />
@@ -85,21 +109,27 @@
                                Content="升级文件信息" />
                         
                         <DockPanel>
-                            <TextBlock Text="设备类型："
+                            <TextBlock Text="板卡类型："
                                        Margin="10, 0" />
-                            <TextBlock Text="{Binding }" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding DevelopmentBoardType}" TextWrapping="Wrap"/>
                         </DockPanel>
                         
                         <DockPanel>
-                            <TextBlock Text="硬件类型："
+                            <TextBlock Text="版本号："
                                        Margin="10, 0" />
-                            <TextBlock Text="{Binding }" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding  VersionNumber}" TextWrapping="Wrap"/>
                         </DockPanel>
                         
                         <DockPanel>
-                            <TextBlock Text="硬件版本："
+                            <TextBlock Text="升级信息："
                                        Margin="10, 0" />
-                            <TextBlock Text="{Binding }" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding UpdataInformation}" TextWrapping="Wrap"/>
+                        </DockPanel>
+
+                        <DockPanel>
+                            <TextBlock Text="备注信息："
+                                       Margin="10, 0" />
+                            <TextBlock Text="{Binding Description}"/>
                         </DockPanel>
                     </StackPanel>
                 </ScrollViewer>

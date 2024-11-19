@@ -139,7 +139,7 @@ namespace UtilityTools.Core.Protocol
 
 
         [MethodImpl(MethodImplOptions.Synchronized)]
-        public void ReceiveBytes(byte[] data)
+        public void ReceiveBytes(byte[] data) //接收函数
         {
             if (_buffer.Length < _idx + data.Length)
             {
@@ -157,16 +157,16 @@ namespace UtilityTools.Core.Protocol
             int header_pos;
             while ((header_pos = FindHeaderPos(st)) >= 0)
             {
-                if (_idx < header_pos + 2) break;
+                if (_idx < header_pos + 2) break;//不明白
 
                 int length = BitConverter.ToInt16(_buffer, header_pos + DataPacket.HEADER.Length);
                 int ed = header_pos + length;
-                if (_idx < ed) break;
+                if (_idx < ed) break;//表示此包不全
 
-                if (_buffer[ed - 1] == DataPacket.EOF)
+                if (_buffer[ed - 1] == DataPacket.EOF)//表示数据完整
                 {
-                    var crc = BitConverter.GetBytes(CRCHelper.Data_GetCRC16(_buffer, header_pos, header_pos + length - 3));
-                    if (crc.SequenceEqual(_buffer[(header_pos + length - 3)..(header_pos + length - 1)]))
+                    var crc = BitConverter.GetBytes(CRCHelper.Data_GetCRC16(_buffer, header_pos, header_pos + length - 3));//CRC校验
+                    if (crc.SequenceEqual(_buffer[(header_pos + length - 3)..(header_pos + length - 1)]))//判断CRC
                     {
                         var packet = DataPacket.ParseFromBytes(_buffer[header_pos..ed]);
                         AsyncNotifyRespReceived(this, packet);
@@ -179,7 +179,7 @@ namespace UtilityTools.Core.Protocol
             }
         }
 
-        private void ShiftAndResetBuffer(int ed)
+        private void ShiftAndResetBuffer(int ed) //
         {
             int left = _idx - ed;
             if (left > 0)

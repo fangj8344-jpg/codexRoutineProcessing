@@ -21,7 +21,7 @@
             <RowDefinition Height="auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <DockPanel Grid.Row="0" LastChildFill="False">
+        <DockPanel Grid.Row="0" LastChildFill="False"> 
             <TextBlock Text="串口设置" FontWeight="Bold" DockPanel.Dock="Left" VerticalAlignment="Center" />
             <Button DockPanel.Dock="Left" Command="{Binding ShowDeviceCommand}" Content="{md:PackIcon Kind=UsbPort, Size=24}" Style="{StaticResource MaterialDesignToolButton}"
                     Foreground="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>

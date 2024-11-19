@@ -150,7 +150,7 @@ namespace UtilityTools.Modules.OtaTool.ViewModels
         private async void ShowNetDevice()
         {
             DialogParameters parameter = new DialogParameters();
-            parameter.Add("Value", Model.NetUdpService);
+            parameter.Add("Value", Model.NetUdpService);//传递参数用来读写
             var diaglogResult = await this._dialogHostService.ShowDialog("NetConfigView", parameter, CommonModel.OtaToolRegionName);
             if (diaglogResult == null)
                 return;
@@ -164,6 +164,8 @@ namespace UtilityTools.Modules.OtaTool.ViewModels
                 }
             }
         }
+
+       
         #endregion
 
         #region ------------StaticMethod------------
