@@ -68,7 +68,7 @@
             <DockPanel VerticalAlignment="Center">
                 <Label Content="{Binding IsKelvin, Converter={StaticResource ResourceKey=kelvinToStringConverter}}"
                        DockPanel.Dock="Right" />
-                <Label Content="{Binding TargetTemperature}" />
+                <Label Content="{Binding ReadTemperature}" />
             </DockPanel>
             <Label Content="反馈电流"
                    VerticalAlignment="Center" />

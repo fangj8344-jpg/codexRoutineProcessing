@@ -54,14 +54,21 @@ namespace UtilityTools.Modules.OtaTool.Model
             SerialPortService = new SerialPortService();
             SerialPortService.Name = "升级串口";
             SerialPortService.IsBinary = true;
-            NetUdpService = new UdpNetAsyncDevice();
-            NetUdpService.Name = "升级网口";
-            NetUdpService.IsBinary = true;
+            var netUdp = new UdpNetAsyncDevice();
+            netUdp.Name = "升级网口";
+            netUdp.DeviceInstance.TargetIp = "192.168.1.88";
+            netUdp.DeviceInstance.TargetPort = 5000;
+            netUdp.DeviceInstance.HostIp = "192.168.1.34";
+            netUdp.DeviceInstance.HostPort = 5001;
+            netUdp.IsBinary = true;
+            NetUdpService = netUdp;
             UpdateCommand = new DelegateCommand(Update);
             LoadPackFileCommand = new DelegateCommand(LoadPackFile);
 
             _parser1 = new OtaToolProtocolParser();
+            _parser1.Service = SerialPortService;
             _parser2 = new OtaToolProtocolParser();
+            _parser2.Service = NetUdpService;
             SerialPortService.UpdateResponse += SerialPortService_UpdateResponse;
             NetUdpService.UpdateResponse += NetUdpService_UpdateResponse;
             _parser1.PacketReceivedEvent += Parser_PacketReceivedEvent;
@@ -259,6 +266,25 @@ namespace UtilityTools.Modules.OtaTool.Model
         /// </summary>
         private async void Update()
         {
+            if (_isUpdating)
+            { 
+                _isUpdating = false;
+                UpgradeButtonName = "开始升级";
+
+                var stopCmd = OtaProtocol.GetAbortUpdateCmd(DevelopmentBoardMessage.DeviceID.Value);
+                if (SerialPortService.IsOpen)
+                {
+                    SerialPortService.SendMsg(stopCmd);
+                }
+
+                if (NetUdpService.IsOpen)
+                {
+                    NetUdpService.SendMsg(stopCmd);
+                }
+
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(SourcePath))
             {
                 await _dialogHostService.Information("升级错误", "请选择合适的升级文件");
@@ -277,6 +303,9 @@ namespace UtilityTools.Modules.OtaTool.Model
                 await _dialogHostService.Information("升级错误", "设备未连接，无法升级");
                 return;
             }
+
+            _isUpdating = true;
+            UpgradeButtonName = "停止升级";
 
             // 检查设备类型是否匹配
             var requestCmd = OtaProtocol.GetUpdateFrameInfoCmd(DevelopmentBoardMessage.DeviceID.Value);
@@ -302,6 +331,7 @@ namespace UtilityTools.Modules.OtaTool.Model
                 Tips = "当前文件夹下存在同名文件";
                 return false;
             }
+            bool result = false;
             //先解压文件
             string destinationPath = ZipCompress.ZipExtract(filePath);
             //再将文件中的json文件读取出来
@@ -312,16 +342,18 @@ namespace UtilityTools.Modules.OtaTool.Model
                 var path = Path.Combine(destinationPath, DevelopmentBoardMessage.FileName);
                 if (File.Exists(path))
                 {
-                    UpdateData = File.ReadAllBytes(path);
-                    var length = UpdateData.Length;
+                    var data = File.ReadAllBytes(path);
+                    var length = data.Length;
                     MaxFrameCount = (uint)(length + 31) / 32;
+                    UpdateData = new byte[MaxFrameCount * 32];
+                    Array.Copy(data, UpdateData, length);
                     CurFrameCount = 0;
                     UpdateDataCrc = CRCHelper.Data_GetCRC16(UpdateData, 0, length);
-                    return true;
+                    result = true;
                 }
             }
-            Directory.Delete(destinationPath);
-            return false;
+            Directory.Delete(destinationPath, true);
+            return result;
         }
 
         /// <summary>
@@ -351,7 +383,12 @@ namespace UtilityTools.Modules.OtaTool.Model
         /// <param name="e"></param>
         private void Parser_PacketReceivedEvent(object? sender, OtaToolDataPacket e)
         {
-            var service = sender as IAsynRWService;
+            var parser = sender as OtaToolProtocolParser;
+            IAsynRWService? service = null;
+            if (parser != null) 
+            {
+                service = parser.Service;
+            }
             switch (e.CmdType)
             {
                 case EnumOtaCommandType.OTA_GET_HWV:
@@ -387,7 +424,15 @@ namespace UtilityTools.Modules.OtaTool.Model
                     }
                     break;
                 case EnumOtaCommandType.OTA_GET_STATUS:
-                    
+                    var stateByte = e.DataSource[0];
+                    if (stateByte == 0x00)
+                    {
+                        Status = "正常运行";
+                    }
+                    else
+                    {
+                        Status = "固件升级中";
+                    }
                     break;
                 case EnumOtaCommandType.OTA_REQUEST:
                     {
@@ -416,6 +461,7 @@ namespace UtilityTools.Modules.OtaTool.Model
                         if (CurFrameCount < MaxFrameCount)
                         {
                             var data = new byte[32];
+
                             Array.Copy(UpdateData, CurFrameCount * 32, data, 0, 32);
                             var cmd = OtaProtocol.GetTransferOtaCmd(CurFrameCount, data, DevelopmentBoardMessage.DeviceID.Value);
                             service?.SendMsg(cmd);

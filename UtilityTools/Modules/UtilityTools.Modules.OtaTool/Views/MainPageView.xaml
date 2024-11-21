@@ -45,7 +45,7 @@
                          Height="25"
                          Minimum="0"
                          Maximum="{Binding MaxFrameCount}"
-                         Value="{Binding CurFrameIndex}" />
+                         Value="{Binding CurFrameCount}" />
 
             <Grid Grid.Row="1"
                        Grid.Column="1"

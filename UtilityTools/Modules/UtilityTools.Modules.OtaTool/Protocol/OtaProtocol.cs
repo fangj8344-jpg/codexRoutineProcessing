@@ -36,6 +36,7 @@ using System.Windows.Markup;
 using UtilityTools.Core.Helper;
 using UtilityTools.Core.Model;
 using UtilityTools.Core.Protocol;
+using UtilityTools.Services.Interfaces.IServices;
 
 namespace UtilityTools.Modules.OtaTool.Protocol
 {
@@ -90,7 +91,6 @@ namespace UtilityTools.Modules.OtaTool.Protocol
         {
             _parser = new ZepGenericProtocolParser();
             _parser.PacketReceivedEvent += GeneriaPackReceived;
-
         }
         private void GeneriaPackReceived(object sender,DataPacket packet)
         {
@@ -105,6 +105,7 @@ namespace UtilityTools.Modules.OtaTool.Protocol
         }
 
         private ZepGenericProtocolParser _parser;
+        public IAsynRWService Service;
     }
 
 
@@ -231,16 +232,6 @@ namespace UtilityTools.Modules.OtaTool.Protocol
             writer.Write(frameId);
             writer.Write(data);
             return GetCmd(EnumOtaCommandType.OTA_TRANSFER, deviceID, writer.EndWrite());
-        }
-
-        /// <summary>
-        /// 获取终止OTA指令
-        /// </summary>
-        /// <returns></returns>
-        public static byte[] GetAbortOtaCmd(EnumDeviceID deviceID)
-        {
-            byte[] array = new byte[1];
-            return GetCmd(EnumOtaCommandType.OTA_ABORT, deviceID, array);
         }
 
         /// <summary> 

@@ -128,10 +128,8 @@ namespace UtilityTools
             debugTarget.ArchiveEvery = FileArchivePeriod.Day;
 
             // Step 4. Define rules
-#if DEBUG
             var rule1 = new LoggingRule("*", LogLevel.Debug, LogLevel.Info, debugTarget);
             config.LoggingRules.Add(rule1);
-#endif
 
             var rule2 = new LoggingRule("*", LogLevel.Warn, fileTarget);
             config.LoggingRules.Add(rule2);

@@ -58,6 +58,7 @@ namespace UtilityTools.Modules.TemperatureController.Model
 
             SerialPortService = new SerialPortService();
             SerialPortService.UpdateResponse += SerialPortService_UpdateResponse;
+            SerialPortService.IsBinary = true;
             NetUdpService = new UdpNetAsyncDevice();
             NetUdpService.UpdateResponse += NetUdpService_UpdateResponse;
             Pid = new PidModel();
