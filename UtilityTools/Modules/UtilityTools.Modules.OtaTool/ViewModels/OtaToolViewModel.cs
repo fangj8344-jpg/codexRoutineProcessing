@@ -140,6 +140,7 @@ namespace UtilityTools.Modules.OtaTool.ViewModels
                 {
                     Model.SerialPortService = value;
                     IsConnected = Model.SerialPortService.IsOpen;
+                    Model.StartRequestStatus();
                 }
             }
         }
@@ -161,6 +162,7 @@ namespace UtilityTools.Modules.OtaTool.ViewModels
                 {
                     Model.NetUdpService = value;
                     NetIsConnected = Model.NetUdpService.IsOpen;
+                    Model.StartRequestStatus();
                 }
             }
         }

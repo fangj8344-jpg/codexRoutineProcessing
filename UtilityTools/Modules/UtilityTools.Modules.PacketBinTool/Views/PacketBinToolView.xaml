@@ -1,13 +1,27 @@
 ﻿<UserControl x:Class="UtilityTools.Modules.PacketBinTool.Views.PacketBinToolView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:UtilityTools.Modules.PacketBinTool.Views"
              xmlns:prism="http://prismlibrary.com/"
              xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
-             mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             xmlns:model="clr-namespace:UtilityTools.Core.Model;assembly=UtilityTools.Core"
+             xmlns:method="clr-namespace:UtilityTools.Core.Helper;assembly=UtilityTools.Core"
+             mc:Ignorable="d"
+             d:DesignHeight="450"
+             d:DesignWidth="800">
+
+    <UserControl.Resources>
+        <ObjectDataProvider x:Key="enumDeviceID"
+                            MethodName="EnumToDescList"
+                            ObjectType="{x:Type method:EnumMethod}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type Type="model:EnumDeviceID" />
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </UserControl.Resources>
+
     <Grid>
         <Grid Margin="10">
             <Grid.RowDefinitions>
@@ -28,13 +42,13 @@
                 </Grid.ColumnDefinitions>
 
                 <Button Grid.Row="0"
-            Grid.RowSpan="2"
-            Grid.Column="0"
-            Margin="5"
-            Content="开始打包"
-            Width="120"
-            Height="120"
-            Command="{Binding PackageCommand}"/>
+                        Grid.RowSpan="2"
+                        Grid.Column="0"
+                        Margin="5"
+                        Content="开始打包"
+                        Width="120"
+                        Height="120"
+                        Command="{Binding PackageCommand}" />
 
                 <ProgressBar Grid.Row="0"
                              Grid.Column="1"
@@ -60,7 +74,7 @@
             </Grid>
 
             <DockPanel Grid.Row="1"
-           Margin="5">
+                       Margin="5">
                 <Button Content="加载固件"
                         Command="{Binding LoadFilePathCommand}"
                         Width="120" />
@@ -79,34 +93,41 @@
                 </Grid.ColumnDefinitions>
 
                 <Border Grid.Column="0"
-            CornerRadius="10"
-            BorderThickness="2"
-            Margin="5"
-            BorderBrush="AliceBlue">
+                        CornerRadius="10"
+                        BorderThickness="2"
+                        Margin="5"
+                        BorderBrush="AliceBlue">
                     <ScrollViewer>
                         <StackPanel>
                             <Label Margin="10"
-                       Content="板卡固件信息" />
+                                   Content="板卡固件信息" />
 
                             <DockPanel>
                                 <TextBlock Text="板卡类型："
-                               Margin="10, 10" />
-                                <ComboBox ItemsSource="{Binding AllDeviceID}" DisplayMemberPath="Key" SelectedValuePath="Key" SelectedValue="{Binding SelectDeviceID}"/>
+                                           Margin="10, 10" />
+                                <ComboBox SelectedValue="{Binding DevelopmentBoardMessage.DeviceID, Mode=TwoWay}"
+                                          ItemsSource="{Binding Source={StaticResource enumDeviceID}}"
+                                          DisplayMemberPath="Value"
+                                          SelectedValuePath="Key" />
                             </DockPanel>
 
                             <DockPanel>
                                 <TextBlock Text="版本号："
-                               Margin="10, 10" />
-                                <TextBox Text="{Binding VersionNumber}" TextWrapping="Wrap"/>
+                                           Margin="10, 10" />
+                                <TextBox Text="{Binding DevelopmentBoardMessage.VersionNumber}"
+                                         TextWrapping="Wrap" />
                             </DockPanel>
 
                             <DockPanel>
                                 <TextBlock Text="变更信息："
-                               Margin="10, 10" />
-                                <TextBox Text="{Binding UpdataInformation}" TextWrapping="Wrap"/>
+                                           Margin="10, 10" />
+                                <TextBox Text="{Binding DevelopmentBoardMessage.UpdateInformation}"
+                                         TextWrapping="Wrap" />
                             </DockPanel>
-                            <Label Content="备注信息:"/>
-                            <TextBox Text="{Binding Description}" TextWrapping="Wrap" Margin="60,0,0,0"/>
+                            <Label Content="备注信息:" />
+                            <TextBox Text="{Binding DevelopmentBoardMessage.Description}"
+                                     TextWrapping="Wrap"
+                                     Margin="60,0,0,0" />
                         </StackPanel>
                     </ScrollViewer>
                 </Border>

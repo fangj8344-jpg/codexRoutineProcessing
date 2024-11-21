@@ -34,6 +34,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Markup;
 using UtilityTools.Core.Helper;
+using UtilityTools.Core.Model;
 using UtilityTools.Core.Protocol;
 
 namespace UtilityTools.Modules.OtaTool.Protocol
@@ -50,7 +51,7 @@ namespace UtilityTools.Modules.OtaTool.Protocol
         OTA_GET_FMV = 0x005,
 
         [Description("广播通信")]
-        OTA_SYS_BRADCAST = 0x0006,
+        OTA_SYS_BROADCAST = 0x0006,
 
         [Description("获取固件版本信息（字节表达）（用于升级校验）")]
         OTA_GET_UPGRADE_FMV = 0x0010,
@@ -70,23 +71,7 @@ namespace UtilityTools.Modules.OtaTool.Protocol
         [Description("重启升级")]
         OTA_RESTART = 0X0015,
     }
-    public enum EnumDeviceID 
-    {
-        [Description("主控制板")]
-        DeviceID_MAIN_CONTROL_PANEL = 0X0100,
 
-        [Description("真空控制板")]
-        DeviceID_VACUUM_CONTROL_PANEL = 0X0101,
-
-        [Description("灯带控制板")]
-        DeviceID_LIGHT_BELT_CONTROL_PANEL = 0X0102,
-
-        [Description("20kv高压箱")]
-        DeviceID_20KV_HIGH_PRESSURE_BOX = 0X0200,
-
-        [Description("五轴电机控制板")]
-        DeviceID_FIVEAXIS_MOTOR_CONTROL_PANEL = 0X0300
-    }
     public class OtaToolDataPacket
     {
         public OtaToolDataPacket(DataPacket packet)
@@ -148,9 +133,63 @@ namespace UtilityTools.Modules.OtaTool.Protocol
             }
 
             var cmd = BitConverter.GetBytes((ushort)command);
-            var temp = DeviceIdTransformUInt16(deviceID);
-            var id = BitConverter.GetBytes(temp);
+            var id = BitConverter.GetBytes((ushort)deviceID);
             return ZepGenericProtocol.GetCmd(id, cmd, data);
+        }
+
+        /// <summary>
+        /// 获取硬件信息指令
+        /// </summary>
+        /// <param name="deviceID"></param>
+        /// <returns></returns>
+        public static byte[] GetRequestHardInfoCmd(EnumDeviceID deviceID)
+        {
+            ByteWriter writer = new ByteWriter(36);
+            return GetCmd(EnumOtaCommandType.OTA_GET_HWV, deviceID, writer.EndWrite());
+        }
+
+        /// <summary>
+        /// 获取固件信息指令
+        /// </summary>
+        /// <param name="deviceID"></param>
+        /// <returns></returns>
+        public static byte[] GetRequestFrameInfoCmd(EnumDeviceID deviceID) 
+        {
+            ByteWriter writer = new ByteWriter(36);
+            return GetCmd(EnumOtaCommandType.OTA_GET_FMV, deviceID, writer.EndWrite());
+        }
+
+        /// <summary>
+        /// 获取广播指令
+        /// </summary>
+        /// <param name="deviceID"></param>
+        /// <returns></returns>
+        public static byte[] GetBroadcastCmd(EnumDeviceID deviceID)
+        {
+            ByteWriter writer = new ByteWriter(36);
+            return GetCmd(EnumOtaCommandType.OTA_SYS_BROADCAST, deviceID, writer.EndWrite());
+        }
+
+        /// <summary>
+        /// 获取升级校验指令
+        /// </summary>
+        /// <param name="deviceID"></param>
+        /// <returns></returns>
+        public static byte[] GetUpdateFrameInfoCmd(EnumDeviceID deviceID) 
+        {
+            ByteWriter writer = new ByteWriter(36);
+            return GetCmd(EnumOtaCommandType.OTA_GET_UPGRADE_FMV, deviceID, writer.EndWrite());
+        }
+
+        /// <summary>
+        /// 获取设备状态指令
+        /// </summary>
+        /// <param name="deviceID"></param>
+        /// <returns></returns>
+        public static byte[] GetDeviceStatusCmd(EnumDeviceID deviceID)
+        {
+            ByteWriter writer = new ByteWriter(36);
+            return GetCmd(EnumOtaCommandType.OTA_GET_STATUS, deviceID, writer.EndWrite());
         }
 
         /// <summary>
@@ -160,7 +199,7 @@ namespace UtilityTools.Modules.OtaTool.Protocol
         /// <param name="frameCount">预期传输帧数</param>
         /// <param name="crc">CRC校验值</param>
         /// <returns></returns>
-        public static byte[] GetRequestOtaCmd(int fileLength, int frameCount, EnumDeviceID deviceID, ushort crc)
+        public static byte[] GetRequestOtaCmd(uint fileLength, uint frameCount, EnumDeviceID deviceID, ushort crc)
         {
             ByteWriter writer = new ByteWriter(36);
             writer.Write(fileLength);
@@ -169,6 +208,16 @@ namespace UtilityTools.Modules.OtaTool.Protocol
             return GetCmd(EnumOtaCommandType.OTA_REQUEST, deviceID, writer.EndWrite());
         }
 
+        /// <summary>
+        /// 获取终止OTA更新指令
+        /// </summary>
+        /// <param name="deviceID"></param>
+        /// <returns></returns>
+        public static byte[] GetAbortUpdateCmd(EnumDeviceID deviceID) 
+        {
+            ByteWriter writer = new ByteWriter(36);
+            return GetCmd(EnumOtaCommandType.OTA_ABORT, deviceID, writer.EndWrite());
+        }
 
         /// <summary>
         /// 传输OTA指令
@@ -176,7 +225,7 @@ namespace UtilityTools.Modules.OtaTool.Protocol
         /// <param name="frameId">帧ID</param>
         /// <param name="data">传输数据</param>
         /// <returns></returns>
-        public static byte[] GetTransferOtaCmd(int frameId, byte[] data, EnumDeviceID deviceID)
+        public static byte[] GetTransferOtaCmd(uint frameId, byte[] data, EnumDeviceID deviceID)
         {
             ByteWriter writer = new ByteWriter(36);
             writer.Write(frameId);
@@ -204,45 +253,6 @@ namespace UtilityTools.Modules.OtaTool.Protocol
             return GetCmd(EnumOtaCommandType.OTA_RESTART, deviceID, array);
         }
 
-
-        public static EnumDeviceID? DeviceIdTransformEnum(UInt16 device)
-        {
-            switch (device)
-            {
-                case 0X0100: return EnumDeviceID.DeviceID_MAIN_CONTROL_PANEL; break;
-                case 0X0101: return EnumDeviceID.DeviceID_VACUUM_CONTROL_PANEL; break;
-                case 0X0102: return EnumDeviceID.DeviceID_LIGHT_BELT_CONTROL_PANEL; break;
-                case 0X0200: return EnumDeviceID.DeviceID_20KV_HIGH_PRESSURE_BOX; break;
-                case 0X0300: return EnumDeviceID.DeviceID_FIVEAXIS_MOTOR_CONTROL_PANEL; break;
-                default: return null;
-            }
-        }
-        public static string? DeviceIdTransformString(UInt16 device)
-        {
-            switch (device)
-            {
-                case 0X0100: return "主控制板"; break;
-                case 0X0101: return "真空控制板"; break;
-                case 0X0102: return "灯带控制板"; break;
-                case 0X0200: return "20kv高压箱"; break;
-                case 0X0300: return "五轴电机控制板"; break;
-                default: return null;
-
-            }
-
-        }
-        public static UInt16 DeviceIdTransformUInt16(EnumDeviceID? deviceID)
-        {
-            switch (deviceID)
-            {
-                case EnumDeviceID.DeviceID_MAIN_CONTROL_PANEL : return 0X0100; break;
-                case EnumDeviceID.DeviceID_VACUUM_CONTROL_PANEL : return 0X0101; break;
-                case EnumDeviceID.DeviceID_LIGHT_BELT_CONTROL_PANEL : return 0X0102; break;
-                case EnumDeviceID.DeviceID_20KV_HIGH_PRESSURE_BOX : return 0X0200; break;
-                case EnumDeviceID.DeviceID_FIVEAXIS_MOTOR_CONTROL_PANEL : return 0X0300; break;
-                default: return 00;
-            }
-        }
     }
 
 

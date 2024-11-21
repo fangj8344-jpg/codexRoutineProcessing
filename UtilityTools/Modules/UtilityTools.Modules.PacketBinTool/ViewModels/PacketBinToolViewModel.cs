@@ -15,7 +15,7 @@ using System.Windows.Forms;
 using static OpenCvSharp.Stitcher;
 using NLog.LayoutRenderers;
 using System.IO.Compression;
-
+using UtilityTools.Core.Model;
 
 namespace UtilityTools.Modules.PacketBinTool.ViewModels
 {
@@ -28,12 +28,9 @@ namespace UtilityTools.Modules.PacketBinTool.ViewModels
         #region ------------Constructor------------
         public PacketBinToolViewModel()
         {
-
+            DevelopmentBoardMessage = new DevelopmentBoardMessage();
             PackageCommand = new DelegateCommand(Package);
             LoadFilePathCommand = new DelegateCommand(LoadFilePath);
-            AllDeviceID = new Dictionary<string, ushort>() { { "主控制板", 0x1000 },{"真空控制板", 0x0100 }, { "灯带控制板", 0x0102 }, { "20kv高压箱", 0x0200 }, { "五轴电机控制板", 0x0300 } };
-          
-
         }
         #endregion
 
@@ -41,69 +38,16 @@ namespace UtilityTools.Modules.PacketBinTool.ViewModels
 
         #endregion
 
-      
-        
-        private Dictionary<string, UInt16> _allDeviceID;
-        
+        private DevelopmentBoardMessage _developmentBoardMessage;
         /// <summary>
-        /// 所有的设备ID
+        /// 升级信息
         /// </summary>
-        public Dictionary<string, UInt16> AllDeviceID 
-        { 
-            get { return _allDeviceID; }
-            set { _allDeviceID = value; RaisePropertyChanged(); }
-        }
-        private string _selectDeviceID;
-        public string SelectDeviceID
-        { 
-            get { return _selectDeviceID; }
-            set  { _selectDeviceID = value; RaisePropertyChanged(); }
-        }
-        /*
-        private int _selectDeviceIDIndex;
-        public int SelectDeviceIDIndex
+        public DevelopmentBoardMessage DevelopmentBoardMessage
         {
-            get { return _selectDeviceIDIndex; }
-            set { _selectDeviceIDIndex = value; RaisePropertyChanged(); }
+            get { return _developmentBoardMessage; }
+            set { _developmentBoardMessage = value; RaisePropertyChanged(); }
         }
-        */
 
-        /// <summary>
-        /// 板卡类型
-        /// </summary>
-        private string developmentBoardType;
-        public string DevelopmentBoardType
-        {
-            get { return developmentBoardType; }
-            set { developmentBoardType = value; RaisePropertyChanged(); }
-        }
-        /// <summary>
-        /// 烧录文件的版本号
-        /// </summary>
-        private string versionNumber;
-        public string VersionNumber
-        {
-            get { return versionNumber; }
-            set { versionNumber = value; RaisePropertyChanged(); }
-        }
-        /// <summary>
-        /// 版本变更信息
-        /// </summary>
-        private string updataInformation;
-        public string UpdataInformation
-        {
-            get { return updataInformation; }
-            set { updataInformation = value; RaisePropertyChanged(); }
-        }
-        /// <summary>
-        /// 备注信息
-        /// </summary>
-        private string description;
-        public string Description
-        {
-            get { return description; }
-            set { description = value; RaisePropertyChanged(); }
-        }
         /// <summary>
         /// 需要打包的文件路径
         /// </summary>
@@ -152,9 +96,9 @@ namespace UtilityTools.Modules.PacketBinTool.ViewModels
         /// <summary>
         /// 开发板信息
         /// </summary>
-        public DevelopmentBoardMessage developmentBoardMessage{ get; set; }
-  
-    #region ------------Command------------
+        public DevelopmentBoardMessage developmentBoardMessage { get; set; }
+
+        #region ------------Command------------
         public DelegateCommand PackageCommand { get; set; }
         public DelegateCommand LoadFilePathCommand { get; set; }
 
@@ -173,10 +117,10 @@ namespace UtilityTools.Modules.PacketBinTool.ViewModels
         {
             if (SourcePath == null)
             {
-                Status = "请先选择固件"; 
+                Status = "请先选择固件";
                 return;
             }
-            if (SelectDeviceID == null || VersionNumber == null )
+            if (DevelopmentBoardMessage.VersionNumber == null && !DevelopmentBoardMessage.DeviceID.HasValue)
             {
                 Status = "请先填写板卡信息和版本号";
                 return;
@@ -187,24 +131,22 @@ namespace UtilityTools.Modules.PacketBinTool.ViewModels
             folderBrowserDialog.UseDescriptionForTitle = true;
             var result = folderBrowserDialog.ShowDialog();
             string destinationPath;
-            if (result != System.Windows.Forms.DialogResult.OK )
+            if (result != System.Windows.Forms.DialogResult.OK)
             {
                 return;
             }
             destinationPath = folderBrowserDialog.SelectedPath;
-            
+
             Status = "正在打包";
-            //创建的对象，包含开发板信息
-            DevelopmentBoardMessage bagMessage = new DevelopmentBoardMessage { DevelopmentBoardType = AllDeviceID[SelectDeviceID], VersionNumber = this.VersionNumber, UpdataInformation = this.UpdataInformation, Description = this.Description };
             //将对象序列化为JSON字符串
-            string JsonMessageFile = JsonConvert.SerializeObject(bagMessage);
+            string JsonMessageFile = JsonConvert.SerializeObject(DevelopmentBoardMessage);
             //创建一个文件夹
-            string BagMessageDirectoryPath = Path.GetDirectoryName(SourcePath) + @"\" + SelectDeviceID + "_" + versionNumber + "_" + System.DateTime.Now.ToString("HH时mm分ss秒");
+            string BagMessageDirectoryPath = Path.GetDirectoryName(SourcePath) + @"\" + EnumMethod.GetEnumDesc(DevelopmentBoardMessage.DeviceID) + "_" + DevelopmentBoardMessage.VersionNumber + "_" + System.DateTime.Now.ToString("HH时mm分ss秒");
             if (!Directory.Exists(BagMessageDirectoryPath))
             {
                 Directory.CreateDirectory(BagMessageDirectoryPath);
                 //指定文件路径和文件名
-                string jspmFilePath = BagMessageDirectoryPath+ @"\DevelopmentBoardMessage.json";
+                string jspmFilePath = BagMessageDirectoryPath + @"\DevelopmentBoardMessage.json";
                 using (StreamWriter file = File.CreateText(jspmFilePath))
                 {
                     file.Write(JsonMessageFile);
@@ -221,7 +163,7 @@ namespace UtilityTools.Modules.PacketBinTool.ViewModels
             {
                 return;
             }
-        
+
             //压缩文件夹
             string zipPath = ZipCompress.CompressFile(BagMessageDirectoryPath);
             if (zipPath == null)
@@ -231,12 +173,13 @@ namespace UtilityTools.Modules.PacketBinTool.ViewModels
             }
             //向压缩文件中添加固件文件
             ZipCompress.ZipFiles(zipPath, SourcePath);
-            Directory.Delete(BagMessageDirectoryPath, true );
-            destinationPath += @"\" + Path.GetFileName(zipPath); 
+            Directory.Delete(BagMessageDirectoryPath, true);
+            destinationPath += @"\" + Path.GetFileName(zipPath);
             File.Move(zipPath, destinationPath);
             Status = "打包完成";
             CurFrameIndex = 1;
         }
+
         private void LoadFilePath()
         {
             Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
@@ -246,10 +189,11 @@ namespace UtilityTools.Modules.PacketBinTool.ViewModels
                 SourcePath = openFileDialog.FileName;
                 Status = "";
                 CurFrameIndex = 0;
+                DevelopmentBoardMessage.FileName = Path.GetFileName(SourcePath);
             }
         }
-       
-        
+
+
         #endregion
 
         #region ------------StaticMethod------------

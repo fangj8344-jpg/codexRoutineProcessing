@@ -4,9 +4,14 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:UtilityTools.Modules.OtaTool.Views"
+             xmlns:cv="clr-namespace:UtilityTools.Core.Converter;assembly=UtilityTools.Core"
              mc:Ignorable="d"
              d:DesignHeight="450"
              d:DesignWidth="800">
+    <UserControl.Resources>
+        <cv:EnumDescriptionConverter x:Key="enumDescriptionConverter" />
+    </UserControl.Resources>
+    
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
@@ -111,25 +116,25 @@
                         <DockPanel>
                             <TextBlock Text="板卡类型："
                                        Margin="10, 0" />
-                            <TextBlock Text="{Binding DevelopmentBoardType}" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding DevelopmentBoardMessage.DeviceID, Converter={StaticResource enumDescriptionConverter}}" TextWrapping="Wrap"/>
                         </DockPanel>
                         
                         <DockPanel>
                             <TextBlock Text="版本号："
                                        Margin="10, 0" />
-                            <TextBlock Text="{Binding  VersionNumber}" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding  DevelopmentBoardMessage.VersionNumber}" TextWrapping="Wrap"/>
                         </DockPanel>
                         
                         <DockPanel>
                             <TextBlock Text="升级信息："
                                        Margin="10, 0" />
-                            <TextBlock Text="{Binding UpdataInformation}" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding DevelopmentBoardMessage.UpdateInformation}" TextWrapping="Wrap"/>
                         </DockPanel>
 
                         <DockPanel>
                             <TextBlock Text="备注信息："
                                        Margin="10, 0" />
-                            <TextBlock Text="{Binding Description}"/>
+                            <TextBlock Text="{Binding DevelopmentBoardMessage.Description}"/>
                         </DockPanel>
                     </StackPanel>
                 </ScrollViewer>
