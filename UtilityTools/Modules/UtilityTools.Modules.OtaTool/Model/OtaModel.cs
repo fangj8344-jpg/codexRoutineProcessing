@@ -96,6 +96,7 @@ namespace UtilityTools.Modules.OtaTool.Model
         private bool _isUpdating = false;
         private bool _isRestart = false;
         private bool _isTimeout = false;
+        private bool _isStartUpgrade = false;
         private System.Timers.Timer _timer;
         private System.Timers.Timer _confirmTheUpgradeTimer;
         private int _interval = 1000;
@@ -238,6 +239,7 @@ namespace UtilityTools.Modules.OtaTool.Model
                 _confirmTheUpgradeTimer.Interval = _confirmInterval;
                 _confirmTheUpgradeTimer.Elapsed += ConfirmTheUpgradeTimer_Elapsed;
             }
+            _confirmTheUpgradeTimer.Start();
         }
 
 
@@ -300,9 +302,7 @@ namespace UtilityTools.Modules.OtaTool.Model
         {
             if (_isUpdating)
             {
-                _isUpdating = false;
-                UpgradeButtonName = "开始升级";
-
+                Reset();
                 var stopCmd = OtaProtocol.GetAbortUpdateCmd(DevelopmentBoardMessage.DeviceID.Value);
                 if (SerialPortService.IsOpen)
                 {
@@ -313,6 +313,7 @@ namespace UtilityTools.Modules.OtaTool.Model
                 {
                     NetUdpService.SendMsg(stopCmd);
                 }
+                Tips = "停止固件升级中";
 
                 return;
             }
@@ -338,7 +339,7 @@ namespace UtilityTools.Modules.OtaTool.Model
 
             _isUpdating = true;
             UpgradeButtonName = "停止升级";
-
+            _isStartUpgrade = true;
             // 检查设备类型是否匹配
             var requestCmd = OtaProtocol.GetUpdateFrameInfoCmd(DevelopmentBoardMessage.DeviceID.Value);
             if (SerialPortService.IsOpen)
@@ -450,13 +451,12 @@ namespace UtilityTools.Modules.OtaTool.Model
                         byte mouth = e.DataSource[4];
                         byte day = e.DataSource[5];
                         ushort crc = BitConverter.ToUInt16(e.DataSource, 6);
+                        var firmwareVersim = DevelopmentBoardMessage.VersionNumber.Split('.');
+                        var majorfirmwareVersim = firmwareVersim[0];
+                        var minorfirmwareVersim = firmwareVersim[1];
                         //是否是重启查询后的结果
                         if (_isRestart == true)
                         {
-                            var firmwareVersim = DevelopmentBoardMessage.VersionNumber.Split('.');
-                            var majorfirmwareVersim = firmwareVersim[0];
-                            var minorfirmwareVersim = firmwareVersim[1];
-
                             if (majorfirmwareVersim[0] == 'v' || (majorfirmwareVersim[0] == 'V'))
                             {
                                 majorfirmwareVersim = majorfirmwareVersim.Substring(1, majorfirmwareVersim.Length - 1);
@@ -468,20 +468,43 @@ namespace UtilityTools.Modules.OtaTool.Model
                             }
                             else
                             {
-                                Tips = "固件升级失败,请重新尝试";
+                                if (crc == UpdateDataCrc)
+                                {
+                                    Tips = "固件升级失败,请核对版本号是否输入正确";
+                                }
+                                else 
+                                {
+                                    Tips = "固件升级失败";
+                                }
+                                Reset();
                             }
                         }
                         else
                         {
                             //如果crc是0xffff 表示开发板是第一次进行升级
                             //当前固件版本和开发板固件版本crc不同时进行升级操作
-                            if (crc != UpdateDataCrc || (crc == 0xffff && majorVersion == 1 && minorVersion == 1))
+                            if ((((Convert.ToUInt32(majorfirmwareVersim) != majorVersion || Convert.ToUInt32(minorfirmwareVersim) != minorVersion || crc != UpdateDataCrc ))
+                                || (crc == 0xffff && majorVersion == 1 && minorVersion == 0)) 
+                                && _isStartUpgrade == true)
                             {
                                 var cmd = OtaProtocol.GetRequestOtaCmd((uint)UpdateData.Length, MaxFrameCount, DevelopmentBoardMessage.DeviceID.Value, UpdateDataCrc);
                                 service?.SendMsg(cmd);
+                                _isStartUpgrade = false;
+                                Tips = "开始升级中，请耐心等待";
                             }
+                            else
+                            {
+                                Reset();
+                                Tips = "当前固件已是最新版本";
+                            }
+                           
                         }
                         _isRestart = false;
+                        if (_confirmTheUpgradeTimer != null && _confirmTheUpgradeTimer.Enabled == true)
+                        {
+                            _confirmTheUpgradeTimer.Stop();
+                            
+                        } 
                     }
                     break;
                 case EnumOtaCommandType.OTA_GET_STATUS:
@@ -509,7 +532,8 @@ namespace UtilityTools.Modules.OtaTool.Model
                     }
                     break;
                 case EnumOtaCommandType.OTA_ABORT:
-                    _isUpdating = false;
+                    Reset();
+                    Tips = "已停止固件升级";
                     break;
                 case EnumOtaCommandType.OTA_TRANSFER://接收到回报发送下一个回报
                     {
@@ -526,15 +550,7 @@ namespace UtilityTools.Modules.OtaTool.Model
                             var cmd = OtaProtocol.GetTransferOtaCmd(CurFrameCount, data, DevelopmentBoardMessage.DeviceID.Value);
                             service?.SendMsg(cmd);
                             _isTimeout = true;
-                            try
-                            {
-                                ExecuteWithTimeoutAsync(5000);
-                            }
-                            catch (Exception f)
-                            {
-
-                            }
-
+                            ExecuteWithTimeoutAsync(5000);
                         }
                         else
                         {
@@ -543,16 +559,8 @@ namespace UtilityTools.Modules.OtaTool.Model
                             service?.SendMsg(cmd);
                             ConfirmTheUpgrade();
                             _isTimeout = true;
-                            try
-                            {
-                                ExecuteWithTimeoutAsync(10000);
-                            }
-                            catch (Exception f)
-                            {
-
-                            }
+                            ExecuteWithTimeoutAsync(10000);
                         }
-                       
                     }
                     break;
                 case EnumOtaCommandType.OTA_RESTART:
@@ -602,8 +610,16 @@ namespace UtilityTools.Modules.OtaTool.Model
                 timeoutTask.Dispose();
             }
         }
+        private void Reset()
+        {
+            _isStartUpgrade = false;
+            _isUpdating = false;
+            UpgradeButtonName = "开始升级";
+            CurFrameCount = 0;
+        }
 
-    } 
+    }
+    
 
 
     #endregion
