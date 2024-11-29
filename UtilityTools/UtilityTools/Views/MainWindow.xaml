@@ -31,7 +31,7 @@
                                    PassEventArgsToCommand="True" />
         </i:EventTrigger>
     </i:Interaction.Triggers>
-    
+
     <md:DialogHost Identifier="Root"
                    DialogTheme="Inherit"
                    x:Name="DialogHost">
@@ -41,34 +41,34 @@
             <!--左侧抽屉滑窗-->
             <md:DrawerHost.LeftDrawerContent>
                 <DockPanel MinWidth="220">
-                    <StackPanel Margin="0, 100"
-                                DockPanel.Dock="Top">
-                        <ListBox x:Name="menuBar"
-                                 ItemsSource="{Binding Modules, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                 SelectedIndex="{Binding SelectedIndex}"
-                                 ItemContainerStyle="{StaticResource MyListBoxItemStle}">
-                            <i:Interaction.Triggers>
-                                <i:EventTrigger EventName="SelectionChanged">
-                                    <i:InvokeCommandAction Command="{Binding NavigateCommand}"
-                                                           CommandParameter="{Binding ElementName=menuBar, Path=SelectedItem}" />
-                                </i:EventTrigger>
-                            </i:Interaction.Triggers>
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal"
-                                                VerticalAlignment="Center">
-                                        <md:PackIcon Kind="{Binding Icon}"
-                                                     Margin="15, 0" />
-                                        <TextBlock Text="{Binding Title}"
-                                                   Margin="10, 0"
-                                                   TextAlignment="Center" 
-                                                   ToolTip="{Binding Tip}">
-                                        </TextBlock>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                    </StackPanel>
+                    <ListBox x:Name="menuBar"
+                             Margin="0, 100"
+                             DockPanel.Dock="Top"
+                             ItemsSource="{Binding Modules, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             SelectedIndex="{Binding SelectedIndex}"
+                             ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                             ItemContainerStyle="{StaticResource MyListBoxItemStle}">
+                        <i:Interaction.Triggers>
+                            <i:EventTrigger EventName="SelectionChanged">
+                                <i:InvokeCommandAction Command="{Binding NavigateCommand}"
+                                                       CommandParameter="{Binding ElementName=menuBar, Path=SelectedItem}" />
+                            </i:EventTrigger>
+                        </i:Interaction.Triggers>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal"
+                                            VerticalAlignment="Center">
+                                    <md:PackIcon Kind="{Binding Icon}"
+                                                 Margin="15, 0" />
+                                    <TextBlock Text="{Binding Title}"
+                                               Margin="10, 0"
+                                               TextAlignment="Center"
+                                               ToolTip="{Binding Tip}">
+                                    </TextBlock>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
                 </DockPanel>
             </md:DrawerHost.LeftDrawerContent>
 
@@ -139,7 +139,7 @@
                                    DockPanel.Dock="Top" />
                     </DockPanel>
                 </md:ColorZone>
-                
+
                 <!--主体内容区域-->
                 <ContentControl Grid.Row="1"
                                 prism:RegionManager.RegionName="{x:Static core:RegionNames.MainWindowRegionName}" />

@@ -74,12 +74,9 @@ namespace UtilityTools.Core.Protocol
             Buffer.BlockCopy(timestamp, 0, ret, i, timestamp.Length);
             i += timestamp.Length;
 
-            ushort crc = CRCHelper.Data_GetCRC16(ret, 0, length - 3);
-            tmp = new byte[2];
-            tmp[0] = (byte)((crc & 0xFF00) >> 8);
-            tmp[1] = (byte)(crc & 0xFF);
-            Buffer.BlockCopy(tmp, 0, ret, i, tmp.Length);
-            i += tmp.Length;
+            var CheckCode = BitConverter.GetBytes(CRCHelper.Data_GetCRC16(ret, 0, length - 3));
+            Buffer.BlockCopy(CheckCode, 0, ret, i, CheckCode.Length);
+            i += CheckCode.Length;
 
             ret[i] = EOF;
             return ret;

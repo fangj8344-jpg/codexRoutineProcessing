@@ -164,7 +164,6 @@ namespace UtilityTools.Modules.OtaTool.Model
         /// </summary>
         public byte[] UpdateData { get; set; }
 
-
         private uint _maxFrameCount = 100;
         /// <summary>
         /// 最大传输帧数
@@ -379,9 +378,10 @@ namespace UtilityTools.Modules.OtaTool.Model
                     var length = data.Length;
                     MaxFrameCount = (uint)(length + 31) / 32;
                     UpdateData = new byte[MaxFrameCount * 32];
+                    Array.Fill<byte>(UpdateData, 0xFF);
                     Array.Copy(data, UpdateData, length);
                     CurFrameCount = 0;
-                    UpdateDataCrc = CRCHelper.Data_GetCRC16(UpdateData, 0, length);
+                    UpdateDataCrc = CRCHelper.Data_GetCRC16(UpdateData, 0, UpdateData.Length);
                     result = true;
                 }
             }
