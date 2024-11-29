@@ -13,134 +13,137 @@
         <cv:KelvinToStringConverter x:Key="kelvinToStringConverter" />
     </UserControl.Resources>
 
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition />
-            <ColumnDefinition />
-        </Grid.ColumnDefinitions>
+    <ScrollViewer>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
 
-        <Grid.RowDefinitions>
-            <RowDefinition Height="auto" />
-            <RowDefinition />
-        </Grid.RowDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto" />
+                <RowDefinition />
+            </Grid.RowDefinitions>
 
-        <Border Grid.Row="0"
-                Grid.Column="0"
-                Grid.RowSpan="2"
-                CornerRadius="10"
-                BorderThickness="2"
-                BorderBrush="AntiqueWhite"
-                Margin="10" />
+            <Border Grid.Row="0"
+                    Grid.Column="0"
+                    Grid.RowSpan="2"
+                    CornerRadius="10"
+                    BorderThickness="2"
+                    BorderBrush="AntiqueWhite"
+                    Margin="10" />
 
-        <Border Grid.Row="0"
-                Grid.Column="1"
-                Grid.RowSpan="2"
-                CornerRadius="10"
-                BorderThickness="2"
-                BorderBrush="AntiqueWhite"
-                Margin="10" />
+            <Border Grid.Row="0"
+                    Grid.Column="1"
+                    Grid.RowSpan="2"
+                    CornerRadius="10"
+                    BorderThickness="2"
+                    BorderBrush="AntiqueWhite"
+                    Margin="10" />
 
-        <Label Content="状态参数"
-               Grid.Row="0"
-               FontSize="30"
-               Grid.Column="0"
-               Margin="20" />
-        <Label Content="设置参数"
-               Grid.Row="0"
-               FontSize="30"
-               Grid.Column="1"
-               Margin="20" />
+            <Label Content="状态参数"
+                   Grid.Row="0"
+                   FontSize="30"
+                   Grid.Column="0"
+                   Margin="20" />
+            <Label Content="设置参数"
+                   Grid.Row="0"
+                   FontSize="30"
+                   Grid.Column="1"
+                   Margin="20" />
 
-        <UniformGrid Grid.Row="1"
-                     Grid.Column="0"
-                     Margin="40"
-                     Columns="2">
-            <Label Content="PID控制电流"
-                   VerticalAlignment="Center" />
-            <Label Content="{Binding ReadPidCurrent}"
-                   VerticalAlignment="Center" />
-            <Label Content="手动控制电流"
-                   VerticalAlignment="Center" />
-            <Label Content="{Binding ReadManualCurrent}"
-                   VerticalAlignment="Center" />
-            <Label Content="实时温度"
-                   VerticalAlignment="Center" />
-            <DockPanel VerticalAlignment="Center">
-                <Label Content="{Binding IsKelvin, Converter={StaticResource ResourceKey=kelvinToStringConverter}}"
-                       DockPanel.Dock="Right" />
-                <Label Content="{Binding ReadTemperature}" />
-            </DockPanel>
-            <Label Content="反馈电流"
-                   VerticalAlignment="Center" />
-            <Label Content="{Binding ReadCurrent}"
-                   VerticalAlignment="Center" />
-        </UniformGrid>
+            <UniformGrid Grid.Row="1"
+                         Grid.Column="0"
+                         Margin="40"
+                         Columns="2">
+                <Label Content="PID控制电流"
+                       VerticalAlignment="Center" />
+                <Label Content="{Binding ReadPidCurrent}"
+                       VerticalAlignment="Center" />
+                <Label Content="手动控制电流"
+                       VerticalAlignment="Center" />
+                <Label Content="{Binding ReadManualCurrent}"
+                       VerticalAlignment="Center" />
+                <Label Content="实时温度"
+                       VerticalAlignment="Center" />
+                <DockPanel VerticalAlignment="Center">
+                    <Label Content="{Binding IsKelvin, Converter={StaticResource ResourceKey=kelvinToStringConverter}}"
+                           DockPanel.Dock="Right" />
+                    <Label Content="{Binding ReadTemperature}" />
+                </DockPanel>
+                <Label Content="反馈电流"
+                       VerticalAlignment="Center" />
+                <Label Content="{Binding ReadCurrent}"
+                       VerticalAlignment="Center" />
+            </UniformGrid>
 
-        <UniformGrid Grid.Row="1"
-                     Grid.Column="1"
-                     Margin="40"
-                     Columns="2">
-            <Label Content="温度类型"
-                   VerticalAlignment="Center" />
-            <DockPanel VerticalAlignment="Center">
-                <Label Content="摄氏温度"
-                       DockPanel.Dock="Right" />
-                <Label Content="开氏温度"
-                       DockPanel.Dock="left" />
-                <ToggleButton IsChecked="{Binding IsKelvin}"
-                              HorizontalAlignment="Center" />
-            </DockPanel>
+            <UniformGrid Grid.Row="1"
+                         Grid.Column="1"
+                         Margin="40"
+                         Columns="2">
+                <Label Content="温度类型"
+                       VerticalAlignment="Center" />
+                <DockPanel VerticalAlignment="Center">
+                    <Label Content="摄氏温度"
+                           DockPanel.Dock="Right" />
+                    <Label Content="开氏温度"
+                           DockPanel.Dock="left" />
+                    <ToggleButton IsChecked="{Binding IsKelvin}"
+                                  HorizontalAlignment="Center" />
+                </DockPanel>
 
-            <Label Content="设置温度"
-                   VerticalAlignment="Center" />
-            <DockPanel VerticalAlignment="Center">
-                <Label Content="{Binding IsKelvin, Converter={StaticResource ResourceKey=kelvinToStringConverter}}"
-                       DockPanel.Dock="Right" />
-                <TextBox Text="{Binding TargetTemperature}" />
-            </DockPanel>
+                <Label Content="设置温度"
+                       VerticalAlignment="Center" />
+                <DockPanel VerticalAlignment="Center">
+                    <Label Content="{Binding IsKelvin, Converter={StaticResource ResourceKey=kelvinToStringConverter}}"
+                           DockPanel.Dock="Right" />
+                    <TextBox Text="{Binding TargetTemperature}" />
+                </DockPanel>
 
-            <Label Content="设置Kp"
-                   VerticalAlignment="Center" />
-            <TextBox Text="{Binding Pid.Kp}"
-                     VerticalAlignment="Center" />
+                <Label Content="设置Kp"
+                       VerticalAlignment="Center" />
+                <TextBox Text="{Binding Pid.Kp}"
+                         VerticalAlignment="Center" />
 
-            <Label Content="设置Ki"
-                   VerticalAlignment="Center" />
-            <TextBox Text="{Binding Pid.Ki}"
-                     VerticalAlignment="Center" />
+                <Label Content="设置Ki"
+                       VerticalAlignment="Center" />
+                <TextBox Text="{Binding Pid.Ki}"
+                         VerticalAlignment="Center" />
 
-            <Label Content="设置Kd"
-                   VerticalAlignment="Center" />
-            <TextBox Text="{Binding Pid.Kd}"
-                     VerticalAlignment="Center" />
+                <Label Content="设置Kd"
+                       VerticalAlignment="Center" />
+                <TextBox Text="{Binding Pid.Kd}"
+                         VerticalAlignment="Center" />
 
-            <Label Content="设置控制电流"
-                   VerticalAlignment="Center" />
-            <TextBox Text="{Binding SetCurrent}"
-                     VerticalAlignment="Center" />
+                <Label Content="设置控制电流"
+                       VerticalAlignment="Center" />
+                <TextBox Text="{Binding SetCurrent}"
+                         VerticalAlignment="Center" />
 
-            <Label Content="设置最大电流"
-                   VerticalAlignment="Center" />
-            <TextBox Text="{Binding MaxCurrent}"
-                     VerticalAlignment="Center" />
+                <Label Content="设置最大电流"
+                       VerticalAlignment="Center" />
+                <TextBox Text="{Binding MaxCurrent}"
+                         VerticalAlignment="Center" />
 
-            <Label Content="工作模式"
-                   VerticalAlignment="Center" />
-            <DockPanel VerticalAlignment="Center">
-                <Label Content="PID调节"
-                       DockPanel.Dock="Left" />
-                <Label Content="手动调节"
-                       DockPanel.Dock="Right" />
-                <ToggleButton IsChecked="{Binding IsManual}"
-                              HorizontalAlignment="Center" />
-            </DockPanel>
+                <Label Content="工作模式"
+                       VerticalAlignment="Center" />
+                <DockPanel VerticalAlignment="Center">
+                    <Label Content="PID调节"
+                           DockPanel.Dock="Left" />
+                    <Label Content="手动调节"
+                           DockPanel.Dock="Right" />
+                    <ToggleButton IsChecked="{Binding IsManual}"
+                                  HorizontalAlignment="Center" />
+                </DockPanel>
 
-            <Label />
+                <Label />
 
-            <DockPanel>
-                <Button Content="{Binding BtnContent}" Command="{Binding StartWorkCommand}"/>
-            </DockPanel>
+                <DockPanel>
+                    <Button Content="{Binding BtnContent}"
+                            Command="{Binding StartWorkCommand}" />
+                </DockPanel>
 
-        </UniformGrid>
-    </Grid>
+            </UniformGrid>
+        </Grid>
+    </ScrollViewer>
 </UserControl>
