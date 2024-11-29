@@ -596,11 +596,29 @@ namespace UtilityTools.Modules.OtaTool.Model
             {
                 if (_isRestart == true)
                 {
-                    Tips = "开发板重启后长时间无响应。";
+                    Tips = "开发板重启后长时间无响应,升级失败";
+                    Reset();
+                    if (_isUpdating)
+                    {
+                        Reset();
+                        var stopCmd = OtaProtocol.GetAbortUpdateCmd(DevelopmentBoardMessage.DeviceID.Value);
+                        if (SerialPortService.IsOpen)
+                        {
+                            SerialPortService.SendMsg(stopCmd);
+                        }
+
+                        if (NetUdpService.IsOpen)
+                        {
+                            NetUdpService.SendMsg(stopCmd);
+                        }
+                        return;
+                    }
                 }
                 else
                 {
+
                     Tips = "开发板传输数据时长时间无响应。";
+                    Reset();
                 }
 
                 task.Dispose();
