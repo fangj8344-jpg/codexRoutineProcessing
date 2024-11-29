@@ -224,16 +224,21 @@ namespace UtilityTools.Services.Services
             if (_sendThreadToken != null)
             {
                 _sendThreadToken.Cancel();
+                _sendThreadToken.Dispose();
+                _sendThreadToken = null;
             }
 
             lock (_syncObject)
             {
                 Monitor.Pulse(_syncObject);
             }
-            _sendThread.Join();
-            _sendThread = null;
-            _sendThreadToken.Dispose();
-            _sendThreadToken = null;
+
+            if (_sendThread != null)
+            {
+                _sendThread.Join();
+                _sendThread = null;
+            }
+
         }
 
         /// <summary>

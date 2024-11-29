@@ -24,5 +24,7 @@ namespace UtilityTools.Modules.PacketBinTool.Views
         {
             InitializeComponent();
         }
+
+     
     }
 }

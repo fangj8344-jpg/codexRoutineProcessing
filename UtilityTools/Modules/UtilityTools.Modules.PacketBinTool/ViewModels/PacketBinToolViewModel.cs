@@ -16,6 +16,7 @@ using static OpenCvSharp.Stitcher;
 using NLog.LayoutRenderers;
 using System.IO.Compression;
 using UtilityTools.Core.Model;
+using System.ComponentModel;
 
 namespace UtilityTools.Modules.PacketBinTool.ViewModels
 {
@@ -120,7 +121,7 @@ namespace UtilityTools.Modules.PacketBinTool.ViewModels
                 Status = "请先选择固件";
                 return;
             }
-            if (DevelopmentBoardMessage.VersionNumber == null && !DevelopmentBoardMessage.DeviceID.HasValue)
+            if (DevelopmentBoardMessage.VersionNumber == null || !DevelopmentBoardMessage.DeviceID.HasValue)
             {
                 Status = "请先填写板卡信息和版本号";
                 return;
@@ -190,8 +191,92 @@ namespace UtilityTools.Modules.PacketBinTool.ViewModels
                 Status = "";
                 CurFrameIndex = 0;
                 DevelopmentBoardMessage.FileName = Path.GetFileName(SourcePath);
+                ResolvingFilename(Path.GetFileNameWithoutExtension(SourcePath));
             }
         }
+        //解析文件名
+        private void ResolvingFilename(String filename)
+        {
+
+            var message = filename.Split('_');
+            if (message.Length < 4)
+            {
+                return;
+            }
+            var firmwareName = message[0];
+            var deviceID = message[1];
+            var firmwareVersion = message[2];
+            var hardwareVersion = message[3];
+            firmwareVersion.Substring(1, firmwareVersion.Length - 1);
+            var testDeviceID = ((EnumDeviceID)Convert.ToUInt32(deviceID, 16)); ;
+            //解析设备id
+            if (DevelopmentBoardMessage.DeviceID == null && Enum.IsDefined(typeof(EnumDeviceID), testDeviceID)) 
+            {
+                DevelopmentBoardMessage.DeviceID = testDeviceID;
+            }
+            //版本号
+            if (DevelopmentBoardMessage.VersionNumber == "" || DevelopmentBoardMessage.VersionNumber == null)
+            {
+                
+                if (firmwareVersion[0] == 'v' || firmwareVersion[0] == 'V')
+                {
+                    firmwareVersion = firmwareVersion.Substring(1, firmwareVersion.Length-1);
+                }
+                DevelopmentBoardMessage.VersionNumber = firmwareVersion;
+
+            }
+            //硬件版本
+            if (DevelopmentBoardMessage.HardwareVersion == "" || DevelopmentBoardMessage.HardwareVersion == null)
+            {
+                
+                DevelopmentBoardMessage.HardwareVersion = hardwareVersion;
+            }
+            // 固件名称
+            if (DevelopmentBoardMessage.FirmwareName == "" || DevelopmentBoardMessage.FirmwareName == null)
+            {
+                DevelopmentBoardMessage.FirmwareName = firmwareName;
+            }
+               
+        }
+        
+
+        /// <summary>
+        /// 通过枚举类型获取描述属性
+        /// </summary>
+        /// <param name="enumValue"></param>
+        /// <returns></returns>
+        public string GetDescriptionByEnum(Enum enumValue)
+        {
+            string value = enumValue.ToString();
+            System.Reflection.FieldInfo field = enumValue.GetType().GetField(value);
+            object[] objs = field.GetCustomAttributes(typeof(DescriptionAttribute), false);    //获取描述属性
+            if (objs.Length == 0)    //当描述属性没有时，直接返回名称
+                return value;
+            DescriptionAttribute descriptionAttribute = (DescriptionAttribute)objs[0];
+            return descriptionAttribute.Description;
+        }
+        /// <summary>
+        /// 通过描述属性获取枚举
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="description"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        public T GetEnumByDescription<T>(string description) where T : Enum
+        {
+            System.Reflection.FieldInfo[] fields = typeof(T).GetFields();
+            foreach (System.Reflection.FieldInfo field in fields)
+            {
+                object[] objs = field.GetCustomAttributes(typeof(DescriptionAttribute), false);    //获取描述属性
+                if (objs.Length > 0 && (objs[0] as DescriptionAttribute).Description == description)
+                {
+                    return (T)field.GetValue(null);
+                }
+            }
+
+            throw new ArgumentException(string.Format("{0} 未能找到对应的枚举.", description), "Description");
+        }
+
 
 
         #endregion

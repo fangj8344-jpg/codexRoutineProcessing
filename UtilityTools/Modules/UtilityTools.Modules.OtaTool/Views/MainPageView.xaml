@@ -112,7 +112,12 @@
                     <StackPanel>
                         <Label Margin="10"
                                Content="升级文件信息" />
-                        
+                        <DockPanel>
+                            <TextBlock Text="固件名称："
+                                       Margin="10, 0" />
+                            <TextBlock Text="{Binding DevelopmentBoardMessage.FirmwareName}" TextWrapping="Wrap"/>
+                        </DockPanel>
+
                         <DockPanel>
                             <TextBlock Text="板卡类型："
                                        Margin="10, 0" />
@@ -124,7 +129,12 @@
                                        Margin="10, 0" />
                             <TextBlock Text="{Binding  DevelopmentBoardMessage.VersionNumber}" TextWrapping="Wrap"/>
                         </DockPanel>
-                        
+                        <DockPanel>
+                            <TextBlock Text="硬件版本："
+                                       Margin="10, 0" />
+                            <TextBlock Text="{Binding DevelopmentBoardMessage.HardwareVersion}" TextWrapping="Wrap"/>
+                        </DockPanel>
+
                         <DockPanel>
                             <TextBlock Text="升级信息："
                                        Margin="10, 0" />

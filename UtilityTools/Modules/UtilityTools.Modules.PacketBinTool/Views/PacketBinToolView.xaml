@@ -101,6 +101,12 @@
                         <StackPanel>
                             <Label Margin="10"
                                    Content="板卡固件信息" />
+                            <DockPanel>
+                                <TextBlock Text="固件名："
+                                           Margin="10, 10" />
+                                <TextBox Text="{Binding DevelopmentBoardMessage.FirmwareName, Mode=TwoWay}"
+                                         TextWrapping="Wrap" />
+                            </DockPanel>
 
                             <DockPanel>
                                 <TextBlock Text="板卡类型："
@@ -114,18 +120,24 @@
                             <DockPanel>
                                 <TextBlock Text="版本号："
                                            Margin="10, 10" />
-                                <TextBox Text="{Binding DevelopmentBoardMessage.VersionNumber}"
+                                <TextBox Text="{Binding DevelopmentBoardMessage.VersionNumber, Mode=TwoWay}"
                                          TextWrapping="Wrap" />
+                            </DockPanel>
+                            <DockPanel>
+                                <TextBlock Text="硬件版本："
+                                           Margin="10, 10" />
+                                <TextBox  Text="{Binding DevelopmentBoardMessage.HardwareVersion, Mode=TwoWay}"
+                                          TextWrapping="Wrap" />
                             </DockPanel>
 
                             <DockPanel>
                                 <TextBlock Text="变更信息："
                                            Margin="10, 10" />
-                                <TextBox Text="{Binding DevelopmentBoardMessage.UpdateInformation}"
-                                         TextWrapping="Wrap" />
+                                <TextBox Text="{Binding DevelopmentBoardMessage.UpdateInformation,Mode=TwoWay}"
+                                         TextWrapping="Wrap"  />
                             </DockPanel>
                             <Label Content="备注信息:" />
-                            <TextBox Text="{Binding DevelopmentBoardMessage.Description}"
+                            <TextBox Text="{Binding DevelopmentBoardMessage.Description,Mode=TwoWay}"
                                      TextWrapping="Wrap"
                                      Margin="60,0,0,0" />
                         </StackPanel>

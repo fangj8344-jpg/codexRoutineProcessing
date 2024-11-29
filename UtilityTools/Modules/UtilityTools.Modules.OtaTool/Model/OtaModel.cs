@@ -41,6 +41,7 @@ using Prism.Events;
 using UtilityTools.Services.Services;
 using System.Timers;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
+using System.Threading.Tasks;
 
 namespace UtilityTools.Modules.OtaTool.Model
 {
@@ -93,8 +94,12 @@ namespace UtilityTools.Modules.OtaTool.Model
         private OtaToolProtocolParser _parser2;
 
         private bool _isUpdating = false;
+        private bool _isRestart = false;
+        private bool _isTimeout = false;
         private System.Timers.Timer _timer;
+        private System.Timers.Timer _confirmTheUpgradeTimer;
         private int _interval = 1000;
+        private int _confirmInterval = 500;
 
         #endregion
 
@@ -225,6 +230,18 @@ namespace UtilityTools.Modules.OtaTool.Model
             }
             _timer.Start();
         }
+        public void ConfirmTheUpgrade()
+        {
+            if (_confirmTheUpgradeTimer == null)
+            {
+                _confirmTheUpgradeTimer = new System.Timers.Timer();
+                _confirmTheUpgradeTimer.AutoReset = true;
+                _confirmTheUpgradeTimer.Interval = _confirmInterval;
+                _confirmTheUpgradeTimer.Elapsed += ConfirmTheUpgradeTimer_Elapsed;
+            }
+        }
+
+
 
         #endregion
 
@@ -232,7 +249,7 @@ namespace UtilityTools.Modules.OtaTool.Model
 
         private void Timer_Elapsed(object? sender, ElapsedEventArgs e)
         {
-            if(DevelopmentBoardMessage != null && DevelopmentBoardMessage.DeviceID.HasValue) 
+            if (DevelopmentBoardMessage != null && DevelopmentBoardMessage.DeviceID.HasValue)
             {
                 var requestCmd = OtaProtocol.GetDeviceStatusCmd(DevelopmentBoardMessage.DeviceID.Value);
                 if (SerialPortService.IsOpen)
@@ -244,7 +261,23 @@ namespace UtilityTools.Modules.OtaTool.Model
                     NetUdpService.SendMsg(requestCmd);
                 }
             }
-            
+
+
+        }
+        private void ConfirmTheUpgradeTimer_Elapsed(object? sender, ElapsedEventArgs e)
+        {
+            if (DevelopmentBoardMessage != null && DevelopmentBoardMessage.DeviceID.HasValue)
+            {
+                var requestCmd = OtaProtocol.GetUpdateFrameInfoCmd(DevelopmentBoardMessage.DeviceID.Value);
+                if (SerialPortService.IsOpen)
+                {
+                    SerialPortService.SendMsg(requestCmd);
+                }
+                if (NetUdpService.IsOpen)
+                {
+                    NetUdpService.SendMsg(requestCmd);
+                }
+            }
         }
 
         private void LoadPackFile()
@@ -267,7 +300,7 @@ namespace UtilityTools.Modules.OtaTool.Model
         private async void Update()
         {
             if (_isUpdating)
-            { 
+            {
                 _isUpdating = false;
                 UpgradeButtonName = "开始升级";
 
@@ -287,7 +320,7 @@ namespace UtilityTools.Modules.OtaTool.Model
 
             if (string.IsNullOrWhiteSpace(SourcePath))
             {
-                await _dialogHostService.Information("升级错误", "请选择合适的升级文件");
+                await _dialogHostService.Information("升级错误", "请选择合适的升级文件");//一个提示弹窗
                 return;
             }
 
@@ -330,7 +363,7 @@ namespace UtilityTools.Modules.OtaTool.Model
             {
                 Tips = "当前文件夹下存在同名文件";
                 return false;
-            }
+            } 
             bool result = false;
             //先解压文件
             string destinationPath = ZipCompress.ZipExtract(filePath);
@@ -383,9 +416,10 @@ namespace UtilityTools.Modules.OtaTool.Model
         /// <param name="e"></param>
         private void Parser_PacketReceivedEvent(object? sender, OtaToolDataPacket e)
         {
+            _isTimeout = false;
             var parser = sender as OtaToolProtocolParser;
             IAsynRWService? service = null;
-            if (parser != null) 
+            if (parser != null)
             {
                 service = parser.Service;
             }
@@ -408,6 +442,7 @@ namespace UtilityTools.Modules.OtaTool.Model
                         {
                             return;
                         }
+
                         //还需要判断一下版本号
                         byte majorVersion = e.DataSource[0];
                         byte minorVersion = e.DataSource[1];
@@ -415,12 +450,38 @@ namespace UtilityTools.Modules.OtaTool.Model
                         byte mouth = e.DataSource[4];
                         byte day = e.DataSource[5];
                         ushort crc = BitConverter.ToUInt16(e.DataSource, 6);
-
-                        if (crc != UpdateDataCrc)
+                        //是否是重启查询后的结果
+                        if (_isRestart == true)
                         {
-                            var cmd = OtaProtocol.GetRequestOtaCmd((uint)UpdateData.Length, MaxFrameCount, DevelopmentBoardMessage.DeviceID.Value, UpdateDataCrc);
-                            service?.SendMsg(cmd);
+                            var firmwareVersim = DevelopmentBoardMessage.VersionNumber.Split('.');
+                            var majorfirmwareVersim = firmwareVersim[0];
+                            var minorfirmwareVersim = firmwareVersim[1];
+
+                            if (majorfirmwareVersim[0] == 'v' || (majorfirmwareVersim[0] == 'V'))
+                            {
+                                majorfirmwareVersim = majorfirmwareVersim.Substring(1, majorfirmwareVersim.Length - 1);
+                            }
+
+                            if (Convert.ToUInt32(majorfirmwareVersim) == majorVersion && Convert.ToUInt32(minorfirmwareVersim) == minorVersion && crc == UpdateDataCrc)
+                            {
+                                Tips = "固件升级成功";
+                            }
+                            else
+                            {
+                                Tips = "固件升级失败,请重新尝试";
+                            }
                         }
+                        else
+                        {
+                            //如果crc是0xffff 表示开发板是第一次进行升级
+                            //当前固件版本和开发板固件版本crc不同时进行升级操作
+                            if (crc != UpdateDataCrc || (crc == 0xffff && majorVersion == 1 && minorVersion == 1))
+                            {
+                                var cmd = OtaProtocol.GetRequestOtaCmd((uint)UpdateData.Length, MaxFrameCount, DevelopmentBoardMessage.DeviceID.Value, UpdateDataCrc);
+                                service?.SendMsg(cmd);
+                            }
+                        }
+                        _isRestart = false;
                     }
                     break;
                 case EnumOtaCommandType.OTA_GET_STATUS:
@@ -461,16 +522,37 @@ namespace UtilityTools.Modules.OtaTool.Model
                         if (CurFrameCount < MaxFrameCount)
                         {
                             var data = new byte[32];
-
                             Array.Copy(UpdateData, CurFrameCount * 32, data, 0, 32);
                             var cmd = OtaProtocol.GetTransferOtaCmd(CurFrameCount, data, DevelopmentBoardMessage.DeviceID.Value);
                             service?.SendMsg(cmd);
+                            _isTimeout = true;
+                            try
+                            {
+                                ExecuteWithTimeoutAsync(5000);
+                            }
+                            catch (Exception f)
+                            {
+
+                            }
+
                         }
-                        else 
+                        else
                         {
                             var cmd = OtaProtocol.GetRestartCmd(DevelopmentBoardMessage.DeviceID.Value);
+                            _isRestart = true;
                             service?.SendMsg(cmd);
+                            ConfirmTheUpgrade();
+                            _isTimeout = true;
+                            try
+                            {
+                                ExecuteWithTimeoutAsync(10000);
+                            }
+                            catch (Exception f)
+                            {
+
+                            }
                         }
+                       
                     }
                     break;
                 case EnumOtaCommandType.OTA_RESTART:
@@ -480,13 +562,48 @@ namespace UtilityTools.Modules.OtaTool.Model
                     }
                     break;
             }
+           
+
+
         }
-        private void Wait()
+        public async Task WaitisTimeout()
         {
-
+            await Task.Run(() => 
+            {
+                while (_isTimeout) 
+                {
+                    Thread.Sleep(0);
+                }
+            });
         }
 
-    }
+        public async Task ExecuteWithTimeoutAsync( int timeout)
+        {
+            Task task = WaitisTimeout();
+            Task timeoutTask = Task.Delay(timeout);
+
+            Task firstCompletedTask = await Task.WhenAny(task, timeoutTask);
+
+            if (firstCompletedTask == timeoutTask)
+            {
+                if (_isRestart == true)
+                {
+                    Tips = "开发板重启后长时间无响应。";
+                }
+                else
+                {
+                    Tips = "开发板传输数据时长时间无响应。";
+                }
+
+                task.Dispose();
+            }
+            else
+            {
+                timeoutTask.Dispose();
+            }
+        }
+
+    } 
 
 
     #endregion

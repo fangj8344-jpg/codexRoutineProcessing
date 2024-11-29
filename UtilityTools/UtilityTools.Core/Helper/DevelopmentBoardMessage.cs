@@ -62,6 +62,23 @@ namespace UtilityTools.Core.Helper
             get { return _description; }
             set { _description = value; RaisePropertyChanged(); }
         }
+
+        private string _hardwareVersion;
+        /// <summary>
+        /// 硬件版本信息
+        /// </summary>
+        public string HardwareVersion
+        {
+            get { return _hardwareVersion; }
+            set { _hardwareVersion = value; RaisePropertyChanged(); }
+        }
+        private string _firmwareName;
+        //固件名称
+        public string FirmwareName
+        {
+            get { return _firmwareName; }
+            set { _firmwareName = value; RaisePropertyChanged(); }
+        }
     }
     
 }

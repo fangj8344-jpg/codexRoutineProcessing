@@ -53,8 +53,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.Modules.CCSToo
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.Modules.OtaTool", "Modules\UtilityTools.Modules.OtaTool\UtilityTools.Modules.OtaTool.csproj", "{BEEFC6F1-4269-4C44-B969-B79E9DB34ED8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UtilityTools.Modules.PacketBinTool", "Modules\UtilityTools.Modules.PacketBinTool\UtilityTools.Modules.PacketBinTool.csproj", "{063589CF-3E05-4D38-BF19-DF20E45ED9DD}"
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UtilityTools.Modules.TemperatureController", "Modules\UtilityTools.Modules.TemperatureController\UtilityTools.Modules.TemperatureController.csproj", "{24A26B70-70D4-45E8-8DA9-057CA30898E2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.Modules.PacketBinTool", "Modules\UtilityTools.Modules.PacketBinTool\UtilityTools.Modules.PacketBinTool.csproj", "{063589CF-3E05-4D38-BF19-DF20E45ED9DD}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.Modules.TemperatureController", "Modules\UtilityTools.Modules.TemperatureController\UtilityTools.Modules.TemperatureController.csproj", "{24A26B70-70D4-45E8-8DA9-057CA30898E2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -169,7 +170,6 @@ Global
 		{2C8E4917-E8F6-4F5D-8B56-1EF0810999D3} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
 		{2EFD5583-AF17-42FA-A6CD-42ACB25D616E} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
 		{784EB163-E55A-4654-B03E-E899869B8AEC} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
-		{C8AA4F34-67B0-4FDD-831C-7BD2DB5DF378} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
 		{555F4C0A-89A7-4718-A404-CC983EE95422} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
 		{FFE94774-B333-4B85-B6E1-B2DB258E5F54} = {A07B706B-AA10-43DA-9614-609D1CD48548}
 		{4F3A40FD-4B8A-4651-AC5D-A4879CAC28FE} = {A07B706B-AA10-43DA-9614-609D1CD48548}

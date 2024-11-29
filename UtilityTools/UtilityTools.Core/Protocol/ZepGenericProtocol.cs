@@ -157,7 +157,7 @@ namespace UtilityTools.Core.Protocol
             int header_pos;
             while ((header_pos = FindHeaderPos(st)) >= 0)
             {
-                if (_idx < header_pos + 2) break;//不明白
+                if (_idx < header_pos + 2) break;
 
                 int length = BitConverter.ToInt16(_buffer, header_pos + DataPacket.HEADER.Length);
                 int ed = header_pos + length;
