@@ -8,6 +8,7 @@
              xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:model="clr-namespace:UtilityTools.Core.Model;assembly=UtilityTools.Core"
              xmlns:method="clr-namespace:UtilityTools.Core.Helper;assembly=UtilityTools.Core"
+             xmlns:validation ="clr-namespace:UtilityTools.Modules.PacketBinTool.ValidationResult"
              mc:Ignorable="d"
              d:DesignHeight="450"
              d:DesignWidth="800">
@@ -120,8 +121,15 @@
                             <DockPanel>
                                 <TextBlock Text="版本号："
                                            Margin="10, 10" />
-                                <TextBox Text="{Binding DevelopmentBoardMessage.VersionNumber, Mode=TwoWay}"
-                                         TextWrapping="Wrap" />
+                                <TextBox TextWrapping="Wrap" >
+                                    <TextBox.Text >
+                                        <Binding  Path="DevelopmentBoardMessage.VersionNumber" Mode="TwoWay"  UpdateSourceTrigger="PropertyChanged">
+                                            <Binding.ValidationRules>
+                                                <validation:VersionNumberValidationResult ValidatesOnTargetUpdated = "True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
                             </DockPanel>
                             <DockPanel>
                                 <TextBlock Text="硬件版本："

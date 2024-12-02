@@ -105,10 +105,12 @@ namespace UtilityTools.Modules.OtaTool.Model
         #endregion
 
         #region ------------Property------------
-        CancellationTokenSource source { get; set; }
-        /// <summary>
-        /// 串口异步通信服务
-        /// </summary>
+        private bool _isButtonEnabled = false;
+        public bool IsButtonEnabled
+        {
+            get { return _isButtonEnabled; }
+            set { _isButtonEnabled = value; RaisePropertyChanged(); }
+        }
         public IAsynRWService SerialPortService { get; set; }
 
         private IAsynRWService _netUdpService;
@@ -139,7 +141,18 @@ namespace UtilityTools.Modules.OtaTool.Model
         public string Status
         {
             get { return _status; }
-            set { _status = value; RaisePropertyChanged(); }
+            set 
+            {
+                if (value == "未连接")
+                {
+                    IsButtonEnabled = false;
+                }
+                else
+                {
+                    IsButtonEnabled= true;
+                }
+                _status = value; RaisePropertyChanged(); 
+            }
         }
 
         private string _log = "日志区域";

@@ -37,7 +37,8 @@
                     Content="{Binding UpgradeButtonName}"
                     Width="120"
                     Height="120"
-                    Command="{Binding UpdateCommand}"/>
+                    Command="{Binding UpdateCommand}"
+                    IsEnabled="{Binding IsButtonEnabled}"/>
 
             <ProgressBar Grid.Row="0"
                          Grid.Column="1"
