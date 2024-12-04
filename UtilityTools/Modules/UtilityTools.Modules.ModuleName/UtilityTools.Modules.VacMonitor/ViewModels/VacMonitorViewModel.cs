@@ -54,6 +54,12 @@ using OxyPlot.Wpf;
 using System.Windows.Forms;
 using System.IO;
 using OxyPlot.Axes;
+using static UtilityTools.Modules.VacMonitor.Protocol.VacMonitorProtocol;
+using CsvHelper;
+using ImageMagick;
+using OpenCvSharp;
+using UtilityTools.Services;
+using UtilityTools.Services.Services;
 
 namespace UtilityTools.Modules.VacMonitor.ViewModels
 {
@@ -67,9 +73,10 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
             this._dialogHostService = dialogHostService;
             InitCommand();
             InitProperty();
-
-            Service.UpdateResponse += Service_UpdateResponse;
+           
         }
+
+       
 
         ~VacMonitorViewModel()
         {
@@ -95,6 +102,10 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         LineSeries _vacuum1;
         LineSeries _vacuum2;
         LineSeries _vacuum3;
+        LineSeries _vacuum4;
+
+        private VacMonitorProtocolParser _parser1;
+        private VacMonitorProtocolParser _parser2; 
         #endregion
 
         #region ------------Property------------
@@ -107,11 +118,35 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
             get { return _isConnected; }
             set { _isConnected = value; RaisePropertyChanged(); }
         }
+        private bool _newAgreement = true;
+        /// <summary>
+        /// 是否是新协议
+        /// </summary>
+        public bool NewAgreement
+        {
+            get { return _newAgreement; }
+            set { _newAgreement = value; RaisePropertyChanged(); }
+        }
 
         /// <summary>
-        /// 下位机服务端接口
+        /// 下位机服务端串接口
         /// </summary>
         public IAsynRWService Service { get; set; }
+        private IAsynRWService _netUdpService;
+        /// <summary>
+        /// 网口异步通信服务
+        /// </summary>
+        public IAsynRWService NetUdpService
+        {
+            get { return _netUdpService; }
+            set { _netUdpService = value; RaisePropertyChanged(); }
+        }
+        private bool _netIsConnected;
+        public bool NetIsConnected
+        {
+            get { return _netIsConnected; }
+            set { _netIsConnected = value;RaisePropertyChanged(); } 
+        }
 
         private string _monitorState;
         /// <summary>
@@ -164,6 +199,7 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
 
         #region ------------Command------------
         public DelegateCommand ShowDeviceCommand { get; set; }
+        public DelegateCommand ShowNetDeviceCommand { get; set; }
         public DelegateCommand ChangeMonitorStateCommand { get; set; }
         public DelegateCommand ClearMonitorCommand { get; set; }
         public DelegateCommand AutoAdjustComamnd { get; set; }
@@ -180,6 +216,7 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         private void InitCommand()
         {
             ShowDeviceCommand = new DelegateCommand(ShowDevice);
+            ShowNetDeviceCommand = new DelegateCommand(ShowNetDevice);
             ChangeMonitorStateCommand = new DelegateCommand(ChangeMonitorState); 
             ClearMonitorCommand = new DelegateCommand(ClearMonitor);
             AutoAdjustComamnd = new DelegateCommand(AutoAdjust);
@@ -193,8 +230,25 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         {
             IsConnected = false;
             Service = _containerProvider.Resolve<IServiceFactory>().GetAsynRWService("SPVM");
+            var netUdp = new UdpNetAsyncDevice();
+            netUdp.Name = "真空检测";
+            netUdp.DeviceInstance.TargetIp = "192.168.1.88";
+            netUdp.DeviceInstance.TargetPort = 5000;
+            netUdp.DeviceInstance.HostIp = "192.168.1.33";
+            netUdp.DeviceInstance.HostPort = 5001;
+            netUdp.IsBinary = true;
+            NetUdpService = netUdp;
             MonitorState = "开始监控";
             MonitorInterval = 1000;
+
+            _parser1 = new VacMonitorProtocolParser();
+            _parser2 = new VacMonitorProtocolParser();
+            _parser1.Service = Service;
+            _parser1.Service = NetUdpService;
+            Service.UpdateResponse += Service_VacuumMonitoringResponse;
+            NetUdpService.UpdateResponse += NetUdpService_VacuumMonitoringResponse;
+            _parser1.PacketReceivedEvent += Parser_VacuumMonitoringResponse;
+            _parser2.PacketReceivedEvent += Parser_VacuumMonitoringResponse;
 
             // 初始化图表信息
             VacuumPlotModel = new PlotModel();
@@ -206,15 +260,19 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
             _vacuum1 = new LineSeries() { Title = "Vac1", RenderInLegend = true };
             _vacuum2 = new LineSeries() { Title = "Vac2", RenderInLegend = true };
             _vacuum3 = new LineSeries() { Title = "Vac3", RenderInLegend = true };
+            _vacuum4 = new LineSeries() { Title = "Vac4", RenderInLegend = true };
             VacuumPlotModel.Series.Add(_vacuum1);
             VacuumPlotModel.Series.Add(_vacuum2);
             VacuumPlotModel.Series.Add(_vacuum3);
+            VacuumPlotModel.Series.Add(_vacuum4);
 
             LogSource = new ObservableCollection<VacuumLogModel>();
         }
 
+       
+
         /// <summary>
-        /// 显示设备弹窗
+        /// 串口显示设备弹窗
         /// </summary>
         private async void ShowDevice()
         {
@@ -230,6 +288,26 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
                 {
                     Service = value;
                     IsConnected = Service.IsOpen;
+                }
+            }
+        }
+        /// <summary>
+        /// 网口显示设备连接弹窗
+        /// </summary>
+        private async void ShowNetDevice()
+        {
+            DialogParameters parameter = new DialogParameters();
+            parameter.Add("Value", NetUdpService);//传递参数用来读写
+            var diaglogResult = await this._dialogHostService.ShowDialog("NetConfigView", parameter, CommonModel.VacMonitorRegionName);
+            if (diaglogResult == null)
+                return;
+            if (diaglogResult.Result == ButtonResult.OK && diaglogResult.Parameters.ContainsKey("Value"))
+            {
+                var value = diaglogResult.Parameters.GetValue<IAsynRWService>("Value");
+                if (value != null)
+                {
+                    NetUdpService = value;
+                    NetIsConnected = NetUdpService.IsOpen;
                 }
             }
         }
@@ -271,6 +349,7 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
             _vacuum1.Points.Clear();
             _vacuum2.Points.Clear();
             _vacuum3.Points.Clear();
+            _vacuum4.Points.Clear();
             VacuumPlotModel.InvalidatePlot(true);
         }
 
@@ -315,6 +394,7 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
                 SaveSeriesToFile(_vacuum1, $"{path}\\真空值1_{timeTip}.txt");
                 SaveSeriesToFile(_vacuum2, $"{path}\\真空值2_{timeTip}.txt");
                 SaveSeriesToFile(_vacuum3, $"{path}\\真空值3_{timeTip}.txt");
+                SaveSeriesToFile(_vacuum4, $"{path}\\真空值4_{timeTip}.txt");
             }));
         }
 
@@ -347,12 +427,43 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         /// <exception cref="NotImplementedException"></exception>
         private void Timer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            // Work
-            SendMsg(VacMonitorProtocol.GetVacuumValue(1));
-            Thread.Sleep(MonitorInterval / 3);
-            SendMsg(VacMonitorProtocol.GetVacuumValue(2));
-            Thread.Sleep(MonitorInterval / 3);
-            SendMsg(VacMonitorProtocol.GetVacuumValue(3));
+            if (NewAgreement == false)
+            {
+                if (Service.IsOpen)
+                {
+                    // Work
+                    SendMsg(VacMonitorProtocol.GetVacuumValue(1));
+                    Thread.Sleep(MonitorInterval / 3);
+                    SendMsg(VacMonitorProtocol.GetVacuumValue(2));
+                    Thread.Sleep(MonitorInterval / 3);
+                    SendMsg(VacMonitorProtocol.GetVacuumValue(3));
+                }
+                if (NetUdpService.IsOpen)
+                {
+                    // Work
+                    NetUdpSendMsg(VacMonitorProtocol.GetVacuumValue(1));
+                    Thread.Sleep(MonitorInterval / 3);
+                    NetUdpSendMsg(VacMonitorProtocol.GetVacuumValue(2));
+                    Thread.Sleep(MonitorInterval / 3);
+                    NetUdpSendMsg(VacMonitorProtocol.GetVacuumValue(3));
+                }
+                
+            }
+            else
+            {
+                if (Service.IsOpen)
+                {
+                    SendMsg(VacMonitorProtocol.GetVacuumValueNew(0));
+                    Thread.Sleep(MonitorInterval);
+                }
+                if (NetUdpService.IsOpen)
+                {
+                    NetUdpSendMsg(VacMonitorProtocol.GetVacuumValueNew(0));
+                    Thread.Sleep(MonitorInterval);
+                }
+               
+            }
+           
         }
 
         /// <summary>
@@ -361,6 +472,8 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         /// <param name="sender"></param>
         /// <param name="e"></param>
         /// <exception cref="NotImplementedException"></exception>
+        
+
         private void SerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
             if (sender is SerialPort dev)
@@ -414,64 +527,218 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
                 }
             }
         }
-
         /// <summary>
-        /// 
+        /// 网口回报事件
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void Service_UpdateResponse(object sender, byte[] e)
+        private void NetUdpService_VacuumMonitoringResponse(object sender, byte[] e)
         {
-            var sourceMsg = Encoding.Default.GetString(e);
-            var list = sourceMsg.Split((char)0x0D);
-
-            foreach( var msg in list ) 
+            if (NewAgreement == false)
             {
-                if (msg.Length != 0)
+                var sourceMsg = Encoding.Default.GetString(e);
+                var list = sourceMsg.Split((char)0x0D);
+
+                foreach (var msg in list)
                 {
-                    System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+                    if (msg.Length != 0)
                     {
-                        LogSource.Insert(0, new VacuumLogModel()
+                        System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
                         {
-                            Time = DateTime.Now,
-                            Message = msg,
-                            Direct = "R"
-                        });
+                            LogSource.Insert(0, new VacuumLogModel()
+                            {
+                                Time = DateTime.Now,
+                                Message = msg,
+                                Direct = "R"
+                            });
 
-                        int length = LogSource.Count;
-                        if (length > 1000)
-                        {
-                            LogSource.RemoveAt(length - 1);
-                        }
-                    }));
+                            int length = LogSource.Count;
+                            if (length > 1000)
+                            {
+                                LogSource.RemoveAt(length - 1);
+                            }
+                        }));
 
-                    if (VacMonitorProtocol.TryParseResponse(msg, out int index, out double vac))
-                    {
-                        switch (index)
+                        if (VacMonitorProtocol.TryParseResponse(msg, out int index, out double vac))
                         {
-                            case 1:
-                                {
-                                    _vacuum1.Points.Add(new DataPoint(_vacuum1.Points.Count(), vac));
-                                    break;
-                                }
-                            case 2:
-                                {
-                                    _vacuum2.Points.Add(new DataPoint(_vacuum2.Points.Count(), vac));
-                                    break;
-                                }
-                            case 3:
-                                {
-                                    _vacuum3.Points.Add(new DataPoint(_vacuum3.Points.Count(), vac));
-                                    break;
-                                }
+                            switch (index)
+                            {
+                                case 1:
+                                    {
+                                        _vacuum1.Points.Add(new DataPoint(_vacuum1.Points.Count(), vac));
+                                        break;
+                                    }
+                                case 2:
+                                    {
+                                        _vacuum2.Points.Add(new DataPoint(_vacuum2.Points.Count(), vac));
+                                        break;
+                                    }
+                                case 3:
+                                    {
+                                        _vacuum3.Points.Add(new DataPoint(_vacuum3.Points.Count(), vac));
+                                        break;
+                                    }
+                            }
+                            VacuumPlotModel.InvalidatePlot(true);
                         }
-                        VacuumPlotModel.InvalidatePlot(true);
                     }
                 }
             }
-
+            else
+            {
+                _parser2.ReceiveBytes(e);
+            }
         }
 
+
+        /// <summary>
+        /// 回报事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Service_VacuumMonitoringResponse(object sender, byte[] e)
+        {
+            if (NewAgreement == false)
+            {
+                var sourceMsg = Encoding.Default.GetString(e);
+                var list = sourceMsg.Split((char)0x0D);
+
+                foreach (var msg in list)
+                {
+                    if (msg.Length != 0)
+                    {
+                        System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+                        {
+                            LogSource.Insert(0, new VacuumLogModel()
+                            {
+                                Time = DateTime.Now,
+                                Message = msg,
+                                Direct = "R"
+                            });
+
+                            int length = LogSource.Count;
+                            if (length > 1000)
+                            {
+                                LogSource.RemoveAt(length - 1);
+                            }
+                        }));
+
+                        if (VacMonitorProtocol.TryParseResponse(msg, out int index, out double vac))
+                        {
+                            switch (index)
+                            {
+                                case 1:
+                                    {
+                                        _vacuum1.Points.Add(new DataPoint(_vacuum1.Points.Count(), vac));
+                                        break;
+                                    }
+                                case 2:
+                                    {
+                                        _vacuum2.Points.Add(new DataPoint(_vacuum2.Points.Count(), vac));
+                                        break;
+                                    }
+                                case 3:
+                                    {
+                                        _vacuum3.Points.Add(new DataPoint(_vacuum3.Points.Count(), vac));
+                                        break;
+                                    }
+                            }
+                            VacuumPlotModel.InvalidatePlot(true);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                _parser1.ReceiveBytes(e);
+            }
+        }
+        /// <summary>
+        /// 新协议回报事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void Parser_VacuumMonitoringResponse(object sender, VacDataPacket e)
+        {
+            var parser = sender as VacMonitorProtocolParser;
+            IAsynRWService? service = null;
+           if (parser != null) 
+            {
+                service = parser.Service;
+            }
+            //0x0800是读取真空规数字的命令码
+            if (e.cmd == 0x0800)
+            {
+                ushort channel = BitConverter.ToUInt16(e.DataSource,0);
+                ushort floatNumber = BitConverter.ToUInt16(e.DataSource,2);
+                
+                var msg = BitConverter.ToString (e.DataSource);
+                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+                {
+                    LogSource.Insert(0, new VacuumLogModel()
+                    {
+                        Time = DateTime.Now,
+                        Message = msg,
+                        Direct = "R"
+                    });
+
+                    int length = LogSource.Count;
+                    if (length > 1000)
+                    {
+                        LogSource.RemoveAt(length - 1);
+                    }
+                }));
+            
+                float vacFloat1 = BitConverter.ToSingle(e.DataSource.Skip(4).Take(4).ToArray());
+                float vacFloat2 = BitConverter.ToSingle(e.DataSource.Skip(8).Take(4).ToArray());
+                float vacFloat3 = BitConverter.ToSingle(e.DataSource.Skip(12).Take(4).ToArray());
+                float vacFloat4 = BitConverter.ToSingle(e.DataSource.Skip(16).Take(4).ToArray());
+                switch (channel)
+                {
+                    case 1:
+                        _vacuum1.Points.Add(new DataPoint(_vacuum1.Points.Count(), vacFloat1));
+                        break;
+                    case 2:
+                        _vacuum1.Points.Add(new DataPoint(_vacuum2.Points.Count(), vacFloat1));
+                        break;
+                    case 3:
+                        _vacuum1.Points.Add(new DataPoint(_vacuum3.Points.Count(), vacFloat1));
+                        break;
+
+                    case 4:
+                        _vacuum1.Points.Add(new DataPoint(_vacuum4.Points.Count(), vacFloat1));
+                        break;
+                    case 0:
+                        {
+                            switch (floatNumber)
+                            {
+                                case 4:
+                                    _vacuum4.Points.Add(new DataPoint(_vacuum4.Points.Count(), vacFloat4));
+                                    _vacuum3.Points.Add(new DataPoint(_vacuum3.Points.Count(), vacFloat3));
+                                    _vacuum2.Points.Add(new DataPoint(_vacuum2.Points.Count(), vacFloat2));
+                                    _vacuum1.Points.Add(new DataPoint(_vacuum2.Points.Count(), vacFloat1));
+                                    break;
+                                case 3: 
+                                    _vacuum3.Points.Add(new DataPoint(_vacuum3.Points.Count(), vacFloat3));
+                                    _vacuum2.Points.Add(new DataPoint(_vacuum2.Points.Count(), vacFloat2));
+                                    _vacuum1.Points.Add(new DataPoint(_vacuum2.Points.Count(), vacFloat1));
+                                    break;
+                                case 2:
+                                    _vacuum2.Points.Add(new DataPoint(_vacuum2.Points.Count(), vacFloat2));
+                                    _vacuum1.Points.Add(new DataPoint(_vacuum2.Points.Count(), vacFloat1)); 
+                                    break;
+                                case 1: _vacuum1.Points.Add(new DataPoint(_vacuum2.Points.Count(), vacFloat1));
+                                    break;
+                            }
+
+                            break;
+                        }
+                }
+                VacuumPlotModel.InvalidatePlot(true);
+
+            }
+        }
         /// <summary>
         /// 串口通讯异常数据回报接收函数
         /// </summary>
@@ -495,12 +762,28 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         {
             System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
             {
-                LogSource.Insert(0, new VacuumLogModel()
+                if ((NewAgreement == true))
                 {
-                    Time = DateTime.Now,
-                    Message = Encoding.Default.GetString(msg),
-                    Direct = "W"
-                });
+                    if (NewAgreement == true)
+                    {
+                        LogSource.Insert(0, new VacuumLogModel()
+                        {
+                            Time = DateTime.Now,
+                            Message = BitConverter.ToString(msg.Skip(18).Take(4).ToArray()),
+                            Direct = "W"
+                        });
+                    }
+                }
+                else
+                {
+                    LogSource.Insert(0, new VacuumLogModel()
+                    {
+                        Time = DateTime.Now,
+                        Message = Encoding.Default.GetString(msg),
+                        Direct = "W"
+                    });
+
+                }
 
                 int length = LogSource.Count;
                 if (length > 1000)
@@ -510,6 +793,38 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
             }));
 
             Service.SendMsg(msg);
+        }
+        private void NetUdpSendMsg(byte[] msg)
+        {
+            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+            {
+                if (NewAgreement == true)
+                {
+                    LogSource.Insert(0, new VacuumLogModel()
+                    {
+                        Time = DateTime.Now,
+                        Message = BitConverter.ToString(msg.Skip(18).Take(4).ToArray()),
+                        Direct = "W"
+                    });
+
+                }
+                else
+                {
+                    LogSource.Insert(0, new VacuumLogModel()
+                    {
+                        Time = DateTime.Now,
+                        Message = Encoding.Default.GetString(msg),
+                        Direct = "W"
+                    });
+                }
+                int length = LogSource.Count;
+                if (length > 1000)
+                {
+                    LogSource.RemoveAt(length - 1);
+                }
+            }));
+
+            NetUdpService.SendMsg(msg);
         }
         #endregion
 
