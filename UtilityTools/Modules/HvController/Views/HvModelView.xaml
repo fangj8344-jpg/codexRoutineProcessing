@@ -342,6 +342,10 @@
                 </DockPanel>
             </Grid>
         </TabItem>
+        
+        <TabItem Header="新高压控制">
+            
+        </TabItem>
 
         <TabItem Header="自定义指令">
             <ItemsControl ItemsSource="{Binding CustomCmds}"
