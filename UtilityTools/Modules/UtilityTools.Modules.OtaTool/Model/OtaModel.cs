@@ -146,10 +146,12 @@ namespace UtilityTools.Modules.OtaTool.Model
                 if (value == "未连接")
                 {
                     IsButtonEnabled = false;
+                    Log += "通讯异常\r\n";
                 }
                 else
                 {
                     IsButtonEnabled= true;
+                    Log += "通讯恢复正常\r\n";
                 }
                 _status = value; RaisePropertyChanged(); 
             }
@@ -320,11 +322,13 @@ namespace UtilityTools.Modules.OtaTool.Model
                 if (SerialPortService.IsOpen)
                 {
                     SerialPortService.SendMsg(stopCmd);
+                    Log += "已发送停止固件升级命令\n\r";
                 }
 
                 if (NetUdpService.IsOpen)
                 {
                     NetUdpService.SendMsg(stopCmd);
+                    Log += "已发送停止固件升级命令\n\r";
                 }
                 Tips = "停止固件升级中";
 
@@ -358,11 +362,13 @@ namespace UtilityTools.Modules.OtaTool.Model
             if (SerialPortService.IsOpen)
             {
                 SerialPortService.SendMsg(requestCmd);
+                Log += "已发送升级校验指令\n\r";
             }
 
             if (NetUdpService.IsOpen)
             {
                 NetUdpService.SendMsg(requestCmd);
+                Log += "已发送升级校验指令\n\r";
             }
         }
 
@@ -397,6 +403,20 @@ namespace UtilityTools.Modules.OtaTool.Model
                     CurFrameCount = 0;
                     UpdateDataCrc = CRCHelper.Data_GetCRC16(UpdateData, 0, UpdateData.Length);
                     result = true;
+                    //日志
+                    if (length >= 1024 && length < 1024 * 1024)
+                    {
+                        Log = "文件大小" + (length + 1023) / 1024 + "KB\n\r" ;
+                    }
+                    else if(length >= 1024*1024 )
+                    {
+                        Log = "文件大小" + (length + 1023) / 1024 + "MB\n\r";
+                    }
+                    else if (length < 1024 ) 
+                    {
+                        Log = "文件大小" + (length + 1023) / 1024 + "B\n\r";
+                    }
+                    Log += "预计传输" + MaxFrameCount + "帧" + "\n\r";
                 }
             }
             Directory.Delete(destinationPath, true);

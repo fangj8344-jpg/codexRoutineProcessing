@@ -24,14 +24,36 @@
  *----------------------------------------------------------------*/
 #endregion
 
+using OpenCvSharp.Flann;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UtilityTools.Core.Model;
+using UtilityTools.Core.Protocol;
+using UtilityTools.Services.Interfaces.IServices;
 
 namespace UtilityTools.Modules.VacMonitor.Protocol
 {
+    public enum EnumBackVacChannel
+    {
+        [Description("通道1")]
+        VACCHANNEL_CH1 = 0x0101,
+
+        [Description("通道2")]
+        VACCHANNEL_CH2 = 0x0102,
+
+        [Description("通道3")]
+        VACCHANNEL_CH3 = 0x0103,
+
+        [Description("通道4")]
+        VACCHANNEL_CH4 = 0x0104,
+
+        [Description("所有通道")]
+        VACCHANNEL_CH0 = 0x0400
+    }
     public class VacMonitorProtocol
     {
         #region ------------Constructor------------
@@ -50,6 +72,55 @@ namespace UtilityTools.Modules.VacMonitor.Protocol
         #endregion
 
         #region ------------StaticMethod------------
+        public static byte[] GetCmd( byte[] data)
+        {
+            // data段固定36字节，不足用零填充
+            if (data.Length < 36)
+            {
+                var tmp = new byte[36];
+                Array.Clear(tmp, 0, tmp.Length);
+
+                Buffer.BlockCopy(data, 0, tmp, 0, data.Length);
+                data = tmp;
+            }
+            var addr = new byte[6] { 0x00,0x00,0x00,0x00,0x01,0x01};
+            var cmd = BitConverter.GetBytes((ushort)0x0800);//0x0800 获取读取真空规数值的命令码
+            var id = BitConverter.GetBytes((ushort)0x0101);
+           return ZepGenericProtocol.GetCmd(addr,id, cmd, data);
+           //return ZepGenericProtocol.GetCmd( id, cmd, data);
+        }
+        public class VacDataPacket
+        {
+            public VacDataPacket(DataPacket packet)
+            {
+                this.packet = packet;
+            }
+            public UInt16 cmd { get { return BitConverter.ToUInt16(this.packet.command); } }
+            public byte[] DataSource { get => packet.data; }
+            private DataPacket packet;
+        }
+
+        public class VacMonitorProtocolParser
+        {
+            public VacMonitorProtocolParser()
+            {
+                _parser = new ZepGenericProtocolParser();
+                _parser.PacketReceivedEvent += GeneriaPackReceived;
+            }
+            private void GeneriaPackReceived(object sender, DataPacket packet)
+            {
+                PacketReceivedEvent(this, new VacDataPacket(packet));
+            }
+            public event EventHandler<VacDataPacket> PacketReceivedEvent;  
+            public void ReceiveBytes(byte[] data)
+            {
+                _parser.ReceiveBytes(data);
+            }
+
+            private ZepGenericProtocolParser _parser;
+            public IAsynRWService Service;
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -72,6 +143,15 @@ namespace UtilityTools.Modules.VacMonitor.Protocol
             bytes[4] = (byte)'2';
             bytes[5] = 0x0D;
             return bytes;
+        }
+        /// <summary>
+        /// 新协议获取真空读数指令码
+        /// </summary>
+        /// <param name="channelNumer"> 通道号</param>
+        /// <returns></returns>
+        public static byte[] GetVacuumValueNew(uint channelNumer)
+        {
+            return  GetCmd(BitConverter.GetBytes(channelNumer));
         }
 
         /// <summary>

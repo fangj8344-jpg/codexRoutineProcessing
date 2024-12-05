@@ -20,6 +20,7 @@
   
   <ItemGroup>
     <ProjectReference Include="..\..\UtilityTools.Core\UtilityTools.Core.csproj" />
+    <ProjectReference Include="..\UtilityTools.Modules.OtaTool\UtilityTools.Modules.OtaTool.csproj" />
   </ItemGroup>
 
 </Project>

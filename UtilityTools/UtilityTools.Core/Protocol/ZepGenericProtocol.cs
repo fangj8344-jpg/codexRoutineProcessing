@@ -31,7 +31,7 @@ namespace UtilityTools.Core.Protocol
 
             this.command = command;
             this.data = data;
-            timestamp = BitConverter.GetBytes((UInt32)DateTimeOffset.Now.ToUnixTimeSeconds());
+            timestamp = BitConverter.GetBytes((UInt32)DateTimeOffset.Now.ToUnixTimeMilliseconds());
         }
 
 
@@ -114,6 +114,14 @@ namespace UtilityTools.Core.Protocol
         public static byte[] GetCmd(byte[] id, byte[] command, byte[] data)
         {
             var packet = new DataPacket(command, data);
+            packet.id = id;
+            return packet.GetBytes();
+        }
+
+        public static byte[] GetCmd(byte[] addr, byte[] id, byte[] command, byte[] data)
+        {
+            var packet = new DataPacket(command, data);
+            packet.addr = addr;
             packet.id = id;
             return packet.GetBytes();
         }

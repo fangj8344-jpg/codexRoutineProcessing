@@ -33,6 +33,11 @@
                            DockPanel.Dock="Left"
                            VerticalAlignment="Center" />
                 <Button DockPanel.Dock="Right"
+                        Command="{Binding ShowNetDeviceCommand}"
+                        Content="{md:PackIcon Kind=EthernetCable, Size=24}"
+                        Style="{StaticResource MaterialDesignToolButton}"
+                        Foreground="{Binding NetIsConnected, Converter={StaticResource boolToColorConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <Button DockPanel.Dock="Right"
                         Command="{Binding ShowDeviceCommand}"
                         Content="{md:PackIcon Kind=UsbPort, Size=24}"
                         Style="{StaticResource MaterialDesignToolButton}"
@@ -91,6 +96,14 @@
                          attach:TextBoxAttached.IsSupportWheel="True"
                          DockPanel.Dock="Left"
                          Margin="5, 0, 5, 0" />
+                <RadioButton Content="新协议"
+                             IsChecked="{Binding NewAgreement}"
+                             DockPanel.Dock="Left"
+                             Margin="5, 0, 5, 0"/>
+                <RadioButton Content="旧协议"
+                             
+                             DockPanel.Dock="Left"
+                             Margin="5, 0, 5, 0"/>
             </DockPanel>
         </Grid>
     </md:DialogHost>

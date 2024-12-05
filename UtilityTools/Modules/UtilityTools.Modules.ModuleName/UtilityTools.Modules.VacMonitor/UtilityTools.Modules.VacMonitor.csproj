@@ -14,6 +14,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Services\UtilityTools.Services.Interfaces\UtilityTools.Services.Interfaces.csproj" />
+    <ProjectReference Include="..\..\..\Services\UtilityTools.Services\UtilityTools.Services.csproj" />
     <ProjectReference Include="..\..\..\UtilityTools.Core\UtilityTools.Core.csproj" />
   </ItemGroup>
   <Target Name="CopyTargetFiles" AfterTargets="PostBuildEvent">
