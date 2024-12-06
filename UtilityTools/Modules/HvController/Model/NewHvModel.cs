@@ -24,7 +24,12 @@
  *----------------------------------------------------------------*/
 #endregion
 
+using Newtonsoft.Json.Linq;
 using OxyPlot;
+using OxyPlot.Axes;
+using OxyPlot.Legends;
+using OxyPlot.Series;
+using OxyPlot.Wpf;
 using Prism.Commands;
 using Prism.Ioc;
 using Prism.Mvvm;
@@ -32,19 +37,22 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
+using System.Windows.Forms;
 using System.Windows.Interop;
+using System.Xml.Linq;
 using UtilityTools.Modules.HvController.Protocol;
 using UtilityTools.Services.Interfaces;
 using UtilityTools.Services.Interfaces.IServices;
 
 namespace UtilityTools.Modules.HvController.Model
 {
-    internal class NewHvModel : BindableBase
+    public class NewHvModel : BindableBase
     {
         #region ------------Constructor------------
         public NewHvModel(IContainerProvider containerProvider)
@@ -55,11 +63,49 @@ namespace UtilityTools.Modules.HvController.Model
             NetUdpService = _containerProvider.Resolve<IServiceFactory>().GetAsynRWService("UNHV");
             NetUdpService.UpdateResponse += Device_UpdateResponse;
 
-
             PrepareWorkCommand = new DelegateCommand(PrepareWorkMethod);
-            SetAccVolCommand = new DelegateCommand(SetAccVolMethod);
-            CloseHvCommand = new DelegateCommand(CloseHvMethod);
+            SetAccVolCommand = new DelegateCommand<object>(SetAccVolMethod);
+            ChangeMonitorStateCommand = new DelegateCommand(ChangeMonitorState);
+            AutoAdjustCommand = new DelegateCommand(AutoAdjust);
+            ClearMonitorCommand = new DelegateCommand(ClearMonitor);
+            SaveMonitorInfoCommand = new DelegateCommand(SaveMonitorInfo);
+
+            HvPlotModel = new PlotModel();
+            HvPlotModel.Legends.Add(new Legend());
+            HvPlotModel.Axes.Add(new LinearAxis() { Title = "时间", Position = OxyPlot.Axes.AxisPosition.Bottom });
+            HvPlotModel.Axes.Add(new LogarithmicAxis() { Title = "数值", Position = OxyPlot.Axes.AxisPosition.Left });
+            _accVolLineSeries = new LineSeries() { Title = "加速电压", RenderInLegend = true };
+            _filaCurLineSeries = new LineSeries() { Title = "灯丝电流", RenderInLegend = true };
+            _filaRLineSeries = new LineSeries() { Title = "灯丝电阻", RenderInLegend = true };
+            _emissionVolLineSeries = new LineSeries() { Title = "吸取极电压", RenderInLegend = true };
+            _gridVolLineSeries = new LineSeries() { Title = "栅极电压", RenderInLegend = true };
+            HvPlotModel.Series.Add(_accVolLineSeries);
+            HvPlotModel.Series.Add(_filaCurLineSeries);
+            HvPlotModel.Series.Add(_filaRLineSeries);
+            HvPlotModel.Series.Add(_emissionVolLineSeries);
+            HvPlotModel.Series.Add(_gridVolLineSeries);
+
+            if (_timer == null)
+            {
+                _timer = new System.Timers.Timer();
+                _timer.AutoReset = true;
+                _timer.Elapsed += Timer_Elapsed;
+            }
+
+            _timer.Interval = MonitorInterval;
+
+            if (_timer.Enabled)
+            {
+                _timer.Stop();
+                MonitorState = "开始监控";
+            }
+            else
+            {
+                _timer.Start();
+                MonitorState = "停止监控";
+            }
         }
+
         #endregion
 
         #region ------------Field------------
@@ -69,6 +115,18 @@ namespace UtilityTools.Modules.HvController.Model
         private string _response = string.Empty;
 
         private BackgroundWorker _backgroundWorker;
+        private bool _initResult = false;
+        private AutoResetEvent _initEvent;
+        private AutoResetEvent _initResultEvent;
+        private AutoResetEvent _gridVolEvent;
+        private AutoResetEvent _heatCurEvent;
+        private AutoResetEvent _emissionVolEvent;
+
+        LineSeries _accVolLineSeries;
+        LineSeries _filaCurLineSeries;
+        LineSeries _filaRLineSeries;
+        LineSeries _emissionVolLineSeries;
+        LineSeries _gridVolLineSeries;
         #endregion
 
         #region ------------Property------------
@@ -99,7 +157,20 @@ namespace UtilityTools.Modules.HvController.Model
         public bool IsPrepared
         {
             get { return _isPrepared; }
-            set { _isPrepared = value; RaisePropertyChanged(); }
+            set 
+            {
+                _isPrepared = value;
+                RaisePropertyChanged();
+
+                if (_isPrepared)
+                {
+                    PrepareState = "关闭高压";
+                }
+                else
+                {
+                    PrepareState = "高压准备";
+                }
+            }
         }
 
         private float _setAccVol;
@@ -151,6 +222,17 @@ namespace UtilityTools.Modules.HvController.Model
             get { return _accVol; }
             set { _accVol = value; RaisePropertyChanged(); }
         }
+
+        private float _hi;
+        /// <summary>
+        /// 钨灯丝电流
+        /// </summary>
+        public float Hi
+        {
+            get { return _hi; }
+            set { _hi = value; RaisePropertyChanged(); }
+        }
+
 
         private float _filaCur = float.NaN;
         /// <summary>
@@ -212,7 +294,7 @@ namespace UtilityTools.Modules.HvController.Model
             set { _emissionCur = value; RaisePropertyChanged(); }
         }
 
-        private int _monitorInterval;
+        private int _monitorInterval = 2000;
         /// <summary>
         /// 时间间隔
         /// </summary>
@@ -287,27 +369,40 @@ namespace UtilityTools.Modules.HvController.Model
         public DelegateCommand PrepareWorkCommand { get; set; }
 
         private void PrepareWorkMethod()
-        { 
-            
-        }
-
-        public DelegateCommand SetAccVolCommand { get; set; }
-
-        private void SetAccVolMethod()
-        { 
-            
-        }
-
-        public DelegateCommand CloseHvCommand { get; set; }
-
-        private void CloseHvMethod() 
         {
-            
+            if (IsPrepared)
+            {
+                IsPrepared = false;
+                // 卸载高压准备工作
+                StopBackgroundWorker();
+
+                SetAccVol = 0;
+                SetGridVol = 0;
+                SetHeatCur = 0;
+                SetEmissionVol = 0;
+                SendMsg(NewHvControllerProtocol.GetCloseHvCommand());
+
+            }
+            else
+            {
+                // 开启高压准备工作
+                StartBackgroundWorker();
+            }
+        }
+
+        public DelegateCommand<object> SetAccVolCommand { get; set; }
+
+        private void SetAccVolMethod(object obj)
+        {
+            if (int.TryParse(obj.ToString(), out int value))
+            {
+                SetAccVol = value;
+            }
         }
 
         public DelegateCommand ChangeMonitorStateCommand { get; set; }
 
-        private async void ChangeMonitorState() 
+        private async void ChangeMonitorState()
         {
             await Task.Run(() =>
             {
@@ -332,18 +427,265 @@ namespace UtilityTools.Modules.HvController.Model
                 }
             });
         }
+
+        public DelegateCommand AutoAdjustCommand { get; set; }
+
+        private void AutoAdjust()
+        {
+            foreach (var axis in HvPlotModel.Axes)
+            {
+                axis.Reset();
+            }
+
+            HvPlotModel.InvalidatePlot(true);
+        }
+
+        public DelegateCommand ClearMonitorCommand { get; set; }
+
+        private void ClearMonitor()
+        {
+            _accVolLineSeries.Points.Clear();
+            _filaCurLineSeries.Points.Clear();
+            _filaRLineSeries.Points.Clear();
+            _emissionVolLineSeries.Points.Clear();
+            _gridVolLineSeries.Points.Clear();
+        }
+
+        public DelegateCommand SaveMonitorInfoCommand { get; set; }
+
+        private void SaveMonitorInfo()
+        {
+            // 借鉴已经存在表格数据
+            FolderBrowserDialog dialog = new FolderBrowserDialog();
+            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.Cancel)
+            {
+                var path = dialog.SelectedPath;
+
+                SaveToFile(path);
+            }
+        }
+
+        private void SaveToFile(string path)
+        {
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
+            var timeTip = DateTime.Now.ToString("HHmmss");
+            PngExporter exporter = new PngExporter();
+
+            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+            {
+                exporter.ExportToFile(HvPlotModel, $"{path}\\高压监控_{timeTip}.png");
+                SaveSeriesToFile(_accVolLineSeries, $"{path}\\加速电压_{timeTip}.txt");
+                SaveSeriesToFile(_filaCurLineSeries, $"{path}\\灯丝电流_{timeTip}.txt");
+                SaveSeriesToFile(_filaRLineSeries, $"{path}\\灯丝电阻_{timeTip}.txt");
+                SaveSeriesToFile(_emissionVolLineSeries, $"{path}\\吸取极电压_{timeTip}.txt");
+                SaveSeriesToFile(_gridVolLineSeries, $"{path}\\栅极电压_{timeTip}.txt");
+            }));
+        }
+
+        private void SaveSeriesToFile(DataPointSeries series, string filePath)
+        {
+            string gunReport = string.Empty;
+            foreach (var report in series.Points)
+            {
+                gunReport += $"{report.X}\t{report.Y}\n";
+            }
+            try
+            {
+                using (var gunStream = File.OpenWrite(filePath))
+                {
+                    var gunData = Encoding.UTF8.GetBytes(gunReport);
+                    gunStream.Write(gunData, 0, gunData.Length);
+                }
+            }
+            catch (Exception ex)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Fatal($"保存图表数据异常：目标路径【{filePath}】，异常原因【{ex.Message}】");
+            }
+        }
         #endregion
 
         #region ------------PublicMethod------------
         public void StartBackgroundWorker()
-        { 
-        
+        {
+            StopBackgroundWorker();
+
+            _backgroundWorker = new BackgroundWorker();
+            _backgroundWorker.WorkerSupportsCancellation = true;
+            _backgroundWorker.DoWork += BackgroundWorker_DoWork;
+            _backgroundWorker.RunWorkerCompleted += BackgroundWorker_RunWorkerCompleted;
+            _backgroundWorker.RunWorkerAsync();
         }
 
-        public void StopBackgroundWorker() 
+        public void StopBackgroundWorker()
         {
-            
+            if (_backgroundWorker != null)
+            {
+                _backgroundWorker.CancelAsync();
+            }
         }
+
+        public void SetProgressInfo(string state, double value)
+        {
+            CurState = state;
+            ProgressValue = value;
+        }
+
+        private void BackgroundWorker_DoWork(object sender, DoWorkEventArgs e)
+        {
+            var bw = sender as BackgroundWorker;
+
+            if (bw.CancellationPending == true)
+            {
+                e.Cancel = true;
+                SetProgressInfo("取消高压准备", 100);
+                return;
+            }
+
+            // 判断当前的灯丝电流
+            if (float.IsNaN(FilaCur))
+            {
+                e.Cancel = true;
+                SetProgressInfo("未连接设备", 100);
+                return;
+            }
+
+            if (FilaCur > 3.5)      // 高压箱处于未准备状态
+            {
+                // 发送初始化指令
+                SetProgressInfo("初始化高压箱", 0);
+                _initEvent = new AutoResetEvent(false);
+                _initResultEvent = new AutoResetEvent(false);
+                SendMsg(NewHvControllerProtocol.GetInitCommand());
+                if (!_initEvent.WaitOne(3000))
+                {
+                    SetProgressInfo("初始化高压箱超时", 100);
+                    _initEvent = null;
+                    e.Cancel = true;
+                    return;
+                }
+                _initEvent = null;
+                SetProgressInfo("初始化高压箱", 10);
+
+                if (!_initResult)
+                {
+                    SetProgressInfo("初始化高压箱失败，请稍后重试", 100);
+                    _initResultEvent = null;
+                    e.Cancel = true;
+                    return;
+                }
+
+                if (!_initResultEvent.WaitOne(10000))
+                {
+                    SetProgressInfo("初始化高压箱等待结果超时", 100);
+                    e.Cancel = true;
+                    _initResultEvent = null;
+                    return;
+                }
+                _initResultEvent = null;
+            }
+
+            SetProgressInfo("初始化高压箱成功", 20);
+
+            if (bw.CancellationPending == true)
+            {
+                e.Cancel = true;
+                SetProgressInfo("取消高压准备", 100);
+                return;
+            }
+
+            // 初始化栅极电压
+            _gridVolEvent = new AutoResetEvent(false);
+            SendMsg(NewHvControllerProtocol.GetGridVolCommand(SetGridVol));
+            if (!_gridVolEvent.WaitOne(3000))
+            {
+                SetProgressInfo("设置栅极电压超时", 100);
+                _gridVolEvent = null;
+                e.Cancel = true;
+                return;
+            }
+            _gridVolEvent = null;
+            SetProgressInfo("设置栅极电压成功", 30);
+
+            if (bw.CancellationPending == true)
+            {
+                e.Cancel = true;
+                SetProgressInfo("取消高压准备", 100);
+                return;
+            }
+
+            // 初始化加热电流
+            _heatCurEvent = new AutoResetEvent(false);
+            SendMsg(NewHvControllerProtocol.GetHeatCurCommand(SetHeatCur, 0x02));
+            if (!_heatCurEvent.WaitOne(3000))
+            {
+                _heatCurEvent = null;
+                e.Cancel = true;
+                SetProgressInfo("设置加热电流超时", 100);
+                return;
+            }
+            _heatCurEvent = null;
+            SetProgressInfo("设置加热电流成功", 40);
+
+            while (true)
+            {
+                if (bw.CancellationPending == true)
+                {
+                    e.Cancel = true;
+                    SetProgressInfo("取消高压准备", 100);
+                    return;
+                }
+                Thread.Sleep(500);
+
+                if (Math.Abs(SetHeatCur - FilaCur) < 0.5)
+                {
+                    SetProgressInfo("完成加载加热电流", 90);
+                    break;
+                }
+                else
+                {
+                    SetProgressInfo("正在加载加热电流", 40 + FilaCur / SetHeatCur * 50);
+                }
+            }
+
+            if (bw.CancellationPending == true)
+            {
+                e.Cancel = true;
+                SetProgressInfo("取消高压准备", 100);
+                return;
+            }
+
+            // 初始化吸取极电压
+            _emissionVolEvent = new AutoResetEvent(false);
+            SendMsg(NewHvControllerProtocol.GetGridVolCommand(SetGridVol));
+            if (!_emissionVolEvent.WaitOne(3000))
+            {
+                SetProgressInfo("设置吸取极电压超时", 100);
+                _emissionVolEvent = null;
+                e.Cancel = true;
+                return;
+            }
+            _emissionVolEvent = null;
+            SetProgressInfo("设置吸取极电压成功", 100);
+
+        }
+
+        private void BackgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            if (e.Cancelled == false)
+            {
+                IsPrepared = true;
+                SetProgressInfo("完成高压箱初始化", 100);
+            }
+
+            _backgroundWorker.DoWork -= BackgroundWorker_DoWork;
+            _backgroundWorker.RunWorkerCompleted -= BackgroundWorker_RunWorkerCompleted;
+            _backgroundWorker = null;
+        }
+
         #endregion
 
         #region ------------PrivateMethod------------
@@ -382,12 +724,6 @@ namespace UtilityTools.Modules.HvController.Model
                 SerialPortService.SendMsg(bytes);
             else if (NetUdpService.IsOpen)
                 NetUdpService.SendMsg(bytes);
-            else
-            {
-                AddLog("无设备连接", false);
-                return;
-            }
-            AddLog(SerialPortService.GetCmdString(bytes, bytes.Length), false);
         }
 
 
@@ -433,11 +769,11 @@ namespace UtilityTools.Modules.HvController.Model
                     _response = string.Empty;
                 }
 
-                for(int i = 0; i < count; i++)
+                for (int i = 0; i < count; i++)
                 {
                     ParseResponse(list[i]);
                 }
-                
+
             }
         }
 
@@ -451,10 +787,17 @@ namespace UtilityTools.Modules.HvController.Model
             else if (msg.StartsWith("HV_INIT"))
             {
                 AddLog("开始初始化高压设备");
+                if (_initEvent != null)
+                {
+                    _initResult = true;
+                    _initEvent.Set();
+                }
             }
             else if (msg.StartsWith("HV_init_done"))
             {
                 AddLog("完成初始化高压设备");
+                if (_initResultEvent != null)
+                    _initResultEvent.Set();
             }
             else if (msg.StartsWith("BV"))
             {
@@ -479,29 +822,35 @@ namespace UtilityTools.Modules.HvController.Model
             else if (msg.StartsWith("DEFAULT"))
             {
                 AddLog("初始化高压设备失败");
+                if (_initEvent != null)
+                {
+                    _initResult = false;
+                    _initEvent.Set();
+                }
             }
         }
 
         private void ParseReadParams(string readStr)
         {
             var list = readStr.Split("---");
-            foreach (var item in list) 
+            foreach (var item in list)
             {
                 var tmpList = item.Split("_");
                 if (tmpList.Length == 3)
                 {
-                    switch(tmpList[1]) 
+                    switch (tmpList[1])
                     {
                         case "HV":
                             if (float.TryParse(tmpList[2], out float hv))
                             {
                                 AccVol = hv;
+                                _accVolLineSeries.Points.Add(new DataPoint(_accVolLineSeries.Points.Count, hv));
                             }
                             break;
                         case "HI":
                             if (float.TryParse(tmpList[2], out float hi))
                             {
-                                
+                                Hi = hi;
                             }
                             break;
                         case "PV":
@@ -514,18 +863,21 @@ namespace UtilityTools.Modules.HvController.Model
                             if (float.TryParse(tmpList[2], out float pi))
                             {
                                 FilaCur = pi;
+                                _filaCurLineSeries.Points.Add(new DataPoint(_filaCurLineSeries.Points.Count, pi));
                             }
                             break;
                         case "R":
                             if (float.TryParse(tmpList[2], out float r))
                             {
                                 FilaR = r;
+                                _filaRLineSeries.Points.Add(new DataPoint(_filaRLineSeries.Points.Count, r));
                             }
                             break;
                         case "EV":
                             if (float.TryParse(tmpList[2], out float ev))
                             {
                                 EmissionVol = ev;
+                                _emissionVolLineSeries.Points.Add(new DataPoint(_emissionVolLineSeries.Points.Count, ev));
                             }
                             break;
                         case "EI":
@@ -538,12 +890,14 @@ namespace UtilityTools.Modules.HvController.Model
                             if (float.TryParse(tmpList[2], out float bv))
                             {
                                 GridVol = bv;
+                                _gridVolLineSeries.Points.Add(new DataPoint(_gridVolLineSeries.Points.Count, bv));
                             }
                             break;
                     }
                 }
             }
         }
+
         #endregion
 
         #region ------------StaticMethod------------

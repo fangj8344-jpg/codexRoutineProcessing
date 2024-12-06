@@ -74,6 +74,8 @@ namespace UtilityTools.Modules.HvController.Model
             InitProperty();
             InitCommand();
 
+            NewHvModel = new NewHvModel(containerProvider);
+
             _response = new byte[4096];
             _responseLength = 0;
         }
@@ -118,6 +120,14 @@ namespace UtilityTools.Modules.HvController.Model
         {
             get { return _netUdpService; }
             set { _netUdpService = value; RaisePropertyChanged(); }
+        }
+
+        private NewHvModel _newHvModel;
+
+        public NewHvModel NewHvModel
+        {
+            get { return _newHvModel; }
+            set { _newHvModel = value; RaisePropertyChanged(); }
         }
 
         private bool _isNewFila;

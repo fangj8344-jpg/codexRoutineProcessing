@@ -342,9 +342,150 @@
                 </DockPanel>
             </Grid>
         </TabItem>
-        
+
         <TabItem Header="新高压控制">
-            
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="21*" />
+                    <ColumnDefinition Width="773*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="120" />
+                    <RowDefinition Height="auto" />
+                    <RowDefinition Height="auto" />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0"
+                      Grid.ColumnSpan="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+
+                    <Button Margin="5"
+                            Content="{Binding NewHvModel.PrepareState}"
+                            Command="{Binding NewHvModel.PrepareWorkCommand}"
+                            Width="100"
+                            Height="100"
+                            Grid.Row="0"
+                            Grid.Column="0"
+                            Grid.RowSpan="2" />
+
+                    <ProgressBar Margin="5"
+                                 Grid.Row="0"
+                                 Grid.Column="1"
+                                 Height="30"
+                                 Value="{Binding NewHvModel.ProgressValue}" />
+
+                    <Label Margin="5"
+                           Grid.Row="1"
+                           Grid.Column="1"
+                           HorizontalContentAlignment="Center"
+                           Content="{Binding NewHvModel.CurState}" />
+                </Grid>
+
+                <GroupBox Grid.Row="1"
+                          Margin="5,5,5,5"
+                          Header="高压准备参数"
+                          Grid.ColumnSpan="2">
+                    <UniformGrid Rows="1"
+                                 Margin="5">
+                        <Label Content="栅极电压(kV)"
+                               HorizontalContentAlignment="Center" />
+                        <TextBox Text="{Binding NewHvModel.SetGridVol}"
+                                 TextAlignment="Center" />
+                        <Label Content="加热电流(A)"
+                               HorizontalContentAlignment="Center" />
+                        <TextBox Text="{Binding NewHvModel.SetHeatCur}"
+                                 TextAlignment="Center" />
+                        <Label Content="吸取极电压(kV)"
+                               HorizontalContentAlignment="Center" />
+                        <TextBox Text="{Binding NewHvModel.SetEmissionVol}"
+                                 TextAlignment="Center" />
+                    </UniformGrid>
+                </GroupBox>
+
+                <GroupBox Grid.Row="2"
+                          IsEnabled="{Binding NewHvModel.IsPrepared}"
+                          Margin="5,5,5,5"
+                          Header="加速电压(kV)"
+                          Grid.ColumnSpan="2">
+                    <UniformGrid Rows="1"
+                                 Margin="5">
+                        <Button Content="3kV" Command="{Binding NewHvModel.SetAccVolCommand}" CommandParameter="3"/>
+                        <Button Content="5kV" Command="{Binding NewHvModel.SetAccVolCommand}" CommandParameter="5"/>
+                        <Button Content="8kV" Command="{Binding NewHvModel.SetAccVolCommand}" CommandParameter="8"/>
+                        <Button Content="10kV" Command="{Binding NewHvModel.SetAccVolCommand}" CommandParameter="10"/>
+                        <Button Content="15kV" Command="{Binding NewHvModel.SetAccVolCommand}" CommandParameter="15"/>
+                        <TextBox Text="{Binding NewHvModel.SetAccVol}"
+                                 TextAlignment="Center" 
+                                 attach:TextBoxAttached.IsEnterEndEdit="True"
+                                 attach:TextBoxAttached.IsSupportWheel="True"/>
+                    </UniformGrid>
+                </GroupBox>
+
+                <ScrollViewer Grid.Row="3"
+                              VerticalScrollBarVisibility="Hidden"
+                              Grid.ColumnSpan="2">
+                    <StackPanel>
+                        <GroupBox Header="获取参数"
+                                  Margin="5">
+                            <UniformGrid Columns="4">
+                                <Label Content="加速电压"
+                                       HorizontalContentAlignment="Center" />
+                                <Label Content="钨灯丝电流"
+                                       HorizontalContentAlignment="Center" />
+                                <Label Content="灯丝电压"
+                                       HorizontalContentAlignment="Center" />
+                                <Label Content="灯丝电流"
+                                       HorizontalContentAlignment="Center" />
+                                <Label Content="{Binding NewHvModel.AccVol}"
+                                       HorizontalContentAlignment="Center" />
+                                <Label Content="{Binding NewHvModel.Hi}"
+                                       HorizontalContentAlignment="Center" />
+                                <Label Content="{Binding NewHvModel.FilaVol}"
+                                       HorizontalContentAlignment="Center" />
+                                <Label Content="{Binding NewHvModel.FilaCur}"
+                                       HorizontalContentAlignment="Center" />
+                                <Label Content="灯丝电阻"
+                                       HorizontalContentAlignment="Center" />
+                                <Label Content="吸取极电压"
+                                       HorizontalContentAlignment="Center" />
+                                <Label Content="吸取极电流"
+                                       HorizontalContentAlignment="Center" />
+                                <Label Content="栅极电压"
+                                       HorizontalContentAlignment="Center" />
+                                <Label Content="{Binding NewHvModel.FilaR}"
+                                       HorizontalContentAlignment="Center" />
+                                <Label Content="{Binding NewHvModel.EmissionVol}"
+                                       HorizontalContentAlignment="Center" />
+                                <Label Content="{Binding NewHvModel.EmissionCur}"
+                                       HorizontalContentAlignment="Center" />
+                                <Label Content="{Binding NewHvModel.GridVol}"
+                                       HorizontalContentAlignment="Center" />
+                            </UniformGrid>
+                        </GroupBox>
+
+                        <oxy:PlotView Margin="20" VerticalAlignment="Stretch" Height="300" Model="{Binding NewHvModel.HvPlotModel}">
+                            <oxy:PlotView.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="自适应"
+                                              Command="{Binding NewHvModel.AutoAdjustCommand}" />
+                                    <MenuItem Header="清除"
+                                              Command="{Binding NewHvModel.ClearMonitorCommand}" />
+                                    <MenuItem Header="另存为"
+                                              Command="{Binding NewHvModel.SaveMonitorInfoCommand}" />
+                                </ContextMenu>
+                            </oxy:PlotView.ContextMenu>
+                        </oxy:PlotView>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
         </TabItem>
 
         <TabItem Header="自定义指令">
@@ -377,21 +518,23 @@
 
         <TabItem Header="日志信息">
             <ListView x:Name="logList"
-                     SelectionMode="Single"
-                     VirtualizingPanel.IsVirtualizing="True"
-                     VirtualizingPanel.VirtualizationMode="Recycling"
-                     VirtualizingPanel.ScrollUnit="Item"
-                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                     ScrollViewer.VerticalScrollBarVisibility="Visible"
-                     SelectedIndex="{Binding SelectedIndex, Mode=TwoWay}"
-                     ItemsSource="{Binding Logs}">
+                      SelectionMode="Single"
+                      VirtualizingPanel.IsVirtualizing="True"
+                      VirtualizingPanel.VirtualizationMode="Recycling"
+                      VirtualizingPanel.ScrollUnit="Item"
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                      ScrollViewer.VerticalScrollBarVisibility="Visible"
+                      SelectedIndex="{Binding SelectedIndex, Mode=TwoWay}"
+                      ItemsSource="{Binding Logs}">
                 <i:Interaction.Behaviors>
                     <bh:AutoScrollBehavior />
                 </i:Interaction.Behaviors>
                 <ListView.ContextMenu>
                     <ContextMenu>
-                        <MenuItem Header="清除" Command="{Binding ClearLogCommand}"/>
-                        <MenuItem Header="复制" Command="{Binding CopyLogCommand}"/>
+                        <MenuItem Header="清除"
+                                  Command="{Binding ClearLogCommand}" />
+                        <MenuItem Header="复制"
+                                  Command="{Binding CopyLogCommand}" />
                     </ContextMenu>
                 </ListView.ContextMenu>
             </ListView>
