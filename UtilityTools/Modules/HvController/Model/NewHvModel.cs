@@ -173,44 +173,98 @@ namespace UtilityTools.Modules.HvController.Model
             }
         }
 
-        private float _setAccVol;
+        private float _setAccVol = 0;
         /// <summary>
-        /// 设置加速电压
+        /// 设置加速电压，0-16kV
         /// </summary>
         public float SetAccVol
         {
             get { return _setAccVol; }
-            set { _setAccVol = value; RaisePropertyChanged(); }
+            set 
+            {
+                if (value < 0)
+                    value = 0;
+                else if (value > 16.0f)
+                    value = 16.0f;
+                _setAccVol = value; 
+                RaisePropertyChanged();
+
+                if (IsPrepared)
+                {
+                    SendMsg(NewHvControllerProtocol.GetAccVolCommand(value * 1000));
+                }
+            }
         }
 
-        private float _setHeatCur;
+        private float _setHeatCur = 2.0f;
         /// <summary>
-        /// 设置加热电流
+        /// 设置加热电流, 0-3.2A
         /// </summary>
         public float SetHeatCur
         {
             get { return _setHeatCur; }
-            set { _setHeatCur = value; RaisePropertyChanged(); }
+            set 
+            {
+                if (value < 0)
+                    value = 0;
+                else if (value > 3.2f)
+                    value = 3.2f;
+                _setHeatCur = value; 
+                RaisePropertyChanged();
+
+                if (IsPrepared)
+                {
+                    SendMsg(NewHvControllerProtocol.GetHeatCurCommand(value, 0x02));
+                }
+            }
         }
 
-        private float _setEmissionVol;
+        private float _setEmissionVol = 3.3f;
         /// <summary>
-        /// 设置吸取极电压
+        /// 设置吸取极电压, 0-6.0kV
         /// </summary>
         public float SetEmissionVol
         {
             get { return _setEmissionVol; }
-            set { _setEmissionVol = value; RaisePropertyChanged(); }
+            set 
+            {
+                if (value < 0)
+                    value = 0;
+                else if (value > 6.0f)
+                    value = 6.0f;
+
+                _setEmissionVol = value;
+                RaisePropertyChanged();
+
+                if (IsPrepared)
+                {
+                    SendMsg(NewHvControllerProtocol.GetEmissionVolCommand(value * 1000));
+                }
+            }
         }
 
-        private float _setGridVol;
+        private float _setGridVol = 0.3f;
         /// <summary>
-        /// 设置栅极电压
+        /// 设置栅极电压，0-2.0kV
         /// </summary>
         public float SetGridVol
         {
             get { return _setGridVol; }
-            set { _setGridVol = value; RaisePropertyChanged(); }
+            set 
+            {
+                if (value < 0)
+                    value = 0;
+                else if (value > 2.0f)
+                    value = 2.0f;
+
+                _setGridVol = value; 
+                RaisePropertyChanged();
+
+                if (IsPrepared)
+                {
+                    SendMsg(NewHvControllerProtocol.GetGridVolCommand(value * 1000));
+                }
+            }
         }
 
         private float _accVol = float.NaN;
@@ -376,10 +430,10 @@ namespace UtilityTools.Modules.HvController.Model
                 // 卸载高压准备工作
                 StopBackgroundWorker();
 
-                SetAccVol = 0;
-                SetGridVol = 0;
-                SetHeatCur = 0;
-                SetEmissionVol = 0;
+                SendMsg(NewHvControllerProtocol.GetHeatCurCommand(0.0f, 0x02));
+                SendMsg(NewHvControllerProtocol.GetAccVolCommand(0.0f));
+                SendMsg(NewHvControllerProtocol.GetGridVolCommand(0.0f));
+                SendMsg(NewHvControllerProtocol.GetEmissionVolCommand(0.0f));
                 SendMsg(NewHvControllerProtocol.GetCloseHvCommand());
 
             }
@@ -599,7 +653,7 @@ namespace UtilityTools.Modules.HvController.Model
 
             // 初始化栅极电压
             _gridVolEvent = new AutoResetEvent(false);
-            SendMsg(NewHvControllerProtocol.GetGridVolCommand(SetGridVol));
+            SendMsg(NewHvControllerProtocol.GetGridVolCommand(SetGridVol * 1000));
             if (!_gridVolEvent.WaitOne(3000))
             {
                 SetProgressInfo("设置栅极电压超时", 100);
@@ -640,7 +694,7 @@ namespace UtilityTools.Modules.HvController.Model
                 }
                 Thread.Sleep(500);
 
-                if (Math.Abs(SetHeatCur - FilaCur) < 0.5)
+                if (Math.Abs(SetHeatCur - FilaCur) < 0.1)
                 {
                     SetProgressInfo("完成加载加热电流", 90);
                     break;
@@ -660,7 +714,7 @@ namespace UtilityTools.Modules.HvController.Model
 
             // 初始化吸取极电压
             _emissionVolEvent = new AutoResetEvent(false);
-            SendMsg(NewHvControllerProtocol.GetGridVolCommand(SetGridVol));
+            SendMsg(NewHvControllerProtocol.GetEmissionVolCommand(SetEmissionVol * 1000));
             if (!_emissionVolEvent.WaitOne(3000))
             {
                 SetProgressInfo("设置吸取极电压超时", 100);
@@ -802,14 +856,20 @@ namespace UtilityTools.Modules.HvController.Model
             else if (msg.StartsWith("BV"))
             {
                 AddLog($"设置栅极电压:{msg}");
+                if(_gridVolEvent != null)
+                    _gridVolEvent.Set();
             }
             else if (msg.StartsWith("PI"))
             {
                 AddLog($"设置加热电流:{msg}");
+                if (_heatCurEvent != null)
+                    _heatCurEvent.Set();
             }
             else if (msg.StartsWith("EV"))
             {
                 AddLog($"设置吸取电压:{msg}");
+                if (_emissionVolEvent != null)
+                    _emissionVolEvent.Set();
             }
             else if (msg.StartsWith("HV"))
             {

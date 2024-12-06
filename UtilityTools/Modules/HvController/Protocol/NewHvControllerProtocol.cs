@@ -81,10 +81,11 @@ namespace UtilityTools.Modules.HvController.Protocol
         /// <returns></returns>
         public static byte[] GetGridVolCommand(float vol) 
         {
-            ushort value = (ushort)(vol * 0xFFFF / 2000.0);
+            ushort value = (ushort)(vol * 65536 / 2000.0);
             byte[] msgBuf = new byte[4];
             var arr = BitConverter.GetBytes(value);
-            Array.Copy(arr, msgBuf, arr.Length);
+            msgBuf[0] = arr[1];
+            msgBuf[1] = arr[0];
 
             return GetCommand(0xF2, msgBuf);
         }
@@ -97,10 +98,11 @@ namespace UtilityTools.Modules.HvController.Protocol
         /// <returns></returns>
         public static byte[] GetHeatCurCommand(float cur, byte step)
         {
-            ushort value = (ushort)(cur * 0xFFFF / 3.2);
+            ushort value = (ushort)(cur * 65536 / 3.2);
             byte[] msgBuf = new byte[4];
             var arr = BitConverter.GetBytes(value);
-            Array.Copy(arr, msgBuf, arr.Length);
+            msgBuf[0] = arr[1];
+            msgBuf[1] = arr[0];
             msgBuf[3] = step;
 
             return GetCommand(0xF3, msgBuf);
@@ -113,10 +115,11 @@ namespace UtilityTools.Modules.HvController.Protocol
         /// <returns></returns>
         public static byte[] GetEmissionVolCommand(float vol)
         {
-            ushort value = (ushort)(vol * 0xFFFF / 6000.0);
+            ushort value = (ushort)(vol * 65536 / 6000.0);
             byte[] msgBuf = new byte[4];
             var arr = BitConverter.GetBytes(value);
-            Array.Copy(arr, msgBuf, arr.Length);
+            msgBuf[0] = arr[1];
+            msgBuf[1] = arr[0];
 
             return GetCommand(0xF4, msgBuf);
         }
@@ -128,12 +131,13 @@ namespace UtilityTools.Modules.HvController.Protocol
         /// <returns></returns>
         public static byte[] GetAccVolCommand(float vol) 
         {
-            ushort value = (ushort)(vol * 0xFFFF / 16000.0);
+            ushort value = (ushort)(vol * 65536 / 16000.0);
             byte[] msgBuf = new byte[4];
             var arr = BitConverter.GetBytes(value);
-            Array.Copy(arr, msgBuf, arr.Length);
+            msgBuf[0] = arr[1];
+            msgBuf[1] = arr[0];
 
-            return GetCommand(0xF4, msgBuf);
+            return GetCommand(0xF5, msgBuf);
         }
 
         /// <summary>
