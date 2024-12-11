@@ -25,6 +25,11 @@
             <TextBlock Text="串口设置" FontWeight="Bold" DockPanel.Dock="Left" VerticalAlignment="Center" />
             <Button DockPanel.Dock="Left" Command="{Binding ShowDeviceCommand}" Content="{md:PackIcon Kind=UsbPort, Size=24}" Style="{StaticResource MaterialDesignToolButton}"
                     Foreground="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+            <Button DockPanel.Dock="Left"
+                    Command="{Binding ShowNetDeviceCommand}"
+                    Style="{StaticResource MaterialDesignToolButton}"
+                    Content="{md:PackIcon Kind=EthernetCable, Size=24}"
+                    Foreground="{Binding NetIsConnected, Converter={StaticResource BoolToColorConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
         </DockPanel>
 
         <Grid Grid.Row="1" Margin="10">
