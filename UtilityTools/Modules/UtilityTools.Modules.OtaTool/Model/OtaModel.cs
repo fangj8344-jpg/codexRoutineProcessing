@@ -65,6 +65,7 @@ namespace UtilityTools.Modules.OtaTool.Model
             NetUdpService = netUdp;
             UpdateCommand = new DelegateCommand(Update);
             LoadPackFileCommand = new DelegateCommand(LoadPackFile);
+            ClearLogCommand = new DelegateCommand(ClearLog);
 
             _parser1 = new OtaToolProtocolParser();
             _parser1.Service = SerialPortService;
@@ -77,6 +78,7 @@ namespace UtilityTools.Modules.OtaTool.Model
 
         }
 
+       
         ~OtaModel()
         {
             if (SerialPortService != null)
@@ -105,6 +107,12 @@ namespace UtilityTools.Modules.OtaTool.Model
         #endregion
 
         #region ------------Property------------
+        private string _isVisibility = "Collapsed";
+        public  string IsVisibility
+        { 
+            get { return _isVisibility; }
+            set { _isVisibility = value; RaisePropertyChanged(); }
+        }
         private bool _isButtonEnabled = false;
         public bool IsButtonEnabled
         {
@@ -146,18 +154,16 @@ namespace UtilityTools.Modules.OtaTool.Model
                 if (value == "未连接")
                 {
                     IsButtonEnabled = false;
-                    Log += "通讯异常\r\n";
                 }
                 else
                 {
                     IsButtonEnabled= true;
-                    Log += "通讯恢复正常\r\n";
                 }
                 _status = value; RaisePropertyChanged(); 
             }
         }
 
-        private string _log = "日志区域";
+        private string _log ;
 
         public string Log
         {
@@ -229,7 +235,7 @@ namespace UtilityTools.Modules.OtaTool.Model
 
         #region ------------Command-----------
         public DelegateCommand UpdateCommand { get; set; }
-        public DelegateCommand CmdTestCommand { get; set; }
+        public DelegateCommand ClearLogCommand { get; set; }
         public DelegateCommand LoadPackFileCommand { get; set; }
         #endregion
 
@@ -322,13 +328,13 @@ namespace UtilityTools.Modules.OtaTool.Model
                 if (SerialPortService.IsOpen)
                 {
                     SerialPortService.SendMsg(stopCmd);
-                    Log += "已发送停止固件升级命令\n\r";
+                    Log += "已发送停止固件升级命令\n";
                 }
 
                 if (NetUdpService.IsOpen)
                 {
                     NetUdpService.SendMsg(stopCmd);
-                    Log += "已发送停止固件升级命令\n\r";
+                    Log += "已发送停止固件升级命令\n";
                 }
                 Tips = "停止固件升级中";
 
@@ -362,13 +368,13 @@ namespace UtilityTools.Modules.OtaTool.Model
             if (SerialPortService.IsOpen)
             {
                 SerialPortService.SendMsg(requestCmd);
-                Log += "已发送升级校验指令\n\r";
+                Log += "已发送升级校验指令\n";
             }
 
             if (NetUdpService.IsOpen)
             {
                 NetUdpService.SendMsg(requestCmd);
-                Log += "已发送升级校验指令\n\r";
+                Log += "已发送升级校验指令\n";
             }
         }
 
@@ -406,17 +412,17 @@ namespace UtilityTools.Modules.OtaTool.Model
                     //日志
                     if (length >= 1024 && length < 1024 * 1024)
                     {
-                        Log = "文件大小" + (length + 1023) / 1024 + "KB\n\r" ;
+                        Log = "文件大小" + (length + 1023) / 1024 + "KB\n" ;
                     }
                     else if(length >= 1024*1024 )
                     {
-                        Log = "文件大小" + (length + 1023) / 1024 + "MB\n\r";
+                        Log = "文件大小" + (length + 1023) / 1024 + "MB\n";
                     }
                     else if (length < 1024 ) 
                     {
-                        Log = "文件大小" + (length + 1023) / 1024 + "B\n\r";
+                        Log = "文件大小" + (length + 1023) / 1024 + "B\n";
                     }
-                    Log += "预计传输" + MaxFrameCount + "帧" + "\n\r";
+                    Log += "预计传输" + MaxFrameCount + "帧" + "\n";
                 }
             }
             Directory.Delete(destinationPath, true);
@@ -487,6 +493,7 @@ namespace UtilityTools.Modules.OtaTool.Model
                         var firmwareVersim = DevelopmentBoardMessage.VersionNumber.Split('.');
                         var majorfirmwareVersim = firmwareVersim[0];
                         var minorfirmwareVersim = firmwareVersim[1];
+                        Log += "升级校校验回报信息："+year+ mouth+ day + " 版本号：" + majorVersion + "." + minorVersion + " 校验码 " + crc + "\r\n";
                         //是否是重启查询后的结果
                         if (_isRestart == true)
                         {
@@ -497,16 +504,24 @@ namespace UtilityTools.Modules.OtaTool.Model
 
                             if (Convert.ToUInt32(majorfirmwareVersim) == majorVersion && Convert.ToUInt32(minorfirmwareVersim) == minorVersion && crc == UpdateDataCrc)
                             {
+                                Log += "主版本号、子版本号和校验码验证匹配，校验完成，固件升级成功 \r\n";
                                 Tips = "固件升级成功";
                             }
                             else
                             {
                                 if (crc == UpdateDataCrc)
                                 {
+                                    Log += "版本号不匹配，校验码验证正确，固件升级失败\r\n";
                                     Tips = "固件升级失败,请核对版本号是否输入正确";
                                 }
-                                else 
+                                else if (Convert.ToUInt32(majorfirmwareVersim) == majorVersion && Convert.ToUInt32(minorfirmwareVersim) == minorVersion)
                                 {
+                                    Log += "版本号匹配，校验码验证错误，固件升级失败\r\n";
+                                    Tips = "固件升级失败";
+                                }
+                                else
+                                {
+                                    Log += "版本号错误，校验码验证错误，固件升级失败\r\n";
                                     Tips = "固件升级失败";
                                 }
                                 Reset();
@@ -524,11 +539,13 @@ namespace UtilityTools.Modules.OtaTool.Model
                                 service?.SendMsg(cmd);
                                 _isStartUpgrade = false;
                                 Tips = "开始升级中，请耐心等待";
+                                Log += "已发送OTA升级请求\r\n";
                             }
                             else
                             {
                                 Reset();
                                 Tips = "当前固件已是最新版本";
+                                Log += "当前硬件的固件版本已是最新版，升级停止\r\n";
                             }
                            
                         }
@@ -562,15 +579,18 @@ namespace UtilityTools.Modules.OtaTool.Model
                         Array.Copy(UpdateData, CurFrameCount * 32, data, 0, 32);
                         var cmd = OtaProtocol.GetTransferOtaCmd(CurFrameCount, data, DevelopmentBoardMessage.DeviceID.Value);
                         service?.SendMsg(cmd);
+                        Log += "第1帧数据已发送。\r\n";
                     }
                     break;
                 case EnumOtaCommandType.OTA_ABORT:
                     Reset();
                     Tips = "已停止固件升级";
+                    Log += "已接收停止固件升级回包\n\r";
                     break;
                 case EnumOtaCommandType.OTA_TRANSFER://接收到回报发送下一个回报
                     {
                         uint frameID = BitConverter.ToUInt32(e.DataSource, 0);
+                        Log += "第" + (frameID + 1) + "帧数据已接收\r\n";
                         if (!_isUpdating)
                         {
                             return;
@@ -584,10 +604,12 @@ namespace UtilityTools.Modules.OtaTool.Model
                             service?.SendMsg(cmd);
                             _isTimeout = true;
                             ExecuteWithTimeoutAsync(5000);
+                            Log += "第" + (CurFrameCount+1) + "帧数据已发送\r\n";
                         }
                         else
                         {
                             var cmd = OtaProtocol.GetRestartCmd(DevelopmentBoardMessage.DeviceID.Value);
+                            Log += "已发送重启命令\n\r";
                             _isRestart = true;
                             service?.SendMsg(cmd);
                             ConfirmTheUpgrade();
@@ -601,6 +623,7 @@ namespace UtilityTools.Modules.OtaTool.Model
                     {
                         return;
                     }
+                    Log += "已接收到重启升级回包\r\n";
                     break;
             }
            
@@ -610,7 +633,7 @@ namespace UtilityTools.Modules.OtaTool.Model
         public async Task WaitisTimeout()
         {
             await Task.Run(() => 
-            {
+            { 
                 while (_isTimeout) 
                 {
                     Thread.Sleep(0);
@@ -668,9 +691,14 @@ namespace UtilityTools.Modules.OtaTool.Model
             UpgradeButtonName = "开始升级";
             CurFrameCount = 0;
         }
+        private void ClearLog()
+        {
+            Log = "";
+        }
+
 
     }
-    
+
 
 
     #endregion

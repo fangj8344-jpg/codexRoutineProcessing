@@ -135,6 +135,7 @@ namespace UtilityTools.Modules.HvController.ViewModels
                 {
                     Model.SerialPortService = value;
                     IsConnected = Model.SerialPortService.IsOpen;
+                    Model.NewHvModel.GetHVParam();
                 }
             }
         }
@@ -156,6 +157,7 @@ namespace UtilityTools.Modules.HvController.ViewModels
                 {
                     Model.NetUdpService = value;
                     NetIsConnected = Model.NetUdpService.IsOpen;
+                    Model.NewHvModel.GetHVParam();
                 }
             }
         }

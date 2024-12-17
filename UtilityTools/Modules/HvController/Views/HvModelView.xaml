@@ -10,6 +10,7 @@
              xmlns:xc="http://schemas.xceed.com/wpf/xaml/toolkit"
              xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:bh="clr-namespace:UtilityTools.Core.Behavior;assembly=UtilityTools.Core"
+             xmlns:validation="clr-namespace:UtilityTools.Modules.HvController.ValidationResult"
              mc:Ignorable="d"
              d:DesignHeight="450"
              d:DesignWidth="800">
@@ -416,7 +417,8 @@
                           Header="加速电压(kV)"
                           Grid.ColumnSpan="2">
                     <UniformGrid Rows="1"
-                                 Margin="5">
+                                 Margin="6">
+                        <Button Content="关闭" Command="{Binding NewHvModel.SetAccVolCommand}" CommandParameter="0"/>
                         <Button Content="3kV" Command="{Binding NewHvModel.SetAccVolCommand}" CommandParameter="3"/>
                         <Button Content="5kV" Command="{Binding NewHvModel.SetAccVolCommand}" CommandParameter="5"/>
                         <Button Content="8kV" Command="{Binding NewHvModel.SetAccVolCommand}" CommandParameter="8"/>
@@ -433,9 +435,31 @@
                               VerticalScrollBarVisibility="Hidden"
                               Grid.ColumnSpan="2">
                     <StackPanel>
+                        <DockPanel>
+                            <RadioButton Content="新协议" DockPanel.Dock="Left" IsChecked="{Binding NewHvModel.IsNewProtocol}"/>
+                            <RadioButton Content="旧协议" DockPanel.Dock="Left"/>
+                            <CheckBox Content="自动栅压调整:" DockPanel.Dock="Left" Margin="20,0,5,0" IsChecked="{Binding NewHvModel.IsBvAdjust}"/>
+                            <Label Content="设置灯丝电流步进数值:" DockPanel.Dock="Left" Margin="20,0,5,0"/>
+                            <TextBox>
+                                <TextBox.Text>
+                                    <Binding Path="NewHvModel.Step" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged">
+                                        <Binding.ValidationRules>
+                                            <validation:StepValueValidationResult ValidatesOnTargetUpdated ="true" />
+                                        </Binding.ValidationRules>
+                                    </Binding>
+                                </TextBox.Text>
+                            </TextBox>
+                            <UniformGrid Columns="5">
+                                <Button Content="设置栅极电压" Command="{Binding NewHvModel.SetCommand}" CommandParameter="0"/>
+                                <Button Content="设置加热电流" Command="{Binding NewHvModel.SetCommand}" CommandParameter="1"/>
+                                <Button Content="设置吸取极电压" Command="{Binding NewHvModel.SetCommand}" CommandParameter="2"/>
+                                <Button Content="设置加速电压" Command="{Binding NewHvModel.SetCommand}" CommandParameter="3"/>
+                                <Button Content="初始化高压箱"  Command="{Binding NewHvModel.SetCommand}" CommandParameter="4"/>
+                            </UniformGrid>
+                        </DockPanel>
                         <GroupBox Header="获取参数"
                                   Margin="5">
-                            <UniformGrid Columns="4">
+                            <UniformGrid Columns="5">
                                 <Label Content="加速电压"
                                        HorizontalContentAlignment="Center" />
                                 <Label Content="钨灯丝电流"
@@ -444,7 +468,9 @@
                                        HorizontalContentAlignment="Center" />
                                 <Label Content="灯丝电流"
                                        HorizontalContentAlignment="Center" />
-                                <Label Content="{Binding NewHvModel.AccVol}"
+                                <Label Content="步进增长的当前值"
+                                       HorizontalContentAlignment="Center"/>
+                                    <Label Content="{Binding NewHvModel.AccVol}"
                                        HorizontalContentAlignment="Center" />
                                 <Label Content="{Binding NewHvModel.Hi}"
                                        HorizontalContentAlignment="Center" />
@@ -452,6 +478,8 @@
                                        HorizontalContentAlignment="Center" />
                                 <Label Content="{Binding NewHvModel.FilaCur}"
                                        HorizontalContentAlignment="Center" />
+                                <Label Content="{Binding NewHvModel.CurrentValue}"
+                                       HorizontalContentAlignment="Center"/>
                                 <Label Content="灯丝电阻"
                                        HorizontalContentAlignment="Center" />
                                 <Label Content="吸取极电压"
@@ -460,6 +488,8 @@
                                        HorizontalContentAlignment="Center" />
                                 <Label Content="栅极电压"
                                        HorizontalContentAlignment="Center" />
+                                <Label Content="步进增长的目标值"
+                                       HorizontalContentAlignment="Center" />
                                 <Label Content="{Binding NewHvModel.FilaR}"
                                        HorizontalContentAlignment="Center" />
                                 <Label Content="{Binding NewHvModel.EmissionVol}"
@@ -467,6 +497,8 @@
                                 <Label Content="{Binding NewHvModel.EmissionCur}"
                                        HorizontalContentAlignment="Center" />
                                 <Label Content="{Binding NewHvModel.GridVol}"
+                                       HorizontalContentAlignment="Center" />
+                                <Label Content="{Binding NewHvModel.TargetValue}"
                                        HorizontalContentAlignment="Center" />
                             </UniformGrid>
                         </GroupBox>

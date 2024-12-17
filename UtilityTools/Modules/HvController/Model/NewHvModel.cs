@@ -58,10 +58,16 @@ namespace UtilityTools.Modules.HvController.Model
         public NewHvModel(IContainerProvider containerProvider)
         {
             _containerProvider = containerProvider;
+            _paser1 = new HVProtocolParser();
+            _paser2 = new HVProtocolParser();
+            _paser1.Service = SerialPortService;
+            _paser2.Service = NetUdpService;
             SerialPortService = _containerProvider.Resolve<IServiceFactory>().GetAsynRWService("SPHV");
             SerialPortService.UpdateResponse += Device_UpdateResponse;
             NetUdpService = _containerProvider.Resolve<IServiceFactory>().GetAsynRWService("UNHV");
             NetUdpService.UpdateResponse += Device_UpdateResponse;
+            _paser1.PacketReceivedEvent += Paser_PacketReceivedEvent;
+            _paser2.PacketReceivedEvent += Paser_PacketReceivedEvent;
 
             PrepareWorkCommand = new DelegateCommand(PrepareWorkMethod);
             SetAccVolCommand = new DelegateCommand<object>(SetAccVolMethod);
@@ -69,6 +75,7 @@ namespace UtilityTools.Modules.HvController.Model
             AutoAdjustCommand = new DelegateCommand(AutoAdjust);
             ClearMonitorCommand = new DelegateCommand(ClearMonitor);
             SaveMonitorInfoCommand = new DelegateCommand(SaveMonitorInfo);
+            SetCommand = new DelegateCommand<string>(Set);
 
             HvPlotModel = new PlotModel();
             HvPlotModel.Legends.Add(new Legend());
@@ -106,11 +113,23 @@ namespace UtilityTools.Modules.HvController.Model
             }
         }
 
+       
+
+
         #endregion
 
         #region ------------Field------------
         private readonly IContainerProvider _containerProvider;
         private System.Timers.Timer _timer;
+        private System.Timers.Timer _timerNewProtocol;
+        private bool _isPiPrepareToComplete = false;
+        private bool _isInquireHvInitDone = false;
+        private bool _isHvInitDone =false;
+        public bool _isNewProtocolConnect = false;
+        
+
+        private HVProtocolParser _paser1;
+        private HVProtocolParser _paser2;
 
         private string _response = string.Empty;
 
@@ -130,6 +149,19 @@ namespace UtilityTools.Modules.HvController.Model
         #endregion
 
         #region ------------Property------------
+        private bool _isNewProtocol = true;
+        public bool IsNewProtocol
+        {
+            get { return _isNewProtocol; }
+            set { _isNewProtocol = value; RaisePropertyChanged(); }
+        }
+
+        private bool _isBvAdjust = true;
+        public bool IsBvAdjust
+        {
+            get { return _isBvAdjust; }
+            set { _isBvAdjust = value; RaisePropertyChanged(); }
+        }
         private IAsynRWService _serialPortService;
         /// <summary>
         /// 串口异步通信服务
@@ -162,14 +194,30 @@ namespace UtilityTools.Modules.HvController.Model
                 _isPrepared = value;
                 RaisePropertyChanged();
 
-                if (_isPrepared)
+                if (_isPrepared && IsNewProtocol == false)
                 {
                     PrepareState = "关闭高压";
                 }
-                else
+                else if(!_isPrepared && IsNewProtocol == false)
                 {
                     PrepareState = "高压准备";
                 }
+            }
+        }
+        private bool _isPrepareAllComplete = false;
+        public bool IsPrepareAllComplete
+        { 
+            get { return _isPrepareAllComplete; }
+            set { _isPrepareAllComplete = value; RaisePropertyChanged();
+                if (_isPrepareAllComplete && IsNewProtocol == true)
+                {
+                    PrepareState = "取消高压准备";
+                }
+                else if (!_isPrepareAllComplete && IsNewProtocol == true)
+                {
+                    PrepareState = "高压准备";
+                }
+
             }
         }
 
@@ -189,9 +237,13 @@ namespace UtilityTools.Modules.HvController.Model
                 _setAccVol = value; 
                 RaisePropertyChanged();
 
-                if (IsPrepared)
+                if (IsPrepared && IsNewProtocol == false)
                 {
                     SendMsg(NewHvControllerProtocol.GetAccVolCommand(value * 1000));
+                }
+                else if (IsPrepareAllComplete && IsNewProtocol == true)
+                {
+                    SendMsg(NewHvControllerProtocol.SetHVCmd(value));
                 }
             }
         }
@@ -212,9 +264,13 @@ namespace UtilityTools.Modules.HvController.Model
                 _setHeatCur = value; 
                 RaisePropertyChanged();
 
-                if (IsPrepared)
+                if (IsPrepared && IsNewProtocol == false)
                 {
                     SendMsg(NewHvControllerProtocol.GetHeatCurCommand(value, 0x02));
+                }
+                else if (IsPrepareAllComplete == true && IsNewProtocol == true)
+                {
+                    SendMsg(NewHvControllerProtocol.SetPICmd(value, 0x02));
                 }
             }
         }
@@ -236,9 +292,13 @@ namespace UtilityTools.Modules.HvController.Model
                 _setEmissionVol = value;
                 RaisePropertyChanged();
 
-                if (IsPrepared)
+                if (IsPrepared && IsNewProtocol == false)
                 {
                     SendMsg(NewHvControllerProtocol.GetEmissionVolCommand(value * 1000));
+                }
+                else if (IsPrepareAllComplete && IsNewProtocol == true)
+                {
+                    SendMsg(NewHvControllerProtocol.SetEVCmd(value));
                 }
             }
         }
@@ -260,9 +320,13 @@ namespace UtilityTools.Modules.HvController.Model
                 _setGridVol = value; 
                 RaisePropertyChanged();
 
-                if (IsPrepared)
+                if (IsPrepared && IsNewProtocol == false)
                 {
                     SendMsg(NewHvControllerProtocol.GetGridVolCommand(value * 1000));
+                }
+                else if (IsPrepareAllComplete && IsNewProtocol == true)
+                {
+                    SendMsg(NewHvControllerProtocol.SetBVCmd(value, IsBvAdjust));
                 }
             }
         }
@@ -296,6 +360,24 @@ namespace UtilityTools.Modules.HvController.Model
         {
             get { return _filaCur; }
             set { _filaCur = value; RaisePropertyChanged(); }
+        }
+        private float _currentValue = float.NaN;
+        /// <summary>
+        /// 步进增长的当前数值
+        /// </summary>
+        public float CurrentValue
+        {
+            get { return _currentValue; }
+            set { _currentValue = value; RaisePropertyChanged(); }
+        }
+        private float _targetValue = float.NaN;
+        /// <summary>
+        /// 步进增长的目标数值
+        /// </summary>
+        public float TargetValue
+        {
+            get { return _targetValue; }
+            set { _targetValue = value; RaisePropertyChanged(); }
         }
 
         private float _filaVol = float.NaN;
@@ -337,6 +419,12 @@ namespace UtilityTools.Modules.HvController.Model
             get { return _emissionVol; }
             set { _emissionVol = value; RaisePropertyChanged(); }
         }
+        private ushort _step = 2;
+        public ushort Step
+        {
+            get { return _step; }
+            set { _step = value; RaisePropertyChanged(); }
+        }
 
         private float _emissionCur = float.NaN;
         /// <summary>
@@ -347,6 +435,8 @@ namespace UtilityTools.Modules.HvController.Model
             get { return _emissionCur; }
             set { _emissionCur = value; RaisePropertyChanged(); }
         }
+
+   
 
         private int _monitorInterval = 2000;
         /// <summary>
@@ -420,21 +510,58 @@ namespace UtilityTools.Modules.HvController.Model
         #endregion
 
         #region ------------Command------------
+        public DelegateCommand<string> SetCommand { get; set; }
+      
+        private void Set(string obj)
+        {
+            var message1 = NewHvControllerProtocol.SetHVCmd(SetGridVol);
+            var message2 = NewHvControllerProtocol.SetPICmd(SetHeatCur, 0x02);
+            var message3 = NewHvControllerProtocol.SetEVCmd(SetEmissionVol);
+            var message4 = NewHvControllerProtocol.SetHVCmd(SetAccVol);
+            switch (obj)
+            {
+                case "0":SendMsg(NewHvControllerProtocol.SetBVCmd(SetGridVol)); break;
+                case "1":SendMsg(NewHvControllerProtocol.SetPICmd(SetHeatCur,0x02));break;
+                case "2": SendMsg(NewHvControllerProtocol.SetEVCmd(SetEmissionVol)); break;
+                case "3": SendMsg(NewHvControllerProtocol.SetHVCmd(SetAccVol)); break;
+                case "4": SendMsg(NewHvControllerProtocol.SetInitHVCmd()); break;
+            }
+        }
+
         public DelegateCommand PrepareWorkCommand { get; set; }
 
         private void PrepareWorkMethod()
         {
-            if (IsPrepared)
+            if (IsPrepared && IsNewProtocol == false)
             {
                 IsPrepared = false;
                 // 卸载高压准备工作
                 StopBackgroundWorker();
+
 
                 SendMsg(NewHvControllerProtocol.GetHeatCurCommand(0.0f, 0x02));
                 SendMsg(NewHvControllerProtocol.GetAccVolCommand(0.0f));
                 SendMsg(NewHvControllerProtocol.GetGridVolCommand(0.0f));
                 SendMsg(NewHvControllerProtocol.GetEmissionVolCommand(0.0f));
                 SendMsg(NewHvControllerProtocol.GetCloseHvCommand());
+            }
+            else if (_isPrepareAllComplete && IsNewProtocol == true)
+            {
+                IsPrepared = false;
+                StopBackgroundWorker();
+                //卸载高压工作后在将状态归零
+                SendMsg(NewHvControllerProtocol.SetHVCmd(0.0f));
+                Thread.Sleep(1000);
+                SendMsg(NewHvControllerProtocol.SetEVCmd(0.0f));
+                Thread.Sleep(1000);
+                SendMsg(NewHvControllerProtocol.SetPICmd(0.0f, 0x02));
+                Thread.Sleep(2000);
+                SendMsg(NewHvControllerProtocol.SetBVCmd(0.0f, IsBvAdjust));
+                Thread.Sleep(2000);
+                SendMsg(NewHvControllerProtocol.CloseAllCmd());
+                _isHvInitDone = false;
+                IsPrepareAllComplete = false;
+                
 
             }
             else
@@ -481,6 +608,8 @@ namespace UtilityTools.Modules.HvController.Model
                 }
             });
         }
+       
+
 
         public DelegateCommand AutoAdjustCommand { get; set; }
 
@@ -517,6 +646,38 @@ namespace UtilityTools.Modules.HvController.Model
 
                 SaveToFile(path);
             }
+        }
+        public async void GetHVParam()
+        {
+            if (IsNewProtocol)
+            {
+                await Task.Run(() =>
+                {
+                    if (_timerNewProtocol == null)
+                    {
+                        _timerNewProtocol = new System.Timers.Timer();
+                        _timerNewProtocol.AutoReset = true;
+                        _timerNewProtocol.Elapsed += TimerNewProtocol_Elapsed;
+                    }
+
+                    _timerNewProtocol.Interval = 1000;
+
+                    if (!_timerNewProtocol.Enabled)
+                    {
+                        _timerNewProtocol.Start();
+                    }
+                });
+            }
+        }
+
+        private void TimerNewProtocol_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            SendMsg(NewHvControllerProtocol.GetParamCmd());
+            if (_isInquireHvInitDone)
+            {
+                SendMsg(NewHvControllerProtocol.GetHVInitState());
+            }
+      
         }
 
         private void SaveToFile(string path)
@@ -591,145 +752,165 @@ namespace UtilityTools.Modules.HvController.Model
         private void BackgroundWorker_DoWork(object sender, DoWorkEventArgs e)
         {
             var bw = sender as BackgroundWorker;
-
-            if (bw.CancellationPending == true)
+            if (IsNewProtocol == false)
             {
-                e.Cancel = true;
-                SetProgressInfo("取消高压准备", 100);
-                return;
-            }
 
-            // 判断当前的灯丝电流
-            if (float.IsNaN(FilaCur))
-            {
-                e.Cancel = true;
-                SetProgressInfo("未连接设备", 100);
-                return;
-            }
-
-            if (FilaCur > 3.5)      // 高压箱处于未准备状态
-            {
-                // 发送初始化指令
-                SetProgressInfo("初始化高压箱", 0);
-                _initEvent = new AutoResetEvent(false);
-                _initResultEvent = new AutoResetEvent(false);
-                SendMsg(NewHvControllerProtocol.GetInitCommand());
-                if (!_initEvent.WaitOne(3000))
-                {
-                    SetProgressInfo("初始化高压箱超时", 100);
-                    _initEvent = null;
-                    e.Cancel = true;
-                    return;
-                }
-                _initEvent = null;
-                SetProgressInfo("初始化高压箱", 10);
-
-                if (!_initResult)
-                {
-                    SetProgressInfo("初始化高压箱失败，请稍后重试", 100);
-                    _initResultEvent = null;
-                    e.Cancel = true;
-                    return;
-                }
-
-                if (!_initResultEvent.WaitOne(10000))
-                {
-                    SetProgressInfo("初始化高压箱等待结果超时", 100);
-                    e.Cancel = true;
-                    _initResultEvent = null;
-                    return;
-                }
-                _initResultEvent = null;
-            }
-
-            SetProgressInfo("初始化高压箱成功", 20);
-
-            if (bw.CancellationPending == true)
-            {
-                e.Cancel = true;
-                SetProgressInfo("取消高压准备", 100);
-                return;
-            }
-
-            // 初始化栅极电压
-            _gridVolEvent = new AutoResetEvent(false);
-            SendMsg(NewHvControllerProtocol.GetGridVolCommand(SetGridVol * 1000));
-            if (!_gridVolEvent.WaitOne(3000))
-            {
-                SetProgressInfo("设置栅极电压超时", 100);
-                _gridVolEvent = null;
-                e.Cancel = true;
-                return;
-            }
-            _gridVolEvent = null;
-            SetProgressInfo("设置栅极电压成功", 30);
-
-            if (bw.CancellationPending == true)
-            {
-                e.Cancel = true;
-                SetProgressInfo("取消高压准备", 100);
-                return;
-            }
-
-            // 初始化加热电流
-            _heatCurEvent = new AutoResetEvent(false);
-            SendMsg(NewHvControllerProtocol.GetHeatCurCommand(SetHeatCur, 0x02));
-            if (!_heatCurEvent.WaitOne(3000))
-            {
-                _heatCurEvent = null;
-                e.Cancel = true;
-                SetProgressInfo("设置加热电流超时", 100);
-                return;
-            }
-            _heatCurEvent = null;
-            SetProgressInfo("设置加热电流成功", 40);
-
-            while (true)
-            {
                 if (bw.CancellationPending == true)
                 {
                     e.Cancel = true;
                     SetProgressInfo("取消高压准备", 100);
                     return;
                 }
-                Thread.Sleep(500);
 
-                if (Math.Abs(SetHeatCur - FilaCur) < 0.1)
+                // 判断当前的灯丝电流
+                if (float.IsNaN(FilaCur))
                 {
-                    SetProgressInfo("完成加载加热电流", 90);
-                    break;
+                    e.Cancel = true;
+                    SetProgressInfo("未连接设备", 100);
+                    return;
                 }
-                else
+
+                if (FilaCur > 3.5)      // 高压箱处于未准备状态
                 {
-                    SetProgressInfo("正在加载加热电流", 40 + FilaCur / SetHeatCur * 50);
+                    // 发送初始化指令
+                    SetProgressInfo("初始化高压箱", 0);
+                    _initEvent = new AutoResetEvent(false);
+                    _initResultEvent = new AutoResetEvent(false);
+                    SendMsg(NewHvControllerProtocol.GetInitCommand());
+                    if (!_initEvent.WaitOne(3000))
+                    {
+                        SetProgressInfo("初始化高压箱超时", 100);
+                        _initEvent = null;
+                        e.Cancel = true;
+                        return;
+                    }
+                    _initEvent = null;
+                    SetProgressInfo("初始化高压箱", 10);
+
+                    if (!_initResult)
+                    {
+                        SetProgressInfo("初始化高压箱失败，请稍后重试", 100);
+                        _initResultEvent = null;
+                        e.Cancel = true;
+                        return;
+                    }
+
+                    if (!_initResultEvent.WaitOne(10000))
+                    {
+                        SetProgressInfo("初始化高压箱等待结果超时", 100);
+                        e.Cancel = true;
+                        _initResultEvent = null;
+                        return;
+                    }
+                    _initResultEvent = null;
                 }
-            }
 
-            if (bw.CancellationPending == true)
-            {
-                e.Cancel = true;
-                SetProgressInfo("取消高压准备", 100);
-                return;
-            }
+                SetProgressInfo("初始化高压箱成功", 20);
 
-            // 初始化吸取极电压
-            _emissionVolEvent = new AutoResetEvent(false);
-            SendMsg(NewHvControllerProtocol.GetEmissionVolCommand(SetEmissionVol * 1000));
-            if (!_emissionVolEvent.WaitOne(3000))
-            {
-                SetProgressInfo("设置吸取极电压超时", 100);
+                if (bw.CancellationPending == true)
+                {
+                    e.Cancel = true;
+                    SetProgressInfo("取消高压准备", 100);
+                    return;
+                }
+
+                // 初始化栅极电压
+                _gridVolEvent = new AutoResetEvent(false);
+                SendMsg(NewHvControllerProtocol.GetGridVolCommand(SetGridVol * 1000));
+                if (!_gridVolEvent.WaitOne(3000))
+                {
+                    SetProgressInfo("设置栅极电压超时", 100);
+                    _gridVolEvent = null;
+                    e.Cancel = true;
+                    return;
+                }
+                _gridVolEvent = null;
+                SetProgressInfo("设置栅极电压成功", 30);
+
+                if (bw.CancellationPending == true)
+                {
+                    e.Cancel = true;
+                    SetProgressInfo("取消高压准备", 100);
+                    return;
+                }
+
+                // 初始化加热电流
+                _heatCurEvent = new AutoResetEvent(false);
+                SendMsg(NewHvControllerProtocol.GetHeatCurCommand(SetHeatCur, 0x02));
+                if (!_heatCurEvent.WaitOne(3000))
+                {
+                    _heatCurEvent = null;
+                    e.Cancel = true;
+                    SetProgressInfo("设置加热电流超时", 100);
+                    return;
+                }
+                _heatCurEvent = null;
+                SetProgressInfo("设置加热电流成功", 40);
+
+                while (true)
+                {
+                    if (bw.CancellationPending == true)
+                    {
+                        e.Cancel = true;
+                        SetProgressInfo("取消高压准备", 100);
+                        return;
+                    }
+                    Thread.Sleep(500);
+
+                    if (Math.Abs(SetHeatCur - FilaCur) < 0.1)
+                    {
+                        SetProgressInfo("完成加载加热电流", 90);
+                        break;
+                    }
+                    else
+                    {
+                        SetProgressInfo("正在加载加热电流", 40 + FilaCur / SetHeatCur * 50);
+                    }
+                }
+
+                if (bw.CancellationPending == true)
+                {
+                    e.Cancel = true;
+                    SetProgressInfo("取消高压准备", 100);
+                    return;
+                }
+
+                // 初始化吸取极电压
+                _emissionVolEvent = new AutoResetEvent(false);
+                SendMsg(NewHvControllerProtocol.GetEmissionVolCommand(SetEmissionVol * 1000));
+                if (!_emissionVolEvent.WaitOne(3000))
+                {
+                    SetProgressInfo("设置吸取极电压超时", 100);
+                    _emissionVolEvent = null;
+                    e.Cancel = true;
+                    return;
+                }
                 _emissionVolEvent = null;
-                e.Cancel = true;
-                return;
+                SetProgressInfo("设置吸取极电压成功", 100);
             }
-            _emissionVolEvent = null;
-            SetProgressInfo("设置吸取极电压成功", 100);
+            else if (IsNewProtocol)
+            {
+                NewProtocolWorkPrepare(sender,e);
+            }
 
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        private void NewProtocolWorkPrepare(object sender, DoWorkEventArgs e)
+        {
+            if (_isNewProtocolConnect == true)
+            {
+                SendMsg(NewHvControllerProtocol.SetInitHVCmd());
+                SetProgressInfo("初始化高压箱", 100);
+            }
+           
         }
 
         private void BackgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            if (e.Cancelled == false)
+            if (e.Cancelled == false && IsNewProtocol == false)
             {
                 IsPrepared = true;
                 SetProgressInfo("完成高压箱初始化", 100);
@@ -789,10 +970,13 @@ namespace UtilityTools.Modules.HvController.Model
         /// <exception cref="NotImplementedException"></exception>
         private void Timer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            // Work
-            AddLog("请求高压状态");
-            var cmd = NewHvControllerProtocol.GetRequestCommand();
-            SendMsg(cmd);
+            if (IsNewProtocol == false)
+            {
+                // Work
+                AddLog("请求高压状态");
+                var cmd = NewHvControllerProtocol.GetRequestCommand();
+                SendMsg(cmd);
+            }
         }
 
 
@@ -803,32 +987,48 @@ namespace UtilityTools.Modules.HvController.Model
         /// <param name="e"></param>
         private void Device_UpdateResponse(object sender, byte[] e)
         {
-            if (e == null)
-                return;
-
-            _response += Encoding.UTF8.GetString(e);
-
-            while (_response.Contains("\r\n"))
+            if (IsNewProtocol == false)
             {
-                bool isEndWith = _response.EndsWith("\r\n");
-                var list = _response.Split('\n');
-                var count = list.Count();
-                if (!isEndWith)
-                {
-                    _response = list.Last();
-                    count--;
-                }
-                else
-                {
-                    _response = string.Empty;
-                }
+                if (e == null)
+                    return;
 
-                for (int i = 0; i < count; i++)
-                {
-                    ParseResponse(list[i]);
-                }
+                _response += Encoding.UTF8.GetString(e);
 
+                while (_response.Contains("\r\n"))
+                {
+                    bool isEndWith = _response.EndsWith("\r\n");
+                    var list = _response.Split('\n');
+                    var count = list.Count();
+                    if (!isEndWith)
+                    {
+                        _response = list.Last();
+                        count--;
+                    }
+                    else
+                    {
+                        _response = string.Empty;
+                    }
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        ParseResponse(list[i]);
+                    }
+
+                }
             }
+            else if (IsNewProtocol == true) 
+            {
+                if (SerialPortService.IsOpen)
+                {
+                    _paser1.ReceiveBytes(e);
+                }
+                else if (NetUdpService.IsOpen)
+                {
+                    _paser2.ReceiveBytes(e);
+                }
+                
+            }
+            
         }
 
         private void ParseResponse(string msg)
@@ -956,6 +1156,131 @@ namespace UtilityTools.Modules.HvController.Model
                     }
                 }
             }
+        }
+        /// <summary>
+        /// 新协议回报接收事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void Paser_PacketReceivedEvent(object sender, HVDataPacket e)
+        {
+            var paser = sender as HVProtocolParser;
+            IAsynRWService? service = null;
+            if (paser != null)
+            {
+                service = paser.Service;
+            }
+            var cmd = e.CmdType;
+            if (!Enum.IsDefined(typeof(EnumHvCommandType), cmd))
+            {
+                return;
+            }
+            switch (e.CmdType)
+            {
+                case  EnumHvCommandType.CMD_GET_PARAM:
+                    _isNewProtocolConnect = true;
+                    float hv = BitConverter.ToSingle(e.DataSource,0);
+                    float hi = BitConverter.ToSingle(e.DataSource, 4);
+                    float pv = BitConverter.ToSingle(e.DataSource, 8);
+                    float pi = BitConverter.ToSingle(e.DataSource, 12);
+                    float r = BitConverter.ToSingle(e.DataSource, 16);
+                    float ev = BitConverter.ToSingle(e.DataSource, 20);
+                    float ei = BitConverter.ToSingle(e.DataSource, 24);
+                    float bv = BitConverter.ToSingle(e.DataSource, 28);
+                    AccVol = hv;
+                    Hi = hi;
+                    FilaCur = pi;
+                    FilaVol = pv;
+                    FilaR = r;
+                    GridVol = ev;
+                    EmissionVol = bv;
+                    EmissionCur = ei;
+                    break;
+                case EnumHvCommandType.CMD_HV_INIT:
+                    byte initResult = e.DataSource[0];
+                    if (initResult == 0)//0代表行为执行1代表不执行
+                    {
+                        //初始化成功后开始查询进度，查询初始化完成后才能够进行发送的工作
+                        _isInquireHvInitDone = true;
+                       
+                    }
+                    else if (initResult == 1)
+                    {
+
+                        //初始化失败
+                    }
+                    break;
+                case EnumHvCommandType.CMD_SET_BV:
+                    if (_isPrepareAllComplete == false && _isHvInitDone == true)
+                    {
+                        SetProgressInfo("设置栅极电压", 100);
+                        //栅极电压接收成功，开始设置加热电流
+                        SendMsg(NewHvControllerProtocol.SetPICmd(FilaCur, Step));
+                    }
+                    break;  
+                case EnumHvCommandType.CMD_SET_PI:
+                    if (_isPrepareAllComplete == false && _isHvInitDone == true)
+                    {
+                        SetProgressInfo("设置加热电流中", 100);
+                        //加热电流命令接收 需要等待加热电流完成 此时启用等待 等待完成后设置吸取极电压
+                        WaitPIPrepareToComplete();
+                    }
+                        
+                    break;
+                case EnumHvCommandType.CMD_SET_EV:
+                    if (_isHvInitDone == true && IsPrepareAllComplete == false)
+                    {
+                        IsPrepareAllComplete = true;
+                        IsPrepared = true;
+                    }
+                    //吸取电压设置完成后 可以表示准备成功
+
+
+                    break;
+                case EnumHvCommandType.CMD_SET_HV:
+                    break;
+                case EnumHvCommandType.CMD_CLOSE_ALL:
+                    break;
+                case EnumHvCommandType.CMD_GET_HV_INIT_STATE:
+                    var value = e.DataSource[0];
+                    if (value == 1 && _isHvInitDone == false && IsPrepareAllComplete == false)
+                    {
+                        //代表高压箱初始化完成
+                        SetProgressInfo("初始化高压箱完成", 100);
+                        _isHvInitDone = true;
+                        _isInquireHvInitDone = false;
+                        SendMsg(NewHvControllerProtocol.SetBVCmd(GridVol, IsBvAdjust));
+                    }
+                    else if (value == 0)
+                    {
+                        SetProgressInfo("正在初始化高压箱", 100);
+                        //代表还在初始化高压箱中。
+                    }
+                    break;
+                case EnumHvCommandType.CMD_GET_PI_STEP:
+                    UInt16 StepByStepCurrentValue = BitConverter.ToUInt16(e.DataSource,0);//当前步进增长数值
+                    UInt16 StepByStepTargetValue = BitConverter.ToUInt16(e.DataSource, 2);//目标步进增长数值
+                    TargetValue = StepByStepTargetValue;
+                    CurrentValue = StepByStepCurrentValue;
+                    break;
+            }
+        }
+        private async void WaitPIPrepareToComplete()
+        {
+            await Task.Run(() =>
+            {
+                while (true) 
+                {
+                    if (SetHeatCur <= FilaCur && FilaCur <3.5)
+                    {
+                        SendMsg(NewHvControllerProtocol.SetEVCmd(SetEmissionVol));
+                        SetProgressInfo("加热电流设置完成中", 100);
+                        return;
+                    }
+                    else { Thread.Sleep(500); }
+                }
+            });
         }
 
         #endregion

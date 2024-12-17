@@ -156,8 +156,25 @@
                     BorderThickness="2"
                     Margin="5"
                     BorderBrush="AliceBlue">
-                <Label Margin="10"
-                       Content="{Binding Log}" />
+
+                <DockPanel >
+                    <DockPanel DockPanel.Dock="Top">
+                        <Label DockPanel.Dock="Left"
+                               Content="日志区域"/>
+                        <Button  DockPanel.Dock="Right" 
+                                 Margin="400,0,20,0"
+                                 Content="清除日志"  
+                                 Command="{Binding ClearLogCommand}"/>
+                    </DockPanel>
+                    <ScrollViewer HorizontalScrollBarVisibility="Visible" DockPanel.Dock="Top" >
+                        <TextBlock Padding="10" 
+                           Margin="5,5,5,5"
+                           DockPanel.Dock="Top"
+                           TextWrapping="Wrap"
+                       Text="{Binding Log}" />
+                    </ScrollViewer>
+                </DockPanel>
+             
             </Border>
         </Grid>
 
