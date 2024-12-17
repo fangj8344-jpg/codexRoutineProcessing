@@ -218,6 +218,10 @@ namespace UtilityTools.Modules.HvController.Protocol
                     isStart = true;
                     ePos = sPos;
                 }
+                else
+                {
+                    sPos++;
+                }
             }
 
             while (!isEnd)
@@ -231,6 +235,10 @@ namespace UtilityTools.Modules.HvController.Protocol
                     && response[ePos + 3] == 0xEE)
                 {
                     isEnd = true;
+                }
+                else
+                {
+                    ePos++;
                 }
             }
 

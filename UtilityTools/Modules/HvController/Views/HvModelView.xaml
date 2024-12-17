@@ -449,17 +449,18 @@
                                     </Binding>
                                 </TextBox.Text>
                             </TextBox>
-                            <UniformGrid Columns="5">
+                            <UniformGrid Columns="6">
                                 <Button Content="设置栅极电压" Command="{Binding NewHvModel.SetCommand}" CommandParameter="0"/>
                                 <Button Content="设置加热电流" Command="{Binding NewHvModel.SetCommand}" CommandParameter="1"/>
                                 <Button Content="设置吸取极电压" Command="{Binding NewHvModel.SetCommand}" CommandParameter="2"/>
                                 <Button Content="设置加速电压" Command="{Binding NewHvModel.SetCommand}" CommandParameter="3"/>
                                 <Button Content="初始化高压箱"  Command="{Binding NewHvModel.SetCommand}" CommandParameter="4"/>
+                                <Button Content="高压箱状态查询"  Command="{Binding NewHvModel.SetCommand}" CommandParameter="5"/>
                             </UniformGrid>
                         </DockPanel>
                         <GroupBox Header="获取参数"
                                   Margin="5">
-                            <UniformGrid Columns="5">
+                            <UniformGrid Columns="6">
                                 <Label Content="加速电压"
                                        HorizontalContentAlignment="Center" />
                                 <Label Content="钨灯丝电流"
@@ -470,7 +471,9 @@
                                        HorizontalContentAlignment="Center" />
                                 <Label Content="步进增长的当前值"
                                        HorizontalContentAlignment="Center"/>
-                                    <Label Content="{Binding NewHvModel.AccVol}"
+                                <Label Content="高压箱初始化状态"
+                                       HorizontalContentAlignment="Center"/>
+                                <Label Content="{Binding NewHvModel.AccVol}"
                                        HorizontalContentAlignment="Center" />
                                 <Label Content="{Binding NewHvModel.Hi}"
                                        HorizontalContentAlignment="Center" />
@@ -479,6 +482,8 @@
                                 <Label Content="{Binding NewHvModel.FilaCur}"
                                        HorizontalContentAlignment="Center" />
                                 <Label Content="{Binding NewHvModel.CurrentValue}"
+                                       HorizontalContentAlignment="Center"/>
+                                <Label Content="{Binding NewHvModel.IsHvInitDone}"
                                        HorizontalContentAlignment="Center"/>
                                 <Label Content="灯丝电阻"
                                        HorizontalContentAlignment="Center" />
@@ -489,6 +494,8 @@
                                 <Label Content="栅极电压"
                                        HorizontalContentAlignment="Center" />
                                 <Label Content="步进增长的目标值"
+                                       HorizontalContentAlignment="Center" />
+                                <Label Content=""
                                        HorizontalContentAlignment="Center" />
                                 <Label Content="{Binding NewHvModel.FilaR}"
                                        HorizontalContentAlignment="Center" />

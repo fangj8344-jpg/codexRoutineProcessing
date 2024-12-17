@@ -124,7 +124,7 @@ namespace UtilityTools.Modules.HvController.Model
         private System.Timers.Timer _timerNewProtocol;
         private bool _isPiPrepareToComplete = false;
         private bool _isInquireHvInitDone = false;
-        private bool _isHvInitDone =false;
+        
         public bool _isNewProtocolConnect = false;
         
 
@@ -149,6 +149,13 @@ namespace UtilityTools.Modules.HvController.Model
         #endregion
 
         #region ------------Property------------
+        private bool _isHvInitDone = false;
+        public bool IsHvInitDone
+        {
+            get { return _isHvInitDone; }
+            set { _isHvInitDone = value; RaisePropertyChanged(); }
+        }
+        
         private bool _isNewProtocol = true;
         public bool IsNewProtocol
         {
@@ -156,7 +163,7 @@ namespace UtilityTools.Modules.HvController.Model
             set { _isNewProtocol = value; RaisePropertyChanged(); }
         }
 
-        private bool _isBvAdjust = true;
+        private bool _isBvAdjust = false;
         public bool IsBvAdjust
         {
             get { return _isBvAdjust; }
@@ -520,11 +527,12 @@ namespace UtilityTools.Modules.HvController.Model
             var message4 = NewHvControllerProtocol.SetHVCmd(SetAccVol);
             switch (obj)
             {
-                case "0":SendMsg(NewHvControllerProtocol.SetBVCmd(SetGridVol)); break;
+                case "0":SendMsg(NewHvControllerProtocol.SetBVCmd(SetGridVol, IsBvAdjust)); break;
                 case "1":SendMsg(NewHvControllerProtocol.SetPICmd(SetHeatCur,0x02));break;
                 case "2": SendMsg(NewHvControllerProtocol.SetEVCmd(SetEmissionVol)); break;
                 case "3": SendMsg(NewHvControllerProtocol.SetHVCmd(SetAccVol)); break;
                 case "4": SendMsg(NewHvControllerProtocol.SetInitHVCmd()); break;
+                case "5": SendMsg(NewHvControllerProtocol.GetHVInitState()); break;
             }
         }
 
@@ -559,7 +567,7 @@ namespace UtilityTools.Modules.HvController.Model
                 SendMsg(NewHvControllerProtocol.SetBVCmd(0.0f, IsBvAdjust));
                 Thread.Sleep(2000);
                 SendMsg(NewHvControllerProtocol.CloseAllCmd());
-                _isHvInitDone = false;
+                IsHvInitDone = false;
                 IsPrepareAllComplete = false;
                 
 
@@ -660,7 +668,7 @@ namespace UtilityTools.Modules.HvController.Model
                         _timerNewProtocol.Elapsed += TimerNewProtocol_Elapsed;
                     }
 
-                    _timerNewProtocol.Interval = 1000;
+                    _timerNewProtocol.Interval = 500;
 
                     if (!_timerNewProtocol.Enabled)
                     {
@@ -672,7 +680,8 @@ namespace UtilityTools.Modules.HvController.Model
 
         private void TimerNewProtocol_Elapsed(object sender, ElapsedEventArgs e)
         {
-            SendMsg(NewHvControllerProtocol.GetParamCmd());
+            var cmd = NewHvControllerProtocol.GetParamCmd();
+            SendMsg(cmd);
             if (_isInquireHvInitDone)
             {
                 SendMsg(NewHvControllerProtocol.GetHVInitState());
@@ -726,13 +735,20 @@ namespace UtilityTools.Modules.HvController.Model
         #region ------------PublicMethod------------
         public void StartBackgroundWorker()
         {
-            StopBackgroundWorker();
+            if (IsNewProtocol == false)
+            {
+                StopBackgroundWorker();
 
-            _backgroundWorker = new BackgroundWorker();
-            _backgroundWorker.WorkerSupportsCancellation = true;
-            _backgroundWorker.DoWork += BackgroundWorker_DoWork;
-            _backgroundWorker.RunWorkerCompleted += BackgroundWorker_RunWorkerCompleted;
-            _backgroundWorker.RunWorkerAsync();
+                _backgroundWorker = new BackgroundWorker();
+                _backgroundWorker.WorkerSupportsCancellation = true;
+                _backgroundWorker.DoWork += BackgroundWorker_DoWork;
+                _backgroundWorker.RunWorkerCompleted += BackgroundWorker_RunWorkerCompleted;
+                _backgroundWorker.RunWorkerAsync();
+            }
+            else
+            {
+                NewProtocolWorkPrepare();
+            }
         }
 
         public void StopBackgroundWorker()
@@ -888,17 +904,14 @@ namespace UtilityTools.Modules.HvController.Model
                 _emissionVolEvent = null;
                 SetProgressInfo("设置吸取极电压成功", 100);
             }
-            else if (IsNewProtocol)
-            {
-                NewProtocolWorkPrepare(sender,e);
-            }
+            
 
         }
         /// <summary>
         /// 
         /// </summary>
         /// <param name="sender"></param>
-        private void NewProtocolWorkPrepare(object sender, DoWorkEventArgs e)
+        private void NewProtocolWorkPrepare()
         {
             if (_isNewProtocolConnect == true)
             {
@@ -1028,7 +1041,8 @@ namespace UtilityTools.Modules.HvController.Model
                 }
                 
             }
-            
+           
+
         }
 
         private void ParseResponse(string msg)
@@ -1193,8 +1207,8 @@ namespace UtilityTools.Modules.HvController.Model
                     FilaCur = pi;
                     FilaVol = pv;
                     FilaR = r;
-                    GridVol = ev;
-                    EmissionVol = bv;
+                    EmissionVol = ev;
+                    GridVol = bv;
                     EmissionCur = ei;
                     break;
                 case EnumHvCommandType.CMD_HV_INIT:
@@ -1214,17 +1228,20 @@ namespace UtilityTools.Modules.HvController.Model
                 case EnumHvCommandType.CMD_SET_BV:
                     if (_isPrepareAllComplete == false && _isHvInitDone == true)
                     {
-                        SetProgressInfo("设置栅极电压", 100);
+                        
                         //栅极电压接收成功，开始设置加热电流
-                        SendMsg(NewHvControllerProtocol.SetPICmd(FilaCur, Step));
+                        SendMsg(NewHvControllerProtocol.SetPICmd(SetHeatCur, Step));
                     }
+                    SetProgressInfo("设置栅极电压", 100);
                     break;  
                 case EnumHvCommandType.CMD_SET_PI:
                     if (_isPrepareAllComplete == false && _isHvInitDone == true)
                     {
                         SetProgressInfo("设置加热电流中", 100);
                         //加热电流命令接收 需要等待加热电流完成 此时启用等待 等待完成后设置吸取极电压
-                        WaitPIPrepareToComplete();
+
+                        //WaitPIPrepareToComplete();
+                        SendMsg(NewHvControllerProtocol.SetEVCmd(SetEmissionVol));
                     }
                         
                     break;
@@ -1234,6 +1251,7 @@ namespace UtilityTools.Modules.HvController.Model
                         IsPrepareAllComplete = true;
                         IsPrepared = true;
                     }
+                    SetProgressInfo("设置吸取极电压", 100);
                     //吸取电压设置完成后 可以表示准备成功
 
 
@@ -1248,21 +1266,31 @@ namespace UtilityTools.Modules.HvController.Model
                     {
                         //代表高压箱初始化完成
                         SetProgressInfo("初始化高压箱完成", 100);
-                        _isHvInitDone = true;
+                        IsHvInitDone = true;
                         _isInquireHvInitDone = false;
-                        SendMsg(NewHvControllerProtocol.SetBVCmd(GridVol, IsBvAdjust));
+                        SendMsg(NewHvControllerProtocol.SetBVCmd(SetGridVol, IsBvAdjust));
                     }
                     else if (value == 0)
                     {
+                        IsHvInitDone = false;
+                        IsPrepareAllComplete = false;
                         SetProgressInfo("正在初始化高压箱", 100);
                         //代表还在初始化高压箱中。
                     }
+                    else if (value == 0x02)
+                    {
+                        SetProgressInfo("初始化高压错误", 100);
+                        IsHvInitDone = false;
+                        _isInquireHvInitDone = false;
+                    }
+                    
                     break;
                 case EnumHvCommandType.CMD_GET_PI_STEP:
                     UInt16 StepByStepCurrentValue = BitConverter.ToUInt16(e.DataSource,0);//当前步进增长数值
                     UInt16 StepByStepTargetValue = BitConverter.ToUInt16(e.DataSource, 2);//目标步进增长数值
                     TargetValue = StepByStepTargetValue;
                     CurrentValue = StepByStepCurrentValue;
+                    SetProgressInfo("获取当前加热电流设置值", 100);
                     break;
             }
         }

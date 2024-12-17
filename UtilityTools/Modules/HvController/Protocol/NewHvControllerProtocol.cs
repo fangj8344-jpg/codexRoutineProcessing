@@ -170,6 +170,8 @@ namespace UtilityTools.Modules.HvController.Protocol
             ushort value1 = (ushort)(pi * 65535 / 3.2);
             ushort value2 = stepValue;
             byte[] data = new byte[36];
+            var V1 = BitConverter.GetBytes(value1);
+            var V2 = BitConverter.GetBytes(value2);
             Buffer.BlockCopy(BitConverter.GetBytes(value1), 0, data, 0, 2);
             Buffer.BlockCopy(BitConverter.GetBytes(value2), 0, data, 2, 2);
             return GetCmd(EnumHvCommandType.CMD_SET_PI, data);
