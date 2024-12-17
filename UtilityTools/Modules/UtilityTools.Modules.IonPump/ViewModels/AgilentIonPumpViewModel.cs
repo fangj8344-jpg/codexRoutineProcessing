@@ -238,6 +238,12 @@ namespace UtilityTools.Modules.IonPump.ViewModels
         public DelegateCommand ShowDeviceCommand { get; set; }
         private async void ShowDevice()
         {
+            Service = containerProvider.Resolve<IServiceFactory>().GetAsynRWService("GSP", "安捷伦离子泵");
+            Service.IsBinary = false;
+            Service.MinWriteInterval = 100;
+            var Model = Service.GetHandle() as SerialPortModel;
+            Model.BaudRate = 9600;
+            Service.UpdateResponse += (object sender, byte[] data) => _respParser.ReceiveBytes(data);
 
             DialogParameters parameter = new DialogParameters();
             parameter.Add("Value", Service);
@@ -258,12 +264,45 @@ namespace UtilityTools.Modules.IonPump.ViewModels
             }
         }
 
+        public DelegateCommand ShowNetDeviceCommand { get; set; }
+
+        private async void ShowNetDevice()
+        {
+            Service = containerProvider.Resolve<IServiceFactory>().GetAsynRWService("UNHV", "安捷伦离子泵");
+            Service.IsBinary = false;
+            Service.MinWriteInterval = 100;
+            var Model = Service.GetHandle() as NetConfigModel;
+            Model.TargetIp = "192.168.1.88";
+            Model.TargetPort = 5001;
+            Model.HostIp = "192.168.1.34";
+            Model.HostPort = 5001;
+            Service.UpdateResponse += (object sender, byte[] data) => _respParser.ReceiveBytes(data);
+
+            DialogParameters parameter = new DialogParameters();
+            parameter.Add("Value", Service);
+
+            var diaglogResult = await this._dialogHostService.ShowDialog("NetConfigView", parameter, CommonModel.IonPumpRegionName);
+
+            if (diaglogResult == null)
+                return;
+
+            if (diaglogResult.Result == ButtonResult.OK && diaglogResult.Parameters.ContainsKey("Value"))
+            {
+                var value = diaglogResult.Parameters.GetValue<IAsynRWService>("Value");
+                if (value != null)
+                {
+                    Service = value;
+                    IsConnected = Service.IsOpen;
+                }
+            }
+        }
         #endregion
 
 
         private void InitCommand()
         {
             ShowDeviceCommand = new DelegateCommand(ShowDevice);
+            ShowNetDeviceCommand = new DelegateCommand(ShowNetDevice);
 
             QueryStatusCommand = new DelegateCommand(() => { Service.SendMsg(AgilentIonPumpProtocol.QueryStatusCmd()); });
             QueryErrorCodeCommand = new DelegateCommand(() => { Service.SendMsg(AgilentIonPumpProtocol.QueryErrorCodeCmd()); });
