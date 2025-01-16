@@ -1,7 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
   </PropertyGroup>
@@ -12,6 +13,10 @@
     </ItemGroup>
     <Copy SourceFiles="@(SomeFiles)" DestinationFolder="$(SolutionDir)UtilityTools\bin\$(ConfigurationName)\$(TargetFramework)\Modules\" SkipUnchangedFiles="true" />
   </Target>
+
+  <ItemGroup>
+    <PackageReference Include="OxyPlot.Wpf" Version="2.1.2" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Services\UtilityTools.Services.Interfaces\UtilityTools.Services.Interfaces.csproj" />

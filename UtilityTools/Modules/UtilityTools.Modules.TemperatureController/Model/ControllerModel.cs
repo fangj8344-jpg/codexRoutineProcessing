@@ -26,6 +26,11 @@
 
 using CsvHelper;
 using Microsoft.Win32;
+using OxyPlot;
+using OxyPlot.Axes;
+using OxyPlot.Legends;
+using OxyPlot.Series;
+using OxyPlot.Wpf;
 using Prism.Commands;
 using Prism.Ioc;
 using Prism.Mvvm;
@@ -36,6 +41,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
+using System.Windows.Forms;
 using UtilityTools.Core.Dialog;
 using UtilityTools.Core.Extension;
 using UtilityTools.Core.Model;
@@ -64,6 +70,19 @@ namespace UtilityTools.Modules.TemperatureController.Model
             Pid = new PidModel();
 
             StartWorkCommand = new DelegateCommand(StartWork);
+            ClearMonitorCommand = new DelegateCommand(ClearMonitor);
+            AutoAdjustComamnd = new DelegateCommand(AutoAdjust);
+            SaveToFileCommand = new DelegateCommand(SaveToFile);
+
+            // 初始化图表信息
+            TempPlotModel = new PlotModel();
+            TempPlotModel.Legends.Add(new Legend());
+
+            TempPlotModel.Axes.Add(new LinearAxis() { Title = "时间", Position = OxyPlot.Axes.AxisPosition.Bottom });
+            TempPlotModel.Axes.Add(new LogarithmicAxis() { Title = "温度", Position = OxyPlot.Axes.AxisPosition.Left });
+
+            _temp = new LineSeries() { Title = "Vac1", RenderInLegend = true };
+            TempPlotModel.Series.Add(_temp);
         }
 
         #endregion
@@ -73,8 +92,10 @@ namespace UtilityTools.Modules.TemperatureController.Model
         private readonly IDialogHostService _dialogHostService;
 
         private TemperatureControllerParser _parser;
-        private Timer _pidTimer;
-        private Timer _manualTimer;
+        private System.Timers.Timer _pidTimer;
+        private System.Timers.Timer _manualTimer;
+
+        LineSeries _temp;
         #endregion
 
         #region ------------Property------------
@@ -260,6 +281,17 @@ namespace UtilityTools.Modules.TemperatureController.Model
             set { _btnContent = value; RaisePropertyChanged(); }
         }
 
+
+        private PlotModel _tempPlotModel;
+        /// <summary>
+        /// 真空图表模型
+        /// </summary>
+        public PlotModel TempPlotModel
+        {
+            get { return _tempPlotModel; }
+            set { _tempPlotModel = value; RaisePropertyChanged(); }
+        }
+
         #endregion
 
         #region ------------Command------------
@@ -358,6 +390,76 @@ namespace UtilityTools.Modules.TemperatureController.Model
                     NetUdpService.SendMsg(cmd);
             }
         }
+
+
+        public DelegateCommand ClearMonitorCommand { get; set; }
+
+        private void ClearMonitor()
+        {
+            _temp.Points.Clear();
+            TempPlotModel.InvalidatePlot(true);
+        }
+
+        public DelegateCommand AutoAdjustComamnd { get; set; }
+
+        private void AutoAdjust()
+        {
+            foreach (var axis in TempPlotModel.Axes)
+                axis.Reset();
+            TempPlotModel.InvalidatePlot(true);
+        }
+
+        public DelegateCommand SaveToFileCommand { get; set; }
+
+        private void SaveToFile()
+        {
+            FolderBrowserDialog dialog = new FolderBrowserDialog();
+            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.Cancel)
+            {
+                var path = dialog.SelectedPath;
+
+                SaveToFile(path);
+            }
+        }
+
+
+        private void SaveToFile(string path)
+        {
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
+            var timeTip = DateTime.Now.ToString("HHmmss");
+            PngExporter exporter = new PngExporter();
+
+            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+            {
+                exporter.ExportToFile(TempPlotModel, $"{path}\\温度记录_{timeTip}.png");
+                SaveSeriesToFile(_temp, $"{path}\\温度(K)_{timeTip}.txt");
+            }));
+        }
+
+        private void SaveSeriesToFile(DataPointSeries series, string filePath)
+        {
+            string gunReport = string.Empty;
+            foreach (var report in series.Points)
+            {
+                gunReport += $"{report.X}\t{report.Y}\n";
+            }
+            try
+            {
+                using (var gunStream = File.OpenWrite(filePath))
+                {
+                    var gunData = Encoding.UTF8.GetBytes(gunReport);
+                    gunStream.Write(gunData, 0, gunData.Length);
+                }
+            }
+            catch (Exception ex)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Fatal($"保存图表数据异常：目标路径【{filePath}】，异常原因【{ex.Message}】");
+            }
+        }
         #endregion
 
         #region ------------PublicMethod------------
@@ -368,7 +470,7 @@ namespace UtilityTools.Modules.TemperatureController.Model
         {
             if (_pidTimer == null)
             {
-                _pidTimer = new Timer();
+                _pidTimer = new System.Timers.Timer();
                 _pidTimer.Elapsed += PidTimer_Elapsed;
                 _pidTimer.Interval = 2000;
                 _pidTimer.AutoReset = true;
@@ -415,7 +517,7 @@ namespace UtilityTools.Modules.TemperatureController.Model
 
             if (_manualTimer != null)
             {
-                _manualTimer = new Timer();
+                _manualTimer = new System.Timers.Timer();
                 _manualTimer.Elapsed += ManualTimer_Elapsed;
                 _manualTimer.Interval = 100;
                 _manualTimer.AutoReset = true;
@@ -461,8 +563,10 @@ namespace UtilityTools.Modules.TemperatureController.Model
                             var data = e.DataSource;
                             ReadPidCurrent = BitConverter.ToSingle(data, 0);
                             ReadManualCurrent = BitConverter.ToSingle(data, 4);
-                            ReadTemperature = BitConverter.ToSingle(data, 8);
+                            var temp = BitConverter.ToSingle(data, 8);
                             ReadCurrent = BitConverter.ToSingle(data, 12);
+                            ReadTemperature = temp;
+                            _temp.Points.Add(new DataPoint(_temp.Points.Count(), temp));
                         }
                         break;
                     default:

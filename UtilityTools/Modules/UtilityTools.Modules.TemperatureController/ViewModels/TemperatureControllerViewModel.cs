@@ -92,6 +92,7 @@ namespace UtilityTools.Modules.TemperatureController.ViewModels
             set { _model = value; RaisePropertyChanged(); }
         }
 
+
         #endregion
 
         #region ------------Command------------

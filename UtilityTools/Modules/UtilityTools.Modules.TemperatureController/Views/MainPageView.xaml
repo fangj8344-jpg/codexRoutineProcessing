@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:cv="clr-namespace:UtilityTools.Core.Converter;assembly=UtilityTools.Core"
+             xmlns:oxy="http://oxyplot.org/wpf"
              xmlns:local="clr-namespace:UtilityTools.Modules.TemperatureController.Views"
              mc:Ignorable="d"
              FontSize="24"
@@ -17,7 +18,7 @@
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition />
-                <ColumnDefinition />
+                <ColumnDefinition Width="650"/>
             </Grid.ColumnDefinitions>
 
             <Grid.RowDefinitions>
@@ -52,30 +53,67 @@
                    Grid.Column="1"
                    Margin="20" />
 
-            <UniformGrid Grid.Row="1"
-                         Grid.Column="0"
-                         Margin="40"
-                         Columns="2">
-                <Label Content="PID控制电流"
-                       VerticalAlignment="Center" />
-                <Label Content="{Binding ReadPidCurrent}"
-                       VerticalAlignment="Center" />
-                <Label Content="手动控制电流"
-                       VerticalAlignment="Center" />
-                <Label Content="{Binding ReadManualCurrent}"
-                       VerticalAlignment="Center" />
-                <Label Content="实时温度"
-                       VerticalAlignment="Center" />
-                <DockPanel VerticalAlignment="Center">
-                    <Label Content="{Binding IsKelvin, Converter={StaticResource ResourceKey=kelvinToStringConverter}}"
-                           DockPanel.Dock="Right" />
-                    <Label Content="{Binding ReadTemperature}" />
-                </DockPanel>
-                <Label Content="反馈电流"
-                       VerticalAlignment="Center" />
-                <Label Content="{Binding ReadCurrent}"
-                       VerticalAlignment="Center" />
-            </UniformGrid>
+            <DockPanel Grid.Row="1"
+                       Grid.Column="0"
+                       Margin="40, 0, 40, 40">
+                <UniformGrid Columns="4" DockPanel.Dock="Top">
+                    <Label Content="PID控制电流"
+                           FontSize="20"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Right" />
+                    <Label Content="{Binding ReadPidCurrent}"
+                           FontSize="20"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center" />
+                    <Label Content="手动控制电流"
+                           FontSize="20"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Center" />
+                    <Label Content="{Binding ReadManualCurrent}"
+                           FontSize="20"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center" />
+                    <Label Content="实时温度"
+                           FontSize="20"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Right" />
+                    <DockPanel VerticalAlignment="Center"
+                               HorizontalAlignment="Center">
+                        <Label Content="{Binding IsKelvin, Converter={StaticResource ResourceKey=kelvinToStringConverter}}"
+                               FontSize="20"
+                               DockPanel.Dock="Right" />
+                        <Label Content="{Binding ReadTemperature}"
+                               FontSize="20" />
+                    </DockPanel>
+                    <Label Content="反馈电流"
+                           FontSize="20"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Right" />
+                    <Label Content="{Binding ReadCurrent}"
+                           FontSize="20"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center" />
+                </UniformGrid>
+
+                <oxy:PlotView Model="{Binding TempPlotModel}"
+                              Foreground="Black"
+                              DockPanel.Dock="Bottom">
+                    <oxy:PlotView.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="清除"
+                                      Command="{Binding ClearMonitorCommand}"
+                                      CommandParameter="ImageParam" />
+                            <MenuItem Header="自适应"
+                                      Command="{Binding AutoAdjustComamnd}"
+                                      CommandParameter="ImageParam" />
+                            <MenuItem Header="保存到文件"
+                                      Command="{Binding SaveToFileCommand}"
+                                      CommandParameter="ImageParam" />
+                        </ContextMenu>
+                    </oxy:PlotView.ContextMenu>
+                </oxy:PlotView>
+            </DockPanel>
+
 
             <UniformGrid Grid.Row="1"
                          Grid.Column="1"
