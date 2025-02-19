@@ -9,6 +9,7 @@
              xmlns:model="clr-namespace:UtilityTools.Core.Model;assembly=UtilityTools.Core"
              xmlns:method="clr-namespace:UtilityTools.Core.Helper;assembly=UtilityTools.Core"
              xmlns:validation ="clr-namespace:UtilityTools.Modules.PacketBinTool.ValidationResult"
+             xmlns:convertHex= "clr-namespace:UtilityTools.Modules.PacketBinTool.Converter"
              mc:Ignorable="d"
              d:DesignHeight="450"
              d:DesignWidth="800">
@@ -21,6 +22,7 @@
                 <x:Type Type="model:EnumDeviceID" />
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
+        <convertHex:ToHex x:Key="ConvertToHex"/>
     </UserControl.Resources>
 
     <Grid>
@@ -109,13 +111,16 @@
                                          TextWrapping="Wrap" />
                             </DockPanel>
 
-                            <DockPanel>
+                            <DockPanel >
                                 <TextBlock Text="板卡类型："
                                            Margin="10, 10" />
-                                <ComboBox SelectedValue="{Binding DevelopmentBoardMessage.DeviceID, Mode=TwoWay}"
+                                <StackPanel>
+                                    <ComboBox SelectedValue="{Binding DevelopmentBoardMessage.DeviceIDEnum, Mode=TwoWay}"
                                           ItemsSource="{Binding Source={StaticResource enumDeviceID}}"
                                           DisplayMemberPath="Value"
                                           SelectedValuePath="Key" />
+                                    <TextBox Text="{Binding DevelopmentBoardMessage.DeviceID ,Converter={ StaticResource ConvertToHex} ,Mode=TwoWay}"/>
+                                </StackPanel>
                             </DockPanel>
 
                             <DockPanel>

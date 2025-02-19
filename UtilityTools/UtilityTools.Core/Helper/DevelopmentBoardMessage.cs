@@ -23,11 +23,20 @@ namespace UtilityTools.Core.Helper
             set { _fileName = value; RaisePropertyChanged(); }
         }
 
-        private EnumDeviceID? _deviceID;
+        private EnumDeviceID? _deviceIDEnum;
+        /// <summary>
+        /// 升级设备类型枚举类型
+        /// </summary>
+        public EnumDeviceID? DeviceIDEnum
+        {
+            get { return _deviceIDEnum; }
+            set { _deviceIDEnum = value; DeviceID = (int?)value; RaisePropertyChanged(); }
+        }
+        private int? _deviceID;
         /// <summary>
         /// 升级设备类型
         /// </summary>
-        public EnumDeviceID? DeviceID
+        public int? DeviceID
         {
             get { return _deviceID; }
             set { _deviceID = value; RaisePropertyChanged(); }

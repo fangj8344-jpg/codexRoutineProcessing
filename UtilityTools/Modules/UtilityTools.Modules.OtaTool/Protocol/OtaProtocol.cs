@@ -121,7 +121,7 @@ namespace UtilityTools.Modules.OtaTool.Protocol
         /// <param name="command">指令类型</param>
         /// <param name="data">指令参数</param>
         /// <returns></returns>
-        public static byte[] GetCmd(EnumOtaCommandType command, EnumDeviceID? deviceID, byte[] data)
+        public static byte[] GetCmd(EnumOtaCommandType command, int? deviceID, byte[] data)
         {
             // data段固定36字节，不足用零填充
             if (data.Length < 36)
@@ -143,7 +143,7 @@ namespace UtilityTools.Modules.OtaTool.Protocol
         /// </summary>
         /// <param name="deviceID"></param>
         /// <returns></returns>
-        public static byte[] GetRequestHardInfoCmd(EnumDeviceID deviceID)
+        public static byte[] GetRequestHardInfoCmd(int deviceID)
         {
             ByteWriter writer = new ByteWriter(36);
             return GetCmd(EnumOtaCommandType.OTA_GET_HWV, deviceID, writer.EndWrite());
@@ -154,7 +154,7 @@ namespace UtilityTools.Modules.OtaTool.Protocol
         /// </summary>
         /// <param name="deviceID"></param>
         /// <returns></returns>
-        public static byte[] GetRequestFrameInfoCmd(EnumDeviceID deviceID) 
+        public static byte[] GetRequestFrameInfoCmd(int deviceID) 
         {
             ByteWriter writer = new ByteWriter(36);
             return GetCmd(EnumOtaCommandType.OTA_GET_FMV, deviceID, writer.EndWrite());
@@ -165,7 +165,7 @@ namespace UtilityTools.Modules.OtaTool.Protocol
         /// </summary>
         /// <param name="deviceID"></param>
         /// <returns></returns>
-        public static byte[] GetBroadcastCmd(EnumDeviceID deviceID)
+        public static byte[] GetBroadcastCmd(int deviceID)
         {
             ByteWriter writer = new ByteWriter(36);
             return GetCmd(EnumOtaCommandType.OTA_SYS_BROADCAST, deviceID, writer.EndWrite());
@@ -176,7 +176,7 @@ namespace UtilityTools.Modules.OtaTool.Protocol
         /// </summary>
         /// <param name="deviceID"></param>
         /// <returns></returns>
-        public static byte[] GetUpdateFrameInfoCmd(EnumDeviceID deviceID) 
+        public static byte[] GetUpdateFrameInfoCmd(int deviceID) 
         {
             ByteWriter writer = new ByteWriter(36);
             return GetCmd(EnumOtaCommandType.OTA_GET_UPGRADE_FMV, deviceID, writer.EndWrite());
@@ -187,7 +187,7 @@ namespace UtilityTools.Modules.OtaTool.Protocol
         /// </summary>
         /// <param name="deviceID"></param>
         /// <returns></returns>
-        public static byte[] GetDeviceStatusCmd(EnumDeviceID deviceID)
+        public static byte[] GetDeviceStatusCmd(int deviceID)
         {
             ByteWriter writer = new ByteWriter(36);
             return GetCmd(EnumOtaCommandType.OTA_GET_STATUS, deviceID, writer.EndWrite());
@@ -200,7 +200,7 @@ namespace UtilityTools.Modules.OtaTool.Protocol
         /// <param name="frameCount">预期传输帧数</param>
         /// <param name="crc">CRC校验值</param>
         /// <returns></returns>
-        public static byte[] GetRequestOtaCmd(uint fileLength, uint frameCount, EnumDeviceID deviceID, ushort crc)
+        public static byte[] GetRequestOtaCmd(uint fileLength, uint frameCount, int deviceID, ushort crc)
         {
             ByteWriter writer = new ByteWriter(36);
             writer.Write(fileLength);
@@ -214,7 +214,7 @@ namespace UtilityTools.Modules.OtaTool.Protocol
         /// </summary>
         /// <param name="deviceID"></param>
         /// <returns></returns>
-        public static byte[] GetAbortUpdateCmd(EnumDeviceID deviceID) 
+        public static byte[] GetAbortUpdateCmd(int deviceID) 
         {
             ByteWriter writer = new ByteWriter(36);
             return GetCmd(EnumOtaCommandType.OTA_ABORT, deviceID, writer.EndWrite());
@@ -226,7 +226,7 @@ namespace UtilityTools.Modules.OtaTool.Protocol
         /// <param name="frameId">帧ID</param>
         /// <param name="data">传输数据</param>
         /// <returns></returns>
-        public static byte[] GetTransferOtaCmd(uint frameId, byte[] data, EnumDeviceID deviceID)
+        public static byte[] GetTransferOtaCmd(uint frameId, byte[] data, int deviceID)
         {
             ByteWriter writer = new ByteWriter(36);
             writer.Write(frameId);
@@ -238,7 +238,7 @@ namespace UtilityTools.Modules.OtaTool.Protocol
         /// 获取重启指令
         /// </summary>
         /// <returns></returns>
-        public static byte[] GetRestartCmd(EnumDeviceID deviceID)
+        public static byte[] GetRestartCmd(int deviceID)
         {
             byte[] array = new byte[1];
             return GetCmd(EnumOtaCommandType.OTA_RESTART, deviceID, array);

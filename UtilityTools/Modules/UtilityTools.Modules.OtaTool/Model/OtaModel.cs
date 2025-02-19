@@ -287,14 +287,7 @@ namespace UtilityTools.Modules.OtaTool.Model
             if (DevelopmentBoardMessage != null && DevelopmentBoardMessage.DeviceID.HasValue)
             {
                 var requestCmd = OtaProtocol.GetDeviceStatusCmd(DevelopmentBoardMessage.DeviceID.Value);
-                /*if (SerialPortService.IsOpen)
-                {
-                    SerialPortService.SendMsg(requestCmd);
-                }
-                if (NetUdpService.IsOpen)
-                {
-                    NetUdpService.SendMsg(requestCmd);
-                }*/
+               
                 MessageEnqueue(requestCmd);
             }
 
@@ -305,14 +298,7 @@ namespace UtilityTools.Modules.OtaTool.Model
             if (DevelopmentBoardMessage != null && DevelopmentBoardMessage.DeviceID.HasValue)
             {
                 var requestCmd = OtaProtocol.GetUpdateFrameInfoCmd(DevelopmentBoardMessage.DeviceID.Value);
-                /*if (SerialPortService.IsOpen)
-                {
-                    SerialPortService.SendMsg(requestCmd);
-                }
-                if (NetUdpService.IsOpen)
-                {
-                    NetUdpService.SendMsg(requestCmd);
-                }*/
+               
                 MessageEnqueue(requestCmd);
             }
         }
@@ -340,18 +326,7 @@ namespace UtilityTools.Modules.OtaTool.Model
             {
                 Reset();
                 var stopCmd = OtaProtocol.GetAbortUpdateCmd(DevelopmentBoardMessage.DeviceID.Value);
-                /*
-                if (SerialPortService.IsOpen)
-                {
-                    SerialPortService.SendMsg(stopCmd);
-                    Log += "已发送停止固件升级命令\n";
-                }
-
-                if (NetUdpService.IsOpen)
-                {
-                    NetUdpService.SendMsg(stopCmd);
-                    Log += "已发送停止固件升级命令\n";
-                }*/
+               
                 MessageEnqueue(stopCmd);
                 Log += "已发送停止固件升级命令\n";
                 Tips = "停止固件升级中";
@@ -383,17 +358,7 @@ namespace UtilityTools.Modules.OtaTool.Model
             _isStartUpgrade = true;
             // 检查设备类型是否匹配
             var requestCmd = OtaProtocol.GetUpdateFrameInfoCmd(DevelopmentBoardMessage.DeviceID.Value);
-            /*if (SerialPortService.IsOpen)
-            {
-                SerialPortService.SendMsg(requestCmd);
-                Log += "已发送升级校验指令\n";
-            }
-
-            if (NetUdpService.IsOpen)
-            {
-                NetUdpService.SendMsg(requestCmd);
-                Log += "已发送升级校验指令\n";
-            }*/
+           
             MessageEnqueue(requestCmd);
             Log += "已发送升级校验指令\n";
         }
@@ -613,7 +578,6 @@ namespace UtilityTools.Modules.OtaTool.Model
                 case EnumOtaCommandType.OTA_TRANSFER://接收到回报发送下一个回报
                     {
                         uint frameID = BitConverter.ToUInt32(e.DataSource, 0);
-                        Log += "第" + (frameID + 1) + "帧数据已接收\r\n";
                         if (!_isUpdating)
                         {
                             return;
@@ -683,16 +647,7 @@ namespace UtilityTools.Modules.OtaTool.Model
                     {
                         Reset();
                         var stopCmd = OtaProtocol.GetAbortUpdateCmd(DevelopmentBoardMessage.DeviceID.Value);
-                        /*
-                        if (SerialPortService.IsOpen)
-                        {
-                            SerialPortService.SendMsg(stopCmd);
-                        }
-
-                        if (NetUdpService.IsOpen)
-                        {
-                            NetUdpService.SendMsg(stopCmd);
-                        }*/
+                       
                         MessageEnqueue(stopCmd);
 
                         return;

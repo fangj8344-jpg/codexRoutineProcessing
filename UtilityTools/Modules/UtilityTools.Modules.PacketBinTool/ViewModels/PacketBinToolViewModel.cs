@@ -142,7 +142,7 @@ namespace UtilityTools.Modules.PacketBinTool.ViewModels
             //将对象序列化为JSON字符串
             string JsonMessageFile = JsonConvert.SerializeObject(DevelopmentBoardMessage);
             //创建一个文件夹
-            string BagMessageDirectoryPath = Path.GetDirectoryName(SourcePath) + @"\" + EnumMethod.GetEnumDesc(DevelopmentBoardMessage.DeviceID) + "_" + DevelopmentBoardMessage.VersionNumber + "_" + System.DateTime.Now.ToString("HH时mm分ss秒");
+            string BagMessageDirectoryPath = Path.GetDirectoryName(SourcePath) + @"\" + DataTransformationDescription(DevelopmentBoardMessage.DeviceID) + "_" + DevelopmentBoardMessage.VersionNumber + "_" + System.DateTime.Now.ToString("HH时mm分ss秒");
             if (!Directory.Exists(BagMessageDirectoryPath))
             {
                 Directory.CreateDirectory(BagMessageDirectoryPath);
@@ -208,12 +208,24 @@ namespace UtilityTools.Modules.PacketBinTool.ViewModels
             var firmwareVersion = message[2];
             var hardwareVersion = message[3];
             firmwareVersion.Substring(1, firmwareVersion.Length - 1);
-            var testDeviceID = ((EnumDeviceID)Convert.ToUInt32(deviceID, 16)); ;
+            var testDeviceID = Convert.ToUInt32(deviceID, 16);
             //解析设备id
+            /*
             if (DevelopmentBoardMessage.DeviceID == null && Enum.IsDefined(typeof(EnumDeviceID), testDeviceID)) 
             {
                 DevelopmentBoardMessage.DeviceID = testDeviceID;
             }
+            */
+            if (DevelopmentBoardMessage.DeviceID == null )
+            { 
+                DevelopmentBoardMessage.DeviceID = (int?)testDeviceID;
+                if (Enum.IsDefined(typeof(EnumDeviceID), (EnumDeviceID)testDeviceID))
+                {
+                    DevelopmentBoardMessage.DeviceIDEnum = (EnumDeviceID)testDeviceID;
+                }
+                
+            }
+
             //版本号
             if (DevelopmentBoardMessage.VersionNumber == "" || DevelopmentBoardMessage.VersionNumber == null)
             {
@@ -276,7 +288,20 @@ namespace UtilityTools.Modules.PacketBinTool.ViewModels
 
             throw new ArgumentException(string.Format("{0} 未能找到对应的枚举.", description), "Description");
         }
-
+        private string DataTransformationDescription(int? data)
+        {
+            string deviceSting;
+            switch (data)
+            {
+                case 0x0100: deviceSting = "主控制板"; break;
+                case 0x0101: deviceSting = "真空控制板"; break;
+                case 0x0102: deviceSting = "灯带控制板"; break;
+                case 0x0200: deviceSting = "20kv高压箱"; break;
+                case 0x0300: deviceSting = "五轴点击控制板"; break;
+                default: deviceSting = "测试控制板";break;
+            }
+            return deviceSting;
+        }
 
 
         #endregion
