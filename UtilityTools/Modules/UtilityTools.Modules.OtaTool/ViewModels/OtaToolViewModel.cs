@@ -164,6 +164,7 @@ namespace UtilityTools.Modules.OtaTool.ViewModels
                     NetIsConnected = Model.NetUdpService.IsOpen;
                     Model.StartRequestStatus();
                 }
+                
             }
         }
 

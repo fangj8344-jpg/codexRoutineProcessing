@@ -42,6 +42,8 @@ using UtilityTools.Services.Services;
 using System.Timers;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
 using System.Threading.Tasks;
+using System.Collections;
+using MaterialDesignThemes.Wpf;
 
 namespace UtilityTools.Modules.OtaTool.Model
 {
@@ -52,6 +54,10 @@ namespace UtilityTools.Modules.OtaTool.Model
         {
             _containerProvider = containerProvider;
             _dialogHostService = containerProvider.Resolve<IDialogHostService>();
+            _sendQueue = new Queue();
+            _sendMessageQueueThreadSignalLight = true;
+            _sendMessageQueueThread = new Thread(SendMessageEnqueueThread);
+            _sendMessageQueueThread.Start();
             SerialPortService = new SerialPortService();
             SerialPortService.Name = "升级串口";
             SerialPortService.IsBinary = true;
@@ -81,10 +87,12 @@ namespace UtilityTools.Modules.OtaTool.Model
        
         ~OtaModel()
         {
+            _sendMessageQueueThreadSignalLight = false;
             if (SerialPortService != null)
             {
                 SerialPortService.Close();
             }
+            
         }
         #endregion
 
@@ -95,14 +103,19 @@ namespace UtilityTools.Modules.OtaTool.Model
         private OtaToolProtocolParser _parser1;
         private OtaToolProtocolParser _parser2;
 
+
         private bool _isUpdating = false;
         private bool _isRestart = false;
         private bool _isTimeout = false;
         private bool _isStartUpgrade = false;
         private System.Timers.Timer _timer;
         private System.Timers.Timer _confirmTheUpgradeTimer;
-        private int _interval = 1000;
+        private int _interval = 2000;
         private int _confirmInterval = 500;
+        private Queue _sendQueue;
+        private Thread _sendMessageQueueThread;
+        private bool _sendMessageQueueThreadSignalLight = false;
+        private bool _fullSpeedSignalLight = false;
 
         #endregion
 
@@ -274,14 +287,15 @@ namespace UtilityTools.Modules.OtaTool.Model
             if (DevelopmentBoardMessage != null && DevelopmentBoardMessage.DeviceID.HasValue)
             {
                 var requestCmd = OtaProtocol.GetDeviceStatusCmd(DevelopmentBoardMessage.DeviceID.Value);
-                if (SerialPortService.IsOpen)
+                /*if (SerialPortService.IsOpen)
                 {
                     SerialPortService.SendMsg(requestCmd);
                 }
                 if (NetUdpService.IsOpen)
                 {
                     NetUdpService.SendMsg(requestCmd);
-                }
+                }*/
+                MessageEnqueue(requestCmd);
             }
 
 
@@ -291,14 +305,15 @@ namespace UtilityTools.Modules.OtaTool.Model
             if (DevelopmentBoardMessage != null && DevelopmentBoardMessage.DeviceID.HasValue)
             {
                 var requestCmd = OtaProtocol.GetUpdateFrameInfoCmd(DevelopmentBoardMessage.DeviceID.Value);
-                if (SerialPortService.IsOpen)
+                /*if (SerialPortService.IsOpen)
                 {
                     SerialPortService.SendMsg(requestCmd);
                 }
                 if (NetUdpService.IsOpen)
                 {
                     NetUdpService.SendMsg(requestCmd);
-                }
+                }*/
+                MessageEnqueue(requestCmd);
             }
         }
 
@@ -325,6 +340,7 @@ namespace UtilityTools.Modules.OtaTool.Model
             {
                 Reset();
                 var stopCmd = OtaProtocol.GetAbortUpdateCmd(DevelopmentBoardMessage.DeviceID.Value);
+                /*
                 if (SerialPortService.IsOpen)
                 {
                     SerialPortService.SendMsg(stopCmd);
@@ -335,7 +351,9 @@ namespace UtilityTools.Modules.OtaTool.Model
                 {
                     NetUdpService.SendMsg(stopCmd);
                     Log += "已发送停止固件升级命令\n";
-                }
+                }*/
+                MessageEnqueue(stopCmd);
+                Log += "已发送停止固件升级命令\n";
                 Tips = "停止固件升级中";
 
                 return;
@@ -365,7 +383,7 @@ namespace UtilityTools.Modules.OtaTool.Model
             _isStartUpgrade = true;
             // 检查设备类型是否匹配
             var requestCmd = OtaProtocol.GetUpdateFrameInfoCmd(DevelopmentBoardMessage.DeviceID.Value);
-            if (SerialPortService.IsOpen)
+            /*if (SerialPortService.IsOpen)
             {
                 SerialPortService.SendMsg(requestCmd);
                 Log += "已发送升级校验指令\n";
@@ -375,7 +393,9 @@ namespace UtilityTools.Modules.OtaTool.Model
             {
                 NetUdpService.SendMsg(requestCmd);
                 Log += "已发送升级校验指令\n";
-            }
+            }*/
+            MessageEnqueue(requestCmd);
+            Log += "已发送升级校验指令\n";
         }
 
         /// <summary>
@@ -536,7 +556,8 @@ namespace UtilityTools.Modules.OtaTool.Model
                                 && _isStartUpgrade == true)
                             {
                                 var cmd = OtaProtocol.GetRequestOtaCmd((uint)UpdateData.Length, MaxFrameCount, DevelopmentBoardMessage.DeviceID.Value, UpdateDataCrc);
-                                service?.SendMsg(cmd);
+                                //service?.SendMsg(cmd);
+                                MessageEnqueue(cmd);
                                 _isStartUpgrade = false;
                                 Tips = "开始升级中，请耐心等待";
                                 Log += "已发送OTA升级请求\r\n";
@@ -578,8 +599,10 @@ namespace UtilityTools.Modules.OtaTool.Model
                         var data = new byte[32];
                         Array.Copy(UpdateData, CurFrameCount * 32, data, 0, 32);
                         var cmd = OtaProtocol.GetTransferOtaCmd(CurFrameCount, data, DevelopmentBoardMessage.DeviceID.Value);
-                        service?.SendMsg(cmd);
-                        Log += "第1帧数据已发送。\r\n";
+                        //service?.SendMsg(cmd);
+                        MessageEnqueue(cmd);
+                       
+                        _fullSpeedSignalLight = true;
                     }
                     break;
                 case EnumOtaCommandType.OTA_ABORT:
@@ -601,17 +624,19 @@ namespace UtilityTools.Modules.OtaTool.Model
                             var data = new byte[32];
                             Array.Copy(UpdateData, CurFrameCount * 32, data, 0, 32);
                             var cmd = OtaProtocol.GetTransferOtaCmd(CurFrameCount, data, DevelopmentBoardMessage.DeviceID.Value);
-                            service?.SendMsg(cmd);
+                            //service?.SendMsg(cmd);
+                            MessageEnqueue(cmd);
                             _isTimeout = true;
                             ExecuteWithTimeoutAsync(5000);
-                            Log += "第" + (CurFrameCount+1) + "帧数据已发送\r\n";
                         }
                         else
                         {
                             var cmd = OtaProtocol.GetRestartCmd(DevelopmentBoardMessage.DeviceID.Value);
                             Log += "已发送重启命令\n\r";
+                            _fullSpeedSignalLight = false;
                             _isRestart = true;
-                            service?.SendMsg(cmd);
+                            //service?.SendMsg(cmd);
+                            MessageEnqueue(cmd);
                             ConfirmTheUpgrade();
                             _isTimeout = true;
                             ExecuteWithTimeoutAsync(10000);
@@ -658,6 +683,7 @@ namespace UtilityTools.Modules.OtaTool.Model
                     {
                         Reset();
                         var stopCmd = OtaProtocol.GetAbortUpdateCmd(DevelopmentBoardMessage.DeviceID.Value);
+                        /*
                         if (SerialPortService.IsOpen)
                         {
                             SerialPortService.SendMsg(stopCmd);
@@ -666,7 +692,9 @@ namespace UtilityTools.Modules.OtaTool.Model
                         if (NetUdpService.IsOpen)
                         {
                             NetUdpService.SendMsg(stopCmd);
-                        }
+                        }*/
+                        MessageEnqueue(stopCmd);
+
                         return;
                     }
                 }
@@ -694,6 +722,43 @@ namespace UtilityTools.Modules.OtaTool.Model
         private void ClearLog()
         {
             Log = "";
+        }
+        private void MessageEnqueue(byte[] message)
+        {
+            _sendQueue.Enqueue(message);
+        }
+        private void SendMessageEnqueueThread()
+        {
+            while (_sendMessageQueueThreadSignalLight)
+            {
+                if (_sendQueue.Count != 0 && _fullSpeedSignalLight == false)
+                {
+                    if (SerialPortService.IsOpen)
+                    {
+                        SerialPortService.SendMsg((byte[])_sendQueue.Dequeue());
+                    }
+
+                    if (NetUdpService.IsOpen)
+                    {
+                        NetUdpService.SendMsg((byte[])_sendQueue.Dequeue());
+
+                    }
+                    Thread.Sleep(200);
+                }
+                else if (_sendQueue.Count != 0 && _fullSpeedSignalLight == true)
+                {
+                    if (SerialPortService.IsOpen)
+                    {
+                        SerialPortService.SendMsg((byte[])_sendQueue.Dequeue());
+                    }
+
+                    if (NetUdpService.IsOpen)
+                    {
+                        NetUdpService.SendMsg((byte[])_sendQueue.Dequeue());
+
+                    }
+                }
+            }
         }
 
 
