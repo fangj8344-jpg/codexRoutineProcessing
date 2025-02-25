@@ -60,6 +60,23 @@ namespace UtilityTools.Modules.HvController.Protocol
         [Description("获取当前加热电流设置值")]
         CMD_GET_PI_STEP = 0x02f8,
     }
+    public enum EnumDeviceID
+    {
+        [Description("主控制板")]
+        DeviceID_MAIN_CONTROL_PANEL = 0X0100,
+
+        [Description("真空控制板")]
+        DeviceID_VACUUM_CONTROL_PANEL = 0X0101,
+
+        [Description("灯带控制板")]
+        DeviceID_LIGHT_BELT_CONTROL_PANEL = 0X0102,
+
+        [Description("20kv高压箱")]
+        DeviceID_20KV_HIGH_PRESSURE_BOX = 0X0200,
+
+        [Description("五轴电机控制板")]
+        DeviceID_FIVEAXIS_MOTOR_CONTROL_PANEL = 0X0300
+    }
     public class HVDataPacket
     {
         public HVDataPacket(DataPacket packet)

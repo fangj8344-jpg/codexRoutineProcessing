@@ -1,0 +1,44 @@
+﻿<UserControl x:Class="UtilityTools.Modules.Test485ChipTool.Views.Test485ChipToolView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:cv="clr-namespace:UtilityTools.Core.Converter;assembly=UtilityTools.Core"
+             xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:local="clr-namespace:UtilityTools.Modules.Test485ChipTool.Views"
+             xmlns:model="clr-namespace:UtilityTools.Modules.Test485ChipTool.Model"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <cv:BoolToColorConverter x:Key="BoolToColorConverter" />
+    </UserControl.Resources>
+    <md:DialogHost Identifier="{x:Static model:CommonModel.Test485ChipToolRegionName}"
+            DialogTheme="Inherit">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto" />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+            <DockPanel Grid.Row="0"
+           Margin="10"
+           LastChildFill="False">
+                <TextBlock Text="485芯片测试"
+               FontSize="20"
+               FontWeight="Bold"
+               DockPanel.Dock="Left"
+               VerticalAlignment="Center" />
+                <Button DockPanel.Dock="Right"
+            Command="{Binding ShowNetDeviceCommand}"
+            Content="{md:PackIcon Kind=EthernetCable, Size=24}"
+            Style="{StaticResource MaterialDesignToolButton}"
+            Foreground="{Binding NetIsConnected, Converter={StaticResource BoolToColorConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <Button DockPanel.Dock="Right"
+            Command="{Binding ShowDeviceCommand}"
+            Content="{md:PackIcon Kind=UsbPort, Size=24}"
+            Style="{StaticResource MaterialDesignToolButton}"
+            Foreground="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            </DockPanel>
+            <local:MainPageView Grid.Row="1" DataContext="{Binding Model}"/>
+        </Grid>
+    </md:DialogHost>
+</UserControl>

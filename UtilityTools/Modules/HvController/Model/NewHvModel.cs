@@ -34,6 +34,7 @@ using Prism.Commands;
 using Prism.Ioc;
 using Prism.Mvvm;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -58,6 +59,9 @@ namespace UtilityTools.Modules.HvController.Model
         public NewHvModel(IContainerProvider containerProvider)
         {
             _containerProvider = containerProvider;
+            _SendMessageQueue = new Queue();
+            _sendMessageSignalLight = true;
+            sendThread = new Thread(SendMessageEnqueueThread);
             _paser1 = new HVProtocolParser();
             _paser2 = new HVProtocolParser();
             _paser1.Service = SerialPortService;
@@ -113,7 +117,7 @@ namespace UtilityTools.Modules.HvController.Model
             }
         }
 
-       
+
 
 
         #endregion
@@ -121,11 +125,14 @@ namespace UtilityTools.Modules.HvController.Model
         #region ------------Field------------
         private readonly IContainerProvider _containerProvider;
         private System.Timers.Timer _timer;
-        private System.Timers.Timer _timerNewProtocol;
+        private System.Timers.Timer _timerNewProtocolGetParameter;
+        private System.Timers.Timer _timerNewProtocolGetHvInitState;
         private bool _isPiPrepareToComplete = false;
-        private bool _isInquireHvInitDone = false;
-        
+        private Queue _SendMessageQueue;
+        private bool _sendMessageSignalLight = false;
+        private Thread sendThread;
         public bool _isNewProtocolConnect = false;
+
         
 
         private HVProtocolParser _paser1;
@@ -246,11 +253,11 @@ namespace UtilityTools.Modules.HvController.Model
 
                 if (IsPrepared && IsNewProtocol == false)
                 {
-                    SendMsg(NewHvControllerProtocol.GetAccVolCommand(value * 1000));
+                    MessageEnqueue(NewHvControllerProtocol.GetAccVolCommand(value * 1000));
                 }
                 else if (IsPrepareAllComplete && IsNewProtocol == true)
                 {
-                    SendMsg(NewHvControllerProtocol.SetHVCmd(value));
+                    MessageEnqueue(NewHvControllerProtocol.SetHVCmd(value));
                 }
             }
         }
@@ -273,11 +280,11 @@ namespace UtilityTools.Modules.HvController.Model
 
                 if (IsPrepared && IsNewProtocol == false)
                 {
-                    SendMsg(NewHvControllerProtocol.GetHeatCurCommand(value, 0x02));
+                    MessageEnqueue(NewHvControllerProtocol.GetHeatCurCommand(value, 0x02));
                 }
                 else if (IsPrepareAllComplete == true && IsNewProtocol == true)
                 {
-                    SendMsg(NewHvControllerProtocol.SetPICmd(value, 0x02));
+                    MessageEnqueue(NewHvControllerProtocol.SetPICmd(value, 0x02));
                 }
             }
         }
@@ -301,11 +308,11 @@ namespace UtilityTools.Modules.HvController.Model
 
                 if (IsPrepared && IsNewProtocol == false)
                 {
-                    SendMsg(NewHvControllerProtocol.GetEmissionVolCommand(value * 1000));
+                    MessageEnqueue(NewHvControllerProtocol.GetEmissionVolCommand(value * 1000));
                 }
                 else if (IsPrepareAllComplete && IsNewProtocol == true)
                 {
-                    SendMsg(NewHvControllerProtocol.SetEVCmd(value));
+                    MessageEnqueue(NewHvControllerProtocol.SetEVCmd(value));
                 }
             }
         }
@@ -329,11 +336,11 @@ namespace UtilityTools.Modules.HvController.Model
 
                 if (IsPrepared && IsNewProtocol == false)
                 {
-                    SendMsg(NewHvControllerProtocol.GetGridVolCommand(value * 1000));
+                    MessageEnqueue(NewHvControllerProtocol.GetGridVolCommand(value * 1000));
                 }
                 else if (IsPrepareAllComplete && IsNewProtocol == true)
                 {
-                    SendMsg(NewHvControllerProtocol.SetBVCmd(value, IsBvAdjust));
+                    MessageEnqueue(NewHvControllerProtocol.SetBVCmd(value, IsBvAdjust));
                 }
             }
         }
@@ -521,19 +528,32 @@ namespace UtilityTools.Modules.HvController.Model
       
         private void Set(string obj)
         {
-            var message1 = NewHvControllerProtocol.SetHVCmd(SetGridVol);
-            var message2 = NewHvControllerProtocol.SetPICmd(SetHeatCur, 0x02);
-            var message3 = NewHvControllerProtocol.SetEVCmd(SetEmissionVol);
-            var message4 = NewHvControllerProtocol.SetHVCmd(SetAccVol);
-            switch (obj)
+            if ((obj != "4" || obj != "5") && IsHvInitDone == false)
             {
-                case "0":SendMsg(NewHvControllerProtocol.SetBVCmd(SetGridVol, IsBvAdjust)); break;
-                case "1":SendMsg(NewHvControllerProtocol.SetPICmd(SetHeatCur,0x02));break;
-                case "2": SendMsg(NewHvControllerProtocol.SetEVCmd(SetEmissionVol)); break;
-                case "3": SendMsg(NewHvControllerProtocol.SetHVCmd(SetAccVol)); break;
-                case "4": SendMsg(NewHvControllerProtocol.SetInitHVCmd()); break;
-                case "5": SendMsg(NewHvControllerProtocol.GetHVInitState()); break;
+                return;
             }
+            else if (obj == "4" || obj == "5")
+            {
+                switch (obj)
+                {
+                    case "4": MessageEnqueue(NewHvControllerProtocol.SetInitHVCmd()); break;
+                    case "5": MessageEnqueue(NewHvControllerProtocol.GetHVInitState()); break;
+                }
+            }
+            else if (IsHvInitDone == true)
+            {
+                switch (obj)
+                {
+                    case "0": MessageEnqueue(NewHvControllerProtocol.SetBVCmd(SetGridVol, IsBvAdjust)); break;
+                    case "1": MessageEnqueue(NewHvControllerProtocol.SetPICmd(SetHeatCur, 0x02)); break;
+                    case "2": MessageEnqueue(NewHvControllerProtocol.SetEVCmd(SetEmissionVol)); break;
+                    case "3": MessageEnqueue(NewHvControllerProtocol.SetHVCmd(SetAccVol)); break;
+                    case "4": MessageEnqueue(NewHvControllerProtocol.SetInitHVCmd()); break;
+                    case "5": MessageEnqueue(NewHvControllerProtocol.GetHVInitState()); break;
+                }
+            }
+            
+
         }
 
         public DelegateCommand PrepareWorkCommand { get; set; }
@@ -547,26 +567,26 @@ namespace UtilityTools.Modules.HvController.Model
                 StopBackgroundWorker();
 
 
-                SendMsg(NewHvControllerProtocol.GetHeatCurCommand(0.0f, 0x02));
-                SendMsg(NewHvControllerProtocol.GetAccVolCommand(0.0f));
-                SendMsg(NewHvControllerProtocol.GetGridVolCommand(0.0f));
-                SendMsg(NewHvControllerProtocol.GetEmissionVolCommand(0.0f));
-                SendMsg(NewHvControllerProtocol.GetCloseHvCommand());
+                MessageEnqueue(NewHvControllerProtocol.GetHeatCurCommand(0.0f, 0x02));
+                MessageEnqueue(NewHvControllerProtocol.GetAccVolCommand(0.0f));
+                MessageEnqueue(NewHvControllerProtocol.GetGridVolCommand(0.0f));
+                MessageEnqueue(NewHvControllerProtocol.GetEmissionVolCommand(0.0f));
+                MessageEnqueue(NewHvControllerProtocol.GetCloseHvCommand());
             }
             else if (_isPrepareAllComplete && IsNewProtocol == true)
             {
                 IsPrepared = false;
                 StopBackgroundWorker();
                 //卸载高压工作后在将状态归零
-                SendMsg(NewHvControllerProtocol.SetHVCmd(0.0f));
+                MessageEnqueue(NewHvControllerProtocol.SetHVCmd(0.0f));
                 Thread.Sleep(1000);
-                SendMsg(NewHvControllerProtocol.SetEVCmd(0.0f));
+                MessageEnqueue(NewHvControllerProtocol.SetEVCmd(0.0f));
                 Thread.Sleep(1000);
-                SendMsg(NewHvControllerProtocol.SetPICmd(0.0f, 0x02));
+                MessageEnqueue(NewHvControllerProtocol.SetPICmd(0.0f, 0x02));
                 Thread.Sleep(2000);
-                SendMsg(NewHvControllerProtocol.SetBVCmd(0.0f, IsBvAdjust));
+                MessageEnqueue(NewHvControllerProtocol.SetBVCmd(0.0f, IsBvAdjust));
                 Thread.Sleep(2000);
-                SendMsg(NewHvControllerProtocol.CloseAllCmd());
+                MessageEnqueue(NewHvControllerProtocol.CloseAllCmd());
                 IsHvInitDone = false;
                 IsPrepareAllComplete = false;
                 
@@ -661,32 +681,51 @@ namespace UtilityTools.Modules.HvController.Model
             {
                 await Task.Run(() =>
                 {
-                    if (_timerNewProtocol == null)
+                    if (_timerNewProtocolGetParameter == null)
                     {
-                        _timerNewProtocol = new System.Timers.Timer();
-                        _timerNewProtocol.AutoReset = true;
-                        _timerNewProtocol.Elapsed += TimerNewProtocol_Elapsed;
+                        _timerNewProtocolGetParameter = new System.Timers.Timer();
+                        _timerNewProtocolGetParameter.AutoReset = true;
+                        _timerNewProtocolGetParameter.Elapsed += TimerNewProtocolGetParameter_Elapsed;
                     }
 
-                    _timerNewProtocol.Interval = 500;
+                    _timerNewProtocolGetParameter.Interval = 500;
 
-                    if (!_timerNewProtocol.Enabled)
+                    if (!_timerNewProtocolGetParameter.Enabled)
                     {
-                        _timerNewProtocol.Start();
+                        _timerNewProtocolGetParameter.Start();
+                    }
+                });
+            }
+        }
+        public async void GetHVInitState()
+        {
+            if (IsNewProtocol) 
+            {
+                await Task.Run(() =>
+                {
+                    if (_timerNewProtocolGetHvInitState == null)
+                    {
+                        _timerNewProtocolGetHvInitState = new System.Timers.Timer();
+                        _timerNewProtocolGetHvInitState.AutoReset = true;
+                        _timerNewProtocolGetHvInitState.Elapsed += TimerNewProtocolGetHVInitState_Elapsed;
+                    }
+                    _timerNewProtocolGetHvInitState.Interval = 500;
+                    if (!_timerNewProtocolGetHvInitState.Enabled)
+                    {
+                        _timerNewProtocolGetHvInitState.Start();
                     }
                 });
             }
         }
 
-        private void TimerNewProtocol_Elapsed(object sender, ElapsedEventArgs e)
+        private void TimerNewProtocolGetParameter_Elapsed(object sender, ElapsedEventArgs e)
         {
             var cmd = NewHvControllerProtocol.GetParamCmd();
-            SendMsg(cmd);
-            if (_isInquireHvInitDone)
-            {
-                SendMsg(NewHvControllerProtocol.GetHVInitState());
-            }
-      
+            MessageEnqueue(cmd);
+        }
+        private void TimerNewProtocolGetHVInitState_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            MessageEnqueue(NewHvControllerProtocol.GetHVInitState());
         }
 
         private void SaveToFile(string path)
@@ -792,7 +831,7 @@ namespace UtilityTools.Modules.HvController.Model
                     SetProgressInfo("初始化高压箱", 0);
                     _initEvent = new AutoResetEvent(false);
                     _initResultEvent = new AutoResetEvent(false);
-                    SendMsg(NewHvControllerProtocol.GetInitCommand());
+                    MessageEnqueue(NewHvControllerProtocol.GetInitCommand());
                     if (!_initEvent.WaitOne(3000))
                     {
                         SetProgressInfo("初始化高压箱超时", 100);
@@ -832,7 +871,7 @@ namespace UtilityTools.Modules.HvController.Model
 
                 // 初始化栅极电压
                 _gridVolEvent = new AutoResetEvent(false);
-                SendMsg(NewHvControllerProtocol.GetGridVolCommand(SetGridVol * 1000));
+                MessageEnqueue(NewHvControllerProtocol.GetGridVolCommand(SetGridVol * 1000));
                 if (!_gridVolEvent.WaitOne(3000))
                 {
                     SetProgressInfo("设置栅极电压超时", 100);
@@ -852,7 +891,7 @@ namespace UtilityTools.Modules.HvController.Model
 
                 // 初始化加热电流
                 _heatCurEvent = new AutoResetEvent(false);
-                SendMsg(NewHvControllerProtocol.GetHeatCurCommand(SetHeatCur, 0x02));
+                MessageEnqueue(NewHvControllerProtocol.GetHeatCurCommand(SetHeatCur, 0x02));
                 if (!_heatCurEvent.WaitOne(3000))
                 {
                     _heatCurEvent = null;
@@ -893,7 +932,7 @@ namespace UtilityTools.Modules.HvController.Model
 
                 // 初始化吸取极电压
                 _emissionVolEvent = new AutoResetEvent(false);
-                SendMsg(NewHvControllerProtocol.GetEmissionVolCommand(SetEmissionVol * 1000));
+                MessageEnqueue(NewHvControllerProtocol.GetEmissionVolCommand(SetEmissionVol * 1000));
                 if (!_emissionVolEvent.WaitOne(3000))
                 {
                     SetProgressInfo("设置吸取极电压超时", 100);
@@ -915,7 +954,7 @@ namespace UtilityTools.Modules.HvController.Model
         {
             if (_isNewProtocolConnect == true)
             {
-                SendMsg(NewHvControllerProtocol.SetInitHVCmd());
+                MessageEnqueue(NewHvControllerProtocol.SetInitHVCmd());
                 SetProgressInfo("初始化高压箱", 100);
             }
            
@@ -988,7 +1027,7 @@ namespace UtilityTools.Modules.HvController.Model
                 // Work
                 AddLog("请求高压状态");
                 var cmd = NewHvControllerProtocol.GetRequestCommand();
-                SendMsg(cmd);
+                MessageEnqueue(cmd);
             }
         }
 
@@ -1216,21 +1255,20 @@ namespace UtilityTools.Modules.HvController.Model
                     if (initResult == 0)//0代表行为执行1代表不执行
                     {
                         //初始化成功后开始查询进度，查询初始化完成后才能够进行发送的工作
-                        _isInquireHvInitDone = true;
-                       
+                        GetHVInitState();   
                     }
                     else if (initResult == 1)
                     {
-
                         //初始化失败
+                        SetProgressInfo("初始化失败", 100);
                     }
                     break;
                 case EnumHvCommandType.CMD_SET_BV:
                     if (_isPrepareAllComplete == false && _isHvInitDone == true)
                     {
-                        
+
                         //栅极电压接收成功，开始设置加热电流
-                        SendMsg(NewHvControllerProtocol.SetPICmd(SetHeatCur, Step));
+                        MessageEnqueue(NewHvControllerProtocol.SetPICmd(SetHeatCur, Step));
                     }
                     SetProgressInfo("设置栅极电压", 100);
                     break;  
@@ -1239,11 +1277,8 @@ namespace UtilityTools.Modules.HvController.Model
                     {
                         SetProgressInfo("设置加热电流中", 100);
                         //加热电流命令接收 需要等待加热电流完成 此时启用等待 等待完成后设置吸取极电压
-
-                        //WaitPIPrepareToComplete();
-                        SendMsg(NewHvControllerProtocol.SetEVCmd(SetEmissionVol));
+                        WaitPIPrepareToComplete();
                     }
-                        
                     break;
                 case EnumHvCommandType.CMD_SET_EV:
                     if (_isHvInitDone == true && IsPrepareAllComplete == false)
@@ -1266,9 +1301,11 @@ namespace UtilityTools.Modules.HvController.Model
                     {
                         //代表高压箱初始化完成
                         SetProgressInfo("初始化高压箱完成", 100);
+                        _timerNewProtocolGetHvInitState.Enabled = false;
+                        _timerNewProtocolGetHvInitState.AutoReset = false;
+                        _timerNewProtocolGetHvInitState.Stop();
                         IsHvInitDone = true;
-                        _isInquireHvInitDone = false;
-                        SendMsg(NewHvControllerProtocol.SetBVCmd(SetGridVol, IsBvAdjust));
+                        MessageEnqueue(NewHvControllerProtocol.SetBVCmd(SetGridVol, IsBvAdjust));
                     }
                     else if (value == 0)
                     {
@@ -1280,8 +1317,10 @@ namespace UtilityTools.Modules.HvController.Model
                     else if (value == 0x02)
                     {
                         SetProgressInfo("初始化高压错误", 100);
+                        _timerNewProtocolGetHvInitState.Enabled = false;
+                        _timerNewProtocolGetHvInitState.AutoReset = false;
+                        _timerNewProtocolGetHvInitState.Stop();
                         IsHvInitDone = false;
-                        _isInquireHvInitDone = false;
                     }
                     
                     break;
@@ -1300,17 +1339,31 @@ namespace UtilityTools.Modules.HvController.Model
             {
                 while (true) 
                 {
-                    if (SetHeatCur <= FilaCur && FilaCur <3.5)
+                    if (SetHeatCur <= (FilaCur+0.2) && FilaCur <3.5)
                     {
-                        SendMsg(NewHvControllerProtocol.SetEVCmd(SetEmissionVol));
-                        SetProgressInfo("加热电流设置完成中", 100);
+                        MessageEnqueue(NewHvControllerProtocol.SetEVCmd(SetEmissionVol));
                         return;
                     }
                     else { Thread.Sleep(500); }
                 }
             });
         }
+        private void MessageEnqueue(byte[] message)
+        {
+            _SendMessageQueue.Enqueue(message);
+        }
 
+        private void SendMessageEnqueueThread()
+        {
+            while (_sendMessageSignalLight)
+            {
+                if (_SendMessageQueue.Count != 0)
+                {
+                    SendMsg((byte[])_SendMessageQueue.Dequeue());
+                }
+                Thread.Sleep(100);
+            }
+        }
         #endregion
 
         #region ------------StaticMethod------------

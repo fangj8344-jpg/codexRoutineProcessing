@@ -51,8 +51,8 @@ namespace UtilityTools.Core.Converter
         #region ------------PublicMethod------------
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            int? deviceID = (int?)value;
-            string description = GetDataDescription(deviceID);
+            Enum myEnum = (Enum)value;
+            string description = GetEnumDescription(myEnum);
             return description;
         }
 
@@ -63,7 +63,7 @@ namespace UtilityTools.Core.Converter
         #endregion
 
         #region ------------PrivateMethod------------
-        /*
+     
         private string GetEnumDescription(Enum enumObj)
         {
             FieldInfo fieldInfo = enumObj.GetType().GetField(enumObj.ToString());
@@ -85,21 +85,8 @@ namespace UtilityTools.Core.Converter
                 return descriptionAttr.Description;
             }
         }
-        */
-        private string GetDataDescription(int? deviceID)
-        {
-            string deviceIDDescription;
-            switch (deviceID) 
-            {
-                case 0x0100:deviceIDDescription = "主控制板";break;
-                case 0x0101: deviceIDDescription = "真空控制板"; break;
-                case 0x0102: deviceIDDescription = "灯带控制板"; break;
-                case 0x0200: deviceIDDescription = "20kv高压箱"; break;
-                case 0x0300: deviceIDDescription = "五轴点击控制板"; break;
-                default: deviceIDDescription = "测试控制板"; break;
-            }
-            return deviceIDDescription;
-        }
+      
+        
         #endregion
 
         #region ------------StaticMethod------------

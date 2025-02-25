@@ -5,11 +5,12 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:UtilityTools.Modules.OtaTool.Views"
              xmlns:cv="clr-namespace:UtilityTools.Core.Converter;assembly=UtilityTools.Core"
+             xmlns:localCv ="clr-namespace:UtilityTools.Modules.OtaTool.Converter"
              mc:Ignorable="d"
              d:DesignHeight="450"
              d:DesignWidth="800">
     <UserControl.Resources>
-        <cv:EnumDescriptionConverter x:Key="enumDescriptionConverter" />
+        <localCv:DescriptionConverter x:Key="DescriptionConverter" />
     </UserControl.Resources>
     
     <Grid Margin="10">
@@ -122,7 +123,7 @@
                         <DockPanel>
                             <TextBlock Text="板卡类型："
                                        Margin="10, 0" />
-                            <TextBlock Text="{Binding DevelopmentBoardMessage.DeviceID, Converter={StaticResource enumDescriptionConverter}}" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding DevelopmentBoardMessage.DeviceID, Converter={StaticResource DescriptionConverter}}" TextWrapping="Wrap"/>
                         </DockPanel>
                         
                         <DockPanel>
