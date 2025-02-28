@@ -10,57 +10,45 @@
     <UserControl.Resources>
         <localCv:ColorConverter  x:Key="ColorConverter"/>
     </UserControl.Resources>
-   
-        <Grid>
-        <StackPanel >
-            <DockPanel>
-                <UniformGrid  Grid.RowSpan="2" Grid.ColumnSpan="2" Rows="2" Columns="5" Height="100">
-                    <Button Content="串口1测试" Width="100" Command="{Binding TestCommand }" CommandParameter="1"/>
-                    <Button Content="串口2测试"  Width="100" Command="{Binding TestCommand}" CommandParameter="2"/>
-                    <Button Content="串口3测试" Width="100" Command="{Binding TestCommand}" CommandParameter="3"/>
-                    <Button Content="串口4测试"  Width="100" Command="{Binding TestCommand}" CommandParameter="4"/>
-                    <Button Content="串口5测试"  Width="100" Command="{Binding TestCommand}" CommandParameter="5"/>
-                    <Canvas>
-                        <Ellipse Height="40" Width="40" Fill="{Binding IsReady1, Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="10" Canvas.Top="5"/>
-                    </Canvas>
-                    <Canvas>
-                        <Ellipse Height="40" Width="40" Fill="{Binding IsReady2, Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="10" Canvas.Top="5"/>
-                    </Canvas>
-                    <Canvas>
-                        <Ellipse Height="40" Width="40" Fill="{Binding IsReady3, Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="10" Canvas.Top="5"/>
-                    </Canvas>
-                    <Canvas>
-                        <Ellipse Height="40" Width="40" Fill="{Binding IsReady4, Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="10" Canvas.Top="5"/>
-                    </Canvas>
-                    <Canvas>
-                        <Ellipse Height="40" Width="40" Fill="{Binding IsReady5, Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="10" Canvas.Top="5"/>
-                    </Canvas>
-                </UniformGrid>
-            </DockPanel>
-            <UniformGrid Columns="5">
-                <Label Content="单测试发送次数"/>
-                <TextBox Text="{Binding SignleTimeMessage}"/>
-                <Label Content="发送间隔（ms）"/>
-                <TextBox Text="{Binding SendInterval}"/>
-                <Button Content="重置" Command="{Binding  ClearCommand}"/>
-            </UniformGrid>
-            <UniformGrid Columns="6">
-                <Label Content="已发送信息数"/>
-                <TextBlock Text="{Binding SendNumber}"/>
-                <Label Content="已接收信息数"/>
-                <TextBlock Text="{Binding ReceiveNumber}"/>
-                <Label Content="接收正确信息数"/>
-                <TextBlock Text="{Binding CorrectNumber}"/>
-            </UniformGrid>
 
-            <Label Content="网口发送数据" />
-            <TextBlock Text="{Binding NetSendMessage }" />
-            <Label Content="网口接收数据"/>
-            <TextBlock Text="{Binding NetReceiveMessage}" />
-            <Label Content="串口发送数据" />
-            <TextBlock Text="{Binding SerialSendMessage}" />
-            <Label Content="串口接收数据"/>
-            <TextBlock Text="{Binding SerialReceiveMessage}"/>
-        </StackPanel>
+    <Grid>
+        <TabControl>
+            <TabItem Header="测试">
+                <StackPanel >
+                    <UniformGrid  Grid.RowSpan="2" Grid.ColumnSpan="2" Rows="2" Columns="5" Height="100">
+                        <Button Content="串口1测试" Width="100" Command="{Binding TestCommand }" CommandParameter="1"/>
+                        <Button Content="串口2测试"  Width="100" Command="{Binding TestCommand}" CommandParameter="2"/>
+                        <Button Content="串口3测试" Width="100" Command="{Binding TestCommand}" CommandParameter="3"/>
+                        <Button Content="串口4测试"  Width="100" Command="{Binding TestCommand}" CommandParameter="4"/>
+                        <Button Content="串口5测试"  Width="100" Command="{Binding TestCommand}" CommandParameter="5"/>
+                        <Canvas>
+                            <Ellipse Height="40" Width="40" Fill="{Binding IsReady1, Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="70" Canvas.Top="5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Canvas>
+                        <Canvas>
+                            <Ellipse Height="40" Width="40" Fill="{Binding IsReady2, Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="70" Canvas.Top="5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Canvas>
+                        <Canvas>
+                            <Ellipse Height="40" Width="40" Fill="{Binding IsReady3, Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="70" Canvas.Top="5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Canvas>
+                        <Canvas>
+                            <Ellipse Height="40" Width="40" Fill="{Binding IsReady4, Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="70" Canvas.Top="5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Canvas>
+                        <Canvas>
+                            <Ellipse Height="40" Width="40" Fill="{Binding IsReady5, Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="54" Canvas.Top="5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Canvas>
+                    </UniformGrid>
+                    <DockPanel  Height="50"  LastChildFill="False">
+                        <Button Content="一键测试" Command="{Binding  TestCommand}" CommandParameter="0" Height="50"/>
+
+                        <Button Content="重置" Command="{Binding  ClearCommand}" Height="50" DockPanel.Dock="Right"/>
+                    </DockPanel>
+                </StackPanel>
+            </TabItem>
+            <TabItem Header="日志">
+                <ScrollViewer>
+                    <TextBlock Text="{Binding Log}"/>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
     </Grid>
 </UserControl>

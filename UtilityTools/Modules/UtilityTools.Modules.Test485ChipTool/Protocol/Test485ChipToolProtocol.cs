@@ -11,14 +11,13 @@ using UtilityTools.Core.Helper;
 using UtilityTools.Core.Model;
 using UtilityTools.Core.Protocol;
 using UtilityTools.Services.Interfaces.IServices;
+using System.Windows.Media.Animation;
 
 namespace UtilityTools.Modules.Test485ChipTool.Protocol
 {
-    
-        ///<summary>
-        /// OTA升级指令类型
-        /// </summary>
-        
+
+   
+
 
         public class Test485ChipToolDataPacket
         {
@@ -59,8 +58,9 @@ namespace UtilityTools.Modules.Test485ChipTool.Protocol
 
         public static class Test485ChipToolProtocol
         {
-            #region ------------StaticMethod------------
-
+        #region ------------StaticMethod------------
+        public static readonly ushort cmdGetVac = 0x0800;
+        public static readonly ushort cmdGetPID = 0X0806;
             /// <summary>
             /// 指令生成方法
             /// </summary>
@@ -84,23 +84,87 @@ namespace UtilityTools.Modules.Test485ChipTool.Protocol
                 return ZepGenericProtocol.GetCmd(id, cmd, data);
             }
 
+
             /// <summary>
-            /// 获取硬件信息指令
+            /// 读真空1的读数
             /// </summary>
             /// <param name="deviceID"></param>
             /// <returns></returns>
-            public static byte[] GetRequestHardInfoCmd(int deviceID)
+            public static byte[] GetCH1Vac(int deviceID = 0x0101)
             {
-                ByteWriter writer = new ByteWriter(36);
-                return GetCmd(0x04, deviceID, writer.EndWrite());
+            byte[] bytes = new byte[36];
+            bytes[0] = 0x01;
+            return GetCmd(cmdGetVac, deviceID, bytes);
             }
-
-       
-          
-            
-            #endregion
+            /// <summary>
+            /// 读真空2的读数
+            /// </summary>
+            /// <param name="deviceID"></param>
+            /// <returns></returns>
+            public static byte[] GetCH2Vac(int deviceID = 0x0101)
+            {
+                byte[] bytes = new byte[36];
+                bytes[0] = 0x02;
+                return GetCmd(cmdGetVac, deviceID, bytes);
+            }
+            /// <summary>
+            /// 读真空3的读数
+            /// </summary>
+            /// <param name="deviceID"></param>
+            /// <returns></returns>
+            public static byte[] GetCH3Vac(int deviceID = 0x0101)
+            {
+                byte[] bytes = new byte[36];
+                bytes[0] = 0x03;
+                return GetCmd(cmdGetVac, deviceID, bytes);
+            }
+            /// <summary>
+            /// 读真空4的读数
+            /// </summary>
+            /// <param name="deviceID"></param>
+            /// <returns></returns>
+            public static byte[] GetCH4Vac(int deviceID = 0x0101)
+            {
+                byte[] bytes = new byte[36];
+                bytes[0] = 0x04;
+                return GetCmd(cmdGetVac, deviceID, bytes);
+            }
+            /// <summary>
+            /// 获取Pid参数
+            /// </summary>
+            /// <param name="deviceID"></param>
+            /// <returns></returns>
+            public static byte[] GetPID(int deviceID = 0x0101)
+            {
+                byte[] bytes = new byte[36];
+                return GetCmd(cmdGetPID, deviceID, bytes);
+            }
+        public static void GetTestMessage(ref byte[] bytes)
+        {
+            bytes = GetPID();
+            bytes[57] = 0X2B;
+            bytes[58] = 0XAB;
+            bytes[59] = 0XF3;
+            bytes[60] = 0X40;
+            bytes[61] = 0X92;
+            bytes[62] = 0XE1;
+                      
+        }
+        public static void GetRecvMessage(ref byte[] bytes)
+        {
+            bytes = GetPID();
+            bytes[53] = 0x01;
+            bytes[57] = 0X2B;
+            bytes[58] = 0XAB;
+            bytes[59] = 0XF3;
+            bytes[60] = 0X40;
+            bytes[61] = 0X53;
+            bytes[62] = 0X2d;
 
         }
+        #endregion
+
+    }
     public class FreePort
     {
         private const string PortReleaseGuid = "8875BD8E-4D5B-11DE-B2F4-691756D89593";
