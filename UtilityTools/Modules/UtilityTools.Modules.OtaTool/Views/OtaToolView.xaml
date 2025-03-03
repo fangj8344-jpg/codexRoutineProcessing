@@ -7,6 +7,7 @@
              xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:local="clr-namespace:UtilityTools.Modules.OtaTool.Views"
              xmlns:model="clr-namespace:UtilityTools.Modules.OtaTool.Model"
+             xmlns:rule="clr-namespace:UtilityTools.Modules.OtaTool.Rule"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <UserControl.Resources>
@@ -38,6 +39,21 @@
                         Content="{md:PackIcon Kind=UsbPort, Size=24}"
                         Style="{StaticResource MaterialDesignToolButton}"
                         Foreground="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <Button DockPanel.Dock="Right"
+                        Command="{Binding ConnectPrepareCommand}"
+                        Content="获取目标IP"/>
+                <TextBox DockPanel.Dock="Right"
+                    Margin="0,0,10,0"
+                    Width="50">
+                    <TextBox.Text>
+                        <Binding Path="Port" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged">
+                            <Binding.ValidationRules>
+                                <rule:NumberValidationRule ValidatesOnTargetUpdated="True"/>
+                            </Binding.ValidationRules>
+                        </Binding>
+                    </TextBox.Text>
+                </TextBox>
+                <Label Content="目标端口号" DockPanel.Dock="Right"/>
             </DockPanel>
             <local:MainPageView Grid.Row="1" DataContext="{Binding Model}"/>
         </Grid>

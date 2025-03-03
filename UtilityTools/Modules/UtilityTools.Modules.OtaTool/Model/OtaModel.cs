@@ -44,6 +44,8 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
 using System.Threading.Tasks;
 using System.Collections;
 using MaterialDesignThemes.Wpf;
+using System.Net.Sockets;
+using System.Net;
 
 namespace UtilityTools.Modules.OtaTool.Model
 {
@@ -61,18 +63,18 @@ namespace UtilityTools.Modules.OtaTool.Model
             SerialPortService = new SerialPortService();
             SerialPortService.Name = "升级串口";
             SerialPortService.IsBinary = true;
+            locatePort = FreePort.FindNextAvailableUDPPort(5000);
             var netUdp = new UdpNetAsyncDevice();
             netUdp.Name = "升级网口";
             netUdp.DeviceInstance.TargetIp = "192.168.1.88";
             netUdp.DeviceInstance.TargetPort = 5000;
-            netUdp.DeviceInstance.HostIp = "192.168.1.34";
-            netUdp.DeviceInstance.HostPort = 5001;
+            netUdp.DeviceInstance.HostIp = FindIpv4IP().ToString();
+            netUdp.DeviceInstance.HostPort = locatePort;
             netUdp.IsBinary = true;
             NetUdpService = netUdp;
             UpdateCommand = new DelegateCommand(Update);
             LoadPackFileCommand = new DelegateCommand(LoadPackFile);
             ClearLogCommand = new DelegateCommand(ClearLog);
-
             _parser1 = new OtaToolProtocolParser();
             _parser1.Service = SerialPortService;
             _parser2 = new OtaToolProtocolParser();
@@ -81,7 +83,9 @@ namespace UtilityTools.Modules.OtaTool.Model
             NetUdpService.UpdateResponse += NetUdpService_UpdateResponse;
             _parser1.PacketReceivedEvent += Parser_PacketReceivedEvent;
             _parser2.PacketReceivedEvent += Parser_PacketReceivedEvent;
-
+            locateIpAddr = FindIpv4IP();
+            IPEndPoint locatePoint = new IPEndPoint(locateIpAddr,locatePort);
+            _udpClient = new UdpClient();
         }
 
        
@@ -102,8 +106,8 @@ namespace UtilityTools.Modules.OtaTool.Model
         private readonly IDialogHostService _dialogHostService;
         private OtaToolProtocolParser _parser1;
         private OtaToolProtocolParser _parser2;
-
-
+        public UdpClient _udpClient;
+        public byte[] _packetReceived;
         private bool _isUpdating = false;
         private bool _isRestart = false;
         private bool _isTimeout = false;
@@ -116,7 +120,8 @@ namespace UtilityTools.Modules.OtaTool.Model
         private Thread _sendMessageQueueThread;
         private bool _sendMessageQueueThreadSignalLight = false;
         private bool _fullSpeedSignalLight = false;
-
+        public int locatePort;
+        public IPAddress locateIpAddr;
         #endregion
 
         #region ------------Property------------
@@ -243,7 +248,7 @@ namespace UtilityTools.Modules.OtaTool.Model
             get { return _tips; }
             set { _tips = value; RaisePropertyChanged(); }
         }
-
+       
         #endregion
 
         #region ------------Command-----------
@@ -275,6 +280,14 @@ namespace UtilityTools.Modules.OtaTool.Model
             }
             _confirmTheUpgradeTimer.Start();
         }
+        /// <summary>
+        /// 网口和事件回报事件绑定
+        /// </summary>
+        public void InitNetConfig()
+        {
+            _parser2.Service = NetUdpService;
+            NetUdpService.UpdateResponse += NetUdpService_UpdateResponse;
+        }
 
 
 
@@ -282,12 +295,18 @@ namespace UtilityTools.Modules.OtaTool.Model
 
         #region ------------PrivateMethod------------
 
+        /// <summary>
+        /// 获取设备状态信息
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Timer_Elapsed(object? sender, ElapsedEventArgs e)
         {
-            if (DevelopmentBoardMessage != null && DevelopmentBoardMessage.DeviceID.HasValue)
+            if (DevelopmentBoardMessage != null && DevelopmentBoardMessage.DeviceID.HasValue && (SerialPortService.IsOpen == true ||NetUdpService.IsOpen == true))
             {
                 var requestCmd = OtaProtocol.GetDeviceStatusCmd(DevelopmentBoardMessage.DeviceID.Value);
-               
+                var message = EthProtocol.GetIP(DevelopmentBoardMessage.DeviceID);
+                Log += "查询状态" + "\n\r";
                 MessageEnqueue(requestCmd);
             }
 
@@ -330,7 +349,6 @@ namespace UtilityTools.Modules.OtaTool.Model
                 MessageEnqueue(stopCmd);
                 Log += "已发送停止固件升级命令\n";
                 Tips = "停止固件升级中";
-
                 return;
             }
 
@@ -647,15 +665,12 @@ namespace UtilityTools.Modules.OtaTool.Model
                     {
                         Reset();
                         var stopCmd = OtaProtocol.GetAbortUpdateCmd(DevelopmentBoardMessage.DeviceID.Value);
-                       
                         MessageEnqueue(stopCmd);
-
                         return;
                     }
                 }
                 else
                 {
-
                     Tips = "开发板传输数据时长时间无响应。";
                     Reset();
                 }
@@ -688,16 +703,19 @@ namespace UtilityTools.Modules.OtaTool.Model
             {
                 if (_sendQueue.Count != 0 && _fullSpeedSignalLight == false)
                 {
+                    var data = (byte[])_sendQueue.Dequeue();
                     if (SerialPortService.IsOpen)
                     {
-                        SerialPortService.SendMsg((byte[])_sendQueue.Dequeue());
+                        SerialPortService.SendMsg(data);
+                        
                     }
 
                     if (NetUdpService.IsOpen)
                     {
-                        NetUdpService.SendMsg((byte[])_sendQueue.Dequeue());
+                        NetUdpService.SendMsg(data);
 
                     }
+                 
                     Thread.Sleep(200);
                 }
                 else if (_sendQueue.Count != 0 && _fullSpeedSignalLight == true)
@@ -713,12 +731,25 @@ namespace UtilityTools.Modules.OtaTool.Model
 
                     }
                 }
+                
             }
         }
-
+        private IPAddress FindIpv4IP()
+        {
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    return  ip;
+                }
+            }
+            return null;
+        }
+        
 
     }
-
+   
 
 
     #endregion
