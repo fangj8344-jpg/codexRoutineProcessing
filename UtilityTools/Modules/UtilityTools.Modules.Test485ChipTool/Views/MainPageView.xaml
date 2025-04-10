@@ -22,19 +22,19 @@
                         <Button Content="串口4测试"  Width="100" Command="{Binding TestCommand}" CommandParameter="4"/>
                         <Button Content="串口5测试"  Width="100" Command="{Binding TestCommand}" CommandParameter="5"/>
                         <Canvas>
-                            <Ellipse Height="40" Width="40" Fill="{Binding IsReady1, Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="70" Canvas.Top="5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Ellipse Height="40" Width="40" Fill="{Binding ReadySign[0], Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="70" Canvas.Top="5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Canvas>
                         <Canvas>
-                            <Ellipse Height="40" Width="40" Fill="{Binding IsReady2, Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="70" Canvas.Top="5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Ellipse Height="40" Width="40" Fill="{Binding ReadySign[1], Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="70" Canvas.Top="5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Canvas>
                         <Canvas>
-                            <Ellipse Height="40" Width="40" Fill="{Binding IsReady3, Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="70" Canvas.Top="5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Ellipse Height="40" Width="40" Fill="{Binding ReadySign[2], Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="70" Canvas.Top="5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Canvas>
                         <Canvas>
-                            <Ellipse Height="40" Width="40" Fill="{Binding IsReady4, Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="70" Canvas.Top="5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Ellipse Height="40" Width="40" Fill="{Binding ReadySign[3], Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="70" Canvas.Top="5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Canvas>
                         <Canvas>
-                            <Ellipse Height="40" Width="40" Fill="{Binding IsReady5, Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="54" Canvas.Top="5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Ellipse Height="40" Width="40" Fill="{Binding ReadySign[4], Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="54" Canvas.Top="5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Canvas>
                     </UniformGrid>
                     <DockPanel  Height="50"  LastChildFill="False">
