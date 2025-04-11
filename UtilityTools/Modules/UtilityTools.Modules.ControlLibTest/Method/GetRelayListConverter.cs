@@ -39,7 +39,7 @@ namespace UtilityTools.Modules.ControlLibTest.Method
 {
     public class GetRelayListConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             var source = value as ObservableCollection<CCSModel>;
             if (source != null)

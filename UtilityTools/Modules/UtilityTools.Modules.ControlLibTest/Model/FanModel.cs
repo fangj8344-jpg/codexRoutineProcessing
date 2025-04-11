@@ -30,7 +30,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Zeptools.CommonLib.Model;
 
 namespace UtilityTools.Modules.ControlLibTest.Model
 {
@@ -83,7 +82,7 @@ namespace UtilityTools.Modules.ControlLibTest.Model
             set { _maxSpeed = value; RaisePropertyChanged(); }
         }
 
-        public Func<byte,ResponseProto> SetValueFunc { get; set; }
+        public Action<byte>? SetValueFunc { get; set; }
         #endregion
 
         #region ------------PublicMethod------------

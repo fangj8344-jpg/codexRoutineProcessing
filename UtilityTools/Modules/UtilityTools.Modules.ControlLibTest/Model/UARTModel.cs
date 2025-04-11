@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Zeptools.CommonLib.Model;
 
 namespace UtilityTools.Modules.ControlLibTest.Model
 {
@@ -54,7 +53,7 @@ namespace UtilityTools.Modules.ControlLibTest.Model
         
         public DelegateCommand SetUartCommand { get; set; }
 
-        public Func<byte,uint,ResponseProto?> SetBaudRateFunc { get; set; }
+        public Action<byte,uint>? SetBaudRateFunc { get; set; }
         #endregion
 
         #region ------------PublicMethod------------

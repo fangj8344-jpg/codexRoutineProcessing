@@ -11,70 +11,85 @@ using Prism.Services.Dialogs;
 using Prism.Commands;
 using UtilityTools.Modules.Test485ChipTool.Model;
 using UtilityTools.Core.Mvvm;
+using UtilityTools.Modules.Test485ChipTool.Protocol;
+using System.Threading;
 
 namespace UtilityTools.Modules.Test485ChipTool.ViewModels
 {
     public class Test485ChipToolViewModel:RegionViewModelBase
     {
         #region---------------------Construct-------------------
-        public Test485ChipToolViewModel(IContainerProvider containerProvider, IDialogHostService dialogHostService)
+        public Test485ChipToolViewModel(IContainerProvider containerProvider)
           : base(containerProvider)
         {
-            _dialogHostService = dialogHostService;
             InitProperty();
             InitCommand();
         }
         #endregion
 
         #region ------------Field------------
-        private readonly IDialogHostService _dialogHostService;
+
         #endregion
 
         #region ------------Property------------
-        private bool _isConnected;
+        
+        private Test485Model _model1;
         /// <summary>
-        /// 设备是否连接
+        /// 串口1
         /// </summary>
-        public bool IsConnected
+        public Test485Model Model1
         {
-            get { return _isConnected; }
-            set
-            {
-                _isConnected = value;
-                RaisePropertyChanged();
-            }
+            get { return _model1; }
+            set { _model1 = value; RaisePropertyChanged(); }
         }
 
-        private bool _netIsConnected;
+        private Test485Model _model2;
         /// <summary>
-        /// 网络设备是否连接
+        /// 串口2
         /// </summary>
-        public bool NetIsConnected
+        public Test485Model Model2
         {
-            get { return _netIsConnected; }
-            set
-            {
-                _netIsConnected = value;
-                RaisePropertyChanged();
-            }
+            get { return _model2; }
+            set { _model2 = value; RaisePropertyChanged(); }
         }
 
-        private Test485ChipModel _model;
+        private Test485Model _model3;
         /// <summary>
-        /// 
+        /// 串口3
         /// </summary>
-        public Test485ChipModel Model
+        public Test485Model Model3
         {
-            get { return _model; }
-            set { _model = value; RaisePropertyChanged(); }
+            get { return _model3; }
+            set { _model3 = value; RaisePropertyChanged(); }
         }
 
+        private Test485Model _model4;
+        /// <summary>
+        /// 串口4
+        /// </summary>
+        public Test485Model Model4
+        {
+            get { return _model4; }
+            set { _model4 = value; RaisePropertyChanged(); }
+        }
+
+        private Test485Model _model5;
+        /// <summary>
+        /// 串口5
+        /// </summary>
+        public Test485Model Model5
+        {
+            get { return _model5; }
+            set { _model5 = value; RaisePropertyChanged(); }
+        }
+
+       
         #endregion
 
         #region ------------Command------------
-        public DelegateCommand ShowDeviceCommand { get; set; }
+        public DelegateCommand<string> TestCommand { get; set; }
 
-        public DelegateCommand ShowNetDeviceCommand { get; set; }
+        public DelegateCommand ClearCommand { get; set; }
         #endregion
 
         #region ------------PublicMethod------------
@@ -86,68 +101,57 @@ namespace UtilityTools.Modules.Test485ChipTool.ViewModels
         /// </summary>
         private void InitCommand()
         {
-            ShowDeviceCommand = new DelegateCommand(ShowDevice);
-            ShowNetDeviceCommand = new DelegateCommand(ShowNetDevice);
+            TestCommand = new DelegateCommand<string>(Test);
+            ClearCommand = new DelegateCommand(Clear);
         }
+
+       
+
 
         /// <summary>
         /// 初始化属性
         /// </summary>
         private void InitProperty()
         {
-            Model = containerProvider.Resolve<Test485ChipModel>();
+            var hostIp = FreePort.FindIpv4IP().ToString();
+            _model1 = new Test485Model(hostIp, FreePort.FindNextAvailableUDPPort(5000),"192.168.1.88",5001);
+            _model2 = new Test485Model(hostIp, FreePort.FindNextAvailableUDPPort(5000), "192.168.1.88", 5002);
+            _model3 = new Test485Model(hostIp, FreePort.FindNextAvailableUDPPort(5000), "192.168.1.88", 5003);
+            _model4 = new Test485Model(hostIp, FreePort.FindNextAvailableUDPPort(5000), "192.168.1.88", 5004);
+            _model5 = new Test485Model(hostIp, FreePort.FindNextAvailableUDPPort(5000), "192.168.1.88", 5005);
         }
 
-        /// <summary>
-        /// 显示设备连接弹窗
-        /// </summary>
-        private async void ShowDevice()
+        private void Test(string obj)
         {
-            DialogParameters parameter = new DialogParameters();
-            parameter.Add("Value", Model.SerialPortService);
-            var diaglogResult = await this._dialogHostService.ShowDialog("SerialPortView", parameter, CommonModel.Test485ChipToolRegionName);
-            if (diaglogResult == null)
-                return;
-            if (diaglogResult.Result == ButtonResult.OK && diaglogResult.Parameters.ContainsKey("Value"))
-            {
-                var value = diaglogResult.Parameters.GetValue<IAsynRWService>("Value");
-                if (value != null)
-                {
-                    Model.SerialPortService = value;
-                    IsConnected = Model.SerialPortService.IsOpen;
-               
-                }
-            }
-        }
-        
-        /// <summary>
-        /// 显示设备连接弹窗
-        /// </summary>
-        public async void ShowNetDevice()
-        {
-            DialogParameters parameter = new DialogParameters();
-            parameter.Add("Value", Model.NetUdpService);//传递参数用来读写
-            var diaglogResult = await this._dialogHostService.ShowDialog("NetConfigView", parameter, CommonModel.Test485ChipToolRegionName);
-            if (diaglogResult == null)
-                return;
-            if (diaglogResult.Result == ButtonResult.OK && diaglogResult.Parameters.ContainsKey("Value"))
-            {
-                var value = diaglogResult.Parameters.GetValue<IAsynRWService>("Value");
-                if (value != null)
-                {
-                    Model.NetUdpService = value;
-                    NetIsConnected = Model.NetUdpService.IsOpen;
-                }
-
-            }
-           
             
+            switch (obj)
+            {
+                case "1": _model1.CheckTest(); break;
+                case "2": _model2.CheckTest(); break;
+                case "3": _model3.CheckTest(); break;
+                case "4": _model4.CheckTest(); break;
+                case "5": _model5.CheckTest(); break;
+                case "0":
+                    _model1.CheckTest();
+                    Thread.Sleep(200);
+                    _model2.CheckTest();
+                    Thread.Sleep(200);
+                    _model3.CheckTest();
+                    Thread.Sleep(200);
+                    _model4.CheckTest();
+                    Thread.Sleep(200);
+                    _model5.CheckTest();
+                    break;
+            }
         }
-
-      
-        
-       
-
+        private void Clear()
+        {
+            _model1.IsCheckOK = null;
+            _model2.IsCheckOK = null;
+            _model3.IsCheckOK = null;
+            _model4.IsCheckOK = null;
+            _model5.IsCheckOK = null;
+        }
 
         #endregion
 

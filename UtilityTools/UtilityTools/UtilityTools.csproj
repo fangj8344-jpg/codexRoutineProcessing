@@ -50,4 +50,18 @@
       <TargetPath>Modules/%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
     </ContentWithTargetPath>
   </ItemGroup>
+  <ItemGroup>
+    <Reference Include="CoreTools">
+      <HintPath>bin\Debug\net6.0-windows\CoreTools.dll</HintPath>
+    </Reference>
+    <Reference Include="Devices">
+      <HintPath>..\Modules\UtilityTools.Modules.ControlLibTest\bin\Debug\net6.0-windows\Devices.dll</HintPath>
+    </Reference>
+    <Reference Include="Zem15C.CoreControl">
+      <HintPath>..\Modules\UtilityTools.Modules.ControlLibTest\bin\Debug\net6.0-windows\Zem15C.CoreControl.dll</HintPath>
+    </Reference>
+    <Reference Include="ZemModel">
+      <HintPath>..\Modules\UtilityTools.Modules.ControlLibTest\bin\Debug\net6.0-windows\ZemModel.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 </Project>

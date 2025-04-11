@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Zeptools.CommonLib.Model;
 
 namespace UtilityTools.Modules.ControlLibTest.Model
 {
@@ -59,7 +58,7 @@ namespace UtilityTools.Modules.ControlLibTest.Model
             set { _maxValue = value; RaisePropertyChanged(); }
         }
 
-        public Func<ushort, ResponseProto> SetValueFunc { get; set; }
+        public Action<ushort>? SetValueFunc { get; set; }
         #endregion
 
         #region ------------PublicMethod------------

@@ -30,7 +30,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Zeptools.CommonLib.Model;
 
 namespace UtilityTools.Modules.ControlLibTest.Model
 {
@@ -99,11 +98,11 @@ namespace UtilityTools.Modules.ControlLibTest.Model
             set { _channel = value; RaisePropertyChanged(); }
         }
 
-        public Func<ushort, ResponseProto> SetValueFunc { get; set; }
+        public Action<ushort>? SetValueFunc { get; set; }
 
-        public Func<bool, ResponseProto> SetNegStateFunc { get; set; }
+        public Action<bool>? SetNegStateFunc { get; set; }
 
-        public Func<bool, ResponseProto> SetPosStateFunc { get; set; }
+        public Action<bool>? SetPosStateFunc { get; set; }
         #endregion
 
         #region ------------PublicMethod------------

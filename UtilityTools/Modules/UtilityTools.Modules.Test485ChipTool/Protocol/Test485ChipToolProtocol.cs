@@ -12,48 +12,10 @@ using UtilityTools.Core.Model;
 using UtilityTools.Core.Protocol;
 using UtilityTools.Services.Interfaces.IServices;
 using System.Windows.Media.Animation;
+using System.Net.Sockets;
 
 namespace UtilityTools.Modules.Test485ChipTool.Protocol
 {
-
-   
-
-
-        public class Test485ChipToolDataPacket
-        {
-            public Test485ChipToolDataPacket(DataPacket packet)
-            {
-                this.packet = packet;
-            }
-        
-            public DataPacket packet;
-        }
-
-
-        public class Test485ChipToolDataPacketProtocolParser
-        {
-            public Test485ChipToolDataPacketProtocolParser()
-            {
-                _parser = new ZepGenericProtocolParser();
-                _parser.PacketReceivedEvent += GeneriaPackReceived;
-            }
-            private void GeneriaPackReceived(object sender, DataPacket packet)
-            {
-                PacketReceivedEvent(this, new Test485ChipToolDataPacket(packet));
-            }
-
-            public event EventHandler<Test485ChipToolDataPacket> PacketReceivedEvent;
-
-            public void ReceiveBytes(byte[] data)
-            {
-                _parser.ReceiveBytes(data);
-            }
-
-            private ZepGenericProtocolParser _parser;
-            public IAsynRWService Service;
-        }
-
-
 
 
         public static class Test485ChipToolProtocol
@@ -69,6 +31,8 @@ namespace UtilityTools.Modules.Test485ChipTool.Protocol
             /// <returns></returns>
             public static byte[] GetCmd(ushort command, int? deviceID, byte[] data)
             {
+            var addr = 0x0101;
+            
                 // data段固定36字节，不足用零填充
                 if (data.Length < 36)
                 {
@@ -84,51 +48,6 @@ namespace UtilityTools.Modules.Test485ChipTool.Protocol
                 return ZepGenericProtocol.GetCmd(id, cmd, data);
             }
 
-
-            /// <summary>
-            /// 读真空1的读数
-            /// </summary>
-            /// <param name="deviceID"></param>
-            /// <returns></returns>
-            public static byte[] GetCH1Vac(int deviceID = 0x0101)
-            {
-            byte[] bytes = new byte[36];
-            bytes[0] = 0x01;
-            return GetCmd(cmdGetVac, deviceID, bytes);
-            }
-            /// <summary>
-            /// 读真空2的读数
-            /// </summary>
-            /// <param name="deviceID"></param>
-            /// <returns></returns>
-            public static byte[] GetCH2Vac(int deviceID = 0x0101)
-            {
-                byte[] bytes = new byte[36];
-                bytes[0] = 0x02;
-                return GetCmd(cmdGetVac, deviceID, bytes);
-            }
-            /// <summary>
-            /// 读真空3的读数
-            /// </summary>
-            /// <param name="deviceID"></param>
-            /// <returns></returns>
-            public static byte[] GetCH3Vac(int deviceID = 0x0101)
-            {
-                byte[] bytes = new byte[36];
-                bytes[0] = 0x03;
-                return GetCmd(cmdGetVac, deviceID, bytes);
-            }
-            /// <summary>
-            /// 读真空4的读数
-            /// </summary>
-            /// <param name="deviceID"></param>
-            /// <returns></returns>
-            public static byte[] GetCH4Vac(int deviceID = 0x0101)
-            {
-                byte[] bytes = new byte[36];
-                bytes[0] = 0x04;
-                return GetCmd(cmdGetVac, deviceID, bytes);
-            }
             /// <summary>
             /// 获取Pid参数
             /// </summary>
@@ -139,33 +58,58 @@ namespace UtilityTools.Modules.Test485ChipTool.Protocol
                 byte[] bytes = new byte[36];
                 return GetCmd(cmdGetPID, deviceID, bytes);
             }
-        public static void GetTestMessage(ref byte[] bytes)
+   
+        public static byte[] GetSendMessage()
         {
-            bytes = GetPID();
-            bytes[57] = 0X2B;
-            bytes[58] = 0XAB;
-            bytes[59] = 0XF3;
-            bytes[60] = 0X40;
-            bytes[61] = 0X92;
-            bytes[62] = 0XE1;
-                      
-        }
-        public static void GetRecvMessage(ref byte[] bytes)
-        {
-            bytes = GetPID();
-            bytes[53] = 0x01;
-            bytes[57] = 0X2B;
-            bytes[58] = 0XAB;
-            bytes[59] = 0XF3;
-            bytes[60] = 0X40;
-            bytes[61] = 0X53;
-            bytes[62] = 0X2d;
+            string SendMessage = "24 5A 65 70 3A 40 00 00 00 00 00 01 01 01 01 06 08 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 2B AB F3 40 52 D1 25";
+            return hexStringToByteArray(SendMessage);
 
+        }
+        public static byte[] GetCheckMessage()
+        {
+            string CheckMessag = "24 5A 65 70 3A 40 00 00 00 00 00 00 00 01 01 06 08 00 00 00 00 CD CC CC 3E 52 49 1D 3A 0A D7 23 3C 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 2B AB F3 40 9F 30 25";
+            return hexStringToByteArray(CheckMessag);
+        }
+        public static byte[] GetCheckMessage2()
+        {
+            string CheckMessag = "24 5A 65 70 3A 40 00 00 00 00 00 01 01 01 01 06 08 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00 2B AB F3 40 93 1D 25";
+            return hexStringToByteArray(CheckMessag);
+        }
+        /// <summary>
+        /// byte数组转16进制字符串
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public static string byteArrayToHexString(byte[] data)
+        {
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < data.Length; i++)
+            {
+                builder.Append(string.Format("{0:X2} ", data[i]));
+            }
+            return builder.ToString().Trim();
+        }
+
+        /// <summary>
+        /// 16进制字符串转byte数组
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public static byte[] hexStringToByteArray(string data)
+        {
+            string[] chars = data.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            byte[] returnBytes = new byte[chars.Length];
+            //逐个字符变为16进制字节数据
+            for (int i = 0; i < chars.Length; i++)
+            {
+                returnBytes[i] = Convert.ToByte(chars[i], 16);
+            }
+            return returnBytes;
         }
         #endregion
 
     }
-    public class FreePort
+    public static class  FreePort
     {
         private const string PortReleaseGuid = "8875BD8E-4D5B-11DE-B2F4-691756D89593";
 
@@ -265,7 +209,20 @@ namespace UtilityTools.Modules.Test485ChipTool.Protocol
                 mutex.ReleaseMutex();
             }
         }
-        
+        public static IPAddress FindIpv4IP()
+        {
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    return ip;
+                }
+            }
+            return null;
+        }
+       
+
     }
 
 }

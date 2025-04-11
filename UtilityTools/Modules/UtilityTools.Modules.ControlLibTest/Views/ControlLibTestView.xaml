@@ -225,7 +225,7 @@
                 </ItemsControl>
             </Grid>
         </TabItem>
-        <TabItem Header="LED">
+        <!--<TabItem Header="LED">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="118*"/>
@@ -254,9 +254,9 @@
                         <TextBlock VerticalAlignment="Center" Text="静态分段点亮" />
                         <ComboBox SelectedItem="{Binding LedModels.StaticLightModel}"
                                  ItemsSource="{Binding Source={StaticResource enumModels}}">
-                            <!--<ComboBoxItem>奇数灯闪</ComboBoxItem>
+                            --><!--<ComboBoxItem>奇数灯闪</ComboBoxItem>
                             <ComboBoxItem>偶数灯闪</ComboBoxItem>
-                            <ComboBoxItem>奇偶交替闪</ComboBoxItem>-->
+                            <ComboBoxItem>奇偶交替闪</ComboBoxItem>--><!--
                         </ComboBox>
                     </DockPanel>
 
@@ -339,7 +339,7 @@
                 </UniformGrid>
             </Grid>
 
-        </TabItem>
+        </TabItem>-->
         <TabItem Header="ETH">
             <Grid Margin="5">
                 <Grid.RowDefinitions>
@@ -446,7 +446,7 @@
                 </DockPanel>
             </Grid>
         </TabItem>
-        <TabItem Header="VAC">
+        <!--<TabItem Header="VAC">
             <Grid Margin="5">
                 <Grid.RowDefinitions>
                     <RowDefinition />
@@ -540,7 +540,7 @@
                 </DockPanel>
 
             </Grid>
-        </TabItem>
+        </TabItem>-->
         <TabItem Header="BSE">
             <Grid Margin="5">
                 <Grid.RowDefinitions>

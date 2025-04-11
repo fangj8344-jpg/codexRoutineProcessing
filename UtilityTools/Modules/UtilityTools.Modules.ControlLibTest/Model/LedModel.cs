@@ -31,8 +31,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Zeptools.CommonLib.Method;
-using Zeptools.CommonLib.Model;
 
 namespace UtilityTools.Modules.ControlLibTest.Model
 {
@@ -41,10 +39,10 @@ namespace UtilityTools.Modules.ControlLibTest.Model
         #region ------------Constructor------------
 
         public LedModel() {
-            this.UpdateLightCommand = new DelegateCommand(SetUpdateLight);
+           // this.UpdateLightCommand = new DelegateCommand(SetUpdateLight);
         }
         #endregion
-
+        /*
         private void SetUpdateLight()
         {
             byte[] content;
@@ -84,7 +82,7 @@ namespace UtilityTools.Modules.ControlLibTest.Model
                     content[1] = 0x05;
                     content[2] = 0x04;
                     Array.Copy(BitConverter.GetBytes(this.TimeCycle), 0, content, 3, 2);
-                    Array.Copy(BitConverter.GetBytes(((ushort)this.DivideLightModel).Revert()), 0, content, 5, 2);
+                    //Array.Copy(BitConverter.GetBytes(((ushort)this.DivideLightModel).Revert()), 0, content, 5, 2);
                     content[7] = 0xCE;
                     byte len3 = (byte)content.Length;
                     UpdateLightFunc?.Invoke(len3, content);
@@ -137,7 +135,7 @@ namespace UtilityTools.Modules.ControlLibTest.Model
                     content[0] = 0xCE;
                     content[1] = 0x03;
                     content[2] = 0x09;
-                    Array.Copy(BitConverter.GetBytes(((ushort)this.StaticLightModel).Revert()), 0, content, 3, 2);
+                    //Array.Copy(BitConverter.GetBytes(((ushort)this.StaticLightModel).Revert()), 0, content, 3, 2);
                     content[5] = 0xEC;
                     byte len8 = (byte)content.Length;
                     UpdateLightFunc?.Invoke(len8, content);
@@ -176,7 +174,7 @@ namespace UtilityTools.Modules.ControlLibTest.Model
             }
 
            
-        }
+        }*/
         #region ------------Field------------
         #endregion
 
@@ -303,7 +301,7 @@ namespace UtilityTools.Modules.ControlLibTest.Model
         public DelegateCommand UpdateLightCommand { get; set; }
 
 
-        public Func<byte, byte[], ResponseProto> UpdateLightFunc { get; set; }
+        public Action<byte, byte[]>? UpdateLightFunc { get; set; }
 
         #endregion
 

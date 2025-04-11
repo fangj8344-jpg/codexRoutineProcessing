@@ -23,6 +23,8 @@
  * 版本：V1.0.1
  *----------------------------------------------------------------*/
 #endregion
+using Devices.Interface;
+using Devices.Method;
 using OpenCvSharp;
 using Prism.Commands;
 using Prism.Events;
@@ -42,23 +44,8 @@ using UtilityTools.Core.Dialog;
 using UtilityTools.Core.Extension;
 using UtilityTools.Core.Mvvm;
 using UtilityTools.Modules.ControlLibTest.Model;
-using Zeptools.BseControlLib.Entity;
-using Zeptools.CCSControlLib.Entity;
-using Zeptools.CommonLib.ComDevice;
-using Zeptools.CommonLib.Help;
-using Zeptools.CommonLib.Interface;
-using Zeptools.CommonLib.Model;
-using Zeptools.ControlLib.Entity;
-using Zeptools.DacControlLib.Entity;
-using Zeptools.EthControlLib.Entity;
-using Zeptools.FanControlLib.Entity;
-using Zeptools.LedControlLib.Entity;
-using Zeptools.RelayControlLib.Entity;
-using Zeptools.ScanControlLib.Entity;
-using Zeptools.SeControlLib.Entity;
-using Zeptools.TempControlLib.Entity;
-using Zeptools.UartControlLib.Entity;
-using Zeptools.VacuumLib.Entity;
+using Zem15C.CoreControl;
+using ZemModel.Entity;
 
 namespace UtilityTools.Modules.ControlLibTest.ViewModels
 {
@@ -77,18 +64,18 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             {
                 _device.Name = "协议主控板";
                 _device.Open();
-                _bseControl = new BseEntity(_device);
-                _ccsControl = new CCSEntity(_device);
-                _dacControl = new DacEntity(_device);
-                _ethControl = new EthEntity(_device);
-                _fanControl = new FanEntity(_device);
-                _ledControl = new LedEntity(_device);
-                _relayControl = new RelayEntity(_device);
-                _scanControl = new ScanEntity(_device);
-                _seControl = new SeEntity(_device);
-                _tempControl = new TempEntity(_device);
-                _uartControl = new UartEntity(_device);
-                _vacControl = new VacuumEntity(_device);
+                _bseControl = new ControlEntity(_device);
+                _ccsControl = new ControlEntity(_device);
+                _dacControl = new ControlEntity(_device);
+                _ethControl = new ControlEntity(_device);
+                _fanControl = new ControlEntity(_device);
+                //_ledControl = new ControlEntity(_device);
+                _relayControl = new ControlEntity(_device);
+                _scanControl = new ControlEntity(_device);
+                _seControl = new ControlEntity(_device);
+                _tempControl = new ControlEntity(_device);
+                _uartControl = new ControlEntity(_device);
+                //_vacControl = new ControlEntity(_device);
             }
 
             InitProperty();
@@ -105,13 +92,13 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
         private IDacControl? _dacControl = null;
         private IEthControl? _ethControl = null;
         private IFanControl? _fanControl = null;
-        private ILedControl? _ledControl = null;
+        //private ControlEntity? _ledControl = null;
         private IRelayControl? _relayControl = null;
         private IScanControl? _scanControl = null;
         private ISeControl? _seControl = null;
         private ITempControl? _tempControl = null;
         private IUartControl? _uartControl = null;
-        private IVacControl? _vacControl = null;
+        //private ControlEntity? _vacControl = null;
         #endregion
 
         #region ------------Property------------
@@ -325,7 +312,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             //SetUartCommand = new DelegateCommand<string>(SetUart);
 
             VacModel = new VacModel();
-            GetVacCommand = new DelegateCommand<string>(GetVac);
+            //GetVacCommand = new DelegateCommand<string>(GetVac);
 
             if (_bseControl != null)
             {
@@ -420,7 +407,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
 
         }
-
+        
         private void ScanModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             if (_scanControl == null)
@@ -432,80 +419,67 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                 {
                     case "AmpX":
                         {
-                            var result = _scanControl.SetAmpX(model.AmpX);
-                            ShowResponseResult(result);
+                            _scanControl.SetMainAmpX(model.AmpX);
                         }
                         break;
                     case "AmpY":
                         {
-                            var result = _scanControl.SetAmpY(model.AmpY);
-                            ShowResponseResult(result);
+                            _scanControl.SetMainAmpY(model.AmpY);
                         }
                         break;
                     case "AmpTX":
                         {
-                            var result = _scanControl.SetTAmpX(model.AmpTX);
-                            ShowResponseResult(result);
+                            _scanControl.SetMainTAmpX(model.AmpTX);
                         }
                         break;
                     case "AmpTY":
                         {
-                            var result = _scanControl.SetTAmpY(model.AmpTY);
-                            ShowResponseResult(result);
+                            _scanControl.SetMainTAmpY(model.AmpTY);
                         }
                         break;
                     case "AnalogSpinA":
                         {
-                            var result = _scanControl.SetAnalogSpinCHA(model.AnalogSpinA);
-                            ShowResponseResult(result);
+                            _scanControl.SetMainAnalogSpinCHA(model.AnalogSpinA);
                         }
                         break;
                     case "AnalogSpinB":
                         {
-                            var result = _scanControl.SetAnalogSpinCHB(model.AnalogSpinB);
-                            ShowResponseResult(result);
+                            _scanControl.SetMainAnalogSpinCHB(model.AnalogSpinB);
                         }
                         break;
                     case "AnalogSpinC":
                         {
-                            var result = _scanControl.SetAnalogSpinCHC(model.AnalogSpinC);
-                            ShowResponseResult(result);
+                            _scanControl.SetMainAnalogSpinCHC(model.AnalogSpinC);
                         }
                         break;
                     case "AnalogSpinD":
                         {
-                            var result = _scanControl.SetAnalogSpinCHD(model.AnalogSpinD);
-                            ShowResponseResult(result);
+                            _scanControl.SetMainAnalogSpinCHD(model.AnalogSpinD);
                         }
                         break;
                     case "K1":
                         {
-                            var result = _scanControl.SetSCANK1(model.K1);
-                            ShowResponseResult(result);
+                            _scanControl.SetMainSCANK1(model.K1);
                         }
                         break;
                     case "K2":
                         {
-                            var result = _scanControl.SetSCANK2(model.K2);
-                            ShowResponseResult(result);
+                            _scanControl.SetMainSCANK2(model.K2);
                         }
                         break;
                     case "K3":
                         {
-                            var result = _scanControl.SetSCANK3(model.K3);
-                            ShowResponseResult(result);
+                            _scanControl.SetMainSCANK3(model.K3);
                         }
                         break;
                     case "K4":
                         {
-                            var result = _scanControl.SetSCANK4(model.K4);
-                            ShowResponseResult(result);
+                            _scanControl.SetMainSCANK4(model.K4);
                         }
                         break;
                     case "Sw":
                         {
-                            var result = _scanControl.SetSCANSW(model.Sw);
-                            ShowResponseResult(result);
+                            _scanControl.SetMainSCANSW(model.Sw);
                         }
                         break;
                     default:
@@ -525,14 +499,12 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                 {
                     case "Value":
                         {
-                            var result = _seControl.SetSECH0(model.Value);
-                            ShowResponseResult(result);
+                            _seControl.SetSECH0(model.Value);
                         }
                         break;
                     case "Enable":
                         {
-                            var result = _seControl.SetSEEnable(model.Enable);
-                            ShowResponseResult(result);
+                            _seControl.SetSEEnable(model.Enable);
                         }
                         break;
                     default:
@@ -552,25 +524,21 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                     case "Value":
                         if (model == SelectedCCSModelForValue)
                         {
-                            var result = _ccsControl.SetCCSCHValue(model.Channel, model.Value);
-                            ShowResponseResult(result);
+                             _ccsControl.SetCCSCHValue(model.Channel, model.Value);
                         }
                         else
                         {
-                            var result = model.SetValueFunc?.Invoke(model.Value);
-                            ShowResponseResult(result);
+                            model.SetValueFunc?.Invoke(model.Value);
                         }
                         break;
                     case "RelayState":
                         if (model == SelectedCCSModelForRelay)
                         {
-                            var result = _ccsControl.SetCCSk(model.RelayChannel, model.RelayState);
-                            ShowResponseResult(result);
+                            _ccsControl.SetCCSk(model.RelayChannel, model.RelayState);
                         }
                         else
                         {
-                            var result = model.SetStateFunc?.Invoke(model.RelayState);
-                            ShowResponseResult(result);
+                            model.SetStateFunc?.Invoke(model.RelayState);
                         }
                         break;
                 }
@@ -588,13 +556,11 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                     case "Speed":
                         if (model == SelectedFanModel)
                         {
-                            var result = _fanControl.SetFan(model.Channel, model.Speed);
-                            ShowResponseResult(result);
+                            _fanControl.SetFan(model.Channel, model.Speed);
                         }
                         else
                         {
-                            var result = model.SetValueFunc?.Invoke(model.Speed);
-                            ShowResponseResult(result);
+                            model.SetValueFunc?.Invoke(model.Speed);
                         }
                         break;
                 }
@@ -612,37 +578,31 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                     case "Value":
                         if (model == BseModelForValue)
                         {
-                            var result = _bseControl.SetBSECH(model.Channel, model.Value);
-                            ShowResponseResult(result);
+                            _bseControl.SetBSECH(model.Channel, model.Value);
                         }
                         else
                         {
-                            var result = model.SetValueFunc?.Invoke(model.Value);
-                            ShowResponseResult(result);
+                            model.SetValueFunc?.Invoke(model.Value);
                         }
                         break;
                     case "Positive":
                         if (model == BseModelForPos)
                         {
-                            var result = _bseControl.SetBSECH_P(model.Channel, model.Positive);
-                            ShowResponseResult(result);
+                            _bseControl.SetBSECH_P(model.Channel, model.Positive);
                         }
                         else
                         {
-                            var result = model.SetPosStateFunc?.Invoke(model.Positive);
-                            ShowResponseResult(result);
+                            model.SetPosStateFunc?.Invoke(model.Positive);
                         }
                         break;
                     case "Negative":
                         if (model == BseModelForNeg)
                         {
-                            var result = _bseControl.SetBSECH_R(model.Channel, model.Negative);
-                            ShowResponseResult(result);
+                            _bseControl.SetBSECH_R(model.Channel, model.Negative);
                         }
                         else
                         {
-                            var result = model.SetNegStateFunc?.Invoke(model.Negative);
-                            ShowResponseResult(result);
+                            model.SetNegStateFunc?.Invoke(model.Negative);
                         }
                         break;
                 }
@@ -656,8 +616,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             var model = sender as RelayModel;
             if (model != null)
             {
-                var result = _relayControl.SetRelayState(model.Channel, model.Enable);
-                ShowResponseResult(result);
+                 _relayControl.SetRelayState(model.Channel, model.Enable);
             }
         }
         private void DacModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -671,13 +630,11 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                     case "Value":
                         if (model == SelectedDacModel)
                         {
-                            var result = _dacControl.SetDAC(model.Channel, model.Value);
-                            ShowResponseResult(result);
+                           _dacControl.SetDAC(model.Channel, model.Value);
                         }
                         else
                         {
-                            var result = model.SetValueFunc?.Invoke(model.Value);
-                            ShowResponseResult(result);
+                            model.SetValueFunc?.Invoke(model.Value);
                         }
                         break;
                 }
@@ -696,23 +653,24 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
         //    }
         //}
 
-        private ResponseProto? SetUart(byte Series, uint BaudRate)
+        private void SetUart(byte Series, uint BaudRate)
         {
             if (_uartControl == null)
-                return null;
-            var result = _uartControl.SetBaudRate(Series, BaudRate);
-            ShowResponseResult(result);
-            return result;
+                return ;
+            _uartControl.SetBaudRate(Series, BaudRate);
         }
 
-
-        private ResponseProto? SetLedModel(byte ContentLength, byte[] Content)
+         /// <summary>
+         /// 设置led暂时没有
+         /// </summary>
+         /// <param name="ContentLength"></param>
+         /// <param name="Content"></param>
+        private void SetLedModel(byte ContentLength, byte[] Content)
         {
-            if (_ledControl == null)
-                return null;
-            var result = _ledControl.SetLightMsg(ContentLength, Content);
-            ShowResponseResult(result);
-            return result;
+            //if (_ledControl == null)
+                return ;
+            //var result = _ledControl.SetLightMsg(ContentLength, Content);
+        
         }
 
 
@@ -722,86 +680,43 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             if (_ethControl == null || EthModel == null)
                 return;
             string[] ip = EthModel.SetIP.Split(".");
-            ResponseProto response = _ethControl.SetIP(Convert.ToByte(ip[0]), Convert.ToByte(ip[1]), Convert.ToByte(ip[2]), Convert.ToByte(ip[3]));
-
-            ShowResponseResult(response);
+            _ethControl.SetIP(Convert.ToByte(ip[0]), Convert.ToByte(ip[1]), Convert.ToByte(ip[2]), Convert.ToByte(ip[3]));
         }
 
         private void GetIP()
         {
             if (_ethControl == null || EthModel == null)
                 return;
-            ResponseProto response = _ethControl.HandShake();
-            if (response != null && response.Params != null && response.Result != false)
-            {
-                EthModel.RealIP = response.Params;
-            }
-            ShowResponseResult(response);
+            _ethControl.HandShake();
         }
         private void GetAllTemp()
         {
             if (_tempControl == null || TempModel == null)
                 return;
-            ResponseProto response = _tempControl.GetTemp();
-            if (response != null && response.Result != false && response.Params.Split(",").Length == 2)
-            {
-                try
-                {
-                    TempModel.Value1 = float.Parse(response.Params.Split(",")[0]);
-                    TempModel.Value2 = float.Parse(response.Params.Split(",")[1]);
-                }
-                catch (FormatException)
-                {
-                    Console.WriteLine("  param is invalid using  ");
-                }
-            }
-            ShowResponseResult(response);
+            _tempControl.GetTemp();
         }
 
         private void GetTemp1()
         {
             if (_tempControl == null || TempModel == null)
                 return;
-            ResponseProto response = _tempControl.GetTemp1();
-            if (response != null && response.Result != false && response.Params != null)
-            {
-                try
-                {
-                    TempModel.Value1 = float.Parse(response.Params);
-                }
-                catch (FormatException)
-                {
-                    Console.WriteLine("  param is invalid using  ");
-                }
-            }
-            ShowResponseResult(response);
+            _tempControl.GetTemp1();
         }
 
         private void GetTemp2()
         {
             if (_tempControl == null || TempModel == null)
                 return;
-            ResponseProto response = _tempControl.GetTemp2();
-            if (response != null && response.Result != false && response.Params != null)
-            {
-                try
-                {
-                    TempModel.Value2 = float.Parse(response.Params);
-                }
-                catch (FormatException)
-                {
-                    Console.WriteLine("  param is invalid using  ");
-                }
-            }
-            ShowResponseResult(response);
-
+            _tempControl.GetTemp2();
         }
 
+        /*
         private void GetVac(string obj)
         {
             if (_vacControl == null || VacModel == null)
                 return;
             byte channel = Convert.ToByte(obj);
+           
             ResponseProto response = _vacControl.GetVAC(channel);
             if (response != null && response.Result != false && response.Params.Split(",").Length == 3)
             {
@@ -849,18 +764,48 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                         }
                         break;
                 }
+     
 
             }
             ShowResponseResult(response);
         }
+        */
 
         private void ShowResponseResult(ResponseProto? response)
         {
+
             if (response != null && response.Result == false)
             {
                 _aggregator.SendMessage(response.Message);
             }
         }
+        /*
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="response"></paramm
+        private void ShowResponseResult(ResponseProto? response)
+        {
+
+            if (response != null && response.Result == false)
+            {
+                _aggregator.SendMessage(response.Message);
+            }
+        }
+        */
+        private void SendMessage(byte[] message)
+        {
+
+            if (message != null&& _device!=null)
+            {
+                _device.SendMsg(message);
+            }
+        }
+        private void Receive()
+        {
+            
+        }
+        
         #endregion
 
         #region ------------StaticMethod------------

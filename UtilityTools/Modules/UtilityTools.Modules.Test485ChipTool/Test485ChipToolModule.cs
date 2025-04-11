@@ -19,7 +19,7 @@ namespace UtilityTools.Modules.Test485ChipTool
         public void RegisterTypes(IContainerRegistry containerRegistry)
         {
             containerRegistry.RegisterForNavigation<Test485ChipToolView, Test485ChipToolViewModel>();
-            containerRegistry.RegisterSingleton<Test485ChipModel>();
+            containerRegistry.RegisterSingleton<Test485Model>();
         }
     }
 }

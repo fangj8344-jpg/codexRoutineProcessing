@@ -225,7 +225,7 @@ namespace UtilityTools.Modules.HvController.Model
             set { _isPrepareAllComplete = value; RaisePropertyChanged();
                 if (_isPrepareAllComplete && IsNewProtocol == true)
                 {
-                    PrepareState = "取消高压准备";
+                    PrepareState = "关闭高压";
                 }
                 else if (!_isPrepareAllComplete && IsNewProtocol == true)
                 {
@@ -1255,7 +1255,7 @@ namespace UtilityTools.Modules.HvController.Model
                     if (initResult == 0)//0代表行为执行1代表不执行
                     {
                         //初始化成功后开始查询进度，查询初始化完成后才能够进行发送的工作
-                        GetHVInitState();   
+                        MessageEnqueue(NewHvControllerProtocol.GetHVInitState());
                     }
                     else if (initResult == 1)
                     {
@@ -1312,6 +1312,7 @@ namespace UtilityTools.Modules.HvController.Model
                         IsHvInitDone = false;
                         IsPrepareAllComplete = false;
                         SetProgressInfo("正在初始化高压箱", 100);
+                        MessageEnqueue(NewHvControllerProtocol.GetHVInitState());
                         //代表还在初始化高压箱中。
                     }
                     else if (value == 0x02)
