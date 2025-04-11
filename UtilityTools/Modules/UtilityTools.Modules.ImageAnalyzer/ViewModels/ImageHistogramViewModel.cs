@@ -158,7 +158,7 @@ namespace UtilityTools.Modules.ImageAnalyzer.ViewModels
 
         public void SaveResult()
         {
-            if (FilePath is null) { return; }
+            if (FilePath is null || _imgHistInfo is null) { return; }
 
             var p = new PathHelper(FilePath);
             var outdir = p.parent / $"{p.stem}.ImageAnalyzer";
