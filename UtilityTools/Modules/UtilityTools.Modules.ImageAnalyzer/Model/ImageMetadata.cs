@@ -294,9 +294,24 @@ namespace UtilityTools.Modules.ImageAnalyzer.Model
 
         public static ZemMetaData ParseMetadataZem20(IReadOnlyList<Directory> directories)
         {
-            var descriptions = directories.Where(d => d.Name == "PNG-zTXt").Select(d => d.Tags[0].Description).Where(d => d.StartsWith("comment:")).ToList();
-            var xdoc = XDocument.Parse(descriptions[0][8..]);
-            var content = xdoc.ToString();
+            var descriptions = directories
+            .Where(d => d.Name != string.Empty)
+            .SelectMany(d => d.Tags ?? Enumerable.Empty<Tag>())  // 处理 Tags 为 null 的情况
+            .Where(tag => tag?.Description != null)
+            .Select(tag => tag.Description)
+            .Where(d => d.Contains("Zeptools"))
+            .ToList();
+
+            if (descriptions.Count == 0)
+                return null;
+            var content = descriptions[0];
+            if (content.StartsWith("common:"))
+            {
+                content = content[8..];
+            }
+
+            var xdoc = XDocument.Parse(content);
+            content = xdoc.ToString();
             byte[] latin1Bytes = Encoding.Latin1.GetBytes(content); // 使用默认编码格式获取字节数组
             string latin1String = Encoding.UTF8.GetString(latin1Bytes); // 将字节数组转换为目标编码格式的字符串
             xdoc = XDocument.Parse(latin1String);

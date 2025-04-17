@@ -283,6 +283,10 @@ namespace UtilityTools.Core.Model
         {
             try
             {
+                if (Socket == null || !Socket.IsBound) // 检查 Socket 是否有效
+                {
+                    return;
+                }
                 var buffSize = Socket.EndReceiveFrom(ar, ref _sendEndPoint);
                 if (buffSize > 0)
                 {
@@ -292,9 +296,21 @@ namespace UtilityTools.Core.Model
                     ReceiveBuffer(buffer);
                 }
             }
+            catch (ObjectDisposedException)
+            {
+                // Socket 已被释放，无需处理
+                return;
+            }
             catch (SocketException ex)
             {
                 LogManager.GetCurrentClassLogger().Fatal($"接收回调异常：{ex.Message}");
+                // 如果是致命错误（如连接关闭），不再重试
+                if (ex.SocketErrorCode == SocketError.ConnectionReset ||
+                    ex.SocketErrorCode == SocketError.Shutdown ||
+                    ex.SocketErrorCode    == SocketError.NotConnected)
+                {
+                    return;
+                }
             }
             finally
             {
