@@ -26,281 +26,563 @@ using System.Collections;
 using System.Security.Permissions;
 using System.Windows.Markup;
 using System.Collections.ObjectModel;
+using System.Windows.Automation.Text;
+using System.ComponentModel;
+using System.Reflection;
+using static UtilityTools.Modules.Test485ChipTool.Model.Test485ChipModel.EnumHelper;
 
 namespace UtilityTools.Modules.Test485ChipTool.Model
 {
+    /// <summary>
+    /// 通讯协议类型
+    /// </summary>
+    public enum EConnectionType
+    {
+        [Description("UDP连接")]
+        Udp,
+        //[Description("TCP")]
+        //Tcp,
+        //[Description("串口")]
+        //SerialPort,
+    }
+
+    /// <summary>
+    /// 指令码
+    /// </summary>
+    public enum ECommanName : ushort
+    {
+        [Description("读真空规数值")]
+        cmdGetVac = 0x0800,
+        [Description("获取PID参数")]
+        cmdGetPID = 0X0806,
+        [Description("获取高压状态")]
+        cmdGetSTATUS = 0x0501,
+    }
+
+    /// <summary>
+    /// 地址码
+    /// </summary>
+    public enum EAddressCode : ushort
+    {
+        [Description("0x0201")]
+        addressCode_0201 = 0x0201,
+    }
+
+    /// <summary>
+    /// 设备码
+    /// </summary>
+    public enum EDeviceID : ushort
+    {
+        [Description("0x0201")]
+        deviceID_0201 = 0x0201,
+    }
+
+
     public class Test485ChipModel : BindableBase
     {
         #region --------------Construct--------------
         public Test485ChipModel(IContainerProvider containerProvider)
         {
+            //对话框所需
             _containerProvider = containerProvider;
             _dialogHostService = containerProvider.Resolve<IDialogHostService>();
-            
-            //Serial Port
-            SerialPortService = new SerialPortService();
-            SerialPortService.Name = "串口传输";
-            SerialPortService.IsBinary = true;
 
-            //Ethernet port Udp
-            var netUdp = new UdpNetAsyncDevice();
-            netUdp.Name = "网口传输";
-            netUdp.DeviceInstance.TargetIp = "192.168.1.88";
-            netUdp.DeviceInstance.TargetPort = 5000;
-            netUdp.DeviceInstance.HostIp = "192.168.1.34";
-            netUdp.DeviceInstance.HostPort = 5001;
-            netUdp.IsBinary = true;
+            //注册WPF响应         
+            ClickTest = new DelegateCommand<string>(Test);//测试模块
 
-            NetUdpService = netUdp;
-
-            mParser_SerialPort = new Test485ChipToolDataPacketProtocolParser();
-            mParser_SerialPort.Service = SerialPortService;
-
-            mParser_NetUdp = new Test485ChipToolDataPacketProtocolParser();
-            mParser_NetUdp.Service = NetUdpService;
-
-            Test485ChipModel.ECommanName cmd = Test485ChipModel.ECommanName.cmdGetSTATUS;
-            string IpAddress = "192.168.1.88";
-            Protocol.Test485ChipToolProtocol.GetSendMessage( ref _testMessage, 
-                IpAddress,(ushort)cmd);
-            Protocol.Test485ChipToolProtocol.GetRecvMessage(ref _recvMessage, 
-                IpAddress,(ushort)cmd);
-
-            SerialPortService.UpdateResponse += SerialPortService_UpdateResponse;
-            mParser_SerialPort.PacketReceivedEvent += SerialPortService_PacketReceivedEvent;
-
-            NetUdpService.UpdateResponse += NetUdpService_UpdateResponse;
-            mParser_NetUdp.PacketReceivedEvent += NetUdpService_PacketReceivedEvent;
-
-            ClearCommand = new DelegateCommand(clearReadySign);
-            TestCommand = new DelegateCommand<string>(Test);
-            messageQueue = new Queue();
-
-            mnThreadNum = 5;
-
-            //fill the mList_IsReady
-            InitReadySign(mnThreadNum);
-
-            //fill the mList_udpClient
-            InitUdpClient(mnThreadNum);                       
+            SetDefaultParams();           
         }
         #endregion
-        #region -------------Field----------------------------
-        public enum ECommanName : ushort
-        {
-            cmdGetVac = 0x0800,//读真空规数值
-            cmdGetPID = 0X0806,//获取PID参数
-            cmdGetSTATUS = 0x0501,//获取高压状态
-        }
-      
-        private List<UdpClient> mList_udpClient = new List<UdpClient>();
-        private int mnThreadNum;
 
+        #region -------------Field----------------------------
         private IContainerProvider _containerProvider;
         private readonly IDialogHostService _dialogHostService;
-        private Test485ChipToolDataPacketProtocolParser mParser_SerialPort;
-        private Test485ChipToolDataPacketProtocolParser mParser_NetUdp;
-        ZepGenericProtocolParser zep ;
-        private byte[] _testMessage;
-        private byte[] _recvMessage;
-        private Queue messageQueue;
+
+        string _hostIp;
+        byte[] _packetmsg;//打包后的报文
+        bool _init;//初始化标志 
+
+        List<short> _portList;//待通讯的端口号
+        Dictionary<short,ITestUnit> _testUnitDict;//存放测试单元
+
         #endregion
         #region------------------------Property--------------------------
-        private string _log;
+        /// <summary>
+        /// 枚举辅助类
+        /// </summary>
+        public static class EnumHelper
+        {
+            public class EnumItem<T> where T : Enum
+            {
+                public string Description { get; set; }//枚举的描述信息
+                public T Value { get; set; }//枚举的值
+                public int NumericValue => Convert.ToInt32(Value);
+
+                public override string ToString() => Description;
+            }
+
+            public static List<EnumItem<T>> GetEnumItems<T>() where T : Enum
+            {
+                var list = new List<EnumItem<T>>();
+
+                foreach (T value in Enum.GetValues(typeof(T)))
+                {
+                    var fieldInfo = typeof(T).GetField(value.ToString());
+                    var description = fieldInfo.GetCustomAttribute<DescriptionAttribute>()?.Description
+                                    ?? $"{value} (0x{Convert.ToInt32(value):X4})";
+
+                    list.Add(new EnumItem<T>
+                    {
+                        Description = description,
+                        Value = value
+                    });
+                }
+
+                return list;
+            }
+
+            public static string GetEnumDescription<T>(T value) where T : Enum
+            {
+                var fieldInfo = value.GetType().GetField(value.ToString());
+                return fieldInfo.GetCustomAttribute<DescriptionAttribute>()?.Description ?? value.ToString();
+            }
+        }
+
+        /// <summary>
+        /// 通讯协议
+        /// </summary>
+        public List<EnumItem<EConnectionType>> ConnectionTypes { get; } =
+                new List<EnumItem<EConnectionType>>();
+        // 当前选中的命令
+        private EnumItem<EConnectionType> _selectedConnectionType;
+        public EnumItem<EConnectionType> SelectedConnectionType
+        {
+            get => _selectedConnectionType;
+            set
+            {
+                if (_selectedConnectionType != value)
+                {
+                    _selectedConnectionType = value;
+                    RaisePropertyChanged();
+                    if(!_init)
+                    {//除构造函数初始化以外 修改值即重新打包报文
+                        _packetmsg = PacketMsg();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 指令码
+        /// </summary>
+        public List<EnumItem<ECommanName>> CommandNames { get; } =
+                new List<EnumItem<ECommanName>>();
+        // 当前选中的命令
+        private EnumItem<ECommanName> _selectedCommandName;
+        public EnumItem<ECommanName> SelectedCommandName
+        {
+            get => _selectedCommandName;
+            set
+            {
+                if (_selectedCommandName != value)
+                {
+                    _selectedCommandName = value;
+                    RaisePropertyChanged();
+                    if (!_init)
+                    {//除构造函数初始化以外 修改值即重新打包报文
+                        _packetmsg = PacketMsg();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 地址码
+        /// </summary>
+        public List<EnumItem<EAddressCode>> AddressCodes { get; } =
+                new List<EnumItem<EAddressCode>>();
+        // 当前选中的地址码
+        private EnumItem<EAddressCode> _selectedAddressCode;
+        public EnumItem<EAddressCode> SelectedAddressCode
+        {
+            get => _selectedAddressCode;
+            set
+            {
+                if (_selectedAddressCode != value)
+                {
+                    _selectedAddressCode = value;
+                    RaisePropertyChanged();
+                    if (!_init)
+                    {//除构造函数初始化以外 修改值即重新打包报文
+                        _packetmsg = PacketMsg();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 设备码
+        /// </summary>
+        public List<EnumItem<EDeviceID>> DeviceIDs { get; } =
+                new List<EnumItem<EDeviceID>>();
+        // 当前选中的设备码
+        private EnumItem<EDeviceID> _selectedDeviceID;
+        public EnumItem<EDeviceID> SelectedDeviceID
+        {
+            get => _selectedDeviceID;
+            set
+            {
+                if (_selectedDeviceID != value)
+                {
+                    _selectedDeviceID = value;
+                    RaisePropertyChanged();
+                    if (!_init)
+                    {//除构造函数初始化以外 修改值即重新打包报文
+                        _packetmsg = PacketMsg();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 目标IP地址
+        /// </summary>
+        private string _remoteIp;
+        public string RemoteIp
+        {
+            get { return _remoteIp; }
+            set
+            {
+                if (_remoteIp != value)
+                {
+                    _remoteIp = value;
+                    RaisePropertyChanged();
+                    if (!_init)
+                    {//除构造函数初始化以外 修改值即重新打包报文
+                        _packetmsg = PacketMsg();
+                        InitTestUnitDict();
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// 日志
         /// </summary>
+        private string _log;
         public string Log
         {
             get { return _log; }
-            set { _log = value; RaisePropertyChanged(); }
+            set { _log = value + "\r\n"; RaisePropertyChanged(); }
         }
-        private bool _isConnect = false;
+        /*暂未用上的动态绑定变量
+        private short _remotePort_Start;
         /// <summary>
-        /// 是否连接
+        /// 测试端口范围-起始端口
         /// </summary>
-        public bool IsConnect
+        public short RemotePort_Start
         {
-            get { return _isConnect; }
-            set { _isConnect = value;RaisePropertyChanged(); }
-        }
-        /// <summary>
-        /// 提示颜色串口
-        /// </summary>
-        private ObservableCollection<bool?> _readyStates = null;
-        public ObservableCollection<bool?> ReadySign
-        {
-            get => _readyStates;
+            get { return _remotePort_Start; }
             set
             {
-                _readyStates = value;
-                RaisePropertyChanged(nameof(ReadySign));
+                if (_remotePort_Start != value)
+                {
+                    _remotePort_Start = value;
+                    RaisePropertyChanged();
+                }
             }
-        }  
-     
-        #endregion
-
-        public IAsynRWService SerialPortService { get; set; }
-
-        private IAsynRWService _netUdpService;     
-
-        /// <summary>
-        /// 网口异步通信服务
-        /// </summary>
-        public IAsynRWService NetUdpService
-        {
-            get { return _netUdpService; }
-            set { _netUdpService = value; RaisePropertyChanged(); }
         }
-        #region --------------------Command----------------------
-      
 
-        public DelegateCommand ClearCommand { get; set; }
-        public DelegateCommand<string> TestCommand { get; set; }
-        public DelegateCommand NetTestCommand { get; set; }
+        private short _remotePort_End;
+        /// <summary>
+        /// 测试端口范围-终止端口
+        /// </summary>
+        public short RemotePort_End
+        {
+            get { return _remotePort_End; }
+            set
+            {
+                if (_remotePort_End != value)
+                {
+                    _remotePort_End = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private short _hostIp;
+        /// <summary>
+        /// 本地IP地址
+        /// </summary>
+        public short HostIp
+        {
+            get { return _hostIp; }
+            set
+            {
+                if (_hostIp != value)
+                {
+                    _hostIp = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private string _hostPort;
+        /// <summary>
+        /// 本机端口
+        /// </summary>
+        public string HostPort
+        {
+            get { return _hostPort; }
+            set
+            {
+                if (_hostPort != value)
+                {
+                    _hostPort = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }        
+        */
+        #endregion
+        #region --------------------Command----------------------     
+        /// <summary>
+        /// WPF响应-测试开始
+        /// </summary>
+        public DelegateCommand<string> ClickTest { get; set; }
+
         #endregion
         #region ---------------------PublicMethood----------------------------
-
-        #endregion
-        #region ----------------------PrivateMethod---------------------------
-
-        private void SerialPortService_UpdateResponse(object? sender, byte[] e)
+        /// <summary>
+        /// 初始化动态绑定的值
+        /// </summary>
+        public void SetDefaultParams()
         {
-            mParser_SerialPort.ReceiveBytes(e);
+            _hostIp = GetLocalIPv4();
+
+            _init = true;//防止在SetPropery的过程中进入RaisePropertyChanged
+            SetPropery();
+            _init = false;//init over
+
+            _packetmsg = PacketMsg();
+            InitTestUnitDict();
         }
 
-        private void SerialPortService_PacketReceivedEvent(object? sender, Test485ChipToolDataPacket e)
+        /// <summary>
+        /// 填充下拉框的值
+        /// </summary>
+        public void SetPropery()
         {
-            Log += "串口接收消息：" + BitConverter.ToString(e.packet.GetBytes()) + "\n\r";
-        }
-
-        private void NetUdpService_UpdateResponse(object? sender, byte[] e)
-        {
-            mParser_NetUdp.ReceiveBytes(e);
-        }
-
-        private void NetUdpService_PacketReceivedEvent(object? sender, Test485ChipToolDataPacket e)
-        {
-            Log += "网口接收消息：" + BitConverter.ToString(e.packet.GetBytes()) + "\n\r";
-        }
-
-
-        private void clearReadySign()
-        {
-            for (int i = 0; i < ReadySign.Count(); ++i)
+            //协议
+            foreach (EConnectionType cmd in Enum.GetValues(typeof(EConnectionType)))
             {
-                ReadySign[i] = null;
-            }             
+                var fieldInfo = cmd.GetType().GetField(cmd.ToString());
+                var description = fieldInfo.GetCustomAttribute<DescriptionAttribute>()?.Description ?? cmd.ToString();
+
+                ConnectionTypes.Add(new EnumItem<EConnectionType>
+                {
+                    Description = description,
+                    Value = cmd
+                });
+            }
+            // 设置默认选择
+            SelectedConnectionType = ConnectionTypes.FirstOrDefault();
+
+            //命令码
+            foreach (ECommanName cmd in Enum.GetValues(typeof(ECommanName)))
+            {
+                var fieldInfo = cmd.GetType().GetField(cmd.ToString());
+                var description = fieldInfo.GetCustomAttribute<DescriptionAttribute>()?.Description ?? cmd.ToString();
+
+                CommandNames.Add(new EnumItem<ECommanName>
+                {
+                    Description = description,
+                    Value = cmd
+                });
+            }
+            SelectedCommandName = CommandNames.First();
+
+            //地址码
+            foreach (EAddressCode cmd in Enum.GetValues(typeof(EAddressCode)))
+            {
+                var fieldInfo = cmd.GetType().GetField(cmd.ToString());
+                var description = fieldInfo.GetCustomAttribute<DescriptionAttribute>()?.Description ?? cmd.ToString();
+
+                AddressCodes.Add(new EnumItem<EAddressCode>
+                {
+                    Description = description,
+                    Value = cmd
+                });
+            }
+            SelectedAddressCode = AddressCodes.First();
+
+            //设备码
+            foreach (EDeviceID cmd in Enum.GetValues(typeof(EDeviceID)))
+            {
+                var fieldInfo = cmd.GetType().GetField(cmd.ToString());
+                var description = fieldInfo.GetCustomAttribute<DescriptionAttribute>()?.Description ?? cmd.ToString();
+
+                DeviceIDs.Add(new EnumItem<EDeviceID>
+                {
+                    Description = description,
+                    Value = cmd
+                });
+            }
+            SelectedDeviceID = DeviceIDs.First();
+
+            //默认远程地址
+            RemoteIp = "192.168.1.88";
         }
 
-       
-        private  async void  Test(object obj)
+        /// <summary>
+        /// 打包命令报文
+        /// </summary>
+        public byte[] PacketMsg()
         {
-            string str = (string)obj;
-            if (int.TryParse(str, out int nIndex))
+            byte[] buffer = new byte[36];
+            IPAddress ipAddress = IPAddress.Parse(RemoteIp);
+            byte[] IpAddress = ipAddress.GetAddressBytes();//得到4字节IP数组
+            Array.Reverse(IpAddress);//反转字节数组 反转为小端
+            var addressCode = BitConverter.GetBytes((ushort)SelectedAddressCode.NumericValue);
+
+            byte[] combinedAddr = new byte[IpAddress.Length + addressCode.Length];
+            Array.Copy(IpAddress, 0, combinedAddr, 0, IpAddress.Length);
+            Array.Copy(addressCode, 0, combinedAddr, IpAddress.Length, addressCode.Length);
+
+            var cmd = BitConverter.GetBytes((ushort)SelectedCommandName.NumericValue);
+            var id = BitConverter.GetBytes((ushort)SelectedDeviceID.NumericValue);
+            return ZepGenericProtocol.GetCmd(combinedAddr, id, cmd, buffer);
+        }
+
+        /// <summary>
+        /// 填充测试单元
+        /// </summary>
+        public void InitTestUnitDict()
+        {           
+            /*  目前仅使用固定的5001-5005端口  不使用动态端口
+            
+            //RemotePort_Start = 5001;
+            //RemotePort_End = 5005;  
+            _portList?.Clear();
+            _portList = new List<short>();
+            if (RemotePort_Start == RemotePort_End)
             {
-                if (nIndex == 0)
-                {
-                    for (int i = 0; i < mnThreadNum; i++)
-                    {
-                        SendMessage(i);
-                    }
-                }
-                else if (nIndex > 0 && nIndex <= 5)
-                {
-                    SendMessage(nIndex - 1);//list下标从0开始
-                }
+                _portList.Add(RemotePort_Start);
             }
             else
             {
-                // 转换失败的处理
-            }           
-        }
-        private void SendMessage(int nIndex)
-        {
-            IPEndPoint remotePoint = new IPEndPoint(IPAddress.Parse("192.168.1.88"), 5000 + (nIndex + 1));
-            mList_udpClient[nIndex].Send(_testMessage, _testMessage.Length, remotePoint);
-            Log += "网口" + nIndex.ToString() +"发送消息：" +
-                BitConverter.ToString(_testMessage) + "\n\r";
-            Thread UdpRecvThread = new Thread(() => ThreadReceive(nIndex));
-            UdpRecvThread.Start();//start thread  
-        }
-
-        private void ThreadReceive(int nIndex)
-        {
-            bool bHasRecvData = false;
-            int nLANIndex = nIndex + 1;
-            IPEndPoint remotePoint = new IPEndPoint(IPAddress.Any, 0);
-            byte[] data = new byte[64];
-            mList_udpClient[nIndex].Client.ReceiveTimeout = 1000;
-            try
-            {
-                data = mList_udpClient[nIndex].Receive(ref remotePoint);
-                Log += "网口" + (nLANIndex).ToString() + "接收消息：" + 
-                    BitConverter.ToString(data) + "\n\r";
-                bHasRecvData = true;
-            }
-            catch (Exception e)
-            {
-                Log += "网口" + (nLANIndex).ToString() + "接收超时"+
-                    e.ToString() + "\n\r";
-                ReadySign[nIndex] = false;
-            }
-            finally
-            {
-                //if (CompareMessage(data, _recvMessage))
-                if(bHasRecvData)
+                if(RemotePort_Start > RemotePort_End)
                 {
-
-                    ReadySign[nIndex] = true;
+                    short RemotePort = RemotePort_Start;
+                    RemotePort_Start = RemotePort_End;
+                    RemotePort_End = RemotePort;
                 }
-                else
+
+                for(int i = 0;i <= RemotePort_End - RemotePort_Start; i++)
                 {
-                    ReadySign[nIndex] = false;
+                    short RemotePort = (short)(RemotePort_Start + i);
+                    _portList.Add(RemotePort);
                 }
             }
+            */
 
-        }
-
-        private void InitReadySign(int nReadySignNum)
-        {            
-            if (ReadySign == null)
+            short portStatr = 5001;
+            short portEnd = 5005;
+            _portList = new List<short>();
+            //填充端口list
+            for (short i = portStatr; i <= portEnd; i++)
             {
-                ReadySign = new ObservableCollection<bool?>();
+                _portList.Add(i);
             }
 
-            ReadySign.Clear();
-
-            for (int i = 0; i < nReadySignNum; i++)
+            //填充测试单元
+            if (_testUnitDict != null)
             {
-                ReadySign.Add(null);
-            }
-        }
-        private void InitUdpClient(int nUdpClientNum)
-        {
-            for(int i = 0; i < nUdpClientNum; ++i)
-            {                
-                var udpClient = new UdpClient();
-                mList_udpClient.Add(udpClient);
-            }
-        }
-        private bool CompareMessage(byte[] sourceMessage, byte[] TargetMessage)
-        {
-            if (sourceMessage.Length != TargetMessage.Length && TargetMessage == null)
-            {
-                return false;
-            }
-            for (int i = 0; i < 64; i++)
-            {
-                if (sourceMessage[i] != TargetMessage[i])
+                foreach (var testUnit in _testUnitDict)
                 {
-                    return false;
+                    testUnit.Value.Dispose(); // 显式释放
+                }
+                _testUnitDict.Clear();
+            }
+            _testUnitDict = new Dictionary<short, ITestUnit>();
+
+            foreach (var Port in _portList)
+            {               
+                var udpServer = new UdpNetAsyncDevice();
+                udpServer.DeviceInstance.TargetIp = _remoteIp;
+                udpServer.DeviceInstance.TargetPort = Port;
+                udpServer.DeviceInstance.HostIp = _hostIp;
+                udpServer.DeviceInstance.HostPort = 0;
+
+                var TestUnit = new SimpleTestUnit(udpServer, _packetmsg,
+                    IsTestSuccess);
+
+                _testUnitDict.Add(Port, TestUnit);              
+            }
+        }
+
+        /// <summary>
+        /// 遍历测试单元 开始测试
+        /// </summary>
+        public void TestStart()
+        {
+            foreach (var testUnit in _testUnitDict)
+            {
+                testUnit.Value.TestCom();
+            }
+        }
+
+        /// <summary>
+        /// 遍历测试单元 获取每个单元的测试结果
+        /// </summary>
+        public void LogTestResult()
+        {
+            foreach (var testUnit in _testUnitDict)
+            {
+                Log += "串口:" + testUnit.Key + "通讯测试" + 
+                    ((testUnit.Value.IsOK) ? "成功" : "失败") + "\n\r";
+
+            }
+        }
+        /// <summary>
+        /// 获取本机IP地址
+        /// </summary>
+        public static string GetLocalIPv4()
+        {
+            string localIP = string.Empty;
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork) // IPv4
+                {
+                    localIP = ip.ToString();
+                    break; // 取第一个 IPv4 地址
                 }
             }
+
+            return localIP;
+        }
+        #endregion
+        #region ----------------------PrivateMethod---------------------------
+        /// <summary>
+        /// 测试接口
+        /// </summary>
+        private async void  Test(object obj)
+        {
+            Log = "";//每次测试前 清空右侧测试结果
+            TestStart();
+            await Task.Delay(1500);//延迟2s等待回包ing
+            LogTestResult();
+        }
+
+        /// <summary>
+        /// 触发回包即视为成功 如果需要比对报文 可以将recvMsg进行解析 
+        /// </summary>
+        private bool IsTestSuccess(byte[] recvMsg)
+        {
             return true;
         }
-       
-      
         #endregion
     }
 }
