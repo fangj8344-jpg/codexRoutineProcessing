@@ -11,6 +11,7 @@ namespace UtilityTools.Modules.Test485ChipTool.Converter
 {
     internal class ColorConverter : IValueConverter
     {
+
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             bool? color = (bool?)value;
@@ -30,7 +31,7 @@ namespace UtilityTools.Modules.Test485ChipTool.Converter
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            return  string.Empty;
+            return string.Empty;
         }
     }
 }

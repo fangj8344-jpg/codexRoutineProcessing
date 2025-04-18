@@ -50,13 +50,13 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
     /// 指令码
     /// </summary>
     public enum ECommanName : ushort
-    {
+    {        
+        [Description("获取高压状态")]
+        cmdGetSTATUS = 0x0501,
         [Description("读真空规数值")]
         cmdGetVac = 0x0800,
         [Description("获取PID参数")]
         cmdGetPID = 0X0806,
-        [Description("获取高压状态")]
-        cmdGetSTATUS = 0x0501,
     }
 
     /// <summary>
@@ -101,10 +101,12 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
         string _hostIp;
         byte[] _packetmsg;//打包后的报文
         bool _init;//初始化标志 
+        short _portStatr = 5001;
+        short _portEnd = 5005;
 
         List<short> _portList;//待通讯的端口号
         Dictionary<short,ITestUnit> _testUnitDict;//存放测试单元
-
+       
         #endregion
         #region------------------------Property--------------------------
         /// <summary>
@@ -275,6 +277,17 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
             get { return _log; }
             set { _log = value + "\r\n"; RaisePropertyChanged(); }
         }
+
+        private ObservableCollection<bool?> _readyStates = null;
+        public ObservableCollection<bool?> ReadySign
+        {
+            get => _readyStates;
+            set
+            {
+                _readyStates = value;
+                RaisePropertyChanged(nameof(ReadySign));
+            }
+        }
         /*暂未用上的动态绑定变量
         private short _remotePort_Start;
         /// <summary>
@@ -365,6 +378,11 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
             _init = false;//init over
 
             _packetmsg = PacketMsg();
+
+            //打印报文
+            string hexString = BitConverter.ToString(_packetmsg);
+            Console.WriteLine(hexString);
+
             InitTestUnitDict();
         }
 
@@ -432,6 +450,17 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
 
             //默认远程地址
             RemoteIp = "192.168.1.88";
+
+            //按钮状态信标
+            if (ReadySign == null)
+            {
+                ReadySign = new ObservableCollection<bool?>();
+            }
+            ReadySign.Clear();
+            for (int i = 0; i < _portEnd - _portStatr + 1; i++)
+            {
+                ReadySign.Add(null);
+            }
         }
 
         /// <summary>
@@ -485,12 +514,11 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
                 }
             }
             */
-
-            short portStatr = 5001;
-            short portEnd = 5005;
+           
             _portList = new List<short>();
+
             //填充端口list
-            for (short i = portStatr; i <= portEnd; i++)
+            for (short i = _portStatr; i <= _portEnd; i++)
             {
                 _portList.Add(i);
             }
@@ -530,6 +558,11 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
             {
                 testUnit.Value.TestCom();
             }
+
+            for(int i = 0; i< ReadySign.Count; i++)
+            {
+                ReadySign[i] = null;
+            }
         }
 
         /// <summary>
@@ -542,6 +575,12 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
                 Log += "串口:" + testUnit.Key + "通讯测试" + 
                     ((testUnit.Value.IsOK) ? "成功" : "失败") + "\n\r";
 
+                int signIndex = (testUnit.Key - _portStatr);
+                if (signIndex >= 0 &&  signIndex < ReadySign.Count)
+                {
+                    ReadySign[signIndex] = testUnit.Value.IsOK;
+                }
+                
             }
         }
         /// <summary>
@@ -572,7 +611,7 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
         {
             Log = "";//每次测试前 清空右侧测试结果
             TestStart();
-            await Task.Delay(1500);//延迟2s等待回包ing
+            await Task.Delay(1500);//延迟1.5s等待回包ing
             LogTestResult();
         }
 
@@ -581,7 +620,8 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
         /// </summary>
         private bool IsTestSuccess(byte[] recvMsg)
         {
-            return recvMsg.Length == _packetmsg.Length;
+            bool bRe = recvMsg.Length == _packetmsg.Length;
+            return bRe;
         }
         #endregion
     }

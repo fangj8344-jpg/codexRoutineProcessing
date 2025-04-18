@@ -7,9 +7,28 @@
              xmlns:localCv ="clr-namespace:UtilityTools.Modules.Test485ChipTool.Converter"             
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
+
     <UserControl.Resources>
         <localCv:ColorConverter  x:Key="ColorConverter"/>
+        <Style x:Key="CircleButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="60"/>
+            <Setter Property="Height" Value="60"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="30">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
+
 
     <ScrollViewer>
     <Grid>
@@ -38,7 +57,21 @@
         BorderThickness="2"
         BorderBrush="AntiqueWhite"
         Margin="10,10,10,10" >
-            <TextBlock TextWrapping="Wrap" Text="{Binding Log}"/>
+                <StackPanel Margin="10,50,10,10">
+                    <UniformGrid Rows="1" Columns="5" Margin="10">
+                        <Button Grid.Column="0" Background="{Binding  ReadySign[0] ,Mode=TwoWay, Converter={StaticResource ColorConverter},FallbackValue=Orange}" Style="{StaticResource CircleButtonStyle}" Content="5001"/>
+                        <Button Grid.Column="1" Background="{Binding  ReadySign[1] ,Mode=TwoWay, Converter={StaticResource ColorConverter}}" Style="{StaticResource CircleButtonStyle}" Content="5002"/>
+                        <Button Grid.Column="2" Background="{Binding  ReadySign[2] ,Mode=TwoWay, Converter={StaticResource ColorConverter}}" Style="{StaticResource CircleButtonStyle}" Content="5003"/>
+                        <Button Grid.Column="3" Background="{Binding  ReadySign[3] ,Mode=TwoWay, Converter={StaticResource ColorConverter}}" Style="{StaticResource CircleButtonStyle}" Content="5004"/>
+                        <Button Grid.Column="4" Background="{Binding  ReadySign[4] ,Mode=TwoWay, Converter={StaticResource ColorConverter}}" Style="{StaticResource CircleButtonStyle}" Content="5005"/>
+                    </UniformGrid>                                                                                                                           
+                    
+                    <TextBlock TextWrapping="Wrap" Text="{Binding Log}"           
+                               Margin="10"            
+                              />
+                </StackPanel>
+
+                
         </Border>
 
         <Label Content="测试参数"
@@ -146,7 +179,7 @@
             </DockPanel>
         </DockPanel>
 
-        <Button Grid.Row="1"
+        <Button Grid.Row="2"
          Content="开始测试"
          Margin="0,500,200,0"
          HorizontalContentAlignment="Center"

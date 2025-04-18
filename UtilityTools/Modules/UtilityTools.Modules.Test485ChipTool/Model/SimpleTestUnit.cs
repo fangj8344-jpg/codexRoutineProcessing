@@ -51,6 +51,7 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
 
         public void TestCom()
         {
+            IsOK = false;
             _service.Open();
             _service?.SendMsg(_cmd);
         }
