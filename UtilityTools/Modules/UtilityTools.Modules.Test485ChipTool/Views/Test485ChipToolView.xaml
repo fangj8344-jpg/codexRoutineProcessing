@@ -5,82 +5,40 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:cv="clr-namespace:UtilityTools.Core.Converter;assembly=UtilityTools.Core"
              xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
-             xmlns:local="clr-namespace:UtilityTools.Modules.Test485ChipTool.Views"
-             xmlns:localCv ="clr-namespace:UtilityTools.Modules.Test485ChipTool.Converter"
+             xmlns:local="clr-namespace:UtilityTools.Modules.Test485ChipTool.Views"             
              xmlns:model="clr-namespace:UtilityTools.Modules.Test485ChipTool.Model"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <UserControl.Resources>
-        <cv:BoolToColorConverter x:Key="BoolToColorConverter" />
-        <localCv:ColorConverter  x:Key="ColorConverter"/>
+        <cv:BoolToColorConverter x:Key="BoolToColorConverter" />        
     </UserControl.Resources>
     <md:DialogHost Identifier="{x:Static model:CommonModel.Test485ChipToolRegionName}"
             DialogTheme="Inherit">
         <Grid>
-            <TabControl>
-                <TabItem Header="测试">
-                    <StackPanel >
-                        <UniformGrid  Rows="2" Columns="5" Height="100">
-                            <Button Content="串口1测试" Width="100" Command="{Binding TestCommand }" CommandParameter="1"/>
-                            <Button Content="串口2测试"  Width="100" Command="{Binding TestCommand}" CommandParameter="2"/>
-                            <Button Content="串口3测试" Width="100" Command="{Binding TestCommand}" CommandParameter="3"/>
-                            <Button Content="串口4测试"  Width="100" Command="{Binding TestCommand}" CommandParameter="4"/>
-                            <Button Content="串口5测试"  Width="100" Command="{Binding TestCommand}" CommandParameter="5"/>
-                            <Canvas>
-                                <Ellipse Height="40" Width="40" Fill="{Binding Model1.IsCheckOK, Mode=TwoWay, Converter={StaticResource ColorConverter}}"  Canvas.Left="70" Canvas.Top="5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Canvas>
-                            <Canvas>
-                                <Ellipse Height="40" Width="40" Fill="{Binding Model2.IsCheckOK, Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="70" Canvas.Top="5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Canvas>
-                            <Canvas>
-                                <Ellipse Height="40" Width="40" Fill="{Binding Model3.IsCheckOK, Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="70" Canvas.Top="5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Canvas>
-                            <Canvas>
-                                <Ellipse Height="40" Width="40" Fill="{Binding Model4.IsCheckOK, Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="70" Canvas.Top="5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Canvas>
-                            <Canvas>
-                                <Ellipse Height="40" Width="40" Fill="{Binding Model5.IsCheckOK, Mode=TwoWay, Converter={StaticResource ColorConverter}}" Canvas.Left="54" Canvas.Top="5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Canvas>
-                        </UniformGrid>
-                        <DockPanel  Height="50"  LastChildFill="False">
-                            <Button Content="一键测试" Command="{Binding  TestCommand}" CommandParameter="0" Height="50"/>
-
-                            <Button Content="重置" Command="{Binding  ClearCommand}" Height="50" DockPanel.Dock="Right"/>
-                        </DockPanel>
-                    </StackPanel>
-                </TabItem>
-                <TabItem Header="日志">
-                    <TabControl>
-                        <TabItem Header="串口1日志">
-                            <ScrollViewer>
-                                <TextBlock Text="{Binding Model1.Log}"/>
-                        </ScrollViewer>
-                        </TabItem>
-                        <TabItem Header="串口2日志">
-                            <ScrollViewer>
-                                <TextBlock Text="{Binding  Model2.Log}"/>
-                            </ScrollViewer>
-                        </TabItem>
-                        <TabItem Header="串口3日志">
-                            <ScrollViewer>
-                                <TextBlock Text="{Binding  Model3.Log}"/>
-                            </ScrollViewer>
-                        </TabItem>
-                        <TabItem Header="串口4日志">
-                            <ScrollViewer>
-                                <TextBlock Text="{Binding  Model4.Log}"/>
-                            </ScrollViewer>
-                        </TabItem>
-                        <TabItem Header="串口5日志">
-                            <ScrollViewer>
-                                <TextBlock Text="{Binding  Model5.Log}"/>
-                            </ScrollViewer>
-                        </TabItem>
-                    </TabControl>
-                        </TabItem>
-                
-            </TabControl>
-
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto" />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+            <DockPanel Grid.Row="0"
+           Margin="10"
+           LastChildFill="False">
+                <TextBlock Text="485芯片测试"
+               FontSize="20"
+               FontWeight="Bold"
+               DockPanel.Dock="Left"
+               VerticalAlignment="Center" />
+                <Button DockPanel.Dock="Right"
+            Command="{Binding ShowNetDeviceCommand}"
+            Content="{md:PackIcon Kind=EthernetCable, Size=24}"
+            Style="{StaticResource MaterialDesignToolButton}"
+            Foreground="{Binding NetIsConnected, Converter={StaticResource BoolToColorConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <Button DockPanel.Dock="Right"
+            Command="{Binding ShowDeviceCommand}"
+            Content="{md:PackIcon Kind=UsbPort, Size=24}"
+            Style="{StaticResource MaterialDesignToolButton}"
+            Foreground="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            </DockPanel>
+            <local:MainPageView Grid.Row="1" DataContext="{Binding Model}"/>
         </Grid>
     </md:DialogHost>
 </UserControl>

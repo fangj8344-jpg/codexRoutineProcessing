@@ -581,7 +581,7 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
         /// </summary>
         private bool IsTestSuccess(byte[] recvMsg)
         {
-            return true;
+            return recvMsg.Length == _packetmsg.Length;
         }
         #endregion
     }
