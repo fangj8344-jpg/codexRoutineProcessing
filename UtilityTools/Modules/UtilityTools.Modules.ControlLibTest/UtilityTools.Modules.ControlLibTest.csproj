@@ -14,21 +14,14 @@
   </Target>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\UtilityTools.Core\UtilityTools.Core.csproj" />
+    <PackageReference Include="Zeptools.Core.CoreTools" Version="2.0.0" />
+    <PackageReference Include="Zeptools.Core.Devices" Version="2.0.0" />
+    <PackageReference Include="Zeptools.Core.ZemModel" Version="2.0.0" />
+    <PackageReference Include="Zeptools.Hardware.Zeptools.CoreControl" Version="2.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="CoreTools">
-      <HintPath>bin\Debug\net6.0-windows\CoreTools.dll</HintPath>
-    </Reference>
-    <Reference Include="Devices">
-      <HintPath>bin\Debug\net6.0-windows\Devices.dll</HintPath>
-    </Reference>
-    <Reference Include="Zem15C.CoreControl">
-      <HintPath>bin\Debug\net6.0-windows\Zem15C.CoreControl.dll</HintPath>
-    </Reference>
-    <Reference Include="ZemModel">
-      <HintPath>bin\Debug\net6.0-windows\ZemModel.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\..\Services\UtilityTools.Services\UtilityTools.Services.csproj" />
+    <ProjectReference Include="..\..\UtilityTools.Core\UtilityTools.Core.csproj" />
   </ItemGroup>
 </Project>

@@ -35,6 +35,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Configuration;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -44,8 +45,8 @@ using UtilityTools.Core.Dialog;
 using UtilityTools.Core.Extension;
 using UtilityTools.Core.Mvvm;
 using UtilityTools.Modules.ControlLibTest.Model;
-using Zem15C.CoreControl;
 using ZemModel.Entity;
+using Zeptools.CoreControl;
 
 namespace UtilityTools.Modules.ControlLibTest.ViewModels
 {
@@ -64,17 +65,21 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             {
                 _device.Name = "协议主控板";
                 _device.Open();
-                _bseControl = new ControlEntity(_device);
-                _ccsControl = new ControlEntity(_device);
-                _dacControl = new ControlEntity(_device);
-                _ethControl = new ControlEntity(_device);
-                _fanControl = new ControlEntity(_device);
+                var entity = new ControlEntity(_device);
+                IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
+                entity.CreateBroadcastSocket(endPoint);
+                entity.CommandResponseEvent += Entity_CommandResponseEvent;
+                _bseControl = entity;
+                _ccsControl = entity;
+                _dacControl = entity;
+                _ethControl = entity;
+                _fanControl = entity;
                 //_ledControl = new ControlEntity(_device);
-                _relayControl = new ControlEntity(_device);
-                _scanControl = new ControlEntity(_device);
-                _seControl = new ControlEntity(_device);
-                _tempControl = new ControlEntity(_device);
-                _uartControl = new ControlEntity(_device);
+                _relayControl = entity;
+                _scanControl = entity;
+                _seControl = entity;
+                _tempControl = entity;
+                _uartControl = entity;
                 //_vacControl = new ControlEntity(_device);
             }
 
@@ -687,7 +692,7 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
         {
             if (_ethControl == null || EthModel == null)
                 return;
-            _ethControl.HandShake();
+            _ethControl.GetIP();
         }
         private void GetAllTemp()
         {
@@ -805,7 +810,26 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
         {
             
         }
-        
+
+
+        private void Entity_CommandResponseEvent(object? sender, ResponseProto e)
+        {
+            if(e.Result == false) 
+            {
+                return;
+            }
+
+            if (ushort.TryParse(e.Response, out ushort result))
+            {
+                switch(result) 
+                {
+                    case (ushort)ENUM_ETH_CMD.CMD_GetIP:
+                        EthModel.RealIP = e.Params;
+                        break;
+                }
+            }
+        }
+
         #endregion
 
         #region ------------StaticMethod------------
