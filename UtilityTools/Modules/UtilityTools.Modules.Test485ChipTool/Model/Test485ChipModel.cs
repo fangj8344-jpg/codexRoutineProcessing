@@ -30,6 +30,7 @@ using System.Windows.Automation.Text;
 using System.ComponentModel;
 using System.Reflection;
 using static UtilityTools.Modules.Test485ChipTool.Model.Test485ChipModel.EnumHelper;
+using UtilityTools.Core.Helper;
 
 namespace UtilityTools.Modules.Test485ChipTool.Model
 {
@@ -53,10 +54,10 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
     {        
         [Description("获取高压状态")]
         cmdGetSTATUS = 0x0501,
-        [Description("读真空规数值")]
-        cmdGetVac = 0x0800,
-        [Description("获取PID参数")]
-        cmdGetPID = 0X0806,
+        //[Description("设置SV电压(4000V)")]
+        //cmdGetVac = 0x0105,
+        //[Description("设置DV电压(250V)")]
+        //cmdGetPID = 0X0106,
     }
 
     /// <summary>
@@ -80,6 +81,10 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
 
     public class Test485ChipModel : BindableBase
     {
+        //报文头尾
+        public static readonly byte[] HEADER = Encoding.ASCII.GetBytes("$Zep:");
+        public static readonly byte EOF = Convert.ToByte('%');
+
         #region --------------Construct--------------
         public Test485ChipModel(IContainerProvider containerProvider)
         {
@@ -616,11 +621,73 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
         }
 
         /// <summary>
-        /// 触发回包即视为成功 如果需要比对报文 可以将recvMsg进行解析 
+        /// 比对报文 将recvMsg进行解析 
         /// </summary>
         private bool IsTestSuccess(byte[] recvMsg)
         {
             bool bRe = recvMsg.Length == _packetmsg.Length;
+            //解包分析
+            if (bRe)
+            {
+                byte[] RecvMsgHead = new byte[5];
+                byte[] RecvMsgLength = new byte[2];
+                byte[] RecvMsgAddress_Front = new byte[4];
+                byte[] RecvMsgAddress_Behind = new byte[2];
+                byte[] RecvMsgDeviceID = new byte[2];
+                byte[] RecvMsgCmdID = new byte[2];
+                byte[] RecvMsgData = new byte[36];
+                byte[] RecvMsgErrorCode = new byte[4];
+                byte[] RecvMsgTimestamp = new byte[4];
+                byte[] RecvMsgCheckCode = new byte[2];
+                byte[] RecvMsgEnd = new byte[1];
+
+                int index = 0;
+                //填充byte 用于比对
+                Buffer.BlockCopy(recvMsg, index, RecvMsgHead, 0, RecvMsgHead.Length);
+                index += RecvMsgHead.Length;
+                Buffer.BlockCopy(recvMsg, index, RecvMsgLength, 0, RecvMsgLength.Length);
+                index += RecvMsgLength.Length;
+                Buffer.BlockCopy(recvMsg, index, RecvMsgAddress_Front, 0, RecvMsgAddress_Front.Length);
+                index += RecvMsgAddress_Front.Length;
+                Buffer.BlockCopy(recvMsg, index, RecvMsgAddress_Behind, 0, RecvMsgAddress_Behind.Length);
+                index += RecvMsgAddress_Behind.Length;
+                Buffer.BlockCopy(recvMsg, index, RecvMsgDeviceID, 0, RecvMsgDeviceID.Length);
+                index += RecvMsgDeviceID.Length;
+                Buffer.BlockCopy(recvMsg, index, RecvMsgCmdID, 0, RecvMsgCmdID.Length);
+                index += RecvMsgCmdID.Length;
+                Buffer.BlockCopy(recvMsg, index, RecvMsgData, 0, RecvMsgData.Length);
+                index += RecvMsgData.Length;
+                Buffer.BlockCopy(recvMsg, index, RecvMsgErrorCode, 0, RecvMsgErrorCode.Length);
+                index += RecvMsgErrorCode.Length;
+                Buffer.BlockCopy(recvMsg, index, RecvMsgTimestamp, 0, RecvMsgTimestamp.Length);
+                index += RecvMsgTimestamp.Length;
+                Buffer.BlockCopy(recvMsg, index, RecvMsgCheckCode, 0, RecvMsgCheckCode.Length);
+                index += RecvMsgCheckCode.Length;
+                Buffer.BlockCopy(recvMsg, index, RecvMsgEnd, 0, RecvMsgEnd.Length);
+                index += RecvMsgEnd.Length;
+
+                //比对设备地址码、设备ID码、校检码
+                var CheckCode = BitConverter.GetBytes(CRCHelper.Data_GetCRC16(recvMsg,
+                    0, recvMsg.Length - 3));
+
+                var AddressCode = BitConverter.GetBytes((ushort)SelectedAddressCode.NumericValue);                
+                var DeviceId = BitConverter.GetBytes((ushort)SelectedDeviceID.NumericValue);
+
+                if ((AddressCode.SequenceEqual(RecvMsgAddress_Behind)) &&
+                    (DeviceId.SequenceEqual(RecvMsgDeviceID)) &&
+                    (CheckCode.SequenceEqual(RecvMsgCheckCode)) &&
+                    (RecvMsgEnd[0] == EOF))
+                {
+                    bRe = true;
+                }
+                else
+                {
+                    bRe = false;
+                    Log += "校检码异常" + "\n\r";
+                }
+
+            }
+
             return bRe;
         }
         #endregion
