@@ -50,6 +50,11 @@ namespace UtilityTools.Services
 
         #region ------------Property------------
         public bool IsVirtualDevice { get; }
+
+        public static IAsynRWService? GetAsyRWDevice(string v)
+        {
+            throw new NotImplementedException();
+        }
         #endregion
 
         #region ------------PublicMethod------------
