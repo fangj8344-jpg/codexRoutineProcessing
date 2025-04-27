@@ -66,8 +66,8 @@ namespace UtilityTools.Modules.ApplicationOfCoarseFocusingModelTool.ViewModels
                 RaisePropertyChanged();
             }
         }
-        private float _predicitionResule;
-        public float PredicitionResule
+        private int _predicitionResule;
+        public int PredicitionResule
         {
             get { return _predicitionResule;}
             set 
@@ -114,7 +114,7 @@ namespace UtilityTools.Modules.ApplicationOfCoarseFocusingModelTool.ViewModels
             {
                 return;
             }
-            PredicitionResule = output[0, 0];
+             PredicitionResule = (int)output[0, 0];
 
         }
 
@@ -181,6 +181,7 @@ namespace UtilityTools.Modules.ApplicationOfCoarseFocusingModelTool.ViewModels
                         string[] files = Directory.GetFiles(selectedFolder, extension, SearchOption.AllDirectories);
                         allImageFiles = allImageFiles.Concat(files).ToArray();
                     }
+                  
 
                     return allImageFiles;
                 }
@@ -265,11 +266,13 @@ namespace UtilityTools.Modules.ApplicationOfCoarseFocusingModelTool.ViewModels
             */
             //创建输入张量
             var inputObTensor = new DenseTensor<float>(new[] { 1, 80 });
-            var inputMaskTensor = new DenseTensor<float>(new[] { 1, 80 });
+            var inputMaskTensor = new DenseTensor<float>(new[] { 1, 80});
             var inputPixelChanneValuelTensor = new DenseTensor<float>(new[] { 1, 80,3,128,128 });
             var inputBestObTensor = new DenseTensor<float>(new[] { 1 });
-            Scalar mean = new Scalar(0.5,0.5,0.5);
-            Scalar std = new Scalar(0.5,0.5,0.5);
+           
+            //目标均值和和方差
+            double targetMean = 0.5;
+            double targetStd = 0.5;
             //像素通道值张量赋值
             for (int i = 0; i < inputPixelChanneValuelTensor.Dimensions[0]; i++)
             {
@@ -277,29 +280,28 @@ namespace UtilityTools.Modules.ApplicationOfCoarseFocusingModelTool.ViewModels
                 {
                     string currentPhotoPath = picturePath[j];
                     Mat image = Cv2.ImRead(currentPhotoPath);
-                    Mat floatImage = new Mat();
-                    image.ConvertTo(floatImage,MatType.CV_32F,1.0/255.0);
+                    //计算图像的均值和标注差
                     for (int k = 0; k < inputPixelChanneValuelTensor.Dimensions[2]; k++)
                     {
                         for (int m = 0; m < inputPixelChanneValuelTensor.Dimensions[3]; m++)
                         {
                             for (int n = 0; n < inputPixelChanneValuelTensor.Dimensions[4]; n++)
                             {
+                                Vec3b pixel = image.Get<Vec3b>(m, n);
                                 if (k == 0)
                                 {
-                                    inputPixelChanneValuelTensor[i, j, k, m, n] = (float)((floatImage.Get<Vec3i>(m, n).Item0 - mean.Val0)/std.Val0);
+
+                                    inputPixelChanneValuelTensor[i, j, k, m, n] = (float)((pixel.Item0 / 255.0 -0.5) / 0.5);
                                 }
                                 else if (k == 1)
                                 {
-                                    inputPixelChanneValuelTensor[i, j, k, m, n] = (float)((floatImage.Get<Vec3i>(m, n).Item1 - mean.Val1)/std.Val1);
+                                    inputPixelChanneValuelTensor[i, j, k, m, n] = (float)((pixel.Item1 / 255.0 - 0.5) /0.5) ;
                                 }
                                 else if (k == 2)
                                 {
-                                    inputPixelChanneValuelTensor[i, j, k, m, n] = (float)((floatImage.Get<Vec3i>(m, n).Item2  - mean.Val2)/std.Val2);
+                                    inputPixelChanneValuelTensor[i, j, k, m, n] = (float)((pixel.Item2  /255.0 -0.5) / 0.5) ;
                                 }            
                             }
-
-
                         }
                     }
 
@@ -310,7 +312,7 @@ namespace UtilityTools.Modules.ApplicationOfCoarseFocusingModelTool.ViewModels
             {
                 for (int j = 0; j < inputMaskTensor.Dimensions[1]; j++)
                 {
-                   inputMaskTensor[i, j] = 1.0f;
+                     inputMaskTensor[i, j] = 1.0f;
                 }
             }
             //物镜值张量赋值
@@ -340,6 +342,7 @@ namespace UtilityTools.Modules.ApplicationOfCoarseFocusingModelTool.ViewModels
             var inputName0 = inputName.ElementAt(0);
             var inputName1 = inputName.ElementAt(1);
             var inputName2 = inputName.ElementAt(2);
+           
 
 
             //创建NamedOnnxValue对象

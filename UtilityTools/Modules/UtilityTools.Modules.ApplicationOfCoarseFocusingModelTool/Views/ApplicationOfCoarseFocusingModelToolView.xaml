@@ -13,11 +13,7 @@
         </Grid.ColumnDefinitions>
         <StackPanel>
             <Label Content="提示信息:"/>
-            <TextBlock Text="文件夹未加载,请选择含最少80张图的文件夹"/>
-            <DockPanel LastChildFill="False">
-                <Button Content="选择文件夹" Margin="10,10,10,10" Width="100" />
-                <TextBlock Text="C:\Users\ADMIN\Pictures\Saved Pictures\9.jpg" DockPanel.Dock="Right" VerticalAlignment="Center"/>
-            </DockPanel>
+            <TextBlock Text="请选择含最少80张图的文件夹"/>
             <Button Content="开始预测" Command="{Binding ModelPutIntoUseCommand}" Width="100" HorizontalAlignment="Left" Margin="10"/>
             <DockPanel LastChildFill="False">
                 <Label Content="预测结果："/>
