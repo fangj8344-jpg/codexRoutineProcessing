@@ -1,0 +1,318 @@
+<UserControl x:Class="UtilityTools.Modules.InstrumentDataRetriever.Views.InstrumentDataRetrieverView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:UtilityTools.Modules.InstrumentDataRetriever.Views"
+             xmlns:prism="http://prismlibrary.com/"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:oxy="http://oxyplot.org/wpf"
+             xmlns:converters="clr-namespace:System.Windows.Controls;assembly=PresentationFramework"
+             prism:ViewModelLocator.AutoWireViewModel="True"
+             Foreground="Black"
+             mc:Ignorable="d"
+             d:DesignHeight="800"
+             d:DesignWidth="1200">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <materialDesign:BundledTheme BaseTheme="Light"
+                                             PrimaryColor="DeepPurple"
+                                             SecondaryColor="Lime" />
+                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+            <BooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" />
+            <local:InverseBooleanConverter x:Key="InverseBooleanConverter" />
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <DockPanel Margin="16">
+        <!-- 上部分内容 -->
+        <StackPanel DockPanel.Dock="Top"
+                    Margin="0,0,0,16">
+            <!-- 数据库连接状态和操作 -->
+            <Grid DockPanel.Dock="Top"
+                  Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <DockPanel Grid.Column="0">
+                    <TextBlock Text="{Binding DatabaseStatus}"
+                               Foreground="White"
+                               Style="{StaticResource MaterialDesignBody1TextBlock}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,16,0" />
+                    <TextBlock Text="{Binding DbFilePath}"
+                               Foreground="White"
+                               Style="{StaticResource MaterialDesignBody1TextBlock}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,16,0" />
+                </DockPanel>
+
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right">
+                    <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                            Command="{Binding SelectDatabaseCommand}"
+                            Margin="0,0,8,0"
+                            IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBooleanConverter}}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="DatabasePlus"
+                                                     Margin="0,0,8,0" />
+                            <TextBlock Text="选择数据库" />
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                            Command="{Binding DisconnectDatabaseCommand}"
+                            IsEnabled="{Binding IsConnected, Mode=OneWay}"
+                            Cursor="">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="DatabaseRemove"
+                                                     Margin="0,0,8,0" />
+                            <TextBlock Text="断开连接" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- 搜索控件 -->
+            <GroupBox Header="搜索条件"
+                      Style="{StaticResource MaterialDesignGroupBox}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- 时间范围 -->
+                    <StackPanel Grid.Column="0"
+                                Margin="0,0,16,0">
+                        <TextBlock Text="时间范围"
+                                   Foreground="White"
+                                   Style="{StaticResource MaterialDesignBody2TextBlock}" />
+                        <DatePicker SelectedDate="{Binding StartTime}"
+                                    Style="{StaticResource MaterialDesignFloatingHintDatePicker}"
+                                    materialDesign:HintAssist.Hint="开始时间"
+                                    Margin="0,8,0,0" />
+                        <DatePicker SelectedDate="{Binding EndTime}"
+                                    Style="{StaticResource MaterialDesignFloatingHintDatePicker}"
+                                    materialDesign:HintAssist.Hint="结束时间"
+                                    Margin="0,8,0,0" />
+                    </StackPanel>
+
+                    <!-- 状态条件 -->
+                    <StackPanel Grid.Column="1"
+                                Margin="0,0,16,0">
+                        <TextBlock Text="状态条件"
+                                   Foreground="White"
+                                   Style="{StaticResource MaterialDesignBody2TextBlock}" />
+                        <CheckBox Content="是否开枪"
+                                  Foreground="White"
+                                  IsChecked="{Binding IsGunEnabled}"
+                                  Style="{StaticResource MaterialDesignCheckBox}"
+                                  Margin="0,8,0,0" />
+                        <CheckBox Content="SE高压输出使能"
+                                  Foreground="White"
+                                  IsChecked="{Binding IsSEHighVoltageEnabled}"
+                                  Style="{StaticResource MaterialDesignCheckBox}"
+                                  Margin="0,8,0,0" />
+                    </StackPanel>
+
+                    <!-- 操作按钮 -->
+                    <StackPanel Grid.Column="2"
+                                Margin="0,0,16,0">
+                        <TextBlock Text="操作"
+                                   Foreground="White"
+                                   Style="{StaticResource MaterialDesignBody2TextBlock}" />
+                        <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                                Command="{Binding SearchCommand}"
+                                Margin="0,8,0,0">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="Search"
+                                                         Margin="0,0,8,0" />
+                                <TextBlock Text="搜索" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                                Command="{Binding GetLatestDataCommand}"
+                                Margin="0,8,0,0">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="Refresh"
+                                                         Margin="0,0,8,0" />
+                                <TextBlock Text="获取最新数据" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </GroupBox>
+        </StackPanel>
+
+        <!-- 下部分内容（表格和图表） -->
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"
+                                  MinWidth="400" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*"
+                                  MinWidth="300" />
+            </Grid.ColumnDefinitions>
+
+            <!-- 数据表格 -->
+            <DataGrid Grid.Column="0"
+                      ItemsSource="{Binding InstrumentData}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      CanUserReorderColumns="True"
+                      CanUserResizeColumns="True"
+                      CanUserSortColumns="True"
+                      GridLinesVisibility="All"
+                      BorderThickness="1"
+                      BorderBrush="{DynamicResource MaterialDesignDivider}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="时间"
+                                        Binding="{Binding Time, StringFormat=yyyy-MM-dd HH:mm:ss}"
+                                        Width="150" />
+                    <DataGridTextColumn Header="枪头真空"
+                                        Binding="{Binding GunVacuum, StringFormat=N2}"
+                                        Width="100" />
+                    <DataGridTextColumn Header="样品仓真空"
+                                        Binding="{Binding SamVacuum, StringFormat=N2}"
+                                        Width="100" />
+                    <DataGridTextColumn Header="SeGain"
+                                        Binding="{Binding SeGain, StringFormat=N2}"
+                                        Width="100" />
+                    <DataGridTextColumn Header="CollectVol"
+                                        Binding="{Binding CollectVol, StringFormat=N2}"
+                                        Width="100" />
+                    <DataGridTextColumn Header="ScinVol"
+                                        Binding="{Binding ScinVol, StringFormat=N2}"
+                                        Width="100" />
+                    <DataGridTextColumn Header="DecVol"
+                                        Binding="{Binding DecVol, StringFormat=N2}"
+                                        Width="100" />
+                    <DataGridTextColumn Header="CollectCur"
+                                        Binding="{Binding CollectCur, StringFormat=N2}"
+                                        Width="100" />
+                    <DataGridTextColumn Header="ScinCur"
+                                        Binding="{Binding ScinCur, StringFormat=N2}"
+                                        Width="100" />
+                    <DataGridTextColumn Header="DecCur"
+                                        Binding="{Binding DecCur, StringFormat=N2}"
+                                        Width="100" />
+                    <DataGridTextColumn Header="AccVol"
+                                        Binding="{Binding AccVol, StringFormat=N2}"
+                                        Width="100" />
+                    <DataGridTextColumn Header="EmissCur"
+                                        Binding="{Binding EmissCur, StringFormat=N2}"
+                                        Width="100" />
+                    <DataGridTextColumn Header="FilaR"
+                                        Binding="{Binding FilaR, StringFormat=N2}"
+                                        Width="100" />
+                    <DataGridTextColumn Header="GridVol"
+                                        Binding="{Binding GridVol, StringFormat=N2}"
+                                        Width="100" />
+                    <DataGridTextColumn Header="温度1"
+                                        Binding="{Binding Temperature1, StringFormat=N2}"
+                                        Width="100" />
+                    <DataGridTextColumn Header="温度2"
+                                        Binding="{Binding Temperature2, StringFormat=N2}"
+                                        Width="100" />
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- 分隔线 -->
+            <GridSplitter Grid.Column="1"
+                          Width="5"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Stretch"
+                          Background="{DynamicResource MaterialDesignDivider}"
+                          ResizeDirection="Columns" />
+
+            <!-- 图表区域 -->
+            <TabControl Grid.Column="2">
+                <TabItem Header="真空图表">
+                    <!-- 真空图表 -->
+                    <oxy:PlotView Grid.Row="1"
+                                  Model="{Binding VacuumPlotModel}"
+                                  Margin="0,0,0,8"
+                                  Visibility="{Binding IsVacuumPlotVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <oxy:PlotView.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="自适应"
+                                          Command="{Binding AutoAdjustCommand}"
+                                          CommandParameter="真空图表" />
+                                <MenuItem Header="保存"
+                                          Command="{Binding SavePlotCommand}"
+                                          CommandParameter="真空图表"/>
+                            </ContextMenu>
+                        </oxy:PlotView.ContextMenu>
+                    </oxy:PlotView>
+                </TabItem>
+
+                <TabItem Header="温度图表">
+                    <!-- 温度图表 -->
+                    <oxy:PlotView Grid.Row="2"
+                                  Model="{Binding TemperaturePlotModel}"
+                                  Margin="0,0,0,8"
+                                  Visibility="{Binding IsTemperaturePlotVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <oxy:PlotView.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="自适应"
+                                          Command="{Binding AutoAdjustCommand}"
+                                          CommandParameter="温度图表" />
+                                <MenuItem Header="保存"
+                                          Command="{Binding SavePlotCommand}"
+                                          CommandParameter="温度图表"/>
+                            </ContextMenu>
+                        </oxy:PlotView.ContextMenu>
+                    </oxy:PlotView>
+
+                </TabItem>
+
+                <TabItem Header="SE图表">
+                    <!-- SE图表 -->
+                    <oxy:PlotView Grid.Row="3"
+                                  Model="{Binding SEPlotModel}"
+                                  Margin="0,0,0,8"
+                                  Visibility="{Binding IsSEPlotVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <oxy:PlotView.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="自适应"
+                                          Command="{Binding AutoAdjustCommand}"
+                                          CommandParameter="SE图表" />
+                                <MenuItem Header="保存"
+                                          Command="{Binding SavePlotCommand}"
+                                          CommandParameter="SE图表"/>
+                            </ContextMenu>
+                        </oxy:PlotView.ContextMenu>
+                    </oxy:PlotView>
+
+                </TabItem>
+
+                <TabItem Header="高压箱图表">
+                    <!-- 高压箱图表 -->
+                    <oxy:PlotView Grid.Row="4"
+                                  Model="{Binding HighVoltagePlotModel}"
+                                  Margin="0,0,0,8"
+                                  Visibility="{Binding IsHighVoltagePlotVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <oxy:PlotView.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="自适应"
+                                          Command="{Binding AutoAdjustCommand}"
+                                          CommandParameter="高压箱图表" />
+                                <MenuItem Header="保存"
+                                          Command="{Binding SavePlotCommand}"
+                                          CommandParameter="高压箱图表"/>
+                            </ContextMenu>
+                        </oxy:PlotView.ContextMenu>
+                    </oxy:PlotView>
+                </TabItem>
+            </TabControl>
+        </Grid>
+    </DockPanel>
+</UserControl> 

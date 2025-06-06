@@ -57,7 +57,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.Modules.Packet
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.Modules.TemperatureController", "Modules\UtilityTools.Modules.TemperatureController\UtilityTools.Modules.TemperatureController.csproj", "{24A26B70-70D4-45E8-8DA9-057CA30898E2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UtilityTools.Modules.Test485ChipTool", "Modules\UtilityTools.Modules.Test485ChipTool\UtilityTools.Modules.Test485ChipTool.csproj", "{052773D2-E030-40EE-B02D-64DDB2187E56}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.Modules.Test485ChipTool", "Modules\UtilityTools.Modules.Test485ChipTool\UtilityTools.Modules.Test485ChipTool.csproj", "{052773D2-E030-40EE-B02D-64DDB2187E56}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.Modules.AutoFocusTest", "Modules\UtilityTools.Modules.AutoFocusTest\UtilityTools.Modules.AutoFocusTest.csproj", "{067931D4-286D-4DC6-862A-5B4385616C4C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.Modules.InstrumentDataRetriever", "Modules\UtilityTools.Modules.InstrumentDataRetriever\UtilityTools.Modules.InstrumentDataRetriever.csproj", "{F8E7D6C5-B4A3-4C2D-9E1F-0A9B8C7D6E5F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityTools.Modules.ImageComparator", "Modules\UtilityTools.Modules.ImageComparator\UtilityTools.Modules.ImageComparator.csproj", "{A1B2C3D4-E5F6-4A5B-8C7D-9E0F1A2B3C4D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zeptools.Modules.AuthorityManager", "Modules\Zeptools.Modules.AuthorityManager\Zeptools.Modules.AuthorityManager.csproj", "{9C5AEE10-8A51-48E1-A986-38C2019493F5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -165,6 +173,22 @@ Global
 		{052773D2-E030-40EE-B02D-64DDB2187E56}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{052773D2-E030-40EE-B02D-64DDB2187E56}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{052773D2-E030-40EE-B02D-64DDB2187E56}.Release|Any CPU.Build.0 = Release|Any CPU
+		{067931D4-286D-4DC6-862A-5B4385616C4C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{067931D4-286D-4DC6-862A-5B4385616C4C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{067931D4-286D-4DC6-862A-5B4385616C4C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{067931D4-286D-4DC6-862A-5B4385616C4C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F8E7D6C5-B4A3-4C2D-9E1F-0A9B8C7D6E5F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F8E7D6C5-B4A3-4C2D-9E1F-0A9B8C7D6E5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F8E7D6C5-B4A3-4C2D-9E1F-0A9B8C7D6E5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F8E7D6C5-B4A3-4C2D-9E1F-0A9B8C7D6E5F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1B2C3D4-E5F6-4A5B-8C7D-9E0F1A2B3C4D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-E5F6-4A5B-8C7D-9E0F1A2B3C4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-E5F6-4A5B-8C7D-9E0F1A2B3C4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-E5F6-4A5B-8C7D-9E0F1A2B3C4D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9C5AEE10-8A51-48E1-A986-38C2019493F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9C5AEE10-8A51-48E1-A986-38C2019493F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9C5AEE10-8A51-48E1-A986-38C2019493F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9C5AEE10-8A51-48E1-A986-38C2019493F5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -192,6 +216,10 @@ Global
 		{063589CF-3E05-4D38-BF19-DF20E45ED9DD} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
 		{24A26B70-70D4-45E8-8DA9-057CA30898E2} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
 		{052773D2-E030-40EE-B02D-64DDB2187E56} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
+		{067931D4-286D-4DC6-862A-5B4385616C4C} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
+		{F8E7D6C5-B4A3-4C2D-9E1F-0A9B8C7D6E5F} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
+		{A1B2C3D4-E5F6-4A5B-8C7D-9E0F1A2B3C4D} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
+		{9C5AEE10-8A51-48E1-A986-38C2019493F5} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {4877E460-1ABE-4B63-8221-9202D7477E25}

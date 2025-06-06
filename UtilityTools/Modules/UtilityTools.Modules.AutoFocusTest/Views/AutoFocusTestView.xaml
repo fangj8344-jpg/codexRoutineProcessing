@@ -1,0 +1,98 @@
+﻿<UserControl x:Class="UtilityTools.Modules.AutoFocusTest.Views.AutoFocusTestView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:oxy="http://oxyplot.org/wpf"
+             xmlns:model="clr-namespace:UtilityTools.Modules.AutoFocusTest.Model"
+             xmlns:cv="clr-namespace:UtilityTools.Modules.AutoFocusTest.Converters"
+             xmlns:local="clr-namespace:UtilityTools.Modules.AutoFocusTest.Views"
+             mc:Ignorable="d"
+             d:DesignHeight="450"
+             d:DesignWidth="800">
+
+    <UserControl.Resources>
+        <cv:FileToRemapImageConverter x:Key="fileToRemapImageConverter" />
+    </UserControl.Resources>
+
+    <md:DialogHost Identifier="{x:Static model:CommonModel.AutoFocusTestRegionName}"
+                   DialogTheme="Inherit">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto" />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+
+            <Grid Grid.Row="0"
+                  Grid.Column="0"
+                  Grid.ColumnSpan="3">
+                <DockPanel>
+                    <Button Content="选择"
+                            Command="{Binding LoadImagePathCommand}"
+                            DockPanel.Dock="Right" />
+                    <Label Content="文件路径："
+                           DockPanel.Dock="Left" />
+                    <TextBlock Text="{Binding FilePath}" VerticalAlignment="Center"/>
+                </DockPanel>
+            </Grid>
+
+            <GridSplitter Grid.Row="1" Grid.Column="1" Width="10" VerticalAlignment="Stretch" Background="AliceBlue" HorizontalAlignment="Stretch"/>
+            
+            <Grid Grid.Row="1"
+                  Grid.Column="0">
+                <ListView ItemsSource="{Binding BindItems}"
+                          SelectionMode="Single"
+                          VirtualizingPanel.IsVirtualizing="True"
+                          VirtualizingPanel.VirtualizationMode="Recycling"
+                          VirtualizingPanel.ScrollUnit="Item"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          ScrollViewer.VerticalScrollBarVisibility="Visible">
+
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Vertical"
+                                        Margin="5">
+                                <Image Height="250"
+                                       Width="250"
+                                       Source="{Binding FilePath, IsAsync=false, Converter={StaticResource fileToRemapImageConverter}}" />
+                                <Label Content="{Binding FileName}"
+                                       FontSize="24"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       HorizontalContentAlignment="Center"
+                                       VerticalContentAlignment="Center" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+
+                    <ListView.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal"
+                                       HorizontalAlignment="Center">
+                            </WrapPanel>
+                        </ItemsPanelTemplate>
+                    </ListView.ItemsPanel>
+                </ListView>
+            </Grid>
+
+            <Grid Grid.Row="1" Grid.Column="2">
+                <oxy:PlotView Model="{Binding ResultPlot}"
+                              Foreground="Black">
+                    <oxy:PlotView.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="保存到文件"
+                                      Command="{Binding SaveToFileCommand}"/>
+                        </ContextMenu>
+                    </oxy:PlotView.ContextMenu>
+                </oxy:PlotView>
+            </Grid>
+        </Grid>
+    </md:DialogHost>
+</UserControl>

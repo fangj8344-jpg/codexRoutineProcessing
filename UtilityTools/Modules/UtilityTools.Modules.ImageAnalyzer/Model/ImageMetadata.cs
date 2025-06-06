@@ -305,7 +305,7 @@ namespace UtilityTools.Modules.ImageAnalyzer.Model
             if (descriptions.Count == 0)
                 return null;
             var content = descriptions[0];
-            if (content.StartsWith("common:"))
+            if (content.StartsWith("comment:"))
             {
                 content = content[8..];
             }

@@ -270,6 +270,17 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             get { return _selectedDacModel; }
             set { _selectedDacModel = value; RaisePropertyChanged(); }
         }
+
+        public DelegateCommand GetRelayStatusCommand { get; set; }
+
+        private string _relayStatus;
+
+        public string RelayStatus
+        {
+            get { return _relayStatus; }
+            set { _relayStatus = value; RaisePropertyChanged(); }
+        }
+
         #endregion
 
         #region ------------PublicMethod------------
@@ -352,6 +363,8 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
             RelayModels.Add(new RelayModel() { Name = "CHE", Channel = (byte)0x0E, Enable = false });
             RelayModels.Add(new RelayModel() { Name = "CHF", Channel = (byte)0x0F, Enable = false });
 
+            GetRelayStatusCommand = new DelegateCommand(GetRelayStatus);
+
             if (_dacControl != null)
             {
                 DacModels.Add(new DACModel() { Name = "CHA", Channel = (byte)0x00, Value = 0, MinValue = 0, MaxValue = 0x0FFF, SetValueFunc = _dacControl.SetDACCHA });
@@ -372,6 +385,13 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
 
             BindPropertyChanged();
 
+        }
+
+        private void GetRelayStatus()
+        {
+            if (_relayControl == null)
+                return;
+            _relayControl.GetRelayState();
         }
 
         private void BindPropertyChanged()
@@ -825,6 +845,9 @@ namespace UtilityTools.Modules.ControlLibTest.ViewModels
                 {
                     case (ushort)ENUM_ETH_CMD.CMD_GetIP:
                         EthModel.RealIP = e.Params;
+                        break;
+                    case (ushort)ENUM_RELAY_CMD.CMD_GetRelay:
+                        RelayStatus = e.Params;
                         break;
                 }
             }
