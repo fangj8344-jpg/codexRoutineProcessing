@@ -30,6 +30,7 @@ using System.Windows.Automation.Text;
 using System.ComponentModel;
 using System.Reflection;
 using static UtilityTools.Modules.Test485ChipTool.Model.Test485ChipModel.EnumHelper;
+using UtilityTools.Core.Helper;
 
 namespace UtilityTools.Modules.Test485ChipTool.Model
 {
@@ -50,13 +51,13 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
     /// 指令码
     /// </summary>
     public enum ECommanName : ushort
-    {
-        [Description("读真空规数值")]
-        cmdGetVac = 0x0800,
-        [Description("获取PID参数")]
-        cmdGetPID = 0X0806,
+    {        
         [Description("获取高压状态")]
         cmdGetSTATUS = 0x0501,
+        //[Description("设置SV电压(4000V)")]
+        //cmdGetVac = 0x0105,
+        //[Description("设置DV电压(250V)")]
+        //cmdGetPID = 0X0106,
     }
 
     /// <summary>
@@ -80,6 +81,10 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
 
     public class Test485ChipModel : BindableBase
     {
+        //报文头尾
+        public static readonly byte[] HEADER = Encoding.ASCII.GetBytes("$Zep:");
+        public static readonly byte EOF = Convert.ToByte('%');
+
         #region --------------Construct--------------
         public Test485ChipModel(IContainerProvider containerProvider)
         {
@@ -101,10 +106,12 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
         string _hostIp;
         byte[] _packetmsg;//打包后的报文
         bool _init;//初始化标志 
+        short _portStatr = 5001;
+        short _portEnd = 5005;
 
         List<short> _portList;//待通讯的端口号
         Dictionary<short,ITestUnit> _testUnitDict;//存放测试单元
-
+       
         #endregion
         #region------------------------Property--------------------------
         /// <summary>
@@ -275,6 +282,17 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
             get { return _log; }
             set { _log = value + "\r\n"; RaisePropertyChanged(); }
         }
+
+        private ObservableCollection<bool?> _readyStates = null;
+        public ObservableCollection<bool?> ReadySign
+        {
+            get => _readyStates;
+            set
+            {
+                _readyStates = value;
+                RaisePropertyChanged(nameof(ReadySign));
+            }
+        }
         /*暂未用上的动态绑定变量
         private short _remotePort_Start;
         /// <summary>
@@ -365,6 +383,11 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
             _init = false;//init over
 
             _packetmsg = PacketMsg();
+
+            //打印报文
+            string hexString = BitConverter.ToString(_packetmsg);
+            Console.WriteLine(hexString);
+
             InitTestUnitDict();
         }
 
@@ -432,6 +455,17 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
 
             //默认远程地址
             RemoteIp = "192.168.1.88";
+
+            //按钮状态信标
+            if (ReadySign == null)
+            {
+                ReadySign = new ObservableCollection<bool?>();
+            }
+            ReadySign.Clear();
+            for (int i = 0; i < _portEnd - _portStatr + 1; i++)
+            {
+                ReadySign.Add(null);
+            }
         }
 
         /// <summary>
@@ -485,12 +519,11 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
                 }
             }
             */
-
-            short portStatr = 5001;
-            short portEnd = 5005;
+           
             _portList = new List<short>();
+
             //填充端口list
-            for (short i = portStatr; i <= portEnd; i++)
+            for (short i = _portStatr; i <= _portEnd; i++)
             {
                 _portList.Add(i);
             }
@@ -530,6 +563,11 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
             {
                 testUnit.Value.TestCom();
             }
+
+            for(int i = 0; i< ReadySign.Count; i++)
+            {
+                ReadySign[i] = null;
+            }
         }
 
         /// <summary>
@@ -542,6 +580,12 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
                 Log += "串口:" + testUnit.Key + "通讯测试" + 
                     ((testUnit.Value.IsOK) ? "成功" : "失败") + "\n\r";
 
+                int signIndex = (testUnit.Key - _portStatr);
+                if (signIndex >= 0 &&  signIndex < ReadySign.Count)
+                {
+                    ReadySign[signIndex] = testUnit.Value.IsOK;
+                }
+                
             }
         }
         /// <summary>
@@ -572,16 +616,79 @@ namespace UtilityTools.Modules.Test485ChipTool.Model
         {
             Log = "";//每次测试前 清空右侧测试结果
             TestStart();
-            await Task.Delay(1500);//延迟2s等待回包ing
+            await Task.Delay(1500);//延迟1.5s等待回包ing
             LogTestResult();
         }
 
         /// <summary>
-        /// 触发回包即视为成功 如果需要比对报文 可以将recvMsg进行解析 
+        /// 比对报文 将recvMsg进行解析 
         /// </summary>
         private bool IsTestSuccess(byte[] recvMsg)
         {
-            return true;
+            bool bRe = recvMsg.Length == _packetmsg.Length;
+            //解包分析
+            if (bRe)
+            {
+                byte[] RecvMsgHead = new byte[5];
+                byte[] RecvMsgLength = new byte[2];
+                byte[] RecvMsgAddress_Front = new byte[4];
+                byte[] RecvMsgAddress_Behind = new byte[2];
+                byte[] RecvMsgDeviceID = new byte[2];
+                byte[] RecvMsgCmdID = new byte[2];
+                byte[] RecvMsgData = new byte[36];
+                byte[] RecvMsgErrorCode = new byte[4];
+                byte[] RecvMsgTimestamp = new byte[4];
+                byte[] RecvMsgCheckCode = new byte[2];
+                byte[] RecvMsgEnd = new byte[1];
+
+                int index = 0;
+                //填充byte 用于比对
+                Buffer.BlockCopy(recvMsg, index, RecvMsgHead, 0, RecvMsgHead.Length);
+                index += RecvMsgHead.Length;
+                Buffer.BlockCopy(recvMsg, index, RecvMsgLength, 0, RecvMsgLength.Length);
+                index += RecvMsgLength.Length;
+                Buffer.BlockCopy(recvMsg, index, RecvMsgAddress_Front, 0, RecvMsgAddress_Front.Length);
+                index += RecvMsgAddress_Front.Length;
+                Buffer.BlockCopy(recvMsg, index, RecvMsgAddress_Behind, 0, RecvMsgAddress_Behind.Length);
+                index += RecvMsgAddress_Behind.Length;
+                Buffer.BlockCopy(recvMsg, index, RecvMsgDeviceID, 0, RecvMsgDeviceID.Length);
+                index += RecvMsgDeviceID.Length;
+                Buffer.BlockCopy(recvMsg, index, RecvMsgCmdID, 0, RecvMsgCmdID.Length);
+                index += RecvMsgCmdID.Length;
+                Buffer.BlockCopy(recvMsg, index, RecvMsgData, 0, RecvMsgData.Length);
+                index += RecvMsgData.Length;
+                Buffer.BlockCopy(recvMsg, index, RecvMsgErrorCode, 0, RecvMsgErrorCode.Length);
+                index += RecvMsgErrorCode.Length;
+                Buffer.BlockCopy(recvMsg, index, RecvMsgTimestamp, 0, RecvMsgTimestamp.Length);
+                index += RecvMsgTimestamp.Length;
+                Buffer.BlockCopy(recvMsg, index, RecvMsgCheckCode, 0, RecvMsgCheckCode.Length);
+                index += RecvMsgCheckCode.Length;
+                Buffer.BlockCopy(recvMsg, index, RecvMsgEnd, 0, RecvMsgEnd.Length);
+                index += RecvMsgEnd.Length;
+
+                //比对设备地址码、设备ID码、校检码
+                var CheckCode = BitConverter.GetBytes(CRCHelper.Data_GetCRC16(recvMsg,
+                    0, recvMsg.Length - 3));
+
+                var AddressCode = BitConverter.GetBytes((ushort)SelectedAddressCode.NumericValue);                
+                var DeviceId = BitConverter.GetBytes((ushort)SelectedDeviceID.NumericValue);
+
+                if ((AddressCode.SequenceEqual(RecvMsgAddress_Behind)) &&
+                    (DeviceId.SequenceEqual(RecvMsgDeviceID)) &&
+                    (CheckCode.SequenceEqual(RecvMsgCheckCode)) &&
+                    (RecvMsgEnd[0] == EOF))
+                {
+                    bRe = true;
+                }
+                else
+                {
+                    bRe = false;
+                    Log += "校检码异常" + "\n\r";
+                }
+
+            }
+
+            return bRe;
         }
         #endregion
     }
