@@ -39,7 +39,7 @@ namespace UtilityTools.Modules.ImageAnalyzer.Model
             }
 
             spectrum = CvHelper.CalcSpectrum(gray);
-            spectrum_mean = spectrum.Reduce(ReduceDimension.Row, ReduceTypes.Avg, MatType.CV_32FC1);
+            spectrum_mean = spectrum.Reduce(ReduceDimension.Row, ReduceTypes.Avg, (int)MatType.CV_32FC1);
 
             _points = new List<DataPoint>();
             int n = src.Rows;
