@@ -37,7 +37,7 @@ using UtilityTools.Core.Protocol;
 namespace UtilityTools.Modules.TemperatureController.Protocol
 {
     /// <summary>
-    /// OTA升级指令类型
+    /// 
     /// </summary>
     public enum EnumTemperatureControllerCommandType
     {
