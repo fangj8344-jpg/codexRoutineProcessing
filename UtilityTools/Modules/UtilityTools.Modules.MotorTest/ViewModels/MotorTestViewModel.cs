@@ -114,6 +114,15 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
                 {
                     Model.SerialPortService = value;
                     IsConnected = Model.SerialPortService.IsOpen;
+                    if (IsConnected == true)
+                    {
+                        Model._getMotorStateTimer.Start();
+                        Model.SendDataThread();
+                    }
+                    else
+                    {
+                        Model._getMotorStateTimer.Stop();
+                    }
                 }
             }
         }
@@ -135,6 +144,15 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
                 {
                     Model.NetUdpService = value;
                     NetIsConnected = Model.NetUdpService.IsOpen;
+                    if (NetIsConnected == true)
+                    {
+                        Model._getMotorStateTimer.Start();
+                        Model.SendDataThread();
+                    }
+                    else
+                    {
+                        Model._getMotorStateTimer.Stop();
+                    }
                 }
             }
         }

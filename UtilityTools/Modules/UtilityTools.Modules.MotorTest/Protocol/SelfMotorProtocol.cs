@@ -80,9 +80,9 @@ namespace UtilityTools.Modules.MotorTest.Protocol
     public enum EnumMotorCtrType
     {
         [Description("闭环位置")]
-        OpenLoopPosCtr = 0x00,
+        CloseLoopPosCtr = 0x00,
         [Description("开环位置")]
-        CloseLoopPosCtr = 0x01,
+        OpenLoopPosCtr = 0x01,
         [Description("闭环速度")]
         CloseLoopSpeedCtr = 0x02,
         [Description("开环速度")]
@@ -222,19 +222,19 @@ namespace UtilityTools.Modules.MotorTest.Protocol
     public enum EnumMotorId
     {
         [Description("主控板电机插槽位1处电机")]
-        MOTOR_1 = 0x0001,
+        MOTOR_1 = 0x01,
 
         [Description("主控板电机插槽位2处电机(Z轴直流电机)")]
-        MOTOR_2 = 0x0002,
+        MOTOR_2 = 0x02,
 
         [Description("主控板电机插槽位3处电机")]
-        MOTOR_3 = 0x0003,
+        MOTOR_3 = 0x03,
 
         [Description("主控板电机插槽位4处电机")]
-        MOTOR_4 = 0x0004,
+        MOTOR_4 = 0x04,
 
         [Description("主控板电机插槽位5处电机")]
-        MOTOR_5 = 0x0005,
+        MOTOR_5 = 0x05,
 
     }
     public class SelfMotorProtocol
@@ -275,8 +275,7 @@ namespace UtilityTools.Modules.MotorTest.Protocol
         public static byte[] SetMotorEnable(EnumMotorId motorId, EnumMotorEnable enable)
         {
             ByteWriter writer = new ByteWriter(36);
-            var motorIdByte = BitConverter.GetBytes((ushort)motorId);
-            writer.Write(motorIdByte);
+            writer.Write((byte)motorId);
             writer.Write((byte)enable);
             return GetCmd(EnumSelfMotorCmdType.CMD_SET_HR, writer.EndWrite());
         }
@@ -290,8 +289,7 @@ namespace UtilityTools.Modules.MotorTest.Protocol
         public static byte[] SetMotorOperatingStatus(EnumMotorId motorId, EnumMotorOperatingState operatingStatus)
         {
             ByteWriter writer = new ByteWriter(36);
-            var motorIdByte = BitConverter.GetBytes((ushort)motorId);
-            writer.Write(motorIdByte);
+            writer.Write((byte)motorId);
             writer.Write((byte)operatingStatus);
             return GetCmd(EnumSelfMotorCmdType.CMD_SET_RS, writer.EndWrite());
         }
@@ -306,8 +304,7 @@ namespace UtilityTools.Modules.MotorTest.Protocol
         public static byte[] SetMotorGoTo(EnumMotorId motorId, EnumMotorUnit unit ,float distance)
         {
             ByteWriter writer = new ByteWriter(36);
-            var motorIdByte = BitConverter.GetBytes((ushort)motorId);
-            writer.Write(motorIdByte);
+            writer.Write((byte)motorId);
             writer.Write((byte)unit);
             writer.Write(distance);
             return GetCmd(EnumSelfMotorCmdType.CMD_MOT_GOTO,writer.EndWrite());
@@ -320,8 +317,7 @@ namespace UtilityTools.Modules.MotorTest.Protocol
         public static byte[] SetMotorZero(EnumMotorId motorId)
         {
             ByteWriter writer = new ByteWriter(36);
-            var motorIdByte = BitConverter.GetBytes((ushort)motorId);
-            writer.Write(motorIdByte);
+            writer.Write((byte)motorId);
             return GetCmd(EnumSelfMotorCmdType.CMD_SET_ZERO, writer.EndWrite());
         }
 
@@ -333,8 +329,7 @@ namespace UtilityTools.Modules.MotorTest.Protocol
         public static byte[]  GetMotorPos(EnumMotorId motorId)
         {
             ByteWriter writer = new ByteWriter(36);
-            var motorIdByte = BitConverter.GetBytes((ushort)motorId);
-            writer.Write(motorIdByte);
+            writer.Write((byte)motorId);
             return GetCmd(EnumSelfMotorCmdType.CMD_GET_POS, writer.EndWrite());
         }
 
@@ -346,8 +341,7 @@ namespace UtilityTools.Modules.MotorTest.Protocol
         public static byte[] GetMotorStatus(EnumMotorId motorId)
         {
             ByteWriter writer = new ByteWriter(36);
-            var motorIdByte = BitConverter.GetBytes((ushort)motorId);
-            writer.Write(motorIdByte);
+            writer.Write((byte)motorId);
             return GetCmd(EnumSelfMotorCmdType.CMD_GET_STATUS, writer.EndWrite());
         }
 
@@ -359,8 +353,7 @@ namespace UtilityTools.Modules.MotorTest.Protocol
         public static byte[] GetMotorSpeed(EnumMotorId motorId)
         {
             ByteWriter writer = new ByteWriter(36);
-            var motorIdByte = BitConverter.GetBytes((ushort)motorId);
-            writer.Write(motorIdByte);
+            writer.Write((byte)motorId);
             return GetCmd(EnumSelfMotorCmdType.CMD_GET_SPEED, writer.EndWrite());
         }
 
@@ -373,8 +366,7 @@ namespace UtilityTools.Modules.MotorTest.Protocol
         public static byte[] SetMotorControlMode(EnumMotorId motorId, EnumMotorCtrType controlMode)
         {
             ByteWriter writer = new ByteWriter(36);
-            var motorIdByte = BitConverter.GetBytes((ushort)motorId);
-            writer.Write(motorIdByte);
+            writer.Write((byte)motorId);
             writer.Write((byte)controlMode);
             return GetCmd(EnumSelfMotorCmdType.CMD_SET_MCTL, writer.EndWrite());
         }

@@ -5,6 +5,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:UtilityTools.Modules.MotorTest.Views"
              xmlns:oxy="http://oxyplot.org/wpf"
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+             xmlns:bh="clr-namespace:UtilityTools.Core.Behavior;assembly=UtilityTools.Core"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <UserControl.Resources>
@@ -83,29 +85,29 @@
 
         <TabControl>
             <TabItem Header="速度曲线图">
-                <oxy:PlotView Model="{Binding MotorSpeedplotModel}"  Grid.Row="0" Grid.Column="0">
+                <oxy:PlotView Model="{Binding MotorSpeedplotModel}"  Grid.Row="0" Grid.Column="0" Foreground="Black">
                     <oxy:PlotView.ContextMenu>
                         <ContextMenu>
                             <MenuItem Header="自适应"
-                                      Command="{Binding AutoAdjustCommand}" />
+                                      Command="{Binding AutoAdjustCommand}"  CommandParameter="speed"/>
                             <MenuItem Header="清除"
-                                      Command="{Binding ClearMonitorCommand}" />
+                                      Command="{Binding ClearMonitorCommand}"  CommandParameter="speed"/>
                             <MenuItem Header="另存为"
-                                      Command="{Binding SaveMonitorInfoCommand}" />
+                                      Command="{Binding SaveMonitorInfoCommand}" CommandParameter="speed" />
                         </ContextMenu>
                     </oxy:PlotView.ContextMenu>
                 </oxy:PlotView>
             </TabItem>
             <TabItem Header="位置曲线图">
-                <oxy:PlotView Model="{Binding MotorplotModel}"  Grid.Row="0" Grid.Column="0">
+                <oxy:PlotView Model="{Binding MotorplotModel}"  Grid.Row="0" Grid.Column="0"  Foreground="Black" >
                     <oxy:PlotView.ContextMenu>
                         <ContextMenu>
                             <MenuItem Header="自适应"
-                                      Command="{Binding AutoAdjustCommand}" />
+                                      Command="{Binding AutoAdjustCommand}"  CommandParameter="point" />
                             <MenuItem Header="清除"
-                                      Command="{Binding ClearMonitorCommand}" />
+                                      Command="{Binding ClearMonitorCommand}"  CommandParameter="point"/>
                             <MenuItem Header="另存为"
-                                      Command="{Binding SaveMonitorInfoCommand}" />
+                                      Command="{Binding SaveMonitorInfoCommand}" CommandParameter="point" />
                         </ContextMenu>
                     </oxy:PlotView.ContextMenu>
                 </oxy:PlotView>
@@ -113,19 +115,33 @@
         </TabControl>
         <TabControl  Grid.Row="0" Grid.Column="1" >
             <TabItem Header="测试结果">
-                <DataGrid   AutoGenerateColumns="False" IsReadOnly="True"   Margin="50,0,50,0">
+                <DataGrid   AutoGenerateColumns="False" IsReadOnly="True"   Margin="50,0,50,0" ItemsSource="{Binding MotorTestMessages}">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="测试项目" Binding ="{Binding MotorTestMessages.TestProject}" />
-                        <DataGridTextColumn Header="测试结果" Binding="{Binding MotorTestMessages.TestResult}"/>
-                        <DataGridTextColumn Header="测量值" Binding="{Binding MotorTestMessages.TestValue}"/>
-                        <DataGridTextColumn Header="标准值" Binding="{Binding MotorTestMessages.StandardValue}"/>
-                        <DataGridTextColumn Header="说明" Binding="{Binding MotorTestMessages.Description}"/>
+                        <DataGridTextColumn Header="测试项目" Binding ="{Binding TestProject}" />
+                        <DataGridTextColumn Header="测试结果" Binding="{Binding TestResult}"/>
+                        <DataGridTextColumn Header="测量值" Binding="{Binding TestValue}"/>
+                        <DataGridTextColumn Header="标准值" Binding="{Binding StandardValue}"/>
+                        <DataGridTextColumn Header="说明" Binding="{Binding Description}"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>
             <TabItem Header="日志信息">
-                <ListView ItemsSource="{Binding Log}"   VerticalAlignment="Top">
-                </ListView>
+                <DockPanel LastChildFill="True">
+                    <ListView ItemsSource="{Binding Log}"
+                              VerticalAlignment="Top">
+                        <ListView.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="清除" Command="{Binding ClearLogCommand}"/>
+                            </ContextMenu>
+                        </ListView.ContextMenu>
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" />
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                        
+                    </ListView>
+                </DockPanel>
             </TabItem>
         </TabControl >
         
@@ -144,7 +160,7 @@
                     </Ellipse.Effect>
                 </Ellipse>
                 <!-- 用于显示角度等信息的文本块 -->
-                <Button Content="停止" Style="{StaticResource CircleButtonStyle}"  FontSize="20" FontWeight="Bold" Foreground="White"
+                <Button Content="停止" Style="{StaticResource CircleButtonStyle}"  Command="{Binding MoveCommand}" CommandParameter="stop" FontSize="20" FontWeight="Bold" Foreground="White"
                        HorizontalAlignment="Center" VerticalAlignment="Center" Height="80" Width="80"/>
                 <!-- 布局网格，划分四个方向区域 -->
                 <Grid>
@@ -167,7 +183,7 @@
                         <Path Data="M 5,0 L 0,5 L 5,10" Stroke="White" StrokeThickness="5"/>
                     </Button>
                     <!-- 下按钮 -->
-                    <Button Grid.Row="2" Grid.Column="1" Style="{StaticResource DirectionButtonStyle}" Command="{Binding MoveCommand}" CommandParameter="dowm">
+                    <Button Grid.Row="2" Grid.Column="1" Style="{StaticResource DirectionButtonStyle}" Command="{Binding MoveCommand}" CommandParameter="down">
                         <Path Data="M 0,5 L 5,10 L 10,5" Stroke="White" StrokeThickness="5"/>
                     </Button>
                     <!-- 右按钮 -->
@@ -177,21 +193,71 @@
                 </Grid>
             </Grid>
             <Grid Grid.Column="1">
-                <DockPanel Margin="0,80,0,0">
-                    <Label Content="x:" Margin="20,0,0,0"/>
-                    <Label Content="0.00:" />
-                    <Label Content="脉冲" />
-                    <Label Content="y:" Margin="20,0,0,0"/>
-                    <Label Content="0.00:" />
-                    <Label Content="脉冲" Margin="0,0,20,0" />
-             
-                </DockPanel>
+                <StackPanel>
+                    <DockPanel Margin="0,80,0,0">
+                        <Label Content="x:" Margin="20,0,0,0"/>
+                        <Label Content="{Binding MotorModelX.MotorParams.Pos}" />
+                        <Label Content=" 脉冲" />
+                        <Label Content="y:" Margin="20,0,0,0"/>
+                        <Label Content="{Binding MotorModelY.MotorParams.Pos}" />
+                        <Label Content=" 脉冲" Margin="0,0,20,0" />
+                    </DockPanel>
+                    <DockPanel Margin="0,10,0,0">
+                        <Label Content="x:" Margin="20,0,0,0"/>
+                        <Label Content="{Binding MotorModelX.MotorParams.Speed}" />
+                        <Label Content=" 脉冲/s" />
+                    </DockPanel>
+                    <DockPanel Margin="0,10,0,0">
+                        <Label Content="y:" Margin="20,0,0,0"/>
+                        <Label Content="{Binding MotorModelY.MotorParams.Speed}" />
+                        <Label Content=" 脉冲/s" Margin="0,0,20,0" />
+                    </DockPanel>
+                </StackPanel>
             </Grid>
         </Grid>
         <Grid Grid.Row="1" Grid.Column="1">
-            <StackPanel >
-                <Button Content="开始测试" Command="{Binding TestAllCommand}"/>
-            </StackPanel>
+            <TabControl>
+                <TabItem Header="功能测试">
+                    <StackPanel >
+                        <Button Content="开始测试" Command="{Binding TestAllCommand}"/>
+                        <Button Content="电机状态读取" Command="{Binding GetMotorStatusCommand}"/>
+                        <Button Content="初始化零点位置" Command="{Binding AutomaticZeroInitializationCommand}"/>
+                    </StackPanel>
+                </TabItem>
+                <TabItem Header="电机状态">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <UniformGrid Columns="2" Rows="5">
+                            <Label Content="控制模式"/>
+                            <Label Content="{Binding MotorModelX.MotorParams.CtrType}"/>
+                            <Label Content="使能状态"/>
+                            <Label Content="{Binding MotorModelX.MotorParams.Enable}"/>
+                            <Label Content="运行状态"/>
+                            <Label Content="{Binding MotorModelX.MotorParams.MoveState}"/>
+                            <Label Content="运行方向"/>
+                            <Label Content="{Binding MotorModelX.MotorParams.MoveDirection}"/>
+                            <Label Content="限位状态"/>
+                            <Label Content="{Binding MotorModelX.MotorParams.LimitedState}"/>
+                        </UniformGrid>
+                        <UniformGrid Columns="2" Rows="5" Grid.Column="1">
+                            <Label Content="控制模式"/>
+                            <Label Content="{Binding MotorModelY.MotorParams.CtrType}"/>
+                            <Label Content="使能状态"/>
+                            <Label Content="{Binding MotorModelY.MotorParams.Enable}"/>
+                            <Label Content="运行状态"/>
+                            <Label Content="{Binding MotorModelY.MotorParams.MoveState}"/>
+                            <Label Content="运行方向"/>
+                            <Label Content="{Binding MotorModelY.MotorParams.MoveDirection}"/>
+                            <Label Content="限位状态"/>
+                            <Label Content="{Binding MotorModelY.MotorParams.LimitedState}"/>
+                        </UniformGrid>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+          
         </Grid>
     </Grid>
 </UserControl>

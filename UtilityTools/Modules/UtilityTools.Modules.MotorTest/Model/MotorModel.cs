@@ -11,6 +11,10 @@ namespace UtilityTools.Modules.MotorTest.Model
 {
     public class MotorModel:BindableBase
     {
+        public MotorModel()
+        {
+            MotorParams = new MotorParams();
+        }
         private MotorParams _motorParams;
         public MotorParams MotorParams 
         {
@@ -77,6 +81,15 @@ namespace UtilityTools.Modules.MotorTest.Model
         {
             get { return _pos; }
             set { _pos = value; RaisePropertyChanged(); }
+        }
+        private double _speed;
+        /// <summary>
+        /// 速度
+        /// </summary>
+        public double Speed
+        {
+            get { return _speed; }
+            set { _speed = value; RaisePropertyChanged(); }
         }
         private float _subRatio;
         /// <summary>
@@ -229,6 +242,39 @@ namespace UtilityTools.Modules.MotorTest.Model
             get { return _encoderDirection; }
             set { _encoderDirection = value; RaisePropertyChanged(); }
         }
+    }
+    public class MotorTypeMessage:BindableBase
+    {
+        private string _name;
+        /// <summary>
+        /// 电机名称
+        /// </summary>
+        public string Name
+        {
+            get { return _name; }
+            set { _name = value; RaisePropertyChanged(); }
+        }
+
+        private int _minStrokeRange;
+        /// <summary>
+        /// 最小行程
+        /// </summary>
+        public int MinStrokeRange
+        {
+            get { return _minStrokeRange; }
+            set { _minStrokeRange = value; RaisePropertyChanged(); }
+        }
+
+        private int _maxStrokeRange;
+        /// <summary>
+        /// 最大行程范围
+        /// </summary>
+        public int MaxStrokeRange
+        {
+            get { return _maxStrokeRange; }
+            set { _maxStrokeRange = value; RaisePropertyChanged(); }
+        }
+
     }
 
 }

@@ -18,7 +18,7 @@ namespace UtilityTools.Modules.MotorTest.Views
     /// <summary>
     /// MotorTestView.xaml 的交互逻辑
     /// </summary>
-    public partial class MotorTestView : UserControl
+    public partial class MotorTestView : System.Windows.Controls.UserControl
     {
         public MotorTestView()
         {

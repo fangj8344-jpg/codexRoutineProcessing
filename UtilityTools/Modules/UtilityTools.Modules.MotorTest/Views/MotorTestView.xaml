@@ -6,6 +6,7 @@
              xmlns:cv="clr-namespace:UtilityTools.Core.Converter;assembly=UtilityTools.Core"
              xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:model="clr-namespace:UtilityTools.Modules.MotorTest.Model"
+            
              xmlns:local="clr-namespace:UtilityTools.Modules.MotorTest.Views"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
