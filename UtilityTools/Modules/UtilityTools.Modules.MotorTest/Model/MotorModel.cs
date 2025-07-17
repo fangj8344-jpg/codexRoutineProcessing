@@ -40,6 +40,24 @@ namespace UtilityTools.Modules.MotorTest.Model
             set { _enable = value; RaisePropertyChanged(); }
         }
 
+        private bool _sPLimted;
+        /// <summary>
+        /// 软件正限位
+        /// </summary>
+        public bool SPLimted
+        {
+            get { return _sPLimted; }
+            set { _sPLimted = value; RaisePropertyChanged(); }
+        }
+        private bool _sNLimted;
+        /// <summary>
+        /// 软件正限位
+        /// </summary>
+        public bool SNLimted
+        {
+            get { return _sNLimted; }
+            set { _sNLimted = value;RaisePropertyChanged(); }  
+        }
         private EnumMotorCtrType _ctrType = EnumMotorCtrType.CloseLoopPosCtr;
         /// <summary>
         /// 控制类型
@@ -242,6 +260,27 @@ namespace UtilityTools.Modules.MotorTest.Model
             get { return _encoderDirection; }
             set { _encoderDirection = value; RaisePropertyChanged(); }
         }
+        private int _positiveLimitPosition;
+        /// <summary>
+        /// 正限位位置 单位脉冲
+        /// </summary>
+        public int PositiveLimitPosition
+        {
+            get { return _positiveLimitPosition; }
+            set { _positiveLimitPosition = value;RaisePropertyChanged(); }
+        }
+
+        private int _negativeLimitPosition;
+        /// <summary>
+        /// 负限位位置，单位脉冲
+        /// </summary>
+        public int NegativeLimitPosition
+        {
+            get { return _negativeLimitPosition; }
+            set { _negativeLimitPosition = value; RaisePropertyChanged(); }
+        }
+        private int _timer = 0;
+       
     }
     public class MotorTypeMessage:BindableBase
     {
@@ -274,7 +313,54 @@ namespace UtilityTools.Modules.MotorTest.Model
             get { return _maxStrokeRange; }
             set { _maxStrokeRange = value; RaisePropertyChanged(); }
         }
+       
 
+    }
+    public class PlotViewPointMessage : BindableBase
+    {
+        private DateTime _date;
+        /// <summary>
+        /// 时间
+        /// </summary>
+        public DateTime Date
+        {
+            get { return _date; }
+            set { _date = value; RaisePropertyChanged(); }
+        }
+
+        private int _point;
+        /// <summary>
+        /// 位置
+        /// </summary>
+        public int Point
+        {
+            get { return _point; }
+            set { _point = value; RaisePropertyChanged(); }
+        }
+
+      
+    }
+    public class PlotViewSpeedMessage : BindableBase
+    {
+        private DateTime _speedDate;
+        /// <summary>
+        /// 速度的时间
+        /// </summary>
+        public DateTime SpeedDate
+        {
+            get { return _speedDate; }
+            set { _speedDate = value; RaisePropertyChanged(); }
+        }
+
+        private double _speed;
+        /// <summary>
+        /// 速度
+        /// </summary>
+        public double Speed
+        {
+            get { return _speed; }
+            set { _speed = value; RaisePropertyChanged(); }
+        }
     }
 
 }

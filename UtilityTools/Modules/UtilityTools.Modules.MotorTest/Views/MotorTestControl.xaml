@@ -32,7 +32,7 @@
                             <!-- 点击时略微缩小 -->
                         </Setter.Value>
                     </Setter>
-                    </Trigger>
+                </Trigger>
             </Style.Triggers>
         </Style>
         <Style x:Key="CircleButtonStyle" TargetType="Button">
@@ -72,7 +72,7 @@
             </Setter>
         </Style>
     </UserControl.Resources>
-    
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -84,6 +84,20 @@
         </Grid.ColumnDefinitions>
 
         <TabControl>
+            <TabItem Header="位置曲线图">
+                <oxy:PlotView Model="{Binding MotorplotModel}"  Grid.Row="0" Grid.Column="0"  Foreground="Black" >
+                    <oxy:PlotView.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="自适应"
+                          Command="{Binding AutoAdjustCommand}"  CommandParameter="point" />
+                            <MenuItem Header="清除"
+                          Command="{Binding ClearMonitorCommand}"  CommandParameter="point"/>
+                            <MenuItem Header="另存为"
+                          Command="{Binding SaveToFileCommand}" CommandParameter="point" />
+                        </ContextMenu>
+                    </oxy:PlotView.ContextMenu>
+                </oxy:PlotView>
+            </TabItem>
             <TabItem Header="速度曲线图">
                 <oxy:PlotView Model="{Binding MotorSpeedplotModel}"  Grid.Row="0" Grid.Column="0" Foreground="Black">
                     <oxy:PlotView.ContextMenu>
@@ -93,25 +107,12 @@
                             <MenuItem Header="清除"
                                       Command="{Binding ClearMonitorCommand}"  CommandParameter="speed"/>
                             <MenuItem Header="另存为"
-                                      Command="{Binding SaveMonitorInfoCommand}" CommandParameter="speed" />
+                                      Command="{Binding SaveToFileCommand}" CommandParameter="speed" />
                         </ContextMenu>
                     </oxy:PlotView.ContextMenu>
                 </oxy:PlotView>
             </TabItem>
-            <TabItem Header="位置曲线图">
-                <oxy:PlotView Model="{Binding MotorplotModel}"  Grid.Row="0" Grid.Column="0"  Foreground="Black" >
-                    <oxy:PlotView.ContextMenu>
-                        <ContextMenu>
-                            <MenuItem Header="自适应"
-                                      Command="{Binding AutoAdjustCommand}"  CommandParameter="point" />
-                            <MenuItem Header="清除"
-                                      Command="{Binding ClearMonitorCommand}"  CommandParameter="point"/>
-                            <MenuItem Header="另存为"
-                                      Command="{Binding SaveMonitorInfoCommand}" CommandParameter="point" />
-                        </ContextMenu>
-                    </oxy:PlotView.ContextMenu>
-                </oxy:PlotView>
-            </TabItem>
+
         </TabControl>
         <TabControl  Grid.Row="0" Grid.Column="1" >
             <TabItem Header="测试结果">
@@ -139,12 +140,12 @@
                                 <TextBlock Text="{Binding}" />
                             </DataTemplate>
                         </ListView.ItemTemplate>
-                        
+
                     </ListView>
                 </DockPanel>
             </TabItem>
         </TabControl >
-        
+
         <Grid  Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -219,18 +220,30 @@
             <TabControl>
                 <TabItem Header="功能测试">
                     <StackPanel >
-                        <Button Content="开始测试" Command="{Binding TestAllCommand}"/>
-                        <Button Content="电机状态读取" Command="{Binding GetMotorStatusCommand}"/>
-                        <Button Content="初始化零点位置" Command="{Binding AutomaticZeroInitializationCommand}"/>
+                        <UniformGrid Columns="4" >
+                            <Button Content="开始测试" Command="{Binding TestAllCommand}" Margin="10"/>
+                            <Button Content="丝杆性能测试" Command="{Binding TestSmoothnessDetectionCommand}" Margin="10"/>
+                            <Button Content="设中心零点" Command="{Binding AutomaticZeroInitializationCommand}" Margin="10"/>
+                            <Button Content="使用软限位" Command="{Binding SetMotorLimitEnableCommand}" CommandParameter="true" Margin="10" />
+                            <Button Content="取消软限位" Command="{Binding SetMotorLimitEnableCommand}" CommandParameter="false" Margin="10" />
+                            <Button Content="获取限位掩码" Command="{Binding GetMotorLimitEnableCommand}" Margin="10"/>
+                            <Button Content="测试极限性能" Command="{Binding TestPerformanceCommand}" Margin="10"/>
+                            <Button Content="关闭极限性能" Command="{Binding NoPerformanceCommand}" Margin="10"/>
+                            
+                        </UniformGrid>
                     </StackPanel>
                 </TabItem>
                 <TabItem Header="电机状态">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="11*"/>
+                            <ColumnDefinition Width="25*"/>
+                            <ColumnDefinition Width="161*"/>
+                            <ColumnDefinition Width="197*"/>
                         </Grid.ColumnDefinitions>
-                        <UniformGrid Columns="2" Rows="5">
+                        <UniformGrid Columns="2" Rows="8" Grid.ColumnSpan="3">
+                            <Label Content="x轴电机信息"/>
+                            <Label/>
                             <Label Content="控制模式"/>
                             <Label Content="{Binding MotorModelX.MotorParams.CtrType}"/>
                             <Label Content="使能状态"/>
@@ -241,8 +254,14 @@
                             <Label Content="{Binding MotorModelX.MotorParams.MoveDirection}"/>
                             <Label Content="限位状态"/>
                             <Label Content="{Binding MotorModelX.MotorParams.LimitedState}"/>
+                            <Label Content="软正限位状态"/>
+                            <Label Content="{Binding MotorModelX.MotorParams.SPLimted}"/>
+                            <Label Content="软负限位状态"/>
+                            <Label Content="{Binding MotorModelX.MotorParams.SNLimted}"/>
                         </UniformGrid>
-                        <UniformGrid Columns="2" Rows="5" Grid.Column="1">
+                        <UniformGrid Columns="2" Rows="8" Grid.Column="3">
+                            <Label Content="y轴电机信息"/>
+                            <Label />
                             <Label Content="控制模式"/>
                             <Label Content="{Binding MotorModelY.MotorParams.CtrType}"/>
                             <Label Content="使能状态"/>
@@ -253,11 +272,15 @@
                             <Label Content="{Binding MotorModelY.MotorParams.MoveDirection}"/>
                             <Label Content="限位状态"/>
                             <Label Content="{Binding MotorModelY.MotorParams.LimitedState}"/>
+                            <Label Content="软正限位状态"/>
+                            <Label Content="{Binding MotorModelY.MotorParams.SPLimted}"/>
+                            <Label Content="软负限位状态"/>
+                            <Label Content="{Binding MotorModelY.MotorParams.SNLimted}"/>
                         </UniformGrid>
                     </Grid>
                 </TabItem>
             </TabControl>
-          
+
         </Grid>
     </Grid>
 </UserControl>

@@ -71,7 +71,14 @@ namespace UtilityTools.Modules.MotorTest.Protocol
         [Description("设置电机软限位最小值")]
         CMD_SET_MINSPOS = 0x0222,
 
+        [Description("设置最大开环速度")]
+        CMD_SET_MAXCLS = 0X0223,
 
+        [Description("设置最小开环速度")]
+        CMD_SET_MINCLS = 0X0224,
+
+        [Description("获取电机当前限位掩码状态")]
+        CMD_GET_SLIM = 0x0312,
     }
 
     /// <summary>
@@ -369,6 +376,56 @@ namespace UtilityTools.Modules.MotorTest.Protocol
             writer.Write((byte)motorId);
             writer.Write((byte)controlMode);
             return GetCmd(EnumSelfMotorCmdType.CMD_SET_MCTL, writer.EndWrite());
+        }
+
+        /// <summary>
+        /// 设置电机最小闭环速度
+        /// </summary>
+        /// <param name="motorId"></param>
+        /// <param name="controlMode"></param>
+        /// <returns></returns>
+        public static byte[] SetMotorControlMinCls(EnumMotorId motorId, Int32 controlMode)
+        {
+            ByteWriter writer = new ByteWriter(36);
+            writer.Write((byte)motorId);
+            writer.Write((byte)controlMode);
+            return GetCmd(EnumSelfMotorCmdType.CMD_SET_MINCLS, writer.EndWrite());
+        }
+
+        /// <summary>
+        /// 设置电机最大闭环速度
+        /// </summary>
+        /// <param name="motorId"></param>
+        /// <param name="controlMode"></param>
+        /// <returns></returns>
+        public static byte[] SetMotorControlMaxCls(EnumMotorId motorId, Int32 controlMode)
+        {
+            ByteWriter writer = new ByteWriter(36);
+            writer.Write((byte)motorId);
+            writer.Write((byte)controlMode);
+            return GetCmd(EnumSelfMotorCmdType.CMD_SET_MAXCLS, writer.EndWrite());
+        }
+
+        /// <summary>
+        /// 设置软件的限位使能掩码
+        /// </summary>
+        /// <param name="motorId">电机名称</param>
+        /// <param name="controlMode"></param>
+        /// <returns></returns>
+        public static byte[] SetMotorLimitEnable(EnumMotorId motorId, byte limitEnableMask)
+        {
+            ByteWriter writer = new ByteWriter(36);
+            writer.Write((byte)motorId);
+            writer.Write(limitEnableMask);
+            return GetCmd(EnumSelfMotorCmdType.CMD_SET_SLIM, writer.EndWrite());
+        }
+        
+
+        public static byte[] GetMotorLimitEnable(EnumMotorId motorId)
+        {
+            ByteWriter writer = new ByteWriter(36);
+            writer.Write((byte)motorId);
+            return GetCmd(EnumSelfMotorCmdType.CMD_GET_SLIM, writer.EndWrite());
         }
 
     }
