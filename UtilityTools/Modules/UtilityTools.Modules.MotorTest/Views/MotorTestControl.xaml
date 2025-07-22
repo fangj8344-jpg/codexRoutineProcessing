@@ -229,6 +229,7 @@
                             <Button Content="获取限位掩码" Command="{Binding GetMotorLimitEnableCommand}" Margin="10"/>
                             <Button Content="测试极限性能" Command="{Binding TestPerformanceCommand}" Margin="10"/>
                             <Button Content="关闭极限性能" Command="{Binding NoPerformanceCommand}" Margin="10"/>
+                            <Button Content="保存" Command="{Binding SerilizeCommand}" Margin="10"/>
                             <Button Content="加载" Command="{Binding DeserilizeCommand}" Margin="10"/>
 
                         </UniformGrid>

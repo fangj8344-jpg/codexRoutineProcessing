@@ -344,6 +344,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             NoPerformanceCommand = new DelegateCommand(NoPerformance);
             SaveToFileCommand = new DelegateCommand<string>(SaveToFile);
             TestSmoothnessDetectionCommand = new DelegateCommand(TestSmoothnessDetection);
+            SerilizeCommand = new DelegateCommand(Serilize);
             DeserilizeCommand = new DelegateCommand(Deserilize);
             Log = new ObservableCollection<string>();
             MyCustomEvent += ParserMotorStatus;
@@ -420,13 +421,14 @@ namespace UtilityTools.Modules.MotorTest.Model
             {
                 while (_isPerformance)
                 {
-                    if (_byteQueue.Count <=10)
+                    if (_byteQueue.Count == 0)
                     {
                         var getMotor2Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_2);
                         SendData(getMotor2Statuscmd);
                         var getMotor1Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_1);
                         SendData(getMotor1Statuscmd);
                     }
+                    Thread.Sleep(1); 
                     
                 }
             });
@@ -452,6 +454,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                 await SmoothnessDetection(EnumMotorId.MOTOR_2);
             }
             _work.CancelAsync();
+            Serilize();
         }
         public DelegateCommand TestAllCommand { get; set; }
         private async void TestAll()
@@ -469,10 +472,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             SendImportantData(ystopcmd);
 
 
-            _work = new BackgroundWorker();
-            _work.WorkerSupportsCancellation = true;
-            _work.DoWork += Worker_DoWork;
-            _work?.RunWorkerAsync();
+          
 
            
 
@@ -482,7 +482,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             {
                 DispathcherInvoke($"电机移动测试失败，测试退出");
                 _dialogHostService.Information("提示","请先修复电机移动问题");
-                _work.CancelAsync();
+           
                 return;
             }
 
@@ -491,16 +491,21 @@ namespace UtilityTools.Modules.MotorTest.Model
             {
                 _dialogHostService.Information("提示", "请先修复编码器反向问题");
                 DispathcherInvoke($"电机编码器测试失败，测试退出");
-                _work.CancelAsync();
+          
                 return;
             }
+            _work = new BackgroundWorker();
+            _work.WorkerSupportsCancellation = true;
+            _work.DoWork += Worker_DoWork;
+            _work?.RunWorkerAsync();
 
             result = await LimitSwitchTest(EnumMotorId.MOTOR_1);
             if (result != true)
             {
                 DispathcherInvoke($"x轴电机限位测试失败，测试退出");
-                _dialogHostService.Information("提示", "请先修复编码器反向问题");
+                _dialogHostService.Information("提示", "请先修复限位反向问题");
                 _work.CancelAsync();
+                _work = null;
                 return;
             }
             result = await LimitSwitchTest(EnumMotorId.MOTOR_2);
@@ -509,6 +514,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                 DispathcherInvoke($"y轴电机限位测试失败，测试退出");
                 _dialogHostService.Information("提示", "请先修复限位反向问题");
                 _work.CancelAsync();
+                _work = null;
                 return;
             }
             result = await FullTravelTest(EnumMotorId.MOTOR_1);
@@ -519,15 +525,12 @@ namespace UtilityTools.Modules.MotorTest.Model
             
             result = await LimitPositioningAccuracyDetection(EnumMotorId.MOTOR_2);
 
-            for (int i = 0; i < 25; i++)
-            {
-                await SmoothnessDetection(EnumMotorId.MOTOR_1);
-                await SmoothnessDetection(EnumMotorId.MOTOR_2);
-            }
+          
 
             //await SmoothnessDetection();
 
             _work.CancelAsync();
+            _work = null;
             Serilize();
 
         }
@@ -626,7 +629,7 @@ namespace UtilityTools.Modules.MotorTest.Model
            
             while (_work != null && _work.CancellationPending != true)
             {
-                if (_byteQueue.Count < 100)
+                if (_byteQueue.Count == 0)
                 {
                     var getMotor2Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_2);
                     SendData(getMotor2Statuscmd);
@@ -668,7 +671,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                 var ygotocmd = SelfMotorProtocol.SetMotorGoTo(EnumMotorId.MOTOR_2, EnumMotorUnit.Pulse, 100000);
                 SendImportantData(xgotocmd);
                 SendImportantData(ygotocmd);
-                Thread.Sleep(2000);
+                Thread.Sleep(5000);
                 var xStopcmd = SelfMotorProtocol.SetMotorOperatingStatus(EnumMotorId.MOTOR_1, EnumMotorOperatingState.Stop);
                 var yStopcmd = SelfMotorProtocol.SetMotorOperatingStatus(EnumMotorId.MOTOR_2, EnumMotorOperatingState.Stop);
                 SendImportantData(xStopcmd);
@@ -676,7 +679,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                 Thread.Sleep(2000);
                 var xposEnd = _xPlotViewPointMessage[_xPlotViewPointMessage.Count - 1].Point;
                 var yposEnd = _yPlotViewPointMessage[_yPlotViewPointMessage.Count - 1].Point;
-                if (yposEnd - yposStart < 200)
+                if (yposEnd - yposStart < 50)
                 {
                     TestMessage.TestProject = "Y轴编码器测试";
                     TestMessage.TestResult = "不合格";
@@ -694,7 +697,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     TestMessage.Description = "编码器正常";
                     DispathcherInvoke($"电机测试yEnd:{yposEnd},yStart:{yposStart} 行程:{yposEnd - yposStart}");
                 }
-                if (xposEnd - xposStart < 200)
+                if (xposEnd - xposStart < 50)
                 {
                     TestMessage2.TestProject = "X轴编码器测试";
                     TestMessage2.TestResult = "不合格";
@@ -1167,7 +1170,8 @@ namespace UtilityTools.Modules.MotorTest.Model
                         posMessage.negativeLimitPositionendPos = motorModel.MotorParams.Pos;
                         int fullStrokeOfMotor = posMessage.positiveLimitPosition - posMessage.negativeLimitPositionendPos;
                         if ((fullStrokeOfMotor < 170000 && fullStrokeOfMotor > 160000)
-                        || (fullStrokeOfMotor < 130000 && fullStrokeOfMotor > 120000))
+                        || (fullStrokeOfMotor < 130000 && fullStrokeOfMotor > 120000)
+                         || (fullStrokeOfMotor < 240000 && fullStrokeOfMotor > 210000))
                         {
                             if (_limtedPos == null)
                             {
@@ -1525,13 +1529,13 @@ namespace UtilityTools.Modules.MotorTest.Model
             {
                 timePosStallDetectionList.Clear();
             }
-            for (int i = 0; i < 60; i++)
+            for (int i = 0; i < 120; i++)
             {
                 timePosStallDetectionList.Add(motorModel.MotorParams.Pos);
                 
                 if (i > 4)
                 {
-                    if (Math.Abs(timePosStallDetectionList[timePosStallDetectionList.Count - 1] - timePosStallDetectionList[timePosStallDetectionList.Count - 4]) < 200)
+                    if (Math.Abs(timePosStallDetectionList[timePosStallDetectionList.Count - 1] - timePosStallDetectionList[timePosStallDetectionList.Count - 4]) < 30)
                     {
                         var Stopcmd = SelfMotorProtocol.SetMotorOperatingStatus(enumMotorId, EnumMotorOperatingState.Stop);
                         SendImportantData(Stopcmd);
@@ -1553,7 +1557,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     DispathcherInvoke($"发送负向限位退出");
                     return;
                 }
-                Thread.Sleep(1000);
+                Thread.Sleep(500);
             }
             DispathcherInvoke($"测试堵转功能退出");
 
@@ -2059,7 +2063,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                 {
                     if (_stopwatch == null)
                     {
-                        _stopwatch = new Stopwatch();
+                        
                     }
                     if (_stopwatch.IsRunning == false)
                     {
@@ -2081,6 +2085,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     // Debug.WriteLine($"发送时间间隔{time}");
 
                     _waitingReply = new TaskCompletionSource<string>();
+                    Thread.Sleep(1);
                     try
                     {
                         string result = await _waitingReply.Task.WaitAsync(TimeSpan.FromMilliseconds(300));
@@ -2308,7 +2313,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             }
         }
 
-      
+        public DelegateCommand SerilizeCommand { get; set; }
         private  void Serilize()
         {
             FolderBrowserDialog dialog = new FolderBrowserDialog();
