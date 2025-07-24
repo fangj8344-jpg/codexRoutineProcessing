@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Services\UtilityTools.Services.Interfaces\UtilityTools.Services.Interfaces.csproj" />
     <ProjectReference Include="..\..\UtilityTools.Core\UtilityTools.Core.csproj" />
+    <ProjectReference Include="..\UtilityTools.Modules.AutoFocusTest\UtilityTools.Modules.AutoFocusTest.csproj" />
   </ItemGroup>
   
   <Target Name="CopyTargetFiles" AfterTargets="PostBuildEvent">

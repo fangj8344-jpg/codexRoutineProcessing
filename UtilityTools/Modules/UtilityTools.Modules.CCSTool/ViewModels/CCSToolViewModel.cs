@@ -24,10 +24,11 @@
  *----------------------------------------------------------------*/
 #endregion
 
+using NLog;
+using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Legends;
 using OxyPlot.Series;
-using OxyPlot;
 using Prism.Commands;
 using Prism.Events;
 using Prism.Ioc;
@@ -35,22 +36,22 @@ using Prism.Services.Dialogs;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO.Ports;
+using System.ComponentModel;
 using System.IO;
+using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
+using System.Windows.Documents;
+using System.Windows.Threading;
 using UtilityTools.Core.Dialog;
+using UtilityTools.Core.Model;
 using UtilityTools.Core.Mvvm;
 using UtilityTools.Modules.CCSTool.Model;
 using UtilityTools.Services.Interfaces;
 using UtilityTools.Services.Interfaces.IServices;
-using NLog;
-using UtilityTools.Core.Model;
-using System.ComponentModel;
-using System.Windows.Threading;
 
 namespace UtilityTools.Modules.CCSTool.ViewModels
 {
@@ -88,7 +89,7 @@ namespace UtilityTools.Modules.CCSTool.ViewModels
         private readonly IDialogHostService _dialogHostService;
         private readonly IContainerProvider _containerProvider;
         private System.Timers.Timer _timer;
-
+        
         LineSeries _vacuum1;
         LineSeries _vacuum2;
         LineSeries _vacuum3;
@@ -117,7 +118,7 @@ namespace UtilityTools.Modules.CCSTool.ViewModels
             get { return _modelA; }
             set { _modelA = value; RaisePropertyChanged(); }
         }
-
+        
         private CCSModel _modelB;
 
         public CCSModel ModelB
@@ -126,6 +127,7 @@ namespace UtilityTools.Modules.CCSTool.ViewModels
             set { _modelB = value; RaisePropertyChanged(); }
         }
 
+       
         #endregion
 
         #region ------------Command------------
@@ -303,6 +305,9 @@ namespace UtilityTools.Modules.CCSTool.ViewModels
         {
             Service.SendMsg(msg);
         }
+       
+
+    
         #endregion
 
         #region ------------StaticMethod------------

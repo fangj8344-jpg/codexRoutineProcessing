@@ -12,37 +12,66 @@
     <UserControl.Resources>
         <DataTemplate x:Key="CCSItemTemplate"
                       DataType="{x:Type model:IntSliderInfoModel}">
-            <DockPanel LastChildFill="True"
+                <DockPanel LastChildFill="True"
                        VerticalAlignment="Center">
-                <Label Content="{Binding Title}"
+                    <Label Content="{Binding Title}"
                        HorizontalContentAlignment="Center"
                        VerticalContentAlignment="Center"
                        DockPanel.Dock="Left" />
-                <TextBox Text="{Binding Value}"
+                    <TextBox Text="{Binding Value}"
                          HorizontalContentAlignment="Center"
                          VerticalContentAlignment="Center"
                          DockPanel.Dock="Right" />
-                <Slider Value="{Binding Value}"
+                    <Slider Value="{Binding Value}"
                         Minimum="{Binding MinValue}"
                         Maximum="{Binding MaxValue}"
                         DockPanel.Dock="Left"
                         attach:SliderAttached.IsSupportWheel="True" />
-            </DockPanel>
-        </DataTemplate>
+                </DockPanel>
+            </DataTemplate>
     </UserControl.Resources>
-
-    <DockPanel LastChildFill="True">
-        <Label Content="{Binding Title}"
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="5*"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions> 
+        <DockPanel LastChildFill="True">
+            <Label Content="{Binding Title}"
                HorizontalContentAlignment="Center"
                VerticalContentAlignment="Center"
                DockPanel.Dock="Top" />
-        <ItemsControl  ItemsSource="{Binding ControlItems}"
+            <ItemsControl  ItemsSource="{Binding ControlItems}"
                        ItemTemplate="{StaticResource CCSItemTemplate}">
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <UniformGrid Columns="1" />
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-        </ItemsControl>
-    </DockPanel>
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="1" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+        </DockPanel>
+
+        <UniformGrid Grid.Row="1"
+                         Rows="1">
+            <Label Content="变化间隔(ms)"
+                   HorizontalContentAlignment="Center"
+                   VerticalContentAlignment="Center"/>
+            <TextBox Text="{Binding Interval}"
+                     TextAlignment="Center"
+                     VerticalAlignment="Center"/>
+            <Label Content="调节窗口"
+                       HorizontalContentAlignment="Center"
+                       VerticalContentAlignment="Center" />
+            <TextBox Text="{Binding Width}"
+                         TextAlignment="Center"
+                         VerticalAlignment="Center" />
+            <Label Content="调节步长"
+                       HorizontalContentAlignment="Center"
+                       VerticalContentAlignment="Center" />
+            <TextBox Text="{Binding Step}"
+                         TextAlignment="Center"
+                         VerticalAlignment="Center" />
+            <Button Content="wobble" Command="{Binding WobbleCommand}"/>
+
+        </UniformGrid>
+    </Grid>
 </UserControl>
