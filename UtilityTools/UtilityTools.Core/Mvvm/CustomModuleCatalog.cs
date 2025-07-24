@@ -185,7 +185,8 @@ namespace UtilityTools.Core.Mvvm
 
             if (!Directory.Exists(ModulePath))
             {
-                throw new InvalidOperationException($"DirectoryNotFound: {ModulePath}");
+                Directory.CreateDirectory(ModulePath);
+               
             }
 
             AppDomain currentDomain = AppDomain.CurrentDomain;

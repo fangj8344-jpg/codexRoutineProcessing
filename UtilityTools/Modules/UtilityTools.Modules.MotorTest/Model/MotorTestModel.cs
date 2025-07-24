@@ -81,6 +81,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         private TaskCompletionSource<string> _stallDetectiotcs;
         private List<int> timePosStallDetectionList;
         private Stopwatch _stopwatch;
+        private Stopwatch _testTime;
         private long elapsedTime;
         private int[] _limtedPos;
         private BackgroundWorker _work;
@@ -448,13 +449,33 @@ namespace UtilityTools.Modules.MotorTest.Model
             _work.WorkerSupportsCancellation = true;
             _work.DoWork += Worker_DoWork;
             _work?.RunWorkerAsync();
-            for (int i = 0; i < 25; i++)
+            if (_testTime == null)
             {
-                await SmoothnessDetection(EnumMotorId.MOTOR_1);
-                await SmoothnessDetection(EnumMotorId.MOTOR_2);
+                _testTime = new Stopwatch();
             }
-            _work.CancelAsync();
+            _testTime.Start();
+            for (int i = 0; i < 60; i++)
+            {
+
+               bool result1 = await SmoothnessDetection(EnumMotorId.MOTOR_1);
+               bool result2 = await SmoothnessDetection(EnumMotorId.MOTOR_2);
+               if (result1 == false || result2 == false)
+               {
+                    _dialogHostService.Information("提示", "丝杆顺滑度测试错误");
+                    return;
+               }
+               if(_testTime.ElapsedMilliseconds /1000.0 / 60 > 60)
+               {
+                    break;
+                }
+            }
+            _dialogHostService.Information("提示", "丝杆顺滑度测试完毕请选择保存路径");
             Serilize();
+            _work.CancelAsync();
+            _testTime.Stop();
+            _testTime = null;
+
+
         }
         public DelegateCommand TestAllCommand { get; set; }
         private async void TestAll()
@@ -1285,13 +1306,14 @@ namespace UtilityTools.Modules.MotorTest.Model
                         TestMessage.TestValue = "不正常";
                         TestMessage.StandardValue = "正常";
                         TestMessage.Description = "电机堵转，请检查";
+                        DispathcherInvoke($"电机测试丝杆测试堵转");
 
                     }
                     else if (result == "PhyForwardLimited")
                     {
 
-                       
-                       
+                        
+
                     }
                     else if (result == "PhyBackwardLimited")
                     {
@@ -1302,6 +1324,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                         TestMessage.Description = "正限位反向";
                         var stopcmd = SelfMotorProtocol.SetMotorOperatingStatus(enumMotorId, EnumMotorOperatingState.Stop);
                         SendImportantData(stopcmd);
+                        DispathcherInvoke($"电机测试丝杆正限位反向");
                     }
                     else
                     {
@@ -1309,7 +1332,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                         TestMessage.TestValue = "不正常";
                         TestMessage.StandardValue = "正常";
                         TestMessage.Description = result;
-
+                        DispathcherInvoke($"电机测试丝杆异常错误");
                     }
                 }
                 catch (Exception ex)
@@ -1318,6 +1341,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     TestMessage.TestValue = "不正常";
                     TestMessage.StandardValue = "正常";
                     TestMessage.Description = $"请检测网络连接";
+                    DispathcherInvoke($"电机测试丝杆异常错误{ex}");
                 }
             });
             if (result != "PhyForwardLimited")
@@ -1343,6 +1367,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                         TestMessage.TestValue = "不正常";
                         TestMessage.StandardValue = "正常";
                         TestMessage.Description = "电机堵转，请检查";
+                        DispathcherInvoke($"电机测试丝杆堵转");
                     }
                     else if (result == "PhyForwardLimited")
                     {
@@ -1352,7 +1377,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                         TestMessage.Description = "负限位反向";
                         var stopcmd = SelfMotorProtocol.SetMotorOperatingStatus(enumMotorId, EnumMotorOperatingState.Stop);
                         SendImportantData(stopcmd);
-
+                        DispathcherInvoke($"电机测试负限位反向");
                     }
                     else if (result == "PhyBackwardLimited")
                     {
@@ -1367,6 +1392,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     TestMessage.TestValue = "不正常";
                     TestMessage.StandardValue = "正常";
                     TestMessage.Description = $"检测时间超时:{ex}";
+                    DispathcherInvoke($"电机测试错误{ex}");
                 }
 
             });
@@ -1406,6 +1432,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                         TestMessage.TestValue = "不正常";
                         TestMessage.StandardValue = "正常";
                         TestMessage.Description = "电机堵转，请检查";
+                        DispathcherInvoke($"电机丝杆测试堵转");
                     }
                     else if (result == "PhyForwardLimited")
                     {
@@ -1420,6 +1447,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                         TestMessage.Description = "正限位限位反向";
                         var stopcmd = SelfMotorProtocol.SetMotorOperatingStatus(enumMotorId, EnumMotorOperatingState.Stop);
                         SendImportantData(stopcmd);
+                        DispathcherInvoke($"电机丝杆测试正限位反向");
                     }
                 }
                 catch (Exception ex)
@@ -1428,6 +1456,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     TestMessage.TestValue = "不正常";
                     TestMessage.StandardValue = "正常";
                     TestMessage.Description = $"检测时间超时:{ex}";
+                    DispathcherInvoke($"电机丝杆测试错误{ex}");
                 }
 
             });
@@ -1454,7 +1483,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     TestMessage.TestValue = "请分析速度曲线";
                     TestMessage.StandardValue = "正常";
                     TestMessage.Description = $"请分析速度曲线";
-                    return false;
+                    return true;
                 }
             }
 
