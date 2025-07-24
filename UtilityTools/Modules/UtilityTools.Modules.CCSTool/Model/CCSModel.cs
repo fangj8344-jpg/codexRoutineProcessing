@@ -134,8 +134,8 @@ namespace UtilityTools.Modules.CCSTool.Model
                         _oldValue = item.Value;
                     }
                 }
-                _maxValue =_coarseValue + Width;
-                _minValue =_coarseValue - Width;
+                _maxValue = _ch7.Value + Width;
+                _minValue = _ch7.Value - Width;
                 if (_maxValue > UInt16.MaxValue)
                     _maxValue = UInt16.MaxValue;
                 if (_minValue < 0)
