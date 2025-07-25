@@ -56,7 +56,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             var netUdp = new UdpNetAsyncDevice();
             netUdp.Name = "升级网口";
             netUdp.DeviceInstance.TargetIp = "192.168.1.88";
-            netUdp.DeviceInstance.TargetPort = 5002;
+            netUdp.DeviceInstance.TargetPort = 5003;
             netUdp.DeviceInstance.HostIp = "192.168.1.33";
             netUdp.DeviceInstance.HostPort = 6585;
             netUdp.IsBinary = true;
@@ -688,16 +688,15 @@ namespace UtilityTools.Modules.MotorTest.Model
             {
                 var xposStart = _xPlotViewPointMessage[_xPlotViewPointMessage.Count - 1].Point;
                 var yposStart = _yPlotViewPointMessage[_yPlotViewPointMessage.Count - 1].Point;
-                var xgotocmd = SelfMotorProtocol.SetMotorGoTo(EnumMotorId.MOTOR_1, EnumMotorUnit.Pulse, 100000);
-                var ygotocmd = SelfMotorProtocol.SetMotorGoTo(EnumMotorId.MOTOR_2, EnumMotorUnit.Pulse, 100000);
+                var xgotocmd = SelfMotorProtocol.SetMotorGoTo(EnumMotorId.MOTOR_1, EnumMotorUnit.Pulse, 5000000);
+                var ygotocmd = SelfMotorProtocol.SetMotorGoTo(EnumMotorId.MOTOR_2, EnumMotorUnit.Pulse, 5000000);
                 SendImportantData(xgotocmd);
                 SendImportantData(ygotocmd);
-                Thread.Sleep(5000);
+                Thread.Sleep(2000);
                 var xStopcmd = SelfMotorProtocol.SetMotorOperatingStatus(EnumMotorId.MOTOR_1, EnumMotorOperatingState.Stop);
                 var yStopcmd = SelfMotorProtocol.SetMotorOperatingStatus(EnumMotorId.MOTOR_2, EnumMotorOperatingState.Stop);
                 SendImportantData(xStopcmd);
                 SendImportantData(yStopcmd);
-                Thread.Sleep(2000);
                 var xposEnd = _xPlotViewPointMessage[_xPlotViewPointMessage.Count - 1].Point;
                 var yposEnd = _yPlotViewPointMessage[_yPlotViewPointMessage.Count - 1].Point;
                 if (yposEnd - yposStart < 50)
@@ -2053,7 +2052,11 @@ namespace UtilityTools.Modules.MotorTest.Model
                 {
                     _byteQueue = new Queue<byte[]>();
                 }
-                _byteQueue.Enqueue(cmd);
+                if (_importantByteQueue == null || _importantByteQueue.Count == 0)
+                {
+                    _byteQueue.Enqueue(cmd);
+                }
+                
             }
             else if (SerialPortService.IsOpen) 
             {
@@ -2346,88 +2349,99 @@ namespace UtilityTools.Modules.MotorTest.Model
         private  void Serilize()
         {
             FolderBrowserDialog dialog = new FolderBrowserDialog();
+           
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.Cancel)
             {
+                Task.Run(() =>
+                {
 
-                var path = dialog.SelectedPath;
-                SaveToFile(path, "speed");
-                SaveToFile(path, "point");
-                string xPointjson = JsonConvert.SerializeObject(_xPlotViewPointMessage);
-                string yPointjson = JsonConvert.SerializeObject(_yPlotViewPointMessage);
-                string xSpeedjson = JsonConvert.SerializeObject(_xPlotViewSpeedMessage);
-                string ySpeedjson = JsonConvert.SerializeObject(_yPlotViewSpeedMessage);
-                string testMessgae = JsonConvert.SerializeObject(MotorTestMessages);   
-                // 获取当前时间并格式化为文件名安全的字符串
+                    var path = dialog.SelectedPath;
+                    SaveToFile(path, "speed");
+                    SaveToFile(path, "point");
+                    string xPointjson = JsonConvert.SerializeObject(_xPlotViewPointMessage);
+                    string yPointjson = JsonConvert.SerializeObject(_yPlotViewPointMessage);
+                    string xSpeedjson = JsonConvert.SerializeObject(_xPlotViewSpeedMessage);
+                    string ySpeedjson = JsonConvert.SerializeObject(_yPlotViewSpeedMessage);
+                    string testMessgae = JsonConvert.SerializeObject(MotorTestMessages);
+                    // 获取当前时间并格式化为文件名安全的字符串
 
-                string xPointjsonfilePathfileName = $"xPoint.json";
-                string xPointjsonfilePath = Path.Combine(path, xPointjsonfilePathfileName); // 组合完整路径
+                    string xPointjsonfilePathfileName = $"xPoint.json";
+                    string xPointjsonfilePath = Path.Combine(path, xPointjsonfilePathfileName); // 组合完整路径
 
-                string yPointjsonfilePathfileName = $"yPoint.json";
-                string yPointjsonfilePath = Path.Combine(path, yPointjsonfilePathfileName); // 组合完整路径
+                    string yPointjsonfilePathfileName = $"yPoint.json";
+                    string yPointjsonfilePath = Path.Combine(path, yPointjsonfilePathfileName); // 组合完整路径
 
-                string xSpeedjsonfilePathfileName = $"xSpeed.json";
-                string xSpeedjsonfilePath = Path.Combine(path, xSpeedjsonfilePathfileName); // 组合完整路径
+                    string xSpeedjsonfilePathfileName = $"xSpeed.json";
+                    string xSpeedjsonfilePath = Path.Combine(path, xSpeedjsonfilePathfileName); // 组合完整路径
 
-                string ySpeedjsonfilePathfileName = $"ySpeed.json";
-                string ySpeedjsonfilePath = Path.Combine(path, ySpeedjsonfilePathfileName); // 组合完整路径
+                    string ySpeedjsonfilePathfileName = $"ySpeed.json";
+                    string ySpeedjsonfilePath = Path.Combine(path, ySpeedjsonfilePathfileName); // 组合完整路径
 
-                string testMessgaefilePathfileName = $"testMessage.json";
-                string testMessgaejsonfilePath = Path.Combine(path, testMessgaefilePathfileName); // 组合完整路径
-                // 写入JSON数据
-                File.WriteAllText(xPointjsonfilePath, xPointjson);
-                File.WriteAllText(yPointjsonfilePath, yPointjson);
-                File.WriteAllText(xSpeedjsonfilePath, xSpeedjson);
-                File.WriteAllText(ySpeedjsonfilePath, ySpeedjson);
-                File.WriteAllText(testMessgaejsonfilePath, testMessgae);
+                    string testMessgaefilePathfileName = $"testMessage.json";
+                    string testMessgaejsonfilePath = Path.Combine(path, testMessgaefilePathfileName); // 组合完整路径
+                                                                                                      // 写入JSON数据
+                    File.WriteAllText(xPointjsonfilePath, xPointjson);
+                    File.WriteAllText(yPointjsonfilePath, yPointjson);
+                    File.WriteAllText(xSpeedjsonfilePath, xSpeedjson);
+                    File.WriteAllText(ySpeedjsonfilePath, ySpeedjson);
+                    File.WriteAllText(testMessgaejsonfilePath, testMessgae);
+                });
             }
+           
+           
            
 
         }
         public DelegateCommand DeserilizeCommand { get; set; }
         private void Deserilize()
         {
+
             FolderBrowserDialog dialog = new FolderBrowserDialog();
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.Cancel)
             {
-                var path = dialog.SelectedPath;
-                string xPointjsonfilePathfileName = $"xPoint.json";
-                string xPointjsonfilePath = Path.Combine(path, xPointjsonfilePathfileName); // 组合完整路径
+                Task.Run(() => 
+                {
+                    var path = dialog.SelectedPath;
+                    string xPointjsonfilePathfileName = $"xPoint.json";
+                    string xPointjsonfilePath = Path.Combine(path, xPointjsonfilePathfileName); // 组合完整路径
 
-                string yPointjsonfilePathfileName = $"yPoint.json";
-                string yPointjsonfilePath = Path.Combine(path, yPointjsonfilePathfileName); // 组合完整路径
+                    string yPointjsonfilePathfileName = $"yPoint.json";
+                    string yPointjsonfilePath = Path.Combine(path, yPointjsonfilePathfileName); // 组合完整路径
 
-                string xSpeedjsonfilePathfileName = $"xSpeed.json";
-                string xSpeedjsonfilePath = Path.Combine(path, xSpeedjsonfilePathfileName); // 组合完整路径
+                    string xSpeedjsonfilePathfileName = $"xSpeed.json";
+                    string xSpeedjsonfilePath = Path.Combine(path, xSpeedjsonfilePathfileName); // 组合完整路径
 
-                string ySpeedjsonfilePathfileName = $"ySpeed.json";
-                string ySpeedjsonfilePath = Path.Combine(path, ySpeedjsonfilePathfileName); // 组合完整路径
+                    string ySpeedjsonfilePathfileName = $"ySpeed.json";
+                    string ySpeedjsonfilePath = Path.Combine(path, ySpeedjsonfilePathfileName); // 组合完整路径
 
-                string testMessgaefilePathfileName = $"testMessage.json";
-                string testMessgaejsonfilePath = Path.Combine(path, testMessgaefilePathfileName); // 组合完整路径
+                    string testMessgaefilePathfileName = $"testMessage.json";
+                    string testMessgaejsonfilePath = Path.Combine(path, testMessgaefilePathfileName); // 组合完整路径
 
-                _xPlotViewPointMessage = JsonConvert.DeserializeObject<List<PlotViewPointMessage>>(File.ReadAllText(xPointjsonfilePath));
-                _yPlotViewPointMessage = JsonConvert.DeserializeObject<List<PlotViewPointMessage>>(File.ReadAllText(yPointjsonfilePath));
-                _xPlotViewSpeedMessage = JsonConvert.DeserializeObject<List<PlotViewSpeedMessage>>(File.ReadAllText(xSpeedjsonfilePath));
-                _yPlotViewSpeedMessage = JsonConvert.DeserializeObject<List<PlotViewSpeedMessage>>(File.ReadAllText(ySpeedjsonfilePath));
-                MotorTestMessages = JsonConvert.DeserializeObject<ObservableCollection<MotorTestMessage>>(File.ReadAllText(testMessgaejsonfilePath));
+                    _xPlotViewPointMessage = JsonConvert.DeserializeObject<List<PlotViewPointMessage>>(File.ReadAllText(xPointjsonfilePath));
+                    _yPlotViewPointMessage = JsonConvert.DeserializeObject<List<PlotViewPointMessage>>(File.ReadAllText(yPointjsonfilePath));
+                    _xPlotViewSpeedMessage = JsonConvert.DeserializeObject<List<PlotViewSpeedMessage>>(File.ReadAllText(xSpeedjsonfilePath));
+                    _yPlotViewSpeedMessage = JsonConvert.DeserializeObject<List<PlotViewSpeedMessage>>(File.ReadAllText(ySpeedjsonfilePath));
+                    MotorTestMessages = JsonConvert.DeserializeObject<ObservableCollection<MotorTestMessage>>(File.ReadAllText(testMessgaejsonfilePath));
 
-                _xSpeedPosLine.ItemsSource = _xPlotViewSpeedMessage;
-                _ySpeedPosLine.ItemsSource = _yPlotViewSpeedMessage;
-                _xSpeedPosLine.DataFieldX = "SpeedDate";
-                _xSpeedPosLine.DataFieldY = "Speed";
+                    _xSpeedPosLine.ItemsSource = _xPlotViewSpeedMessage;
+                    _ySpeedPosLine.ItemsSource = _yPlotViewSpeedMessage;
+                    _xSpeedPosLine.DataFieldX = "SpeedDate";
+                    _xSpeedPosLine.DataFieldY = "Speed";
 
-                _ySpeedPosLine.DataFieldX = "SpeedDate";
-                _ySpeedPosLine.DataFieldY = "Speed";
-                _xPosLine.ItemsSource = _xPlotViewPointMessage;
-                _yPosLine.ItemsSource = _yPlotViewPointMessage;
-                _xPosLine.DataFieldX = "Date";
-                _xPosLine.DataFieldY = "Point";
-                _yPosLine.DataFieldX = "Date";
-                _yPosLine.DataFieldY = "Point";
+                    _ySpeedPosLine.DataFieldX = "SpeedDate";
+                    _ySpeedPosLine.DataFieldY = "Speed";
+                    _xPosLine.ItemsSource = _xPlotViewPointMessage;
+                    _yPosLine.ItemsSource = _yPlotViewPointMessage;
+                    _xPosLine.DataFieldX = "Date";
+                    _xPosLine.DataFieldY = "Point";
+                    _yPosLine.DataFieldX = "Date";
+                    _yPosLine.DataFieldY = "Point";
 
-            
-                MotorSpeedplotModel.InvalidatePlot(true);
-                MotorplotModel.InvalidatePlot(true);
+
+                    MotorSpeedplotModel.InvalidatePlot(true);
+                    MotorplotModel.InvalidatePlot(true);
+                });
+                
             }
            
         }
