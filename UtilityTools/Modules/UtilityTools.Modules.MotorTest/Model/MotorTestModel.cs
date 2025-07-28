@@ -1,4 +1,5 @@
-﻿using MathNet.Numerics.Statistics;
+﻿using MaterialDesignThemes.Wpf;
+using MathNet.Numerics.Statistics;
 using Microsoft.VisualBasic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -32,6 +33,7 @@ using System.Windows.Media.Media3D;
 using UtilityTools.Core.Dialog;
 using UtilityTools.Core.Extension;
 using UtilityTools.Modules.MotorTest.Protocol;
+using UtilityTools.Modules.MotorTest.Views;
 using UtilityTools.Services.Interfaces.IServices;
 using UtilityTools.Services.Services;
 
@@ -86,7 +88,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         private int[] _limtedPos;
         private BackgroundWorker _work;
         private bool _isPerformance;
-
+        private bool _isDurabilityTest = false;
         private List<PlotViewPointMessage> _xPlotViewPointMessage;
         private List<PlotViewPointMessage> _yPlotViewPointMessage;
 
@@ -347,6 +349,9 @@ namespace UtilityTools.Modules.MotorTest.Model
             TestSmoothnessDetectionCommand = new DelegateCommand(TestSmoothnessDetection);
             SerilizeCommand = new DelegateCommand(Serilize);
             DeserilizeCommand = new DelegateCommand(Deserilize);
+            ShowThreeAzisTestModelViewModelCommand = new DelegateCommand(ShowThreeAzisTestModelViewModel);
+            ShutDownDurabilityTestCommand = new DelegateCommand(ShutDownDurabilityTest);
+            DurabilityTestgCommand = new DelegateCommand(DurabilityTest);
             Log = new ObservableCollection<string>();
             MyCustomEvent += ParserMotorStatus;
             _stopwatch = new Stopwatch();
@@ -477,6 +482,42 @@ namespace UtilityTools.Modules.MotorTest.Model
 
 
         }
+        public DelegateCommand DurabilityTestgCommand { get; set; }
+        private async void DurabilityTest()
+        {
+            _isDurabilityTest = true;
+
+            _work = new BackgroundWorker();
+            _work.WorkerSupportsCancellation = true;
+            _work.DoWork += Worker_DoWork;
+            _work?.RunWorkerAsync();
+            if (_testTime == null)
+            {
+                _testTime = new Stopwatch();
+            }
+            _testTime.Start();
+
+            while (true)
+            {
+                bool result1 = await SmoothnessDetection(EnumMotorId.MOTOR_1);
+                bool result2 = await SmoothnessDetection(EnumMotorId.MOTOR_2);
+                if (_isDurabilityTest == false)
+                {
+                    break;
+                }
+               
+            }
+            _dialogHostService.Information("提示", "丝杆顺滑度测试完毕请选择保存路径");
+            Serilize();
+            _work.CancelAsync();
+            _testTime.Stop();
+            _testTime = null;
+        }
+        public DelegateCommand ShutDownDurabilityTestCommand { get; set; }
+        private void ShutDownDurabilityTest()
+        {
+            _isDurabilityTest = false;
+        }
         public DelegateCommand TestAllCommand { get; set; }
         private async void TestAll()
         {
@@ -491,13 +532,6 @@ namespace UtilityTools.Modules.MotorTest.Model
             var ystopcmd = SelfMotorProtocol.SetMotorOperatingStatus(EnumMotorId.MOTOR_2, EnumMotorOperatingState.Stop);
             SendImportantData(xstopcmd);
             SendImportantData(ystopcmd);
-
-
-          
-
-           
-
-        
             var result = await TestMotorMove();
             if (result != true)
             {
@@ -1634,6 +1668,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                 }
             });
         }
+
         /// <summary>
         /// 自动初始化零点
         /// </summary>
@@ -2391,6 +2426,12 @@ namespace UtilityTools.Modules.MotorTest.Model
            
            
 
+        }
+        public DelegateCommand ShowThreeAzisTestModelViewModelCommand { get; set; }
+        private void ShowThreeAzisTestModelViewModel()
+        {
+            var threeAxisTestView = _containerProvider.Resolve<ThreeAxisTestModelWindowsView>(); 
+            threeAxisTestView.Show();
         }
         public DelegateCommand DeserilizeCommand { get; set; }
         private void Deserilize()

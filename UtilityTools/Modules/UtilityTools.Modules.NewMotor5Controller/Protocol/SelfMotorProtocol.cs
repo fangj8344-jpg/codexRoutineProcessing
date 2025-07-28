@@ -7,9 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 using UtilityTools.Core.Helper;
 using UtilityTools.Core.Protocol;
-using static OpenCvSharp.Stitcher;
 
-namespace UtilityTools.Modules.MotorTest.Protocol
+namespace UtilityTools.Modules.NewMotor5Controller.Protocol
 {
 
     /// <summary>
@@ -77,33 +76,8 @@ namespace UtilityTools.Modules.MotorTest.Protocol
         [Description("设置最小开环速度")]
         CMD_SET_MINCLS = 0X0224,
 
-
         [Description("获取电机当前限位掩码状态")]
         CMD_GET_SLIM = 0x0312,
-
-        [Description("获取电机当前最大软限位脉冲值")]
-        CMD_GET_MAXSPOS = 0x0321,
-        [Description("获取电机当前最小软限位脉冲值")]
-        CMD_GET_MINSPOS = 0x0322,
-        [Description("获取电机当前最大速度")]
-        CMD_GET_MAXCLS = 0x0323,
-        [Description("获取电机闭环最小速度")]
-        CMD_GET_MINCLS = 0x0324,
-        [Description("设置轴类型（0x00位移轴；0x01旋转轴）")]
-        CMD_SET_AXTYPE = 0x0510,
-
-        [Description("设置轴的参数单位类型（0x00表示脉冲，0x01表示um，0x02表示弧度）")]
-        CMD_SET_AXUNIT = 0x0512,
-
-        [Description("设置电机的类型，（0x00表示直流电机；0x01表示步进电机）")]
-        CMD_SET_MTYPE = 0x0514,
-
-        [Description("设置电机的参数转化系数")]
-        CMD_GET_AXCOEF = 0x0516,
-
-        [Description("设置电机补偿时候的臂长")]
-        CMD_SET_TLINK = 0x0516,
-
     }
     public enum EnumMotorAxisType
     {

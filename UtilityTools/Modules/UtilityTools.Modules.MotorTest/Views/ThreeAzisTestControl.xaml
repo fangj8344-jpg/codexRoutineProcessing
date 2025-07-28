@@ -1,0 +1,374 @@
+﻿<UserControl x:Class="UtilityTools.Modules.MotorTest.Views.ThreeAzisTestControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:oxy="http://oxyplot.org/wpf"
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+             xmlns:bh="clr-namespace:UtilityTools.Core.Behavior;assembly=UtilityTools.Core"
+             xmlns:local="clr-namespace:UtilityTools.Modules.MotorTest.Views"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <!-- 方向按钮的样式 -->
+        <Style x:Key="DirectionButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="LightGray"/>
+                </Trigger>
+                <!-- 鼠标按下时的样式 -->
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#CCCCCC"/>
+                    <!-- 点击时背景变深 -->
+                    <Setter Property="Foreground" Value="#333333"/>
+                    <Setter Property="BorderBrush" Value="#999999"/>
+                    <Setter Property="RenderTransform">
+                        <Setter.Value>
+                            <ScaleTransform ScaleX="0.95" ScaleY="0.95"/>
+                            <!-- 点击时略微缩小 -->
+                        </Setter.Value>
+                    </Setter>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="CircleButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="60"/>
+            <Setter Property="Height" Value="60"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <!-- 圆形背景 -->
+                            <Ellipse x:Name="BackgroundEllipse"
+                         Fill="{TemplateBinding Background}"
+                         Stroke="{TemplateBinding BorderBrush}"
+                         StrokeThickness="{TemplateBinding BorderThickness}"/>
+
+                            <!-- 按钮内容 -->
+                            <ContentPresenter HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  Margin="{TemplateBinding Padding}"/>
+                        </Grid>
+
+                        <!-- 鼠标悬停和点击效果 -->
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="BackgroundEllipse" Property="Fill" Value="#FF6666"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="BackgroundEllipse" Property="Fill" Value="#FF3333"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!-- 箭头按钮共用样式：统一大小、边框和交互效果 -->
+        <Style TargetType="Button" x:Key="ArrowButtonStyle">
+            <Setter Property="Width" Value="60"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Background" Value="#F0F0F0"/>
+            <Setter Property="BorderBrush" Value="#CCCCCC"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <!-- 圆角效果 -->
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border 
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4"
+                            SnapsToDevicePixels="True">
+                            <ContentPresenter 
+                                HorizontalAlignment="Center" 
+                                VerticalAlignment="Center"/>
+                        </Border>
+                        <!-- 交互触发器 -->
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#E0E0E0"/>
+                                <Setter Property="BorderBrush" Value="#AAAAAA"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#D0D0D0"/>
+                                <Setter Property="BorderBrush" Value="#999999"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <TabControl>
+            <TabItem Header="位置曲线图">
+                <oxy:PlotView Model="{Binding MotorplotModel}"  Grid.Row="0" Grid.Column="0"  Foreground="Black" >
+                    <oxy:PlotView.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="自适应"
+                      Command="{Binding AutoAdjustCommand}"  CommandParameter="point" />
+                            <MenuItem Header="清除"
+                      Command="{Binding ClearMonitorCommand}"  CommandParameter="point"/>
+                            <MenuItem Header="另存为"
+                      Command="{Binding SaveToFileCommand}" CommandParameter="point" />
+                        </ContextMenu>
+                    </oxy:PlotView.ContextMenu>
+                </oxy:PlotView>
+            </TabItem>
+            <TabItem Header="速度曲线图">
+                <oxy:PlotView Model="{Binding MotorSpeedplotModel}"  Grid.Row="0" Grid.Column="0" Foreground="Black">
+                    <oxy:PlotView.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="自适应"
+                                  Command="{Binding AutoAdjustCommand}"  CommandParameter="speed"/>
+                            <MenuItem Header="清除"
+                                  Command="{Binding ClearMonitorCommand}"  CommandParameter="speed"/>
+                            <MenuItem Header="另存为"
+                                  Command="{Binding SaveToFileCommand}" CommandParameter="speed" />
+                        </ContextMenu>
+                    </oxy:PlotView.ContextMenu>
+                </oxy:PlotView>
+            </TabItem>
+
+        </TabControl>
+        <TabControl  Grid.Row="0" Grid.Column="1" >
+            <TabItem Header="测试结果">
+                <TabControl>
+                    <TabItem Header="x轴测试结果">
+                        <DataGrid   AutoGenerateColumns="False" IsReadOnly="True"   Margin="50,0,50,0" ItemsSource="{Binding Model.XAxis.MotorTestMessages}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="测试项目" Binding ="{Binding TestProject}" />
+                                <DataGridTextColumn Header="测试结果" Binding="{Binding TestResult}"/>
+                                <DataGridTextColumn Header="测量值" Binding="{Binding TestValue}"/>
+                                <DataGridTextColumn Header="标准值" Binding="{Binding StandardValue}"/>
+                                <DataGridTextColumn Header="说明" Binding="{Binding Description}"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </TabItem>
+                    <TabItem Header="y轴测试结果">
+                        <DataGrid   AutoGenerateColumns="False" IsReadOnly="True"   Margin="50,0,50,0" ItemsSource="{Binding Model.YAxis.MotorTestMessages}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="测试项目" Binding ="{Binding TestProject}" />
+                                <DataGridTextColumn Header="测试结果" Binding="{Binding TestResult}"/>
+                                <DataGridTextColumn Header="测量值" Binding="{Binding TestValue}"/>
+                                <DataGridTextColumn Header="标准值" Binding="{Binding StandardValue}"/>
+                                <DataGridTextColumn Header="说明" Binding="{Binding Description}"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </TabItem>
+                    <TabItem Header="z轴测试结果">
+                        <DataGrid   AutoGenerateColumns="False" IsReadOnly="True"   Margin="50,0,50,0" ItemsSource="{Binding Model.ZAxis.MotorTestMessages}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="测试项目" Binding ="{Binding TestProject}" />
+                                <DataGridTextColumn Header="测试结果" Binding="{Binding TestResult}"/>
+                                <DataGridTextColumn Header="测量值" Binding="{Binding TestValue}"/>
+                                <DataGridTextColumn Header="标准值" Binding="{Binding StandardValue}"/>
+                                <DataGridTextColumn Header="说明" Binding="{Binding Description}"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </TabItem>
+                    
+                </TabControl>
+               
+            </TabItem>
+            <TabItem Header="日志信息">
+                <DockPanel LastChildFill="True">
+                    <ListView ItemsSource="{Binding Log}"
+                          VerticalAlignment="Top">
+                        <ListView.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="清除" Command="{Binding ClearLogCommand}"/>
+                            </ContextMenu>
+                        </ListView.ContextMenu>
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" />
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+
+                    </ListView>
+                </DockPanel>
+            </TabItem>
+        </TabControl >
+
+        <Grid  Grid.Row="1" Cursor="">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <!-- 最外层椭圆，作为背景容器 -->
+            <Ellipse Width="200" Height="200" Fill="#FF333333"/>
+            <Grid Width="180" Height="180" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <!-- 中间显示区域的椭圆 -->
+                <Ellipse Fill="#FF444444" Width="80" Height="80" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Ellipse.Effect>
+                        <DropShadowEffect BlurRadius="5" ShadowDepth="0" Color="Black"/>
+                    </Ellipse.Effect>
+                </Ellipse>
+                <!-- 用于显示角度等信息的文本块 -->
+                <Button Content="停止" Style="{StaticResource CircleButtonStyle}"  Command="{Binding MoveCommand}" CommandParameter="stop" FontSize="20" FontWeight="Bold" Foreground="White"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" Height="80" Width="80"/>
+                <!-- 布局网格，划分四个方向区域 -->
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <!-- 上按钮 -->
+                    <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource DirectionButtonStyle}" Command="{Binding MoveCommand}" CommandParameter="y_p">
+                        <Path Data="M 0,5 L 5,0 L 10,5" Stroke="White" StrokeThickness="5"/>
+                    </Button>
+                    <!-- 左按钮 -->
+                    <Button Grid.Row="1" Grid.Column="0" Style="{StaticResource DirectionButtonStyle}" Command="{Binding MoveCommand}" CommandParameter="x_n">
+                        <Path Data="M 5,0 L 0,5 L 5,10" Stroke="White" StrokeThickness="5"/>
+                    </Button>
+                    <!-- 下按钮 -->
+                    <Button Grid.Row="2" Grid.Column="1" Style="{StaticResource DirectionButtonStyle}" Command="{Binding MoveCommand}" CommandParameter="y_n">
+                        <Path Data="M 0,5 L 5,10 L 10,5" Stroke="White" StrokeThickness="5"/>
+                    </Button>
+                    <!-- 右按钮 -->
+                    <Button Grid.Row="1" Grid.Column="2" Style="{StaticResource DirectionButtonStyle}" Command="{Binding MoveCommand}" CommandParameter="x_p">
+                        <Path Data="M 5,0 L 10,5 L 5,10" Stroke="White" StrokeThickness="5"/>
+                    </Button>
+                </Grid>
+            </Grid>
+            <StackPanel Orientation="Vertical" 
+                        HorizontalAlignment="Center" 
+                        VerticalAlignment="Center" 
+                        Grid.Column="1">
+
+                <!-- 向上箭头按钮 -->
+                <Button Style="{StaticResource ArrowButtonStyle}" Command="{Binding MoveCommand}" CommandParameter="z_p">
+                    <Path Data="M0,8 L8,0 L16,8 Z"  
+                          Fill="#333333" 
+                          Width="16" 
+                          Height="16" 
+                          Stretch="Uniform"/>
+                </Button>
+
+                <!-- 向下箭头按钮 -->
+                <Button Style="{StaticResource ArrowButtonStyle}" Command="{Binding MoveCommand}" CommandParameter="z_n">
+                    <Path  Data="M0,0 L8,8 L16,0 Z" 
+                           Fill="#333333" 
+                           Width="16" 
+                           Height="16" 
+                           Stretch="Uniform"/>
+                </Button>
+            </StackPanel>
+        </Grid>
+        <Grid Grid.Row="1" Grid.Column="1">
+            <TabControl>
+                <TabItem Header="功能测试">
+                    <StackPanel >
+                        <UniformGrid Columns="4" >
+                            <Button Content="基础测试" Command="{Binding TestMotorDelegateCommand}" Margin="10"/>
+                            <Button Content="丝杆测试" Command="{Binding SmoothnessDetectionCommand}" Margin="10"/>
+                        </UniformGrid>
+                    </StackPanel>
+                </TabItem>
+                <TabItem Header="电机状态">
+                    <TabControl>
+                        <TabItem Header="x轴">
+                            <UniformGrid Columns="4">
+                                <Label Content="位置（脉冲）"/>
+                                <Label Content="{Binding XAxis.MotorModel.MotorParams.Pos}" />
+                                <Label Content="速度（脉冲/s）"/>
+                                <Label Content="{Binding XAxis.MotorModel.MotorParams.Speed}" />
+                                <Label Content="控制模式"/>
+                                <Label Content="{Binding XAxis.MotorModel.MotorParams.CtrType}"/>
+                                <Label Content="使能状态"/>
+                                <Label Content="{Binding XAxis.MotorModel.MotorParams.Enable}"/>
+                                <Label Content="运行状态"/>
+                                <Label Content="{Binding XAxis.MotorModel.MotorParams.MoveState}"/>
+                                <Label Content="运行方向"/>
+                                <Label Content="{Binding XAxis.MotorModel.MotorParams.MoveDirection}"/>
+                                <Label Content="限位状态"/>
+                                <Label Content="{Binding XAxis.MotorModel.MotorParams.LimitedState}"/>
+                                <Label Content="软正限位状态"/>
+                                <Label Content="{Binding XAxis.MotorModel.MotorParams.SPLimted}"/>
+                                <Label Content="软负限位状态"/>
+                                <Label Content="{Binding XAxis.MotorModel.MotorParams.SNLimted}"/>
+                            </UniformGrid>
+                        </TabItem>
+                        <TabItem Header="y轴">
+                            <UniformGrid Columns="4"  >
+                                <Label Content="位置（脉冲）"/>
+                                <Label Content="{Binding YAxis.MotorModel.MotorParams.Pos}" />
+                                <Label Content="速度（脉冲/s）"/>
+                                <Label Content="{Binding YAxis.MotorModel.MotorParams.Speed}" />
+                                <Label Content="控制模式"/>
+                                <Label Content="{Binding YAxis.MotorModel.MotorParams.CtrType}"/>
+                                <Label Content="使能状态"/>
+                                <Label Content="{Binding YAxis.MotorModel.MotorParams.Enable}"/>
+                                <Label Content="运行状态"/>
+                                <Label Content="{Binding YAxis.MotorModel.MotorParams.MoveState}"/>
+                                <Label Content="运行方向"/>
+                                <Label Content="{Binding YAxis.MotorModel.MotorParams.MoveDirection}"/>
+                                <Label Content="限位状态"/>
+                                <Label Content="{Binding YAxis.MotorModel.MotorParams.LimitedState}"/>
+                                <Label Content="软正限位状态"/>
+                                <Label Content="{Binding YAxis.MotorModel.MotorParams.SPLimted}"/>
+                                <Label Content="软负限位状态"/>
+                                <Label Content="{Binding YAxis.MotorModel.MotorParams.SNLimted}"/>
+                            </UniformGrid>
+                        </TabItem>
+                        <TabItem Header="z轴">
+                            <UniformGrid Columns="4"  >
+                                <Label Content="位置（脉冲）"/>
+                                <Label Content="{Binding ZAxis.MotorModel.MotorParams.Pos}" />
+                                <Label Content="速度（脉冲/s）"/>
+                                <Label Content="{Binding ZAxis.MotorModel.MotorParams.Speed}" />
+                                <Label Content="控制模式"/>
+                                <Label Content="{Binding ZAxis.MotorModel.MotorParams.CtrType}"/>
+                                <Label Content="使能状态"/>
+                                <Label Content="{Binding ZAxis.MotorModel.MotorParams.Enable}"/>
+                                <Label Content="运行状态"/>
+                                <Label Content="{Binding ZAxis.MotorModel.MotorParams.MoveState}"/>
+                                <Label Content="运行方向"/>
+                                <Label Content="{Binding ZAxis.MotorModel.MotorParams.MoveDirection}"/>
+                                <Label Content="限位状态"/>
+                                <Label Content="{Binding ZAxis.MotorModel.MotorParams.LimitedState}"/>
+                                <Label Content="软正限位状态"/>
+                                <Label Content="{Binding ZAxis.MotorModel.MotorParams.SPLimted}"/>
+                                <Label Content="软负限位状态"/>
+                                <Label Content="{Binding ZAxis.MotorModel.MotorParams.SNLimted}"/>
+                            </UniformGrid>
+                        </TabItem>
+                    </TabControl>
+                   
+                </TabItem>
+            </TabControl>
+
+        </Grid>
+    </Grid>
+</UserControl>

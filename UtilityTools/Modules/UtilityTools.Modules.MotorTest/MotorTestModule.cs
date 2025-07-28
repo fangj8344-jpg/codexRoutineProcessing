@@ -2,8 +2,9 @@
 using Prism.Ioc;
 using Prism.Modularity;
 using UtilityTools.Core.Mvvm;
-using UtilityTools.Modules.MotorTest.Views;
 using UtilityTools.Modules.MotorTest.Model;
+using UtilityTools.Modules.MotorTest.ViewModels;
+using UtilityTools.Modules.MotorTest.Views;
 
 namespace UtilityTools.Modules.MotorTest
 {
@@ -19,6 +20,7 @@ namespace UtilityTools.Modules.MotorTest
         {
             containerRegistry.RegisterForNavigation<MotorTestView>();
             containerRegistry.RegisterSingleton<MotorTestModel>();
+            containerRegistry.RegisterForNavigation<ThreeAxisTestModelWindowsView, ThreeAxisTestModelWindowsViewModel>();
         }
     }
 
