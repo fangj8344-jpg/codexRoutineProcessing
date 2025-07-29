@@ -262,29 +262,20 @@
                     </Button>
                 </Grid>
             </Grid>
-            <StackPanel Orientation="Vertical" 
-                        HorizontalAlignment="Center" 
-                        VerticalAlignment="Center" 
-                        Grid.Column="1">
+        
+            <UniformGrid Columns="2" Grid.Column="1"> 
+                <Button Content="z轴正方向"  Command="{Binding MoveCommand}" CommandParameter="z_p" Margin="10"/>
+                <Button Content="z轴负方向" Command="{Binding MoveCommand}" CommandParameter="z_n" Margin="10"/>
+                <Button Content="r轴正方向"  Command="{Binding MoveCommand}" CommandParameter="r_p" Margin="10"/>
+                <Button Content="r轴负方向" Command="{Binding MoveCommand}" CommandParameter="r_n" Margin="10"/>
+                <Button Content="t轴正方向"  Command="{Binding MoveCommand}" CommandParameter="t_p" Margin="10"/>
+                <Button Content="t轴负方向" Command="{Binding MoveCommand}" CommandParameter="t_n" Margin="10"/>
+            </UniformGrid>
 
-                <!-- 向上箭头按钮 -->
-                <Button Style="{StaticResource ArrowButtonStyle}" Command="{Binding MoveCommand}" CommandParameter="z_p">
-                    <Path Data="M0,8 L8,0 L16,8 Z"  
-                          Fill="#333333" 
-                          Width="16" 
-                          Height="16" 
-                          Stretch="Uniform"/>
-                </Button>
 
-                <!-- 向下箭头按钮 -->
-                <Button Style="{StaticResource ArrowButtonStyle}" Command="{Binding MoveCommand}" CommandParameter="z_n">
-                    <Path  Data="M0,0 L8,8 L16,0 Z" 
-                           Fill="#333333" 
-                           Width="16" 
-                           Height="16" 
-                           Stretch="Uniform"/>
-                </Button>
-            </StackPanel>
+
+
+          
         </Grid>
         <Grid Grid.Row="1" Grid.Column="1">
             <TabControl>
@@ -318,6 +309,10 @@
                                 <Label Content="{Binding XAxis.MotorModel.MotorParams.SPLimted}"/>
                                 <Label Content="软负限位状态"/>
                                 <Label Content="{Binding XAxis.MotorModel.MotorParams.SNLimted}"/>
+                                <Label Content="轴类型"/>
+                                <Label Content="{Binding XAxis.MotorModel.MotorParams.MoveType}"/>
+                                <Label Content="转换系数"/>
+                                <Label Content="{Binding XAxis.MotorModel.MotorParams.SubRatio}"/>
                             </UniformGrid>
                         </TabItem>
                         <TabItem Header="y轴">
@@ -340,6 +335,10 @@
                                 <Label Content="{Binding YAxis.MotorModel.MotorParams.SPLimted}"/>
                                 <Label Content="软负限位状态"/>
                                 <Label Content="{Binding YAxis.MotorModel.MotorParams.SNLimted}"/>
+                                <Label Content="轴类型"/>
+                                <Label Content="{Binding YAxis.MotorModel.MotorParams.MoveType}"/>
+                                <Label Content="转换系数"/>
+                                <Label Content="{Binding YAxis.MotorModel.MotorParams.SubRatio}"/>
                             </UniformGrid>
                         </TabItem>
                         <TabItem Header="z轴">
@@ -362,6 +361,62 @@
                                 <Label Content="{Binding ZAxis.MotorModel.MotorParams.SPLimted}"/>
                                 <Label Content="软负限位状态"/>
                                 <Label Content="{Binding ZAxis.MotorModel.MotorParams.SNLimted}"/>
+                                <Label Content="轴类型"/>
+                                <Label Content="{Binding ZAxis.MotorModel.MotorParams.MoveType}"/>
+                                <Label Content="转换系数"/>
+                                <Label Content="{Binding ZAxis.MotorModel.MotorParams.SubRatio}"/>
+                            </UniformGrid>
+                        </TabItem>
+                        <TabItem Header="t轴">
+                            <UniformGrid Columns="4">
+                                <Label Content="位置（脉冲）"/>
+                                <Label Content="{Binding TAxis.MotorModel.MotorParams.Pos}" />
+                                <Label Content="速度（脉冲/s）"/>
+                                <Label Content="{Binding TAxis.MotorModel.MotorParams.Speed}" />
+                                <Label Content="控制模式"/>
+                                <Label Content="{Binding TAxis.MotorModel.MotorParams.CtrType}"/>
+                                <Label Content="使能状态"/>
+                                <Label Content="{Binding TAxis.MotorModel.MotorParams.Enable}"/>
+                                <Label Content="运行状态"/>
+                                <Label Content="{Binding TAxis.MotorModel.MotorParams.MoveState}"/>
+                                <Label Content="运行方向"/>
+                                <Label Content="{Binding TAxis.MotorModel.MotorParams.MoveDirection}"/>
+                                <Label Content="限位状态"/>
+                                <Label Content="{Binding TAxis.MotorModel.MotorParams.LimitedState}"/>
+                                <Label Content="软正限位状态"/>
+                                <Label Content="{Binding TAxis.MotorModel.MotorParams.SPLimted}"/>
+                                <Label Content="软负限位状态"/>
+                                <Label Content="{Binding TAxis.MotorModel.MotorParams.SNLimted}"/>
+                                <Label Content="轴类型"/>
+                                <Label Content="{Binding TAxis.MotorModel.MotorParams.MoveType}"/>
+                                <Label Content="转换系数"/>
+                                <Label Content="{Binding TAxis.MotorModel.MotorParams.SubRatio}"/>
+                            </UniformGrid>
+                        </TabItem>
+                        <TabItem Header="r轴">
+                            <UniformGrid Columns="4">
+                                <Label Content="位置（脉冲）"/>
+                                <Label Content="{Binding RAxis.MotorModel.MotorParams.Pos}" />
+                                <Label Content="速度（脉冲/s）"/>
+                                <Label Content="{Binding RAxis.MotorModel.MotorParams.Speed}" />
+                                <Label Content="控制模式"/>
+                                <Label Content="{Binding RAxis.MotorModel.MotorParams.CtrType}"/>
+                                <Label Content="使能状态"/>
+                                <Label Content="{Binding RAxis.MotorModel.MotorParams.Enable}"/>
+                                <Label Content="运行状态"/>
+                                <Label Content="{Binding RAxis.MotorModel.MotorParams.MoveState}"/>
+                                <Label Content="运行方向"/>
+                                <Label Content="{Binding RAxis.MotorModel.MotorParams.MoveDirection}"/>
+                                <Label Content="限位状态"/>
+                                <Label Content="{Binding RAxis.MotorModel.MotorParams.LimitedState}"/>
+                                <Label Content="软正限位状态"/>
+                                <Label Content="{Binding RAxis.MotorModel.MotorParams.SPLimted}"/>
+                                <Label Content="软负限位状态"/>
+                                <Label Content="{Binding RAxis.MotorModel.MotorParams.SNLimted}"/>
+                                <Label Content="轴类型"/>
+                                <Label Content="{Binding RAxis.MotorModel.MotorParams.MoveType}"/>
+                                <Label Content="转换系数"/>
+                                <Label Content="{Binding RAxis.MotorModel.MotorParams.SubRatio}"/>
                             </UniformGrid>
                         </TabItem>
                     </TabControl>

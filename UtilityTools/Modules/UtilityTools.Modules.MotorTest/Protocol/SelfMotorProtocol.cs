@@ -104,6 +104,9 @@ namespace UtilityTools.Modules.MotorTest.Protocol
         [Description("设置电机补偿时候的臂长")]
         CMD_SET_TLINK = 0x0516,
 
+        [Description("获取轴类型（0x00位移轴0x01是旋转转轴）；")]
+        CMD_GET_AXTYPE = 0x0611,
+
     }
     public enum EnumMotorAxisType
     {
@@ -164,11 +167,11 @@ namespace UtilityTools.Modules.MotorTest.Protocol
     /// </summary>
     public enum EnumMotorMoveType : ushort
     {
-        [Description("旋转轴")]
-        Rotation = 0x00,
+        [Description("位移轴")]
+        Move  = 0x00,
 
-        [Description("移动轴")]
-        Move = 0x01,
+        [Description("旋转轴")]
+        MoRotationve = 0x01,
     }
 
     /// <summary>
@@ -275,6 +278,24 @@ namespace UtilityTools.Modules.MotorTest.Protocol
 
         [Description("主控板电机插槽位5处电机")]
         MOTOR_5 = 0x05,
+
+    }
+    public enum EnumMotorModel
+    {
+        [Description("y轴电机")]
+        MOTOR_x = 0x01,
+
+        [Description("x轴电机")]
+        MOTOR_y = 0x02,
+
+        [Description("t轴电机")]
+        MOTOR_z = 0x03,
+
+        [Description("z轴电机")]
+        MOTOR_t = 0x04,
+
+        [Description("r轴电机")]
+        MOTOR_r = 0x05,
 
     }
     public class SelfMotorProtocol
@@ -452,14 +473,41 @@ namespace UtilityTools.Modules.MotorTest.Protocol
             writer.Write(limitEnableMask);
             return GetCmd(EnumSelfMotorCmdType.CMD_SET_SLIM, writer.EndWrite());
         }
-        
-
+        /// <summary>
+        /// 获取当前限位状态掩码
+        /// </summary>
+        /// <param name="motorId"></param>
+        /// <returns></returns>
         public static byte[] GetMotorLimitEnable(EnumMotorId motorId)
         {
             ByteWriter writer = new ByteWriter(36);
             writer.Write((byte)motorId);
             return GetCmd(EnumSelfMotorCmdType.CMD_GET_SLIM, writer.EndWrite());
         }
+        /// <summary>
+        /// 设置轴类型
+        /// </summary>
+        /// <param name="motorId">电机名称</param>
+        /// <param name="moveType"> </param>
+        /// <returns></returns>
+        public static byte[] SetAxType(EnumMotorId motorId, EnumMotorMoveType moveType)
+        {
+            ByteWriter writer = new ByteWriter(36);
+            writer.Write((byte)motorId);
+            writer.Write((byte)moveType);
+            return GetCmd(EnumSelfMotorCmdType.CMD_SET_AXTYPE, writer.EndWrite());
+        }
+        /// <summary>
+        /// 获取轴类型
+        /// </summary>
+        /// <param name="motorId"></param>
+        /// <returns></returns>
+        public static byte[] GetAxType(EnumMotorId motorId)
+        {
+            ByteWriter writer = new ByteWriter(36);
+            return GetCmd(EnumSelfMotorCmdType.CMD_GET_AXTYPE, writer.EndWrite());
+        }
+
 
     }
 

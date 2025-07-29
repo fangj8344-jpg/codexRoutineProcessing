@@ -51,7 +51,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         }
         private bool _sNLimted;
         /// <summary>
-        /// 软件正限位
+        /// 软件负限位
         /// </summary>
         public bool SNLimted
         {
@@ -218,6 +218,25 @@ namespace UtilityTools.Modules.MotorTest.Model
         {
             get { return _zeroPos; }
             set { _zeroPos = value; RaisePropertyChanged(); }
+        }
+
+        private EnumMotorMoveType _moveType;
+        /// <summary>
+        /// 电机轴的类型
+        /// </summary>
+        public EnumMotorMoveType MoveType
+        {
+            get { return _moveType; }
+            set { _moveType = value; RaisePropertyChanged(); }
+        }
+        private EnumMotorModel _motorModelId;
+        /// <summary>
+        /// 电机的类型x，y，z，t，r
+        /// </summary>
+        public EnumMotorModel MotorModelID
+        {
+            get { return _motorModelId; }
+            set { _motorModelId = value; RaisePropertyChanged(); }
         }
 
 

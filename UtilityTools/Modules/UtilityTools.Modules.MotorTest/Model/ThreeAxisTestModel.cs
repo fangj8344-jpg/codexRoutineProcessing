@@ -54,6 +54,8 @@ namespace UtilityTools.Modules.MotorTest.Model
         private event EventHandler<SelfMotorPacket> _xAxisReturnEvent;
         private event EventHandler<SelfMotorPacket> _yAxisReturnEvent;
         private event EventHandler<SelfMotorPacket> _zAxisReturnEvent;
+        private event EventHandler<SelfMotorPacket> _tAxisReturnEvent;
+        private event EventHandler<SelfMotorPacket> _rAxisReturnEvent;
 
 
 
@@ -83,6 +85,25 @@ namespace UtilityTools.Modules.MotorTest.Model
         {
             get { return _zAxis; }
             set { _zAxis = value; RaisePropertyChanged(); }
+        }
+        private FiveAxisModel _tAxis;
+        /// <summary>
+        /// T轴
+        /// </summary>
+        public FiveAxisModel TAxis
+        {
+            get { return _tAxis; }
+            set { _tAxis = value; RaisePropertyChanged(); }
+        }
+
+        private FiveAxisModel _rAxis;
+        /// <summary>
+        /// R轴
+        /// </summary>
+        public FiveAxisModel RAxis
+        {
+            get { return _rAxis; }
+            set { _rAxis = value; RaisePropertyChanged(); }
         }
 
         private PlotModel _motorplotModel;
@@ -152,18 +173,26 @@ namespace UtilityTools.Modules.MotorTest.Model
             MoveCommand = new DelegateCommand<string>(Move);
             ByteQueue = new Queue<byte[]>();
             ImportantByteQueue = new Queue<byte[]>();
-            XAxis = new FiveAxisModel( _containerProvider,EnumMotorId.MOTOR_1, "X轴") { };
-            YAxis = new FiveAxisModel(_containerProvider,EnumMotorId.MOTOR_2, "Y轴") { };
-            ZAxis = new FiveAxisModel(_containerProvider,EnumMotorId.MOTOR_3, "Z轴") { };
+            XAxis = new FiveAxisModel( _containerProvider,EnumMotorId.MOTOR_2, EnumMotorModel.MOTOR_x, "X轴") { };
+            YAxis = new FiveAxisModel(_containerProvider,EnumMotorId.MOTOR_1, EnumMotorModel.MOTOR_y, "Y轴") { };
+            ZAxis = new FiveAxisModel(_containerProvider,EnumMotorId.MOTOR_4, EnumMotorModel.MOTOR_z, "Z轴") { };
+            TAxis = new FiveAxisModel(_containerProvider, EnumMotorId.MOTOR_3, EnumMotorModel.MOTOR_t, "T轴") { };
+            RAxis = new FiveAxisModel(_containerProvider, EnumMotorId.MOTOR_5, EnumMotorModel.MOTOR_r, "R轴") { };
             XAxis.AddCmdEvent += AddCmd;
             XAxis.AddImportantCmdEvent += AddImportant;
             YAxis.AddCmdEvent += AddCmd;
             YAxis.AddImportantCmdEvent += AddImportant;
             ZAxis.AddCmdEvent += AddCmd;
             ZAxis.AddImportantCmdEvent += AddImportant;
+            TAxis.AddCmdEvent += AddCmd;
+            TAxis.AddImportantCmdEvent += AddImportant;
+            RAxis.AddCmdEvent += AddCmd;
+            RAxis.AddImportantCmdEvent += AddImportant;
             _xAxisReturnEvent += XAxis.Parser_PacketReceivedEvent;
             _yAxisReturnEvent += YAxis.Parser_PacketReceivedEvent;
             _zAxisReturnEvent += ZAxis.Parser_PacketReceivedEvent;
+            _tAxisReturnEvent += TAxis.Parser_PacketReceivedEvent;
+            _rAxisReturnEvent += RAxis.Parser_PacketReceivedEvent;
 
             MotorplotModel = new PlotModel();
             MotorplotModel.Legends.Add(new Legend());
@@ -172,6 +201,8 @@ namespace UtilityTools.Modules.MotorTest.Model
             MotorplotModel.Series.Add(XAxis.PosLine);
             MotorplotModel.Series.Add(YAxis.PosLine);
             MotorplotModel.Series.Add(ZAxis.PosLine);
+            MotorplotModel.Series.Add(TAxis.PosLine);
+            MotorplotModel.Series.Add(RAxis.PosLine);
 
             MotorSpeedplotModel = new PlotModel();
             MotorSpeedplotModel.Legends.Add(new Legend());
@@ -180,6 +211,8 @@ namespace UtilityTools.Modules.MotorTest.Model
             MotorSpeedplotModel.Series.Add(XAxis.SpeedLine);
             MotorSpeedplotModel.Series.Add(YAxis.SpeedLine);
             MotorSpeedplotModel.Series.Add(ZAxis.SpeedLine);
+            MotorSpeedplotModel.Series.Add(TAxis.SpeedLine);
+            MotorSpeedplotModel.Series.Add(RAxis.SpeedLine);
 
 
         }
@@ -227,6 +260,14 @@ namespace UtilityTools.Modules.MotorTest.Model
             {
                 ZAxis.TestSmoothnessDetection();
             });
+            Task.Run(() =>
+            {
+                TAxis.TestSmoothnessDetection();
+            });
+            Task.Run(() =>
+            {
+                RAxis.TestSmoothnessDetection();
+            });
         }
         public DelegateCommand<string> MoveCommand { get; set; }
         private void Move(string direction)
@@ -239,11 +280,17 @@ namespace UtilityTools.Modules.MotorTest.Model
                 case "y_p": YAxis.Move("p"); break;
                 case "z_n": ZAxis.Move("n"); break;
                 case "z_p": ZAxis.Move("p"); break;
+                case "t_p": TAxis.Move("p"); break;
+                case "t_n": TAxis.Move("n"); break;
+                case "r_p": RAxis.Move("p"); break;
+                case "r_n": RAxis.Move("n"); break;
                 case "stop":
                     {
                         XAxis.Move("s");
                         YAxis.Move("s");
-                        ZAxis.Move("s");
+                        ZAxis.Move("s"); 
+                        TAxis.Move("s");
+                        RAxis.Move("s");
                     }
                     break;
             }
@@ -266,6 +313,8 @@ namespace UtilityTools.Modules.MotorTest.Model
                     XAxis.PlotViewPointMessages.Clear();
                     YAxis.PlotViewPointMessages.Clear();
                     ZAxis.PlotViewPointMessages.Clear();
+                    TAxis.PlotViewPointMessages.Clear();
+                    RAxis.PlotViewPointMessages.Clear();
 
                 }
 
@@ -283,6 +332,8 @@ namespace UtilityTools.Modules.MotorTest.Model
                     XAxis.plotViewSpeedMessages.Clear();
                     YAxis.plotViewSpeedMessages.Clear();
                     ZAxis.plotViewSpeedMessages.Clear();
+                    TAxis.plotViewSpeedMessages.Clear();
+                    RAxis.plotViewSpeedMessages.Clear();
                 }
                 MotorSpeedplotModel.InvalidatePlot(true);
             }
@@ -396,12 +447,16 @@ namespace UtilityTools.Modules.MotorTest.Model
             XAxis._getMotorStateTimer.Start();
             YAxis._getMotorStateTimer.Start();
             ZAxis._getMotorStateTimer.Start();
+            TAxis._getMotorStateTimer.Start();
+            RAxis._getMotorStateTimer.Start();
         }
         public void StopTimer()
         {
             XAxis._getMotorStateTimer.Stop();
             YAxis._getMotorStateTimer.Stop();
             ZAxis._getMotorStateTimer.Stop();
+            TAxis._getMotorStateTimer.Stop();
+            RAxis._getMotorStateTimer.Stop();
         }
         private void NetUdpService_UpdateResponse(object? sender, byte[] e)
         {
@@ -421,9 +476,11 @@ namespace UtilityTools.Modules.MotorTest.Model
                 var channel = (EnumMotorId)(data[0]);//电机通道
                 switch (channel)
                 {
-                    case EnumMotorId.MOTOR_1: _xAxisReturnEvent.Invoke(this,e); break;
-                    case EnumMotorId.MOTOR_2: _yAxisReturnEvent.Invoke(this,e); break;
-                    case EnumMotorId.MOTOR_3: _zAxisReturnEvent.Invoke(this,e); break;
+                    case EnumMotorId.MOTOR_1: _yAxisReturnEvent.Invoke(this,e); break;
+                    case EnumMotorId.MOTOR_2: _xAxisReturnEvent.Invoke(this,e); break;
+                    case EnumMotorId.MOTOR_3: _tAxisReturnEvent.Invoke(this,e); break;
+                    case EnumMotorId.MOTOR_4: _zAxisReturnEvent.Invoke(this, e); break;
+                    case EnumMotorId.MOTOR_5: _rAxisReturnEvent.Invoke(this, e); break;
                 }
             }
         }
