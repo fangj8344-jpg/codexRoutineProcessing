@@ -26,6 +26,8 @@ namespace UtilityTools.Modules.MotorTest.Model
 
         #region ------------StaticMethod------------
         public const string MotorTestRegionName = "MotorTest";
+        public const string ThreeAxisTestModelWindowsViewModelRegionName = "ThreeAxisTestModelWindowsViewModel";
+        
         #endregion
     }
 

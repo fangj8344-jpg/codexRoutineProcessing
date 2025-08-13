@@ -5,9 +5,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using UtilityTools.Modules.MotorTest.Protocol;
+using UtilityTools.Modules.NewMotor5Controller.Protocol;
 
-namespace UtilityTools.Modules.MotorTest.Model
+namespace UtilityTools.Modules.NewMotor5Controller.Model
 {
     public class MotorModel:BindableBase
     {
@@ -51,7 +51,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         }
         private bool _sNLimted;
         /// <summary>
-        /// 软件负限位
+        /// 软件正限位
         /// </summary>
         public bool SNLimted
         {
@@ -82,15 +82,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         }
 
 
-        private PIDModel _pid = new PIDModel();
-        /// <summary>
-        /// PID参数
-        /// </summary>
-        public PIDModel Pid
-        {
-            get { return _pid; }
-            set { _pid = value; RaisePropertyChanged(); }
-        }
+      
         private Int32 _pos;
         /// <summary>
         /// 位置
@@ -218,25 +210,6 @@ namespace UtilityTools.Modules.MotorTest.Model
         {
             get { return _zeroPos; }
             set { _zeroPos = value; RaisePropertyChanged(); }
-        }
-
-        private EnumMotorMoveType _moveType;
-        /// <summary>
-        /// 电机轴的类型
-        /// </summary>
-        public EnumMotorMoveType MoveType
-        {
-            get { return _moveType; }
-            set { _moveType = value; RaisePropertyChanged(); }
-        }
-        private EnumMotorModel _motorModelId;
-        /// <summary>
-        /// 电机的类型x，y，z，t，r
-        /// </summary>
-        public EnumMotorModel MotorModelID
-        {
-            get { return _motorModelId; }
-            set { _motorModelId = value; RaisePropertyChanged(); }
         }
 
 
@@ -379,6 +352,57 @@ namespace UtilityTools.Modules.MotorTest.Model
         {
             get { return _speed; }
             set { _speed = value; RaisePropertyChanged(); }
+        }
+    }
+      public class  MotorTestMessage:BindableBase
+    {
+        private string _testProject;
+        /// <summary>
+        /// 项目名称
+        /// </summary>
+        public string TestProject
+        {
+            get { return _testProject; }
+            set { _testProject = value; RaisePropertyChanged(); }
+        }
+        private string _testResult;
+        /// <summary>
+        /// 测试结果
+        /// </summary>
+        public string TestResult
+        {
+            get { return _testResult; }
+            set { _testResult = value; RaisePropertyChanged(); }
+        }
+
+        private string _testValue;
+        /// <summary>
+        /// 测试值
+        /// </summary>
+        public string TestValue
+        {
+            get { return _testValue; }
+            set { _testValue = value; RaisePropertyChanged(); }
+        }
+
+        private string _standardValue;
+        /// <summary>
+        /// 标准值
+        /// </summary>
+        public string StandardValue
+        {
+            get { return _standardValue; }
+            set { _standardValue = value;RaisePropertyChanged(); }
+        }
+
+        private string _description;
+        /// <summary>
+        /// 说明
+        /// </summary>
+        public string Description
+        {
+            get { return _description; }
+            set { _description = value; RaisePropertyChanged(); }
         }
     }
 

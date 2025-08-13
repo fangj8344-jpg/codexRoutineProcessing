@@ -231,7 +231,10 @@
                             <Button Content="关闭极限性能" Command="{Binding NoPerformanceCommand}" Margin="10"/>
                             <Button Content="保存" Command="{Binding SerilizeCommand}" Margin="10"/>
                             <Button Content="加载" Command="{Binding DeserilizeCommand}" Margin="10"/>
-
+                            <Button Content="两轴测试"  Margin="10"/>
+                            <Button Content="五轴测试" Command="{Binding ShowThreeAzisTestModelViewModelCommand}" Margin="10"/>
+                            <Button Content="耐久测试" Command="{Binding DurabilityTestgCommand}" Margin="10"/>
+                            <Button Content="关闭耐度测试" Command="{Binding ShutDownDurabilityTestCommand}" Margin="10"/>
                         </UniformGrid>
                     </StackPanel>
                 </TabItem>
