@@ -37,7 +37,7 @@ namespace UtilityTools.Modules.InstrumentDataRetriever.ViewModels
         {
             _dataService = dataService;
             InstrumentData = new ObservableCollection<InstrumentInfo>();
-            
+
             // 初始化命令
             SelectDatabaseCommand = new DelegateCommand(ExecuteSelectDatabase);
             DisconnectDatabaseCommand = new DelegateCommand(ExecuteDisconnectDatabase);
@@ -196,7 +196,7 @@ namespace UtilityTools.Modules.InstrumentDataRetriever.ViewModels
 
         private async void ExecuteDisconnectDatabase()
         {
-            if(IsConnected) 
+            if (IsConnected)
             {
                 await _dataService.DisconnectAsync();
                 DatabaseStatus = "未连接数据库";
@@ -263,7 +263,7 @@ namespace UtilityTools.Modules.InstrumentDataRetriever.ViewModels
 
         private void AutoAdjust(object obj)
         {
-            switch(obj.ToString()) 
+            switch (obj.ToString())
             {
                 case "真空图表":
                     {
@@ -337,27 +337,33 @@ namespace UtilityTools.Modules.InstrumentDataRetriever.ViewModels
                     default:
                         break;
                 }
-                
+
             }
-            
+
         }
 
         private void InitializePlotModels()
         {
             // 初始化真空图表
-            VacuumPlotModel = new PlotModel { Title = "真空数据"};
+            VacuumPlotModel = new PlotModel { Title = "真空数据" };
+            VacuumPlotModel.Axes.Add(new DateTimeAxis() { Title = "时间", Position = OxyPlot.Axes.AxisPosition.Bottom });
+            VacuumPlotModel.Axes.Add(new LogarithmicAxis() { Title = "真空值", Position = OxyPlot.Axes.AxisPosition.Left });
             VacuumPlotModel.Legends.Add(new Legend());
             VacuumPlotModel.Series.Add(new LineSeries { Title = "枪头真空", RenderInLegend = true });
             VacuumPlotModel.Series.Add(new LineSeries { Title = "样品仓真空", RenderInLegend = true });
 
             // 初始化温度图表
             TemperaturePlotModel = new PlotModel { Title = "温度数据" };
+            TemperaturePlotModel.Axes.Add(new DateTimeAxis() { Title = "时间", Position = OxyPlot.Axes.AxisPosition.Bottom });
+            TemperaturePlotModel.Axes.Add(new LinearAxis() { Title = "温度", Position = OxyPlot.Axes.AxisPosition.Left });
             TemperaturePlotModel.Legends.Add(new Legend());
             TemperaturePlotModel.Series.Add(new LineSeries { Title = "温度1", RenderInLegend = true });
             TemperaturePlotModel.Series.Add(new LineSeries { Title = "温度2", RenderInLegend = true });
 
             // 初始化SE图表
             SEPlotModel = new PlotModel { Title = "SE数据" };
+            SEPlotModel.Axes.Add(new DateTimeAxis() { Title = "时间", Position = OxyPlot.Axes.AxisPosition.Bottom });
+            SEPlotModel.Axes.Add(new LinearAxis() { Title = "数值", Position = OxyPlot.Axes.AxisPosition.Left });
             SEPlotModel.Legends.Add(new Legend());
             SEPlotModel.Series.Add(new LineSeries { Title = "SE增益", RenderInLegend = true });
             SEPlotModel.Series.Add(new LineSeries { Title = "采集电压", RenderInLegend = true });
@@ -369,6 +375,8 @@ namespace UtilityTools.Modules.InstrumentDataRetriever.ViewModels
 
             // 初始化高压箱图表
             HighVoltagePlotModel = new PlotModel { Title = "高压箱数据" };
+            HighVoltagePlotModel.Axes.Add(new DateTimeAxis() { Title = "时间", Position = OxyPlot.Axes.AxisPosition.Bottom });
+            HighVoltagePlotModel.Axes.Add(new LinearAxis() { Title = "数值", Position = OxyPlot.Axes.AxisPosition.Left });
             HighVoltagePlotModel.Legends.Add(new Legend());
             HighVoltagePlotModel.Series.Add(new LineSeries { Title = "加速电压", RenderInLegend = true });
             HighVoltagePlotModel.Series.Add(new LineSeries { Title = "灯丝电流", RenderInLegend = true });
@@ -459,4 +467,4 @@ namespace UtilityTools.Modules.InstrumentDataRetriever.ViewModels
 
         #endregion
     }
-} 
+}

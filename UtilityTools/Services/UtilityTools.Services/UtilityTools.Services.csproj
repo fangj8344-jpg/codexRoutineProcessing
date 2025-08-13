@@ -5,10 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NLog" Version="5.2.3" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\..\UtilityTools.Core\UtilityTools.Core.csproj" />
     <ProjectReference Include="..\UtilityTools.Services.Interfaces\UtilityTools.Services.Interfaces.csproj" />
   </ItemGroup>

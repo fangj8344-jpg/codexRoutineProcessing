@@ -8,14 +8,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MaterialDesignColors" Version="2.1.4" />
-    <PackageReference Include="MaterialDesignThemes" Version="4.9.0" />
-    <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
-    <PackageReference Include="OxyPlot.Core" Version="2.1.2" />
-    <PackageReference Include="OxyPlot.Wpf" Version="2.1.2" />
-    <PackageReference Include="Prism.Wpf" Version="8.1.97" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\Services\UtilityTools.Services.Interfaces\UtilityTools.Services.Interfaces.csproj" />
     <ProjectReference Include="..\..\Services\UtilityTools.Services\UtilityTools.Services.csproj" />
     <ProjectReference Include="..\..\UtilityTools.Core\UtilityTools.Core.csproj" />

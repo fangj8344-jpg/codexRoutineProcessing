@@ -11,7 +11,6 @@ using Prism.Services.Dialogs;
 using System.Windows.Forms;
 using System.IO;
 using Microsoft.ML.OnnxRuntime;
-
 using OxyPlot;
 using System.Windows.Input;
 using OpenCvSharp;

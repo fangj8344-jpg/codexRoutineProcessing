@@ -8,12 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Prism.Core" Version="8.1.97" />
-    <PackageReference Include="Zeptools.CommonLib" Version="1.1.3" />
-    <PackageReference Include="Zeptools.VacuumLib" Version="1.0.1" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\UtilityTools.Core\UtilityTools.Core.csproj" />
   </ItemGroup>
 

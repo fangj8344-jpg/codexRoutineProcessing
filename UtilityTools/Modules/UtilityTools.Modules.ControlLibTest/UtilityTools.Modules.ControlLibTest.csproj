@@ -14,13 +14,6 @@
   </Target>
 
   <ItemGroup>
-    <PackageReference Include="Zeptools.Core.CoreTools" Version="2.0.0" />
-    <PackageReference Include="Zeptools.Core.Devices" Version="2.0.0" />
-    <PackageReference Include="Zeptools.Core.ZemModel" Version="2.0.0" />
-    <PackageReference Include="Zeptools.Hardware.Zeptools.CoreControl" Version="2.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\..\Services\UtilityTools.Services\UtilityTools.Services.csproj" />
     <ProjectReference Include="..\..\UtilityTools.Core\UtilityTools.Core.csproj" />
   </ItemGroup>

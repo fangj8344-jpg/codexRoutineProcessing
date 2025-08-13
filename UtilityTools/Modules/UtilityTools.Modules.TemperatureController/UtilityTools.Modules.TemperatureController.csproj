@@ -15,10 +15,6 @@
   </Target>
 
   <ItemGroup>
-    <PackageReference Include="OxyPlot.Wpf" Version="2.1.2" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\..\Services\UtilityTools.Services.Interfaces\UtilityTools.Services.Interfaces.csproj" />
     <ProjectReference Include="..\..\Services\UtilityTools.Services\UtilityTools.Services.csproj" />
     <ProjectReference Include="..\..\UtilityTools.Core\UtilityTools.Core.csproj" />
