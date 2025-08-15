@@ -9,6 +9,8 @@ using UtilityTools.Core.Helper;
 
 namespace UtilityTools.Core.Protocol
 {
+
+
     public struct DataPacket
     {
         public static readonly byte[] HEADER = Encoding.ASCII.GetBytes("$Zep:");

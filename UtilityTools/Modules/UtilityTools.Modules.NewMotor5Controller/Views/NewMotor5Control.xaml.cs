@@ -16,11 +16,11 @@ using System.Windows.Shapes;
 namespace UtilityTools.Modules.NewMotor5Controller.Views
 {
     /// <summary>
-    /// NewMotor5ControllerView.xaml 的交互逻辑
+    /// NewMotor5Control.xaml 的交互逻辑
     /// </summary>
-    public partial class NewMotor5ControllerView : UserControl
+    public partial class NewMotor5Control : UserControl
     {
-        public NewMotor5ControllerView()
+        public NewMotor5Control()
         {
             InitializeComponent();
         }

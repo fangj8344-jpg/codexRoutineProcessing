@@ -221,17 +221,16 @@
                 <TabItem Header="功能测试">
                     <StackPanel >
                         <UniformGrid Columns="4" >
-                            <Button Content="开始测试" Command="{Binding TestAllCommand}" Margin="10"/>
-                            <Button Content="丝杆性能测试" Command="{Binding TestSmoothnessDetectionCommand}" Margin="10"/>
+                            <Button Content="基础测试" Command="{Binding TestAllCommand}" Margin="10"/>
+                            <Button Content="丝杆性能测试" Command="{Binding TestSmoothnessDetectionCommand}" CommandParameter="open" Margin="10"/>
+                            <Button Content="关闭丝杆测试" Command="{Binding}" CommandParameter="close" Margin="10"/>
                             <Button Content="设中心零点" Command="{Binding AutomaticZeroInitializationCommand}" Margin="10"/>
                             <Button Content="使用软限位" Command="{Binding SetMotorLimitEnableCommand}" CommandParameter="true" Margin="10" />
                             <Button Content="取消软限位" Command="{Binding SetMotorLimitEnableCommand}" CommandParameter="false" Margin="10" />
-                            <Button Content="获取限位掩码" Command="{Binding GetMotorLimitEnableCommand}" Margin="10"/>
                             <Button Content="测试极限性能" Command="{Binding TestPerformanceCommand}" Margin="10"/>
                             <Button Content="关闭极限性能" Command="{Binding NoPerformanceCommand}" Margin="10"/>
                             <Button Content="保存" Command="{Binding SerilizeCommand}" Margin="10"/>
                             <Button Content="加载" Command="{Binding DeserilizeCommand}" Margin="10"/>
-                            <Button Content="两轴测试"  Margin="10"/>
                             <Button Content="五轴测试" Command="{Binding ShowThreeAzisTestModelViewModelCommand}" Margin="10"/>
                             <Button Content="耐久测试" Command="{Binding DurabilityTestgCommand}" Margin="10"/>
                             <Button Content="关闭耐度测试" Command="{Binding ShutDownDurabilityTestCommand}" Margin="10"/>

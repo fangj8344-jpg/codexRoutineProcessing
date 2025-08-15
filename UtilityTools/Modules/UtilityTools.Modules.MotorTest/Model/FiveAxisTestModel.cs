@@ -4,15 +4,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using UtilityTools.Modules.NewMotor5Controller.Protocol;
+using UtilityTools.Modules.MotorTest.Protocol;
 
-namespace UtilityTools.Modules.NewMotor5Controller.Model
+namespace UtilityTools.Modules.MotorTest.Model
 {
-    public class FiveAxisTestModel:BindableBase
+    public class FiveAxisTestModel : BindableBase
     {
-       public FiveAxisTestModel() 
+        public FiveAxisTestModel()
         {
-           
+
         }
         private FiveAxisModel _xAxis;
         /// <summary>
@@ -71,13 +71,13 @@ namespace UtilityTools.Modules.NewMotor5Controller.Model
         }
         private void Init()
         {
-            XAxis = new FiveAxisModel(EnumMotorId.MOTOR_1, "X轴") { };
-            YAxis = new FiveAxisModel(EnumMotorId.MOTOR_2, "Y轴") { };
-            ZAxis = new FiveAxisModel(EnumMotorId.MOTOR_3, "Z轴") { };
-            RAxis = new FiveAxisModel(EnumMotorId.MOTOR_4, "R轴") { };
-            TAxis = new FiveAxisModel(EnumMotorId.MOTOR_5, "T轴") { };
+            
         }
 
-        
+        private void TestMotor()
+        {
+            
+        }
     }
-}
+
+ }

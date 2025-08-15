@@ -5,6 +5,7 @@
                         xmlns:attach="clr-namespace:UtilityTools.Core.Attach;assembly=UtilityTools.Core"
                         xmlns:model="clr-namespace:UtilityTools.Core.Model;assembly=UtilityTools.Core"
                         xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
+                        xmlns:converter="clr-namespace:UtilityTools.Core.Converter;assembly=UtilityTools.Core"
                         xmlns:prism="http://prismlibrary.com/">
     <Application.Resources>
         <ResourceDictionary>
@@ -14,7 +15,11 @@
                 <md:BundledTheme BaseTheme="Dark"
                                  PrimaryColor="DeepPurple"
                                  SecondaryColor="Lime" />
+
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
+                <ResourceDictionary>
+                    <converter:EnumDescriptionConverter  x:Key="EnumDescriptionConverter"/>
+                </ResourceDictionary>
             </ResourceDictionary.MergedDictionaries>
 
             <!--列表样式-->
@@ -197,3 +202,4 @@
         </ResourceDictionary>
     </Application.Resources>
 </prism:PrismApplication>
+

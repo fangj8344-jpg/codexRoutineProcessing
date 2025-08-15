@@ -6,8 +6,11 @@ using System.Threading.Tasks;
 
 namespace UtilityTools.Modules.NewMotor5Controller.Model
 {
-    public class CommonModel
+    public class MoterControlModel
     {
-        public const string NewMotor5ControllerRegionName = "NewMotor5Controller";
+        public MoterControlModel()
+        {
+
+        }  
     }
 }

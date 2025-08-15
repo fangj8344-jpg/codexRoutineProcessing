@@ -89,6 +89,8 @@ namespace UtilityTools.Modules.MotorTest.Model
         private BackgroundWorker _work;
         private bool _isPerformance;
         private bool _isDurabilityTest = false;
+        private bool _isTest = false;
+        private bool __isInLeadScrewTest = false;
         private List<PlotViewPointMessage> _xPlotViewPointMessage;
         private List<PlotViewPointMessage> _yPlotViewPointMessage;
 
@@ -346,7 +348,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             TestPerformanceCommand = new DelegateCommand(TestPerformance);
             NoPerformanceCommand = new DelegateCommand(NoPerformance);
             SaveToFileCommand = new DelegateCommand<string>(SaveToFile);
-            TestSmoothnessDetectionCommand = new DelegateCommand(TestSmoothnessDetection);
+            TestSmoothnessDetectionCommand = new DelegateCommand<string>(TestSmoothnessDetection);
             SerilizeCommand = new DelegateCommand(Serilize);
             DeserilizeCommand = new DelegateCommand(Deserilize);
             ShowThreeAzisTestModelViewModelCommand = new DelegateCommand(ShowThreeAzisTestModelViewModel);
@@ -406,10 +408,10 @@ namespace UtilityTools.Modules.MotorTest.Model
 
             switch (direction)
             {
-                case "up":; Goto(EnumMotorId.MOTOR_2, 5000000); break;
-                case "down": Goto(EnumMotorId.MOTOR_2, -5000000); break;
-                case "left": Goto(EnumMotorId.MOTOR_1, -5000000); break;
-                case "right": Goto(EnumMotorId.MOTOR_1, 5000000); break;
+                case "up":; Goto(EnumMotorId.MOTOR_2, 5000000 + MotorModelY.MotorParams.Pos); break;
+                case "down": Goto(EnumMotorId.MOTOR_2, -5000000+ MotorModelY.MotorParams.Pos); break;
+                case "left": Goto(EnumMotorId.MOTOR_1, -5000000 + MotorModelX.MotorParams.Pos); break;
+                case "right": Goto(EnumMotorId.MOTOR_1, 5000000 + MotorModelX.MotorParams.Pos); break;
                 case "stop":
                     {
                         var xstopcmd = SelfMotorProtocol.SetMotorOperatingStatus(EnumMotorId.MOTOR_1, EnumMotorOperatingState.Stop);
@@ -446,40 +448,52 @@ namespace UtilityTools.Modules.MotorTest.Model
             _isPerformance = false; ;
             
         }
-        public DelegateCommand TestSmoothnessDetectionCommand { get; set; }
-        private async void TestSmoothnessDetection()
+        public DelegateCommand<string> TestSmoothnessDetectionCommand { get; set; }
+        private async void TestSmoothnessDetection(string parameter)
         {
-
-            _work = new BackgroundWorker();
-            _work.WorkerSupportsCancellation = true;
-            _work.DoWork += Worker_DoWork;
-            _work?.RunWorkerAsync();
-            if (_testTime == null)
+            if (parameter == "open")
             {
-                _testTime = new Stopwatch();
-            }
-            _testTime.Start();
-            for (int i = 0; i < 60; i++)
-            {
-
-               bool result1 = await SmoothnessDetection(EnumMotorId.MOTOR_1);
-               bool result2 = await SmoothnessDetection(EnumMotorId.MOTOR_2);
-               if (result1 == false || result2 == false)
-               {
-                    _dialogHostService.Information("提示", "丝杆顺滑度测试错误");
-                    return;
-               }
-               if(_testTime.ElapsedMilliseconds /1000.0 / 60 > 60)
-               {
-                    break;
+                __isInLeadScrewTest = true;
+                _work = new BackgroundWorker();
+                _work.WorkerSupportsCancellation = true;
+                _work.DoWork += Worker_DoWork;
+                _work?.RunWorkerAsync();
+                if (_testTime == null)
+                {
+                    _testTime = new Stopwatch();
                 }
+                _testTime.Start();
+                for (int i = 0; i < 60; i++)
+                {
+                    if (__isInLeadScrewTest = false)
+                    {
+                        return;
+                    }
+                    bool result1 = await SmoothnessDetection(EnumMotorId.MOTOR_1);
+                    bool result2 = await SmoothnessDetection(EnumMotorId.MOTOR_2);
+                    if (result1 == false || result2 == false)
+                    {
+                        _dialogHostService.Information("提示", "丝杆顺滑度测试错误");
+                        __isInLeadScrewTest = false;
+                        return;
+                    }
+                    if (_testTime.ElapsedMilliseconds / 1000.0 / 60 > 60)
+                    {
+                        break;
+                    }
+                }
+                _dialogHostService.Information("提示", "丝杆顺滑度测试完毕请选择保存路径");
+                Serilize();
+                _work.CancelAsync();
+                _testTime.Stop();
+                _testTime = null;
+                __isInLeadScrewTest = false;
             }
-            _dialogHostService.Information("提示", "丝杆顺滑度测试完毕请选择保存路径");
-            Serilize();
-            _work.CancelAsync();
-            _testTime.Stop();
-            _testTime = null;
-
+            else 
+            {
+                __isInLeadScrewTest = true;
+            }
+            
 
         }
         public DelegateCommand DurabilityTestgCommand { get; set; }
@@ -834,7 +848,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                         TestMessage.Description = "电机堵转，请检查";
                         DispathcherInvoke($"电机测试End:{posEnd},Start:{posStart} 行程:{posEnd - posStart}");
                     }
-                    else if (result == "PhyForwardLimited")
+                    else if (result == "PhyForwardLimited" )
                     {
                         TestMessage.TestResult = "合格";
                         TestMessage.TestValue = "正常";
@@ -1342,13 +1356,13 @@ namespace UtilityTools.Modules.MotorTest.Model
                         DispathcherInvoke($"电机测试丝杆测试堵转");
 
                     }
-                    else if (result == "PhyForwardLimited")
+                    else if (result == "PhyForwardLimited" || result == "SPLimted")
                     {
 
                         
 
                     }
-                    else if (result == "PhyBackwardLimited")
+                    else if (result == "PhyBackwardLimited" || result == "SNLimted")
                     {
 
                         TestMessage.TestResult = "不合格";
@@ -1357,7 +1371,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                         TestMessage.Description = "正限位反向";
                         var stopcmd = SelfMotorProtocol.SetMotorOperatingStatus(enumMotorId, EnumMotorOperatingState.Stop);
                         SendImportantData(stopcmd);
-                        DispathcherInvoke($"电机测试丝杆正限位反向");
+                        DispathcherInvoke($"电机测试丝杆正限位反向{result}");
                     }
                     else
                     {
@@ -1377,7 +1391,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     DispathcherInvoke($"电机测试丝杆异常错误{ex}");
                 }
             });
-            if (result != "PhyForwardLimited")
+            if (!(result == "PhyForwardLimited" || result == "SPLimted"))
             {
                
                 return false;
@@ -1402,7 +1416,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                         TestMessage.Description = "电机堵转，请检查";
                         DispathcherInvoke($"电机测试丝杆堵转");
                     }
-                    else if (result == "PhyForwardLimited")
+                    else if (result == "PhyForwardLimited" || result == "SPLimted")
                     {
                         TestMessage.TestResult = "不合格";
                         TestMessage.TestValue = "不正常";
@@ -1410,9 +1424,9 @@ namespace UtilityTools.Modules.MotorTest.Model
                         TestMessage.Description = "负限位反向";
                         var stopcmd = SelfMotorProtocol.SetMotorOperatingStatus(enumMotorId, EnumMotorOperatingState.Stop);
                         SendImportantData(stopcmd);
-                        DispathcherInvoke($"电机测试负限位反向");
+                        DispathcherInvoke($"电机测试负限位反向{result}");
                     }
-                    else if (result == "PhyBackwardLimited")
+                    else if (result == "PhyBackwardLimited" || result == "SNLimted")
                     {
                         //正常的情况下，需要记录前面运行过程中的点数
                         endIndex = tempSpeedList.Count;
@@ -1429,97 +1443,13 @@ namespace UtilityTools.Modules.MotorTest.Model
                 }
 
             });
-            if (result != "PhyBackwardLimited")
+            if (result == "PhyBackwardLimited" || result == "SNLimted")
             {
                 TestMessage.Description = $"从正方向到负方向的位置丝杆顺滑度错误";
               
             }
-            else
-            {
-                if (!SmoothnessTest(startIndex, endIndex, tempSpeedList))
-                {
-
-                    TestMessage.TestResult = "不合格";
-                    TestMessage.TestValue = "不正常";
-                    TestMessage.StandardValue = "正常";
-                    TestMessage.Description = $"正方向到负方向丝杆顺滑度不达标，请重新安装";
-                    return false; 
-                }
-            }
-            await Task.Run(async () =>
-            {
-                //单开线程去测试堵转和限位
-                SetMotorInit(enumMotorId);
-                var gotocmd = SelfMotorProtocol.SetMotorGoTo(enumMotorId, EnumMotorUnit.Pulse, 10000);
-                SendImportantData(gotocmd);
-                startIndex = tempSpeedList.Count;
-                Thread.Sleep(5000);
-                try
-                {
-                    _limitedtcs1 = new TaskCompletionSource<string>();
-                    Task.Run(() => { MotorStallDetection(enumMotorId); });
-                    string result = await _limitedtcs1.Task.WaitAsync(TimeSpan.FromSeconds(120));
-                    if (result == "stall")
-                    {
-                        TestMessage.TestResult = "不合格";
-                        TestMessage.TestValue = "不正常";
-                        TestMessage.StandardValue = "正常";
-                        TestMessage.Description = "电机堵转，请检查";
-                        DispathcherInvoke($"电机丝杆测试堵转");
-                    }
-                    else if (result == "PhyForwardLimited")
-                    {
-                        endIndex = tempSpeedList.Count;
-                        //正常情况需要计算，从负限位到正限位运行点数的情况
-                    }
-                    else if (result == "PhyBackwardLimited")
-                    {
-                        TestMessage.TestResult = "不合格";
-                        TestMessage.TestValue = "不正常";
-                        TestMessage.StandardValue = "正常";
-                        TestMessage.Description = "正限位限位反向";
-                        var stopcmd = SelfMotorProtocol.SetMotorOperatingStatus(enumMotorId, EnumMotorOperatingState.Stop);
-                        SendImportantData(stopcmd);
-                        DispathcherInvoke($"电机丝杆测试正限位反向");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    TestMessage.TestResult = "不合格";
-                    TestMessage.TestValue = "不正常";
-                    TestMessage.StandardValue = "正常";
-                    TestMessage.Description = $"检测时间超时:{ex}";
-                    DispathcherInvoke($"电机丝杆测试错误{ex}");
-                }
-
-            });
-
-            if (result != "PhyForwardLimited")
-            {
-             
-                return false;
-            }
-            else
-            {
-                if (!SmoothnessTest(startIndex, endIndex, tempSpeedList))
-                {
-
-                    TestMessage.TestResult = "不合格";
-                    TestMessage.TestValue = "不正常";
-                    TestMessage.StandardValue = "正常";
-                    TestMessage.Description = $"丝杆顺滑度不达标，请重新安装";
-                    return false;
-                }
-                else
-                {
-                    TestMessage.TestResult = "请分析速度曲线";
-                    TestMessage.TestValue = "请分析速度曲线";
-                    TestMessage.StandardValue = "正常";
-                    TestMessage.Description = $"请分析速度曲线";
-                    return true;
-                }
-            }
-
+            
+            return true;
 
         }
         /// <summary>
@@ -1610,13 +1540,25 @@ namespace UtilityTools.Modules.MotorTest.Model
                 if (motorModel.MotorParams.LimitedState == EnumMotorLimitedState.PhyForwardLimited)
                 {
                     _limitedtcs1.SetResult("PhyForwardLimited");
-                    DispathcherInvoke($"发送正向限位，退出");
+                    DispathcherInvoke($"发送硬件正向限位，退出");
                     return;
                 }
                 if (motorModel.MotorParams.LimitedState == EnumMotorLimitedState.PhyBackwardLimited)
                 {
                     _limitedtcs1.SetResult("PhyBackwardLimited");
-                    DispathcherInvoke($"发送负向限位退出");
+                    DispathcherInvoke($"发送硬件负向限位退出");
+                    return;
+                }
+                if (motorModel.MotorParams.SPLimted == true)
+                {
+                    _limitedtcs1.SetResult("SPLimted"); 
+                    DispathcherInvoke($"发送软件正向限位退出");
+                    return;
+                }
+                if (motorModel.MotorParams.SNLimted == true)
+                {
+                    _limitedtcs1.SetResult("SNLimted");
+                    DispathcherInvoke($"发送软件负向限位退出");
                     return;
                 }
                 Thread.Sleep(500);
