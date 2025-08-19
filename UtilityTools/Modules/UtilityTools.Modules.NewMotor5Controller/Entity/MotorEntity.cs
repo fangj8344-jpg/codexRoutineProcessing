@@ -66,6 +66,7 @@ namespace UtilityTools.Modules.NewMotor5Controller.Entity
             netUdp.IsBinary = true;
             NetUdpService = netUdp;
             NetUdpService.UpdateResponse += NetUdpService_UpdateResponse;
+            MotorProtocol = new MotorProtocol();
         }
 
       
@@ -581,7 +582,7 @@ namespace UtilityTools.Modules.NewMotor5Controller.Entity
             NLog.LogManager.GetCurrentClassLogger().Info($"获取通道{motorId}电机的PID调节阈值");
             byte channel = GetMotorChannel(motorId);
             var packet = MotorProtocol.GetMotorPidThrCommand(channel);
-            Device?.SendMsg(packet);
+            Device?.SendMsg(MotorProtocol.GetMotorPidThrCommand(channel));
         }
 
         public void GetMotorPidMaxCount(EnumMotorId motorId)

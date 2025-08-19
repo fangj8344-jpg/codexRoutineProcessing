@@ -74,6 +74,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         public event EventHandler<byte[]> AddCmdEvent;
         public event EventHandler<byte[]> AddImportantCmdEvent;
         private double _std;
+        private string _dataPath;
         public double Std
         {
             get { return _std; }
@@ -447,12 +448,6 @@ namespace UtilityTools.Modules.MotorTest.Model
             }
 
         }
-
-
-
-       
-
-
         /// <summary>
         /// 编码器测试
         /// </summary>
@@ -1473,104 +1468,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             message.StandardValue = StandardValue;
             message.Description = Descriptiondes;
         }
-        /// <summary>
-        /// T丝杆顺滑度检测
-        /// </summary>
-
-        private async Task<bool> TSmoothnessDetection()
-        {
-            if (!(MotorModel.MotorParams.MotorModelID == EnumMotorModel.MOTOR_t|| MotorModel.MotorParams.MotorModelID == EnumMotorModel.MOTOR_r)  )
-            {
-                return false;
-            }
-            MotorTestMessage TestMessage = new MotorTestMessage();
-            string result = "";
-            await Task.Run(async () =>
-            {
-                //单开线程去测试堵转和限位
-                _limitedtcs1 = new TaskCompletionSource<string>();
-                if (MotorModel.MotorParams.MotorModelID == EnumMotorModel.MOTOR_r)
-                {
-                    Goto(enumMotorId, (int)(MotorModel.MotorParams.SubRatio * 360));
-                }
-                else 
-                {
-                    Goto(enumMotorId, (int)(MotorModel.MotorParams.SubRatio * 20));
-                }
-               
-                Thread.Sleep(2000);
-
-                try
-                {
-                    _limitedtcs1 = new TaskCompletionSource<string>();
-
-                    Task.Run(() => { RotateMotorStallDetection(enumMotorId); });
-                    result = await _limitedtcs1.Task.WaitAsync(TimeSpan.FromSeconds(50));
-
-                    switch (result)
-                    {
-                        case "stall": AddMessage(TestMessage, "不合格", "不正常", "正常", $"电机堵转，请检查{MotorModel.MotorParams.Pos}"); break;
-                        case "SNLimted": AddMessage(TestMessage, "不合格", "不正常", "正常", $"到达软件负限位，异常{MotorModel.MotorParams.Pos}"); break;
-                        case "SPLimted": AddMessage(TestMessage, "不合格", "不正常", "正常", $"到达软件正限位{MotorModel.MotorParams.Pos}"); break;
-                        case "stop": AddMessage(TestMessage, "合格", "正常", "正常", $"电机到达指定位置{MotorModel.MotorParams.Pos}"); break;
-                        default:
-                            AddMessage(TestMessage, "不合格", "不正常", "正常", "异常"); break;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    AddMessage(TestMessage, "不合格", "不正常", "正常", $"异常{ex}");
-                }
-            });
-            MotorTestMessages.Add(TestMessage);
-            if (!(result == "stop" || result == "SPLimted"))
-            {
-                return false;
-               
-            }
-
-            TestMessage = new MotorTestMessage();
-            await Task.Run(async () =>
-            {
-                //单开线程去测试堵转和限位
-                if (MotorModel.MotorParams.MotorModelID == EnumMotorModel.MOTOR_r)
-                {
-                    Goto(enumMotorId, (int)(MotorModel.MotorParams.SubRatio * 0));
-                }
-                else
-                {
-                    Goto(enumMotorId, -(int)(MotorModel.MotorParams.SubRatio * 20));
-                }
-                Thread.Sleep(2000);
-                try
-                {
-                    _limitedtcs1 = new TaskCompletionSource<string>();
-                    Task.Run(() => { RotateMotorStallDetection(enumMotorId); });
-                    string result = await _limitedtcs1.Task.WaitAsync(TimeSpan.FromSeconds(50));
-                    switch (result)
-                    {
-                        case "stall": AddMessage(TestMessage, "不合格", "不正常", "正常", $"电机堵转，请检查{MotorModel.MotorParams.Pos}"); break;
-                        case "SNLimted": AddMessage(TestMessage, "不合格", "不正常", "正常", $"到达软件负限位{MotorModel.MotorParams.Pos}"); break;
-                        case "SPLimted": AddMessage(TestMessage, "不合格", "不正常", "正常", $"到达软件正限位,异常{MotorModel.MotorParams.Pos}"); break;
-                        case "stop": AddMessage(TestMessage, "合格", "正常", "正常", $"电机到达指定位置{MotorModel.MotorParams.Pos}"); break;
-                        default:
-                            AddMessage(TestMessage, "不合格", "不正常", "正常", "异常"); break;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    AddMessage(TestMessage, "不合格", "不正常", "正常", $"异常{ex}");
-                }
-
-            });
-            MotorTestMessages.Add(TestMessage);
-            if (!(result == "stop" || result == "SNLimted"))
-            {
-                return false;
-
-            }
-            return true;
-        }
+        
         private void DistanceSettingForDifferentAxes(bool direction)
         {
             if (MotorModel.MotorParams.MotorModelID == EnumMotorModel.MOTOR_t)
@@ -1936,6 +1834,47 @@ namespace UtilityTools.Modules.MotorTest.Model
                     PiontPlotModel.InvalidatePlot(true);
                 }
                 
+            }
+        }
+        public DelegateCommand DataPathSelectCommand { get; set; }
+        /// <summary>
+        /// 数据路径保存
+        /// </summary>
+        private void DataPathSelect()
+        {
+
+            FolderBrowserDialog dialog = new FolderBrowserDialog();
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.Cancel)
+            {
+                return;
+            }
+            _dataPath = dialog.SelectedPath;
+        }
+        private void AutoSaveData()
+        {
+            if (string.IsNullOrEmpty(_dataPath))
+            {
+                return;
+            }
+            else
+            {
+                if(!Directory.Exists(_dataPath))
+                {
+                    string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                    _dataPath = Path.Combine(baseDirectory,"Data");
+                    Directory.CreateDirectory(_dataPath);
+                }
+                var path = Path.Combine(_dataPath, DateTime.Now.ToString("yyyyMMdd_HHmmss_fff"));
+                Directory.CreateDirectory(path);
+                Serilize(path);
+                _plotViewSpeedMessage.Clear();
+                _plotViewPointMessage.Clear();
+                if (SpeedPlotModel != null && PiontPlotModel != null)
+                {
+                    SpeedPlotModel.InvalidatePlot(true);
+                    PiontPlotModel.InvalidatePlot(true);
+                }
+
             }
         }
         public void Serilize(string path)

@@ -107,7 +107,7 @@
                                  VerticalAlignment="Center" />
                         <ToggleButton Margin="8,0,8,0"
                                     IsChecked="{Binding MotorX.Polarity}" />
-                        <TextBlock Text="正}"
+                        <TextBlock Text="正"
                                  VerticalAlignment="Center" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal"
@@ -715,7 +715,7 @@
                                                   Margin="5"
                                                   DockPanel.Dock="Right"
                                                   Command="{Binding SetCompensationLengthCommand}" />
-                                            <Button Content="获取}"
+                                            <Button Content="获取"
                                                   Margin="5"
                                                   DockPanel.Dock="Right"
                                                   Command="{Binding GetCompensationLengthCommand}" />

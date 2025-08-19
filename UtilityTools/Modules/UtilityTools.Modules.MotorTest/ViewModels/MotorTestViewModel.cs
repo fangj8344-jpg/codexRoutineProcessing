@@ -117,7 +117,7 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
                     if (IsConnected == true)
                     {
                         Model._getMotorStateTimer.Start();
-                        Model.SendDataThread();
+                        Model.ThreadProc();
                     }
                     else
                     {
@@ -147,7 +147,7 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
                     if (NetIsConnected == true)
                     {
                         Model._getMotorStateTimer.Start();
-                        Model.SendDataThread();
+                        Model.ThreadProc();
                     }
                     else
                     {

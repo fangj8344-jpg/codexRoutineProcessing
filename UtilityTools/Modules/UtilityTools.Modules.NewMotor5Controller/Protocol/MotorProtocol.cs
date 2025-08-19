@@ -252,7 +252,7 @@ namespace UtilityTools.Modules.NewMotor5Controller.Protocol
         CMD_SYS_GETFMV = 0x0005,
         CMD_SYS_BROADCASE = 0x0006,
     }
-    internal class MotorProtocol
+    public class MotorProtocol
     {
         public MotorProtocol()
         {
@@ -280,7 +280,7 @@ namespace UtilityTools.Modules.NewMotor5Controller.Protocol
             }
 
             var cmd = BitConverter.GetBytes((ushort)command);
-            return cmd;
+            return ZepGenericProtocol.GetCmd(DeviceID, cmd, data) ;
         }
         public static byte[] GetCmd(byte[] id, byte[] command, byte[] data)
         {
