@@ -76,7 +76,7 @@ namespace UtilityTools.Modules.NewMotor5Controller.Entity
         #region ------------Field------------
         private List<MotorModel> _motorsList = new List<MotorModel>();
         private System.Timers.Timer? _timer;
-        private int _interval = 0;
+        private int _interval = 500;
         private bool _isFirstRequest = true;
         private NewMotor5ControllerParser _parser;
         private MotorProtocol MotorProtocol;
@@ -847,7 +847,7 @@ namespace UtilityTools.Modules.NewMotor5Controller.Entity
 
         public void StartRequest(int interval)
         {
-            if (interval == _interval && _timer != null && _timer.Enabled == true)
+            if ( _timer != null && _timer.Enabled == true)
                 return;
             _interval = interval;
             if (_timer != null)
