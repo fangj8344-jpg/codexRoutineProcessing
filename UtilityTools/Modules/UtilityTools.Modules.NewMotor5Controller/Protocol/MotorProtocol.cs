@@ -16,15 +16,15 @@ namespace UtilityTools.Modules.NewMotor5Controller.Protocol
     public enum EnumMotorId
     {
         [Description("X轴")]
-        MOTOR_X,
+        MOTOR_X = 0x02,
         [Description("Y轴")]
-        MOTOR_Y,
+        MOTOR_Y = 0x01,
         [Description("Z轴")]
-        MOTOR_Z,
+        MOTOR_Z = 0x04,
         [Description("T轴")]
-        MOTOR_T,
+        MOTOR_T = 0x03,
         [Description("R轴")]
-        MOTOR_R,
+        MOTOR_R = 0x05,
     }
 
     /// <summary>

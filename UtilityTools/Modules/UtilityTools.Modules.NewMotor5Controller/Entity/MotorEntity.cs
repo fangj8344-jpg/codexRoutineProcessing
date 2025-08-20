@@ -109,7 +109,7 @@ namespace UtilityTools.Modules.NewMotor5Controller.Entity
         public MotorModel MotorX
         {
             get { return _motorX; }
-            set { _motorX = value; RaisePropertyChanged(); }
+            set { _motorX = value; RaisePropertyChanged();  }
         }
 
         private MotorModel _motorY;
@@ -861,6 +861,7 @@ namespace UtilityTools.Modules.NewMotor5Controller.Entity
             _timer.Interval = interval;
             _timer.Elapsed += Timer_Elapsed;
             _timer.Enabled = true;
+            _timer.Start();
         }
 
         public void StopMotor(EnumMotorId motorId)
@@ -972,6 +973,7 @@ namespace UtilityTools.Modules.NewMotor5Controller.Entity
 
         private void Motor_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
+
             var timerEnable = _timer != null && _timer.Enabled;
             var motor = sender as MotorModel;
             if (motor != null)
@@ -989,7 +991,8 @@ namespace UtilityTools.Modules.NewMotor5Controller.Entity
                                         StopRequest();
                                     }
                                     Motors.Add(motor);
-                                    if (timerEnable)
+                                    timerEnable = _timer != null && _timer.Enabled;
+                                    if (!timerEnable)
                                     {
                                         StartRequest(_interval);
                                     }
@@ -1004,10 +1007,6 @@ namespace UtilityTools.Modules.NewMotor5Controller.Entity
                                         StopRequest();
                                     }
                                     Motors.Remove(motor);
-                                    if (timerEnable)
-                                    {
-                                        StartRequest(_interval);
-                                    }
                                 }
                             }
                            
