@@ -42,11 +42,11 @@ namespace UtilityTools.Modules.NewMotor5Controller.Entity
             MotorT = new MotorModel(EnumMotorId.MOTOR_T, this) { };
             _motorsList.Add(MotorT);
             
-            Motors.Add(MotorX);
-            Motors.Add(MotorY);
-            Motors.Add(MotorZ);
-            Motors.Add(MotorR);
-            Motors.Add(MotorT);
+            //Motors.Add(MotorX);
+            //Motors.Add(MotorY);
+            //Motors.Add(MotorZ);
+            //Motors.Add(MotorR);
+            //Motors.Add(MotorT);
             MotorX.PropertyChanged += Motor_PropertyChanged;
             MotorY.PropertyChanged += Motor_PropertyChanged;
             MotorZ.PropertyChanged += Motor_PropertyChanged;

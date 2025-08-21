@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CoreTools.Global;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -97,6 +98,24 @@ namespace UtilityTools.Core.Method
                 return EnumAttributes[0].Description;
             }
             return e.ToString();
+        }
+        /// <summary>
+        /// 获取枚举描述信息对列表
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static IList EnumToDescList(Type type)
+        {
+            ArrayList list = new ArrayList();
+            Array array = Enum.GetValues(type);
+
+            bool isChinese = LanguageManager.IsChineseUICulture();
+
+            foreach (Enum value in array)
+            {
+                list.Add(new KeyValuePair<Enum, string>(value, isChinese ? GetEnumDesc(value) : value.ToString()));
+            }
+            return list;
         }
     }
 }

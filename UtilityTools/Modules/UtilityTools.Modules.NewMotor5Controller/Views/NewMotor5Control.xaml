@@ -43,6 +43,7 @@
                 <x:Type TypeName="protocol:EnumMotorUnitType" />
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
+
     </UserControl.Resources>
    
     <Grid>
@@ -201,14 +202,14 @@
                                     Grid.Row="0"
                                     Grid.Column="0">
                                 <UniformGrid Columns="2">
-                                    <Label Content="类型"
+                                    <Label Content="电机类型"
                                          HorizontalContentAlignment="Center"
                                          VerticalContentAlignment="Center" />
                                     <Label Content="{Binding GetParam.Type, Mode=TwoWay, Converter={StaticResource EnumDescriptionConverter}}"
                                          HorizontalContentAlignment="Center"
                                          VerticalContentAlignment="Center" />
 
-                                    <Label Content="轴类型"
+                                    <Label Content="电机轴类型"
                                          HorizontalContentAlignment="Center"
                                          VerticalContentAlignment="Center" />
                                     <Label Content="{Binding GetParam.AxisType, Mode=TwoWay, Converter={StaticResource EnumDescriptionConverter}}"
@@ -229,28 +230,28 @@
                                          HorizontalContentAlignment="Center"
                                          VerticalContentAlignment="Center" />
 
-                                    <Label Content="系数"
+                                    <Label Content="单位换算系数"
                                          HorizontalContentAlignment="Center"
                                          VerticalContentAlignment="Center" />
                                     <Label Content="{Binding GetParam.Coef, Mode=TwoWay}"
                                          HorizontalContentAlignment="Center"
                                          VerticalContentAlignment="Center" />
 
-                                    <Label Content="限位掩码"
+                                    <Label Content="限位状态"
                                          HorizontalContentAlignment="Center"
                                          VerticalContentAlignment="Center" />
                                     <Label Content="{Binding GetParam.LimitMask, Mode=TwoWay}"
                                          HorizontalContentAlignment="Center"
                                          VerticalContentAlignment="Center" />
 
-                                    <Label Content="脉冲位置"
+                                    <Label Content="脉冲坐标"
                                          HorizontalContentAlignment="Center"
                                          VerticalContentAlignment="Center" />
                                     <Label Content="{Binding GetParam.PulsePos, Mode=TwoWay}"
                                          HorizontalContentAlignment="Center"
                                          VerticalContentAlignment="Center" />
 
-                                    <Label Content="真实单位位置"
+                                    <Label Content="物理单位坐标"
                                          HorizontalContentAlignment="Center"
                                          VerticalContentAlignment="Center" />
                                     <Label Content="{Binding GetParam.RealUnitPos, Mode=TwoWay}"
@@ -264,7 +265,7 @@
                                          HorizontalContentAlignment="Center"
                                          VerticalContentAlignment="Center" />
 
-                                    <Label Content="真实单位速度"
+                                    <Label Content="物理单位速度"
                                          HorizontalContentAlignment="Center"
                                          VerticalContentAlignment="Center" />
                                     <Label Content="{Binding GetParam.RealUnitSpeed, Mode=TwoWay}"
@@ -278,7 +279,7 @@
                                          HorizontalContentAlignment="Center"
                                          VerticalContentAlignment="Center" />
 
-                                    <Label Content="电机方向"
+                                    <Label Content="运行方向"
                                          HorizontalContentAlignment="Center"
                                          VerticalContentAlignment="Center" />
                                     <Label Content="{Binding GetParam.MotorDir, Mode=TwoWay, Converter={StaticResource EnumDescriptionConverter}}"
@@ -291,7 +292,7 @@
                                     Grid.Row="0"
                                     Grid.Column="1">
                                 <UniformGrid Columns="3">
-                                    <Label Content="类型"
+                                    <Label Content="电机类型"
                                          HorizontalContentAlignment="Center"
                                          VerticalContentAlignment="Center" />
                                     <ComboBox VerticalAlignment="Center"
@@ -303,7 +304,7 @@
                                     <Button Content="设置"
                                           Command="{Binding SetMotorTypeCommand}" />
 
-                                    <Label Content="轴类型"
+                                    <Label Content="电机轴类型"
                                          HorizontalContentAlignment="Center"
                                          VerticalContentAlignment="Center" />
                                     <ComboBox VerticalAlignment="Center"
@@ -315,7 +316,7 @@
                                     <Button Content="设置"
                                           Command="{Binding SetMotorAxisTypeCommand}" />
 
-                                    <Label Content="控制模式"
+                                    <Label Content="电机控制模式"
                                          HorizontalContentAlignment="Center"
                                          VerticalContentAlignment="Center" />
                                     <ComboBox VerticalAlignment="Center"
@@ -396,7 +397,7 @@
                                     <Button Content="设置"
                                           Command="{Binding SetMotorLimitMaskCommand}" />
 
-                                    <Label Content="脉冲位置"
+                                    <Label Content="脉冲坐标"
                                          HorizontalContentAlignment="Center"
                                          VerticalContentAlignment="Center" />
                                     <TextBox Text="{Binding SetParam.PulsePos, Mode=TwoWay}"
@@ -405,7 +406,7 @@
                                     <Button Content="设置"
                                           Command="{Binding SetMotorPulsePosCommand}" />
 
-                                    <Label Content="真实的单位位置"
+                                    <Label Content="物理单位坐标"
                                          HorizontalContentAlignment="Center"
                                          VerticalContentAlignment="Center" />
                                     <TextBox Text="{Binding SetParam.RealUnitPos, Mode=TwoWay}"
@@ -423,7 +424,7 @@
                                     <Button Content="设置"
                                           Command="{Binding SetMotorPulseSpeedCommand}" />
 
-                                    <Label Content="真实单位速度"
+                                    <Label Content="物理单位速度"
                                          HorizontalContentAlignment="Center"
                                          VerticalContentAlignment="Center" />
                                     <TextBox Text="{Binding SetParam.RealUnitSpeed, Mode=TwoWay}"
@@ -432,7 +433,7 @@
                                     <Button Content="设置"
                                           Command="{Binding SetMotorUnitSpeedCommand}" />
 
-                                    <Label Content="移动脉冲"
+                                    <Label Content="相对脉冲"
                                          HorizontalContentAlignment="Center"
                                          VerticalContentAlignment="Center" />
                                     <TextBox Text="{Binding MovePulse, Mode=TwoWay}"
@@ -441,7 +442,7 @@
                                     <Button Content="设置"
                                           Command="{Binding SetMotorPulseMoveCommand}" />
 
-                                    <Label Content="位移单位"
+                                    <Label Content="相对物理单位"
                                          HorizontalContentAlignment="Center"
                                          VerticalContentAlignment="Center" />
                                     <TextBox Text="{Binding MoveUnit, Mode=TwoWay}"
@@ -591,7 +592,7 @@
                                                      DockPanel.Dock="Left"
                                                      VerticalAlignment="Center"
                                                      TextAlignment="Center" />
-                                            <Button Content="设置}"
+                                            <Button Content="设置"
                                                   Margin="5"
                                                   DockPanel.Dock="Right"
                                                   Command="{Binding SetMotorMaxPosCommand}" />
@@ -759,7 +760,7 @@
                                         <Button Content="激活"
                                               Margin="5"
                                               Command="{Binding MotorActiveCommand}" />
-                                        <Button Content="使能"
+                                        <Button Content="失活"
                                               Margin="5"
                                               Command="{Binding MotorDisactiveCommand}" />
                                     </UniformGrid>

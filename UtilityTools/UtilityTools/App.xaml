@@ -17,8 +17,10 @@
                                  SecondaryColor="Lime" />
 
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/UtilityTools.UserControls;component/Thremes/Xamls/RelayToggleButton.xaml"/>
                 <ResourceDictionary>
                     <converter:EnumDescriptionConverter  x:Key="EnumDescriptionConverter"/>
+                    
                 </ResourceDictionary>
             </ResourceDictionary.MergedDictionaries>
 
