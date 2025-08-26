@@ -478,6 +478,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                         __isInLeadScrewTest = false;
                         return;
                     }
+                    
                     if (_testTime.ElapsedMilliseconds / 1000.0 / 60 > 60)
                     {
                         break;
@@ -506,28 +507,23 @@ namespace UtilityTools.Modules.MotorTest.Model
             _work.WorkerSupportsCancellation = true;
             _work.DoWork += Worker_DoWork;
             _work?.RunWorkerAsync();
-            _testTime = null;
+   
 
-            while (true)
+            while (_isDurabilityTest)
             {
-                if (_testTime == null)
-                {
-                    _testTime = new Stopwatch();
-                    _testTime.Start();
-                }
-               
                 bool result1 = await SmoothnessDetection(EnumMotorId.MOTOR_1);
                 bool result2 = await SmoothnessDetection(EnumMotorId.MOTOR_2);
-                if (_testTime.ElapsedMilliseconds / 1000.0 / 60 > 60)
+                var time = _xPlotViewPointMessage.Last().Date - _xPlotViewPointMessage[0].Date;
+                var min = time.TotalMinutes;
+                if (min > 30)
                 {
-                    AutoSaveData();
-                    _testTime = null;
+                  AutoSaveData();
+                   
                 }
 
             }
             _work.CancelAsync();
-            _testTime.Stop();
-            _testTime = null;
+      
         }
         public DelegateCommand ShutDownDurabilityTestCommand { get; set; }
         private void ShutDownDurabilityTest()
@@ -2043,7 +2039,11 @@ namespace UtilityTools.Modules.MotorTest.Model
                 {
                     _byteQueue = new Queue<byte[]>();
                 }
-                _byteQueue.Enqueue(cmd);
+                if (_importantByteQueue == null || _importantByteQueue.Count == 0)
+                {
+                    _byteQueue.Enqueue(cmd);
+                }
+               
             }
         }
         private void SendImportantData(byte[] cmd)
@@ -2066,76 +2066,74 @@ namespace UtilityTools.Modules.MotorTest.Model
             }
         }
         
-        public void SendDataThread()
+        public async Task SendDataThread()
         {
-            Task.Run(async () => 
+         
+            List<long> times = new List<long>();
+            while (NetUdpService.IsOpen)
             {
-               List<long> times = new List<long>();
-                while (NetUdpService.IsOpen)
+                if (_stopwatch == null)
                 {
-                    if (_stopwatch == null)
-                    {
                         
-                    }
-                    if (_stopwatch.IsRunning == false)
-                    {
-                        _stopwatch.Start();
-                    }
-                    if (_importantByteQueue != null && _importantByteQueue.Count > 0)
-                    {
-                        NetUdpService.SendMsg(_importantByteQueue.Dequeue());
-                    }
-                    else
-                    {
-                        if (_byteQueue != null && _byteQueue.Count > 0)
-                        {
-                            NetUdpService.SendMsg(_byteQueue.Dequeue());
-                        }
-                    }
-                    var time = _stopwatch.ElapsedMilliseconds;
-                    //  times.Add(time);
-                    // Debug.WriteLine($"发送时间间隔{time}");
-
-                    _waitingReply = new TaskCompletionSource<string>();
-                    Thread.Sleep(1);
-                    try
-                    {
-                        string result = await _waitingReply.Task.WaitAsync(TimeSpan.FromMilliseconds(300));
-                        if (result == "Ready")
-                        {
-                            continue;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-
-                    }
                 }
-            
-                while (SerialPortService.IsOpen)
+                if (_stopwatch.IsRunning == false)
+                {
+                    _stopwatch.Start();
+                }
+                if (_importantByteQueue != null && _importantByteQueue.Count > 0)
+                {
+                    NetUdpService.SendMsg(_importantByteQueue.Dequeue());
+                }
+                else
                 {
                     if (_byteQueue != null && _byteQueue.Count > 0)
                     {
-
-                        SerialPortService.SendMsg(_byteQueue.Dequeue());
-
-                    }
-                    try
-                    {
-                        string result = await _waitingReply.Task.WaitAsync(TimeSpan.FromMilliseconds(300));
-                        if (result == "Ready")
-                        {
-                            continue;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-
+                        NetUdpService.SendMsg(_byteQueue.Dequeue());
                     }
                 }
+                var time = _stopwatch.ElapsedMilliseconds;
+                //  times.Add(time);
+                // Debug.WriteLine($"发送时间间隔{time}");
+
+                _waitingReply = new TaskCompletionSource<string>();
+                Thread.Sleep(1);
+                try
+                {
+                    string result = await _waitingReply.Task.WaitAsync(TimeSpan.FromMilliseconds(300));
+                    if (result == "Ready")
+                    {
+                        continue;
+                    }
+                }
+                catch (Exception ex)
+                {
+
+                }
+            }
+            
+            while (SerialPortService.IsOpen)
+            {
+                if (_byteQueue != null && _byteQueue.Count > 0)
+                {
+
+                    SerialPortService.SendMsg(_byteQueue.Dequeue());
+
+                }
+                try
+                {
+                    string result = await _waitingReply.Task.WaitAsync(TimeSpan.FromMilliseconds(300));
+                    if (result == "Ready")
+                    {
+                        continue;
+                    }
+                }
+                catch (Exception ex)
+                {
+
+                }
+            }
                 
-               
-            });
+  
            
         }
         /// <summary>
@@ -2143,26 +2141,33 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// </summary>
         public void ThreadProc()
         {
-            try
+            Task.Run(async () => 
             {
-                // 执行发送逻辑
-                SendDataThread();
-            }
-            catch (Exception ex)
-            {
-                
-            }
-            finally
-            {
-                // 线程结束时检查是否需要重启
-                CheckAndRestart();
-            }
+                try
+                {
+                    if (NetUdpService.IsOpen || SerialPortService.IsOpen)
+                    {
+                        // 执行发送逻辑
+                        await SendDataThread();
+                    }
+
+                }
+                catch (Exception ex)
+                {
+
+                }
+                finally
+                {
+                   
+                }
+            });
+           
         }
         private void CheckAndRestart()
         {
             if (NetUdpService.IsOpen || SerialPortService.IsOpen)
             {
-                
+                ThreadProc();
             }
         }
         public event EventHandler<byte[]> MyCustomEvent;
@@ -2371,11 +2376,11 @@ namespace UtilityTools.Modules.MotorTest.Model
         {
             SaveToFile(path, "speed");
             SaveToFile(path, "point");
-            string xPointjson = JsonConvert.SerializeObject(_xPlotViewPointMessage);
-            string yPointjson = JsonConvert.SerializeObject(_yPlotViewPointMessage);
-            string xSpeedjson = JsonConvert.SerializeObject(_xPlotViewSpeedMessage);
-            string ySpeedjson = JsonConvert.SerializeObject(_yPlotViewSpeedMessage);
-            string testMessgae = JsonConvert.SerializeObject(MotorTestMessages);
+            string xPointjson = JsonConvert.SerializeObject(_xPlotViewPointMessage.ToList());
+            string yPointjson = JsonConvert.SerializeObject(_yPlotViewPointMessage.ToList());
+            string xSpeedjson = JsonConvert.SerializeObject(_xPlotViewSpeedMessage.ToList());
+            string ySpeedjson = JsonConvert.SerializeObject(_yPlotViewSpeedMessage.ToList());
+            string testMessgae = JsonConvert.SerializeObject(MotorTestMessages.ToList());
             // 获取当前时间并格式化为文件名安全的字符串
 
             string xPointjsonfilePathfileName = $"xPoint.json";
@@ -2423,28 +2428,24 @@ namespace UtilityTools.Modules.MotorTest.Model
         }
         private void AutoSaveData()
         {
-            if (string.IsNullOrEmpty(_dataPath))
+
+            if (_dataPath == null || !Directory.Exists(_dataPath))
             {
-                return;
+                string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                _dataPath = Path.Combine(baseDirectory, "Data");
+                Directory.CreateDirectory(_dataPath);
             }
-            else
-            {
-                if (!Directory.Exists(_dataPath))
-                {
-                    string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-                    _dataPath = Path.Combine(baseDirectory, "Data");
-                    Directory.CreateDirectory(_dataPath);
-                }
-                var path = Path.Combine(_dataPath, DateTime.Now.ToString("yyyyMMdd_HHmmss_fff"));
-                Directory.CreateDirectory(path);
-                SaveBase(path);
-                _xPlotViewSpeedMessage.Clear();
-                _yPlotViewSpeedMessage.Clear();
-                _xPlotViewPointMessage.Clear();
-                _yPlotViewPointMessage.Clear();
-                MotorSpeedplotModel.InvalidatePlot(true);
-                MotorplotModel.InvalidatePlot(true);
-            }
+            var path = Path.Combine(_dataPath, DateTime.Now.ToString("yyyyMMdd_HHmmss_fff"));
+            Directory.CreateDirectory(path);
+
+            SaveBase(path);
+            _xPlotViewSpeedMessage.Clear();
+            _yPlotViewSpeedMessage.Clear();
+            _xPlotViewPointMessage.Clear();
+            _yPlotViewPointMessage.Clear();
+            MotorSpeedplotModel.InvalidatePlot(true);
+            MotorplotModel.InvalidatePlot(true);
+            
         }
         public DelegateCommand DeserilizeCommand { get; set; }
         private void Deserilize()
