@@ -328,7 +328,7 @@ namespace UtilityTools.Modules.ImageAnalyzer.Model
                 {"PixelLength", d["PixelLength"][0..^2]},
                 {"field_size", d.ContainsKey("FieldSize") ? d["FieldSize"][0..^2] : "0" },
                 {"position", d["Position"]},
-                {"avg_length", d.TryGetValue("AvLenth", out var result) ? result : "8"}, // 默认给8点平均，后续需要保持该值
+                {"avg_length", d.TryGetValue("AveragePoints", out var result) ? result : "8"}, // 默认给8点平均，后续需要保持该值
                 {"Frequency", d["Frequency"][0..^2]},
                 {"significant_bit", d["DataFlag"]},
             };

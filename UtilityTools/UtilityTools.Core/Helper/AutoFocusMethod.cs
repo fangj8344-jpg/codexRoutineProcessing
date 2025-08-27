@@ -37,7 +37,7 @@ namespace UtilityTools.Core.Helper
 {
     public class AutoFocusMethod
     {
-        public static double CalculateTenengrad(Mat gray) 
+        public static double CalculateTenengrad(Mat gray)
         {
             // Sobel算子计算梯度
             Mat gx = new Mat(), gy = new Mat();
@@ -65,7 +65,7 @@ namespace UtilityTools.Core.Helper
             return stddev.At<double>(0) * stddev.At<double>(0);
         }
 
-        public static double CalculateBrenner(Mat gray) 
+        public static double CalculateBrenner(Mat gray)
         {
             double total = 0;
 
@@ -162,5 +162,169 @@ namespace UtilityTools.Core.Helper
             }
             return entropy;
         }
+
+        // 计算相邻像素相关系数
+        private static double CalculateAdjacentPixelCorrelation(Mat grayImage)
+        {
+            int rows = grayImage.Rows;
+            int cols = grayImage.Cols;
+            int totalPixels = rows * (cols - 1);
+
+            double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+
+            unsafe
+            {
+                byte* ptr = (byte*)grayImage.Data;
+                for (int r = 0; r < rows; r++)
+                {
+                    for (int c = 0; c < cols - 1; c++)
+                    {
+                        int idx = r * cols + c;
+                        byte x = ptr[idx];       // 当前像素
+                        byte y = ptr[idx + 1];   // 右侧相邻像素
+
+                        sumX += x;
+                        sumY += y;
+                        sumXY += x * y;
+                        sumX2 += x * x;
+                        sumY2 += y * y;
+                    }
+                }
+            }
+
+            // 计算相关系数
+            double numerator = totalPixels * sumXY - sumX * sumY;
+            double denominator = Math.Sqrt(
+                (totalPixels * sumX2 - sumX * sumX) *
+                (totalPixels * sumY2 - sumY * sumY));
+
+            return Math.Abs(denominator > 1e-10 ? numerator / denominator : 0);
+        }
+
+        // 计算归一化标准差
+        private static double CalculateNormalizedStdDev(Mat grayImage)
+        {
+            // 计算原始标准差
+            Mat mean = new Mat();
+            Mat stdDev = new Mat();
+            Cv2.MeanStdDev(grayImage, mean, stdDev);
+            double rawStdDev = stdDev.At<double>(0);
+
+            // 归一化到0-100范围
+            double maxPossibleStdDev = Math.Sqrt(Math.Pow(255, 2) / 12); // 均匀分布标准差
+            return (rawStdDev / maxPossibleStdDev) * 100;
+        }
+
+        public static double CalculateMinMaxDiff(Mat grayImage) 
+        {
+            Cv2.MinMaxIdx(grayImage, out double min, out double max);
+            return max - min;
+        }
+
+        // 可选：频率分析（更精确但较慢），计算高频成分占比
+        public static double CalculateHighFrequencyRatio(Mat grayImage)
+        {
+            // 调整到适合FFT的大小
+            Mat padded = new Mat();
+            int optWidth = 2 * (grayImage.Cols / 2);
+            int optHeight = 2 * (grayImage.Rows / 2);
+            Cv2.Resize(grayImage, padded, new OpenCvSharp.Size(optWidth, optHeight));
+
+            // 转换为浮点
+            padded.ConvertTo(padded, MatType.CV_32F);
+
+            // 执行FFT
+            Mat[] planes = { padded, Mat.Zeros(padded.Size(), MatType.CV_32F) };
+            Mat complex = new Mat();
+            Cv2.Merge(planes, complex);
+            Cv2.Dft(complex, complex);
+
+            // 计算幅度谱
+            Cv2.Split(complex, out planes);
+            Cv2.Magnitude(planes[0], planes[1], planes[0]);
+            Mat spectrum = planes[0];
+
+            // 低频区域（中心区域）
+            Rect lowFreqROI = new Rect(
+                optWidth / 4,
+                optHeight / 4,
+                optWidth / 2,
+                optHeight / 2);
+
+            // 计算高频能量比例
+            double totalEnergy = Cv2.Sum(spectrum)[0];
+
+            // 创建高频掩码：整个频谱区域减去中心低频区域
+            Mat mask = new Mat(spectrum.Size(), MatType.CV_32F, Scalar.All(1.0f));
+            mask.SubMat(lowFreqROI).SetTo(0.0f);
+
+            // 计算高频能量
+            Mat highFreqSpectrum = new Mat();
+            Cv2.Multiply(spectrum, mask, highFreqSpectrum);
+            double highFreqEnergy = Cv2.Sum(highFreqSpectrum)[0];
+
+            return highFreqEnergy / totalEnergy;
+        }
+
+        /// <summary>
+        /// 评估图像清晰度
+        /// </summary>
+        public static double AssessSharpness(Mat grayImage, int kernelSize = 5, double sigma = 1.0)
+        {
+            // 1. 应用高斯模糊（再模糊）
+            Mat reblurred = new Mat();
+            Cv2.GaussianBlur(grayImage, reblurred, new OpenCvSharp.Size(kernelSize, kernelSize), sigma);
+
+            // 2. 使用拉普拉斯算子提取边缘
+            Mat edgesOriginal = new Mat();
+            Mat edgesReblurred = new Mat();
+            Cv2.Laplacian(grayImage, edgesOriginal, MatType.CV_64F);
+            Cv2.Laplacian(reblurred, edgesReblurred, MatType.CV_64F);
+
+            // 3. 计算边缘差异
+            Mat edgeDiff = new Mat();
+            Cv2.Absdiff(edgesOriginal, edgesReblurred, edgeDiff);
+
+            // 4. 计算清晰度指标（差异图像的标准差）
+            Cv2.MeanStdDev(edgeDiff, out _, out var stdDev);
+            double sharpnessIndex = stdDev.ToDouble();
+
+            // 释放资源
+            reblurred.Dispose();
+            edgesOriginal.Dispose();
+            edgesReblurred.Dispose();
+            edgeDiff.Dispose();
+
+            return sharpnessIndex;
+        }
+
+        /// <summary>
+        /// 评估图像噪声水平
+        /// </summary>
+        public static double AssessNoise(Mat grayImage, int kernelSize = 5, double sigma = 1.0)
+        {
+            // 1. 应用高斯模糊（再模糊）
+            Mat reblurred = new Mat();
+            Cv2.GaussianBlur(grayImage, reblurred, new OpenCvSharp.Size(kernelSize, kernelSize), sigma);
+
+            // 2. 计算残差图像（原图与再模糊图的差异）
+            Mat residual = new Mat();
+            Cv2.Absdiff(grayImage, reblurred, residual);
+
+            // 3. 计算噪声指标（残差图像的标准差）
+            Cv2.MeanStdDev(residual, out _, out var stdDev);
+            double noiseLevel = stdDev.ToDouble();
+
+            // 4. 可选：计算残差图像的熵值作为辅助指标
+            double entropy = CalculateEntropy(residual);
+
+            // 释放资源
+            reblurred.Dispose();
+            residual.Dispose();
+
+            // 返回综合噪声指标（可以根据需要调整权重）
+            return noiseLevel * 0.7 + entropy * 0.3;
+        }
+
     }
 }

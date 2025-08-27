@@ -89,6 +89,8 @@
                         <ContextMenu>
                             <MenuItem Header="保存到文件"
                                       Command="{Binding SaveToFileCommand}"/>
+                            <MenuItem Header="自适应"
+                                      Command="{Binding AutoAdjustCommand}"/>
                         </ContextMenu>
                     </oxy:PlotView.ContextMenu>
                 </oxy:PlotView>

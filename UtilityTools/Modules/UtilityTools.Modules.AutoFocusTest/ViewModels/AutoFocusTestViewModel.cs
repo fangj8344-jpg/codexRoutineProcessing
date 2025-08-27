@@ -97,6 +97,7 @@ namespace UtilityTools.Modules.AutoFocusTest.ViewModels
             this._dialogHostService = dialogHostService;
 
             LoadImagePathCommand = new DelegateCommand(LoadImagePath);
+            AutoAdjustCommand = new DelegateCommand(AutoAdjust);
             BindingOperations.EnableCollectionSynchronization(BindItems, _locker);
 
             InitPlot();
@@ -192,6 +193,21 @@ namespace UtilityTools.Modules.AutoFocusTest.ViewModels
             set { _noise = value; RaisePropertyChanged(); }
         }
 
+        private LineSeriesInfo _minMaxDiff;
+
+        public LineSeriesInfo MinMaxDiff
+        {
+            get { return _minMaxDiff; }
+            set { _minMaxDiff = value; RaisePropertyChanged(); }
+        }
+
+        private LineSeriesInfo _highFreqRatio;
+
+        public LineSeriesInfo HighFreqRatio
+        {
+            get { return _highFreqRatio; }
+            set { _highFreqRatio = value; RaisePropertyChanged(); }
+        }
         #endregion
 
         #region ------------Command------------
@@ -206,6 +222,17 @@ namespace UtilityTools.Modules.AutoFocusTest.ViewModels
                 FilePath = dialog.SelectedPath;
                 StartAnalysis(FilePath);
             }
+        }
+
+        public DelegateCommand AutoAdjustCommand { get; set; }
+
+        private void AutoAdjust()
+        {
+            foreach (var axis in ResultPlot.Axes)
+            {
+                axis.Reset();
+            }
+            ResultPlot.InvalidatePlot(true);
         }
         #endregion
 
@@ -245,6 +272,8 @@ namespace UtilityTools.Modules.AutoFocusTest.ViewModels
             Brenner = new LineSeriesInfo(ResultPlot, "Brenner");
             MultiScale = new LineSeriesInfo(ResultPlot, "MultiScale");
             Noise = new LineSeriesInfo(ResultPlot, "Noise");
+            MinMaxDiff = new LineSeriesInfo(ResultPlot, "MinMaxDiff");
+            HighFreqRatio = new LineSeriesInfo(ResultPlot, "HighFreqRatio");
         }
 
         /// <summary>
@@ -333,6 +362,8 @@ namespace UtilityTools.Modules.AutoFocusTest.ViewModels
                 Brenner.Clear();
                 MultiScale.Clear();
                 Noise.Clear();
+                MinMaxDiff.Clear();
+                HighFreqRatio.Clear();
             }));
 
             var files = new DirectoryInfo(filePath).GetFiles();
@@ -367,13 +398,17 @@ namespace UtilityTools.Modules.AutoFocusTest.ViewModels
                         var laplacian = AutoFocusMethod.Laplacian(gray);
                         var brenner = AutoFocusMethod.CalculateBrenner(gray);
                         var multi = AutoFocusMethod.MultiScaleSharpness(gray);
-                        var noise = AutoFocusMethod.ComputeNoise(gray);
+                        var noise = AutoFocusMethod.AssessNoise(gray);
+                        var diff = AutoFocusMethod.AssessSharpness(gray);
+                        var highFreqRatio = AutoFocusMethod.CalculateHighFrequencyRatio(gray);
 
                         Tenengrad.Add(new IntegerChartData(tmpBindData.ObValue, tenengrad));
                         Laplacian.Add(new IntegerChartData(tmpBindData.ObValue, laplacian));
                         Brenner.Add(new IntegerChartData(tmpBindData.ObValue, brenner));
                         MultiScale.Add(new IntegerChartData(tmpBindData.ObValue, multi));
                         Noise.Add(new IntegerChartData(tmpBindData.ObValue, noise));
+                        MinMaxDiff.Add(new IntegerChartData(tmpBindData.ObValue, diff));
+                        HighFreqRatio.Add(new IntegerChartData(tmpBindData.ObValue, highFreqRatio));
 
                         ResultPlot.InvalidatePlot(true);
                     }
