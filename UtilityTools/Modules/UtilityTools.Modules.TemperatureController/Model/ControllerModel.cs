@@ -34,6 +34,7 @@ using OxyPlot.Wpf;
 using Prism.Commands;
 using Prism.Ioc;
 using Prism.Mvvm;
+using ScottPlot.Drawing.Colormaps;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -307,36 +308,47 @@ namespace UtilityTools.Modules.TemperatureController.Model
                     return;
                 }
 
-
+                var cmdSwitch = TemperatureControllerProtocol.SetCentigradeCommand(1);
                 BtnContent = "关闭";
                 if (SerialPortService.IsOpen)
                 {
                     if (IsManual)
                     {
-                        var cmd = TemperatureControllerProtocol.SetManualCurrentCommand(
-                            SetCurrent,
-                            MaxCurrent);
-                        SerialPortService.SendMsg(cmd);
+                        //var cmd = TemperatureControllerProtocol.SetManualCurrentCommand(
+                        //    SetCurrent,
+                        //    MaxCurrent);
+                        var cmdModel = TemperatureControllerProtocol.SetCtrlModeCommand(1);
+                        var cmdIout = TemperatureControllerProtocol.SetManualIOutCommand(SetCurrent);
+                        //var cmdImax = TemperatureControllerProtocol.SetIMaxCommand(MaxCurrent);
+                        SerialPortService.SendMsg(cmdModel);
                         StartManualTimer();
                     }
                     else
                     {
+                        var cmdModel = TemperatureControllerProtocol.SetCtrlModeCommand(1);
+                        var cmdPID = TemperatureControllerProtocol.SetPIDparameterCommand(Pid.Kp, Pid.Ki, Pid.Kd);
+                        var cmdImax = TemperatureControllerProtocol.SetIMaxCommand(MaxCurrent);
+                        SerialPortService.SendMsg(cmdModel);
                         if (IsKelvin)
                         {
-                            var cmd = TemperatureControllerProtocol.SetKelvinPidCommand(
-                                TargetTemperature,
-                                SetCurrent,
-                                MaxCurrent,
-                                Pid.Kp, Pid.Ki, Pid.Kd);
+                            //var cmd = TemperatureControllerProtocol.SetKelvinPidCommand(
+                            //    TargetTemperature,
+                            //    SetCurrent,
+                            //    MaxCurrent,
+                            //    Pid.Kp, Pid.Ki, Pid.Kd);
+                            var cmdtargetTemp = TemperatureControllerProtocol.SetPIDTargetTempCommand(1, TargetTemperature);
+                            var cmd = TemperatureControllerProtocol.SetRtimeTempCommand(1);
                             SerialPortService.SendMsg(cmd);
                         }
                         else
                         {
-                            var cmd = TemperatureControllerProtocol.SetCentigradePidCommand(
-                                TargetTemperature,
-                                SetCurrent,
-                                MaxCurrent,
-                                Pid.Kp, Pid.Ki, Pid.Kd);
+                            //var cmd = TemperatureControllerProtocol.SetCentigradePidCommand(
+                            //    TargetTemperature,
+                            //    SetCurrent,
+                            //    MaxCurrent,
+                            //    Pid.Kp, Pid.Ki, Pid.Kd);
+                            var cmdtargetTemp = TemperatureControllerProtocol.SetPIDTargetTempCommand(0, TargetTemperature);
+                            var cmd = TemperatureControllerProtocol.SetRtimeTempCommand(0);
                             SerialPortService.SendMsg(cmd);
                         }
                     }

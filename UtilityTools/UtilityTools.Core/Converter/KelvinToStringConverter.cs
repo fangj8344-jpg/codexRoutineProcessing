@@ -44,11 +44,11 @@ namespace UtilityTools.Core.Converter
             {
                 if (needChangeToCentigrade)
                 {
-                    return $"℃";
+                    return $"K";
                 }
                 else
                 {
-                    return $"K";
+                    return $"℃";
                 }
             }
             return string.Empty;
