@@ -1,5 +1,6 @@
 ﻿using Prism.Commands;
 using Prism.Ioc;
+using Prism.Mvvm;
 using Prism.Services.Dialogs;
 using System;
 using System.Collections.Generic;
@@ -7,27 +8,27 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UtilityTools.Core.Dialog;
-using UtilityTools.Core.Mvvm;
-using UtilityTools.Modules.MotorTest.Model;
+using UtilityTools.Modules.NewMotor5Controller.Entity;
+using UtilityTools.Modules.NewMotor5Controller.Model;
 using UtilityTools.Services.Interfaces.IServices;
 
-namespace UtilityTools.Modules.MotorTest.ViewModels
+namespace UtilityTools.Modules.NewMotor5Controller.ViewModels
 {
-    public class MotorTestViewModel:RegionViewModelBase
+    public class NewMotor5ControlViewModel:BindableBase
     {
-
-        #region ------------Constructor------------
-        public MotorTestViewModel(IContainerProvider containerProvider, IDialogHostService dialogHostService)
-            : base(containerProvider)
+        public NewMotor5ControlViewModel(IContainerProvider containerProvider, IDialogHostService dialogHostService)
         {
+            _containerProvider = containerProvider;
             _dialogHostService = dialogHostService;
+            Model = containerProvider.Resolve<MotorEntity>();
             InitProperty();
             InitCommand();
         }
-        #endregion
 
         #region ------------Field------------
         private readonly IDialogHostService _dialogHostService;
+        private IContainerProvider _containerProvider;
+
         #endregion
 
         #region ------------Property------------
@@ -59,9 +60,9 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
             }
         }
 
-        private MotorTestModel _model;
+        private MotorEntity _model;
 
-        public MotorTestModel Model
+        public MotorEntity Model
         {
             get { return _model; }
             set { _model = value; RaisePropertyChanged(); }
@@ -94,8 +95,9 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
         /// </summary>
         private void InitProperty()
         {
-            Model = containerProvider.Resolve<MotorTestModel>();
+         
         }
+       
 
         /// <summary>
         /// 显示设备连接弹窗
@@ -104,7 +106,7 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
         {
             DialogParameters parameter = new DialogParameters();
             parameter.Add("Value", Model.SerialPortService);
-            var diaglogResult = await this._dialogHostService.ShowDialog("SerialPortView", parameter, CommonModel.MotorTestRegionName);
+            var diaglogResult = await this._dialogHostService.ShowDialog("SerialPortView", parameter, CommonModel.NewMotor5ControllerRegionName);
             if (diaglogResult == null)
                 return;
             if (diaglogResult.Result == ButtonResult.OK && diaglogResult.Parameters.ContainsKey("Value"))
@@ -116,12 +118,11 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
                     IsConnected = Model.SerialPortService.IsOpen;
                     if (IsConnected == true)
                     {
-                        Model._getMotorStateTimer.Start();
-                        Model.ThreadProc();
+                        Model.Device = Model.SerialPortService;
                     }
                     else
                     {
-                        Model._getMotorStateTimer.Stop();
+                        
                     }
                 }
             }
@@ -134,7 +135,7 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
         {
             DialogParameters parameter = new DialogParameters();
             parameter.Add("Value", Model.NetUdpService);
-            var diaglogResult = await this._dialogHostService.ShowDialog("NetConfigView", parameter, CommonModel.MotorTestRegionName);
+            var diaglogResult = await this._dialogHostService.ShowDialog("NetConfigView", parameter, CommonModel.NewMotor5ControllerRegionName);
             if (diaglogResult == null)
                 return;
             if (diaglogResult.Result == ButtonResult.OK && diaglogResult.Parameters.ContainsKey("Value"))
@@ -146,19 +147,15 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
                     NetIsConnected = Model.NetUdpService.IsOpen;
                     if (NetIsConnected == true)
                     {
-                        Model._getMotorStateTimer.Start();
-                        Model.ThreadProc();
+                        Model.Device = Model.NetUdpService;
                     }
                     else
                     {
-                        Model._getMotorStateTimer.Stop();
+                       
                     }
                 }
             }
         }
-        #endregion
-
-        #region ------------StaticMethod------------
         #endregion
     }
 

@@ -1,0 +1,793 @@
+﻿<UserControl x:Class="UtilityTools.Modules.NewMotor5Controller.Views.NewMotor5Control"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:UtilityTools.Modules.NewMotor5Controller.Views"
+             xmlns:mm="clr-namespace:UtilityTools.Modules.NewMotor5Controller.Model"
+             xmlns:attach="clr-namespace:UtilityTools.Core.Attach;assembly=UtilityTools.Core"
+             xmlns:ctl="clr-namespace:UtilityTools.Core.Controls;assembly=UtilityTools.Core"
+             xmlns:convert="clr-namespace:UtilityTools.Core.Converter;assembly=UtilityTools.Core"
+             xmlns:method="clr-namespace:UtilityTools.Core.Method;assembly=UtilityTools.Core"
+             xmlns:protocol="clr-namespace:UtilityTools.Modules.NewMotor5Controller.Protocol"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <convert:EnumDescriptionConverter  x:Key="EnumDescriptionConverter"/>
+        <ObjectDataProvider x:Key="EnumMotorType"
+                  MethodName="EnumToDescList"
+                  ObjectType="{x:Type method:TypeMethod}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="protocol:EnumMotorType" />
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+        
+        <ObjectDataProvider x:Key="EnumMotorAxisType"
+                        MethodName="EnumToDescList"
+                        ObjectType="{x:Type method:TypeMethod}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="protocol:EnumMotorAxisType" />
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+        <ObjectDataProvider x:Key="EnumMotorControlMode"
+                MethodName="EnumToDescList"
+                ObjectType="{x:Type method:TypeMethod}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="protocol:EnumMotorControlMode" />
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+        <ObjectDataProvider x:Key="EnumMotorUnitType"
+        MethodName="EnumToDescList"
+        ObjectType="{x:Type method:TypeMethod}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="protocol:EnumMotorUnitType" />
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+
+    </UserControl.Resources>
+   
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <UniformGrid Columns="1">
+            <DockPanel Margin="10, 0">
+                <Label Content="电机使能"
+                     HorizontalContentAlignment="Center"
+                     VerticalContentAlignment="Center" />
+                <UniformGrid Rows="1">
+                    <CheckBox IsChecked="{Binding MotorX.Enable}"
+                            Content="{Binding MotorX.ID,  Converter={StaticResource EnumDescriptionConverter}}" />
+                    <CheckBox IsChecked="{Binding MotorY.Enable}"
+                            Content="{Binding MotorY.ID, Converter={StaticResource EnumDescriptionConverter}}" />
+                    <CheckBox IsChecked="{Binding MotorZ.Enable}"
+                            Content="{Binding MotorZ.ID, Converter={StaticResource EnumDescriptionConverter}}" />
+                    <CheckBox IsChecked="{Binding MotorR.Enable}"
+                            Content="{Binding MotorR.ID, Converter={StaticResource EnumDescriptionConverter}}" />
+                    <CheckBox IsChecked="{Binding MotorT.Enable}"
+                            Content="{Binding MotorT.ID,  Converter={StaticResource EnumDescriptionConverter}}" />
+                </UniformGrid>
+            </DockPanel>
+            <DockPanel Margin="10, 0">
+                <Label Content="电机通道"
+                     HorizontalContentAlignment="Center"
+                     VerticalContentAlignment="Center" />
+                <UniformGrid Rows="1">
+                    <TextBox Text="{Binding MotorX.Channel, Mode=TwoWay}"
+                           HorizontalContentAlignment="Center"
+                           attach:TextBoxAttached.IsEnterEndEdit="True"
+                           Margin="5" />
+                    <TextBox Text="{Binding MotorY.Channel, Mode=TwoWay}"
+                           HorizontalContentAlignment="Center"
+                           attach:TextBoxAttached.IsEnterEndEdit="True"
+                           Margin="5" />
+                    <TextBox Text="{Binding MotorZ.Channel, Mode=TwoWay}"
+                           HorizontalContentAlignment="Center"
+                           attach:TextBoxAttached.IsEnterEndEdit="True"
+                           Margin="5" />
+                    <TextBox Text="{Binding MotorR.Channel, Mode=TwoWay}"
+                           HorizontalContentAlignment="Center"
+                           attach:TextBoxAttached.IsEnterEndEdit="True"
+                           Margin="5" />
+                    <TextBox Text="{Binding MotorT.Channel, Mode=TwoWay}"
+                           HorizontalContentAlignment="Center"
+                           attach:TextBoxAttached.IsEnterEndEdit="True"
+                           Margin="5" />
+                </UniformGrid>
+            </DockPanel>
+            <DockPanel Margin="10, 0">
+                <Label Content="电机极性"
+                     HorizontalContentAlignment="Center"
+                     VerticalContentAlignment="Center" />
+                <UniformGrid Rows="1">
+                    <StackPanel Orientation="Horizontal"
+                              HorizontalAlignment="Center">
+                        <TextBlock Text="负"
+                                 VerticalAlignment="Center" />
+                        <ToggleButton Margin="8,0,8,0"
+                                    IsChecked="{Binding MotorX.Polarity}" />
+                        <TextBlock Text="正"
+                                 VerticalAlignment="Center" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal"
+                              HorizontalAlignment="Center">
+                        <TextBlock Text="负"
+                                 VerticalAlignment="Center" />
+                        <ToggleButton Margin="8,0,8,0"
+                                    IsChecked="{Binding MotorY.Polarity}" />
+                        <TextBlock Text="正"
+                                 VerticalAlignment="Center" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal"
+                              HorizontalAlignment="Center">
+                        <TextBlock Text="负"
+                                 VerticalAlignment="Center" />
+                        <ToggleButton Margin="8,0,8,0"
+                                    IsChecked="{Binding MotorZ.Polarity}" />
+                        <TextBlock Text="正"
+                                 VerticalAlignment="Center" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal"
+                              HorizontalAlignment="Center">
+                        <TextBlock Text="负"
+                                 VerticalAlignment="Center" />
+                        <ToggleButton Margin="8,0,8,0"
+                                    IsChecked="{Binding MotorR.Polarity}" />
+                        <TextBlock Text="正"
+                                 VerticalAlignment="Center" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal"
+                              HorizontalAlignment="Center">
+                        <TextBlock Text="负"
+                                 VerticalAlignment="Center" />
+                        <ToggleButton Margin="8,0,8,0"
+                                    IsChecked="{Binding MotorT.Polarity}" />
+                        <TextBlock Text="正"
+                                 VerticalAlignment="Center" />
+                    </StackPanel>
+                </UniformGrid>
+            </DockPanel>
+
+            <!--<UniformGrid Rows="1"
+                       Margin="10, 0">
+                <DockPanel LastChildFill="True">
+                    <TextBlock Text="硬件信息"
+                             DockPanel.Dock="Left"
+                             VerticalAlignment="Center"
+                             TextAlignment="Center" />
+                    <Button Content="获取"
+                          Margin="5"
+                          DockPanel.Dock="Right"
+                          Command="{Binding RequestHardwareInfoCommand}" />
+                    <TextBlock Text="{Binding HardwareVersion, Mode=TwoWay}"
+                             TextAlignment="Center"
+                             VerticalAlignment="Center" />
+                </DockPanel>
+
+                <DockPanel LastChildFill="True">
+                    <TextBlock Text="固件信息"
+                             DockPanel.Dock="Left"
+                             VerticalAlignment="Center"
+                             TextAlignment="Center" />
+                    <Button Content="获取"
+                          Margin="5"
+                          DockPanel.Dock="Right"
+                          Command="{Binding RequestFirmwareInfoCommand}" />
+                    <TextBlock Text="{Binding FirmwareVersion, Mode=TwoWay}"
+                             TextAlignment="Center"
+                             VerticalAlignment="Center" />
+                </DockPanel>
+            </UniformGrid>-->
+
+        </UniformGrid>
+
+        <TabControl ItemsSource="{Binding Motors}" 
+                  Grid.Row="1">
+            <TabControl.ContentTemplate>
+                <DataTemplate DataType="{x:Type mm:MotorModel}">
+                    <ScrollViewer VerticalScrollBarVisibility="Hidden">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="3*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition />
+                                <RowDefinition />
+                            </Grid.RowDefinitions>
+
+                            <GroupBox Header="获取参数"
+                                    Grid.Row="0"
+                                    Grid.Column="0">
+                                <UniformGrid Columns="2">
+                                    <Label Content="电机类型"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <Label Content="{Binding GetParam.Type, Mode=TwoWay, Converter={StaticResource EnumDescriptionConverter}}"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+
+                                    <Label Content="电机轴类型"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <Label Content="{Binding GetParam.AxisType, Mode=TwoWay, Converter={StaticResource EnumDescriptionConverter}}"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+
+                                    <Label Content="电机控制模式"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <Label Content="{Binding GetParam.ControlMode, Mode=TwoWay, Converter={StaticResource EnumDescriptionConverter}}"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+
+                                    <Label Content="单位类型"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <Label Content="{Binding GetParam.UnitType, Mode=TwoWay, Converter={StaticResource EnumDescriptionConverter}}"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+
+                                    <Label Content="单位换算系数"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <Label Content="{Binding GetParam.Coef, Mode=TwoWay}"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+
+                                    <Label Content="限位状态"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <Label Content="{Binding GetParam.LimitMask, Mode=TwoWay}"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+
+                                    <Label Content="脉冲坐标"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <Label Content="{Binding GetParam.PulsePos, Mode=TwoWay}"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+
+                                    <Label Content="物理单位坐标"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <Label Content="{Binding GetParam.RealUnitPos, Mode=TwoWay}"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+
+                                    <Label Content="脉冲速度"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <Label Content="{Binding GetParam.PulseSpeed, Mode=TwoWay}"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+
+                                    <Label Content="物理单位速度"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <Label Content="{Binding GetParam.RealUnitSpeed, Mode=TwoWay}"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+
+                                    <Label Content="状态掩码"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <Label Content="{Binding GetParam.StateMask, Mode=TwoWay}"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+
+                                    <Label Content="运行方向"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <Label Content="{Binding GetParam.MotorDir, Mode=TwoWay, Converter={StaticResource EnumDescriptionConverter}}"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                </UniformGrid>
+                            </GroupBox>
+
+                            <GroupBox Header="设置参数"
+                                    Grid.Row="0"
+                                    Grid.Column="1">
+                                <UniformGrid Columns="3">
+                                    <Label Content="电机类型"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <ComboBox VerticalAlignment="Center"
+                                            VerticalContentAlignment="Center"
+                                            SelectedValue="{Binding SetParam.Type, Mode=TwoWay}"
+                                            ItemsSource="{Binding Source={StaticResource EnumMotorType}}"
+                                            DisplayMemberPath="Value"
+                                            SelectedValuePath="Key" />
+                                    <Button Content="设置"
+                                          Command="{Binding SetMotorTypeCommand}" />
+
+                                    <Label Content="电机轴类型"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <ComboBox VerticalAlignment="Center"
+                                            VerticalContentAlignment="Center"
+                                            SelectedValue="{Binding SetParam.AxisType, Mode=TwoWay}"
+                                            ItemsSource="{Binding Source={StaticResource EnumMotorAxisType}}"
+                                            DisplayMemberPath="Value"
+                                            SelectedValuePath="Key" />
+                                    <Button Content="设置"
+                                          Command="{Binding SetMotorAxisTypeCommand}" />
+
+                                    <Label Content="电机控制模式"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <ComboBox VerticalAlignment="Center"
+                                            VerticalContentAlignment="Center"
+                                            SelectedValue="{Binding SetParam.ControlMode, Mode=TwoWay}"
+                                            ItemsSource="{Binding Source={StaticResource EnumMotorControlMode}}"
+                                            DisplayMemberPath="Value"
+                                            SelectedValuePath="Key" />
+                                    <Button Content="设置"
+                                          Command="{Binding SetMotorControlModeCommand}" />
+
+                                    <Label Content="单位类型"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <ComboBox VerticalAlignment="Center"
+                                            VerticalContentAlignment="Center"
+                                            SelectedValue="{Binding SetParam.UnitType, Mode=TwoWay}"
+                                            ItemsSource="{Binding Source={StaticResource EnumMotorUnitType}}"
+                                            DisplayMemberPath="Value"
+                                            SelectedValuePath="Key" />
+                                    <Button Content="设置"
+                                          Command="{Binding SetMotorUnitTypeCommand}" />
+
+                                    <Label Content="系数"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <TextBox Text="{Binding SetParam.Coef, Mode=TwoWay}"
+                                           TextAlignment="Center"
+                                           VerticalAlignment="Center" />
+                                    <Button Content="设置"
+                                          Command="{Binding SetMotorCoefCommand}" />
+
+                                    <Label Content="限位掩码"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <UniformGrid Rows="1">
+                                        <ctl:RelayToggleButton Content="-"
+                                                             Height="20"
+                                                             FontSize="10"
+                                                             RelayValue="{Binding SetParam.LimitMask, Mode=TwoWay}"
+                                                             RelayPos="7" />
+                                        <ctl:RelayToggleButton Content="SN"
+                                                             Height="20"
+                                                             FontSize="9"
+                                                             RelayValue="{Binding SetParam.LimitMask, Mode=TwoWay}"
+                                                             RelayPos="6" />
+                                        <ctl:RelayToggleButton Content="SZ"
+                                                             Height="20"
+                                                             FontSize="9"
+                                                             RelayValue="{Binding SetParam.LimitMask, Mode=TwoWay}"
+                                                             RelayPos="5" />
+                                        <ctl:RelayToggleButton Content="SP"
+                                                             Height="20"
+                                                             FontSize="9"
+                                                             RelayValue="{Binding SetParam.LimitMask, Mode=TwoWay}"
+                                                             RelayPos="4" />
+                                        <ctl:RelayToggleButton Content="ER"
+                                                             Height="20"
+                                                             FontSize="9"
+                                                             RelayValue="{Binding SetParam.LimitMask, Mode=TwoWay}"
+                                                             RelayPos="3" />
+                                        <ctl:RelayToggleButton Content="HN"
+                                                             Height="20"
+                                                             FontSize="9"
+                                                             RelayValue="{Binding SetParam.LimitMask, Mode=TwoWay}"
+                                                             RelayPos="2" />
+                                        <ctl:RelayToggleButton Content="HZ"
+                                                             Height="20"
+                                                             FontSize="9"
+                                                             RelayValue="{Binding SetParam.LimitMask, Mode=TwoWay}"
+                                                             RelayPos="1" />
+                                        <ctl:RelayToggleButton Content="HP"
+                                                             Height="20"
+                                                             FontSize="9"
+                                                             RelayValue="{Binding SetParam.LimitMask, Mode=TwoWay}"
+                                                             RelayPos="0" />
+                                    </UniformGrid>
+                                    <Button Content="设置"
+                                          Command="{Binding SetMotorLimitMaskCommand}" />
+
+                                    <Label Content="脉冲坐标"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <TextBox Text="{Binding SetParam.PulsePos, Mode=TwoWay}"
+                                           TextAlignment="Center"
+                                           VerticalAlignment="Center" />
+                                    <Button Content="设置"
+                                          Command="{Binding SetMotorPulsePosCommand}" />
+
+                                    <Label Content="物理单位坐标"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <TextBox Text="{Binding SetParam.RealUnitPos, Mode=TwoWay}"
+                                           TextAlignment="Center"
+                                           VerticalAlignment="Center" />
+                                    <Button Content="设置"
+                                          Command="{Binding SetMotorUnitPosCommand}" />
+
+                                    <Label Content="脉冲速度"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <TextBox Text="{Binding SetParam.PulseSpeed, Mode=TwoWay}"
+                                           TextAlignment="Center"
+                                           VerticalAlignment="Center" />
+                                    <Button Content="设置"
+                                          Command="{Binding SetMotorPulseSpeedCommand}" />
+
+                                    <Label Content="物理单位速度"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <TextBox Text="{Binding SetParam.RealUnitSpeed, Mode=TwoWay}"
+                                           TextAlignment="Center"
+                                           VerticalAlignment="Center" />
+                                    <Button Content="设置"
+                                          Command="{Binding SetMotorUnitSpeedCommand}" />
+
+                                    <Label Content="相对脉冲"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <TextBox Text="{Binding MovePulse, Mode=TwoWay}"
+                                           TextAlignment="Center"
+                                           VerticalAlignment="Center" />
+                                    <Button Content="设置"
+                                          Command="{Binding SetMotorPulseMoveCommand}" />
+
+                                    <Label Content="相对物理单位"
+                                         HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" />
+                                    <TextBox Text="{Binding MoveUnit, Mode=TwoWay}"
+                                           TextAlignment="Center"
+                                           VerticalAlignment="Center" />
+                                    <Button Content="设置"
+                                          Command="{Binding SetMotorUnitMoveCommand}" />
+                                </UniformGrid>
+                            </GroupBox>
+
+                            <GroupBox Header="通用"
+                                    Grid.Row="1"
+                                    Grid.Column="0"
+                                    Grid.ColumnSpan="2">
+                                <StackPanel>
+                                    <DockPanel LastChildFill="True">
+                                        <TextBlock Text="PID"
+                                                 DockPanel.Dock="Left"
+                                                 VerticalAlignment="Center"
+                                                 TextAlignment="Center" />
+                                        <Button Content="设置"
+                                              Margin="5"
+                                              DockPanel.Dock="Right"
+                                              Command="{Binding SetMotorPidCommand}" />
+                                        <Button Content="获取"
+                                              Margin="5"
+                                              DockPanel.Dock="Right"
+                                              Command="{Binding GetMotorPidCommand}" />
+                                        <UniformGrid Rows="1">
+                                            <TextBox Text="{Binding Pid.Kp, Mode=TwoWay}"
+                                                   TextAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Margin="5, 0" />
+                                            <TextBox Text="{Binding Pid.Ki, Mode=TwoWay}"
+                                                   TextAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Margin="5, 0" />
+                                            <TextBox Text="{Binding Pid.Kd, Mode=TwoWay}"
+                                                   TextAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Margin="5, 0" />
+                                        </UniformGrid>
+                                    </DockPanel>
+
+                                    <UniformGrid Rows="1">
+                                        <DockPanel LastChildFill="True">
+                                            <TextBlock Text="PID脉冲阈值"
+                                                     DockPanel.Dock="Left"
+                                                     VerticalAlignment="Center"
+                                                     TextAlignment="Center" />
+                                            <Button Content="设置"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding SetMotorPidThreCommand}" />
+                                            <Button Content="获取"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding GetMotorPidThreCommand}" />
+                                            <TextBox Text="{Binding PidPulseThr, Mode=TwoWay}"
+                                                   TextAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Margin="5, 0" />
+                                        </DockPanel>
+
+                                        <DockPanel LastChildFill="True">
+                                            <TextBlock Text="PID调节次数"
+                                                     DockPanel.Dock="Left"
+                                                     VerticalAlignment="Center"
+                                                     TextAlignment="Center" />
+                                            <Button Content="设置"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding SetMotorPidMaxCountCommand}" />
+                                            <Button Content="获取"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding GetMotorPidMaxCountCommand}" />
+                                            <TextBox Text="{Binding PidMaxCount, Mode=TwoWay}"
+                                                   TextAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Margin="5, 0" />
+                                        </DockPanel>
+                                    </UniformGrid>
+
+                                    <UniformGrid Rows="1">
+                                        <DockPanel LastChildFill="True">
+                                            <TextBlock Text="点动脉冲阈值"
+                                                     DockPanel.Dock="Left"
+                                                     VerticalAlignment="Center"
+                                                     TextAlignment="Center" />
+                                            <Button Content="设置"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding SetMotorMicroThreCommand}" />
+                                            <Button Content="获取"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding GetMotorMicroThreCommand}" />
+                                            <TextBox Text="{Binding MicroPulseThr, Mode=TwoWay}"
+                                                   TextAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Margin="5, 0" />
+                                        </DockPanel>
+
+                                        <DockPanel LastChildFill="True">
+                                            <TextBlock Text="点动调节脉冲"
+                                                     DockPanel.Dock="Left"
+                                                     VerticalAlignment="Center"
+                                                     TextAlignment="Center" />
+                                            <Button Content="设置"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding SetMotorMicroLenCommand}" />
+                                            <Button Content="获取"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding GetMotorMicroLenCommand}" />
+                                            <TextBox Text="{Binding MicroPulseMove, Mode=TwoWay}"
+                                                   TextAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Margin="5, 0" />
+                                        </DockPanel>
+                                    </UniformGrid>
+
+                                    <UniformGrid Rows="1">
+                                        <DockPanel LastChildFill="True">
+                                            <TextBlock Text="软限位最小值"
+                                                     DockPanel.Dock="Left"
+                                                     VerticalAlignment="Center"
+                                                     TextAlignment="Center" />
+                                            <Button Content="设置"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding SetMotorMinPosCommand}" />
+                                            <Button Content="获取"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding GetMotorMinPosCommand}" />
+                                            <TextBox Text="{Binding SoftMinPulsePos, Mode=TwoWay}"
+                                                   TextAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Margin="5, 0" />
+                                        </DockPanel>
+
+                                        <DockPanel LastChildFill="True">
+                                            <TextBlock Text="软限位最大值"
+                                                     DockPanel.Dock="Left"
+                                                     VerticalAlignment="Center"
+                                                     TextAlignment="Center" />
+                                            <Button Content="设置"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding SetMotorMaxPosCommand}" />
+                                            <Button Content="获取"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding GetMotorMaxPosCommand}" />
+                                            <TextBox Text="{Binding SoftMaxPulsePos, Mode=TwoWay}"
+                                                   TextAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Margin="5, 0" />
+                                        </DockPanel>
+                                    </UniformGrid>
+
+                                    <UniformGrid Rows="1">
+                                        <DockPanel LastChildFill="True">
+                                            <TextBlock Text="最小脉冲速度"
+                                                     DockPanel.Dock="Left"
+                                                     VerticalAlignment="Center"
+                                                     TextAlignment="Center" />
+                                            <Button Content="设置"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding SetMotorMinSpeedCommand}" />
+                                            <Button Content="获取"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding GetMotorMinSpeedCommand}" />
+                                            <TextBox Text="{Binding CloseLoopMinPulseSpeed, Mode=TwoWay}"
+                                                   TextAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Margin="5, 0" />
+                                        </DockPanel>
+
+                                        <DockPanel LastChildFill="True">
+                                            <TextBlock Text="最大脉冲速度"
+                                                     DockPanel.Dock="Left"
+                                                     VerticalAlignment="Center"
+                                                     TextAlignment="Center" />
+                                            <Button Content="设置"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding SetMotorMaxSpeedCommand}" />
+                                            <Button Content="获取"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding GetMotorMaxSpeedCommand}" />
+                                            <TextBox Text="{Binding CloseLoopMaxPulseSpeed, Mode=TwoWay}"
+                                                   TextAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Margin="5, 0" />
+                                        </DockPanel>
+                                    </UniformGrid>
+
+                                    <UniformGrid Rows="1">
+                                        <DockPanel LastChildFill="True">
+                                            <TextBlock Text="最大减速度"
+                                                     DockPanel.Dock="Left"
+                                                     VerticalAlignment="Center"
+                                                     TextAlignment="Center" />
+                                            <Button Content="设置"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding SetMotorMaxDecCommand}" />
+                                            <Button Content="获取"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding GetMotorMaxDecCommand}" />
+                                            <TextBox Text="{Binding MaxDec, Mode=TwoWay}"
+                                                   TextAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Margin="5, 0" />
+                                        </DockPanel>
+
+                                        <DockPanel LastChildFill="True">
+                                            <TextBlock Text="最大加速度"
+                                                     DockPanel.Dock="Left"
+                                                     VerticalAlignment="Center"
+                                                     TextAlignment="Center" />
+                                            <Button Content="设置"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding SetMotorMaxAccCommand}" />
+                                            <Button Content="获取"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding GetMotorMaxAccCommand}" />
+                                            <TextBox Text="{Binding MaxAcc, Mode=TwoWay}"
+                                                   TextAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Margin="5, 0" />
+                                        </DockPanel>
+                                    </UniformGrid>
+
+                                    <UniformGrid Rows="1">
+                                        <DockPanel LastChildFill="True">
+                                            <TextBlock Text="电机补偿臂长(mm)"
+                                                     DockPanel.Dock="Left"
+                                                     VerticalAlignment="Center"
+                                                     TextAlignment="Center" />
+                                            <Button Content="设置"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding SetLinkLengthCommand}" />
+                                            <Button Content="获取"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding GetLinkLengthCommand}" />
+                                            <TextBox Text="{Binding LinkLength, Mode=TwoWay}"
+                                                   TextAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Margin="5, 0" />
+                                        </DockPanel>
+
+                                        <DockPanel LastChildFill="True">
+                                            <TextBlock Text="长度补偿"
+                                                     DockPanel.Dock="Left"
+                                                     VerticalAlignment="Center"
+                                                     TextAlignment="Center" />
+                                            <Button Content="设置"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding SetCompensationLengthCommand}" />
+                                            <Button Content="获取"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding GetCompensationLengthCommand}" />
+                                            <UniformGrid Rows="1">
+                                                <TextBox Text="{Binding CompensationLength1, Mode=TwoWay}"
+                                                       TextAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       Margin="5, 0" />
+                                                <TextBox Text="{Binding CompensationLength2, Mode=TwoWay}"
+                                                       TextAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       Margin="5, 0" />
+                                            </UniformGrid>
+                                        </DockPanel>
+
+                                        <DockPanel LastChildFill="True">
+                                            <TextBlock Text="相对坐标信息"
+                                                     DockPanel.Dock="Left"
+                                                     VerticalAlignment="Center"
+                                                     TextAlignment="Center" />
+                                            <Button Content="设置"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding SetRelativeCoorInfoCommand}" />
+                                            <Button Content="获取"
+                                                  Margin="5"
+                                                  DockPanel.Dock="Right"
+                                                  Command="{Binding GetRelativeCoorInfoCommand}" />
+                                            <UniformGrid Rows="1">
+                                                <TextBox Text="{Binding RelativeCoorDis, Mode=TwoWay}"
+                                                       TextAlignment="Center"
+                                                       ToolTip="相对坐标距离"
+                                                       VerticalAlignment="Center"
+                                                       Margin="5, 0" />
+                                            </UniformGrid>
+
+                                        </DockPanel>
+                                    </UniformGrid>
+
+                                    <UniformGrid>
+                                        <Button Content="激活"
+                                              Margin="5"
+                                              Command="{Binding MotorActiveCommand}" />
+                                        <Button Content="失活"
+                                              Margin="5"
+                                              Command="{Binding MotorDisactiveCommand}" />
+                                    </UniformGrid>
+                                </StackPanel>
+                            </GroupBox>
+
+                        </Grid>
+                    </ScrollViewer>
+                </DataTemplate>
+            </TabControl.ContentTemplate>
+            <TabControl.ItemContainerStyle>
+                <Style TargetType="TabItem">
+                    <Setter Property="Header"
+                          Value="{Binding ID, Converter={StaticResource EnumDescriptionConverter}}" />
+                    <Setter Property="Height"
+                          Value="30" />
+                    <Setter Property="HeaderTemplate">
+                        <Setter.Value>
+                            <DataTemplate>
+                                <ContentPresenter Content="{TemplateBinding Content}"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center" />
+                            </DataTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </TabControl.ItemContainerStyle>
+        </TabControl>
+    </Grid>
+</UserControl>

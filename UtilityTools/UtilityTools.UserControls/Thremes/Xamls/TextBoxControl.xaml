@@ -1,6 +1,9 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:ctl="clr-namespace:UtilityTools.UserControls.Thremes.Controls">
+
+    <SolidColorBrush x:Key="NormalBackgroundBrush"
+                 Color="{StaticResource NormalBackgroundColor}" />
     
     <Style TargetType="{x:Type ctl:PlaceHoldTextBox}">
         <Setter Property="Foreground"

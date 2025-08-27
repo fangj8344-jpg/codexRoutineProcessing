@@ -159,7 +159,7 @@
             <TabItem Header="测试结果">
                 <TabControl>
                     <TabItem Header="x轴测试结果">
-                        <DataGrid   AutoGenerateColumns="False" IsReadOnly="True"   Margin="50,0,50,0" ItemsSource="{Binding Model.XAxis.MotorTestMessages}">
+                        <DataGrid   AutoGenerateColumns="False" IsReadOnly="True"   Margin="50,0,50,0" ItemsSource="{Binding XAxis.MotorTestMessages}">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="测试项目" Binding ="{Binding TestProject}" />
                                 <DataGridTextColumn Header="测试结果" Binding="{Binding TestResult}"/>
@@ -170,7 +170,7 @@
                         </DataGrid>
                     </TabItem>
                     <TabItem Header="y轴测试结果">
-                        <DataGrid   AutoGenerateColumns="False" IsReadOnly="True"   Margin="50,0,50,0" ItemsSource="{Binding Model.YAxis.MotorTestMessages}">
+                        <DataGrid   AutoGenerateColumns="False" IsReadOnly="True"   Margin="50,0,50,0" ItemsSource="{Binding YAxis.MotorTestMessages}">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="测试项目" Binding ="{Binding TestProject}" />
                                 <DataGridTextColumn Header="测试结果" Binding="{Binding TestResult}"/>
@@ -181,7 +181,7 @@
                         </DataGrid>
                     </TabItem>
                     <TabItem Header="z轴测试结果">
-                        <DataGrid   AutoGenerateColumns="False" IsReadOnly="True"   Margin="50,0,50,0" ItemsSource="{Binding Model.ZAxis.MotorTestMessages}">
+                        <DataGrid   AutoGenerateColumns="False" IsReadOnly="True"   Margin="50,0,50,0" ItemsSource="{Binding ZAxis.MotorTestMessages}">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="测试项目" Binding ="{Binding TestProject}" />
                                 <DataGridTextColumn Header="测试结果" Binding="{Binding TestResult}"/>
@@ -191,27 +191,95 @@
                             </DataGrid.Columns>
                         </DataGrid>
                     </TabItem>
-                    
+                    <TabItem Header="t轴测试结果">
+                        <DataGrid   AutoGenerateColumns="False" IsReadOnly="True"   Margin="50,0,50,0" ItemsSource="{Binding TAxis.MotorTestMessages}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="测试项目" Binding ="{Binding TestProject}" />
+                                <DataGridTextColumn Header="测试结果" Binding="{Binding TestResult}"/>
+                                <DataGridTextColumn Header="测量值" Binding="{Binding TestValue}"/>
+                                <DataGridTextColumn Header="标准值" Binding="{Binding StandardValue}"/>
+                                <DataGridTextColumn Header="说明" Binding="{Binding Description}"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </TabItem>
+                    <TabItem Header="r轴测试结果">
+                        <DataGrid   AutoGenerateColumns="False" IsReadOnly="True"   Margin="50,0,50,0" ItemsSource="{Binding RAxis.MotorTestMessages}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="测试项目" Binding ="{Binding TestProject}" />
+                                <DataGridTextColumn Header="测试结果" Binding="{Binding TestResult}"/>
+                                <DataGridTextColumn Header="测量值" Binding="{Binding TestValue}"/>
+                                <DataGridTextColumn Header="标准值" Binding="{Binding StandardValue}"/>
+                                <DataGridTextColumn Header="说明" Binding="{Binding Description}"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </TabItem>
                 </TabControl>
                
             </TabItem>
             <TabItem Header="日志信息">
-                <DockPanel LastChildFill="True">
-                    <ListView ItemsSource="{Binding Log}"
-                          VerticalAlignment="Top">
-                        <ListView.ContextMenu>
-                            <ContextMenu>
-                                <MenuItem Header="清除" Command="{Binding ClearLogCommand}"/>
-                            </ContextMenu>
-                        </ListView.ContextMenu>
-                        <ListView.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding}" />
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-
-                    </ListView>
-                </DockPanel>
+                <TabControl>
+                    <TabItem Header="x日志信息">
+                        <DockPanel LastChildFill="True">
+                            <ListView ItemsSource="{Binding XAxis.Log}"
+                                      VerticalAlignment="Top">
+                                <ListView.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="清除" Command="{Binding ClearLogCommand}"/>
+                                    </ContextMenu>
+                                </ListView.ContextMenu>
+                            </ListView>
+                        </DockPanel>
+                    </TabItem>
+                    <TabItem Header="y日志信息">
+                        <DockPanel LastChildFill="True">
+                            <ListView ItemsSource="{Binding YAxis.Log}"
+                                      VerticalAlignment="Top">
+                                <ListView.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="清除" Command="{Binding ClearLogCommand}"/>
+                                    </ContextMenu>
+                                </ListView.ContextMenu>
+                            </ListView>
+                        </DockPanel>
+                    </TabItem>
+                    <TabItem Header="z日志信息">
+                        <DockPanel LastChildFill="True">
+                            <ListView ItemsSource="{Binding ZAxis.Log}"
+                                      VerticalAlignment="Top">
+                                <ListView.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="清除" Command="{Binding ClearLogCommand}"/>
+                                    </ContextMenu>
+                                </ListView.ContextMenu>
+                            </ListView>
+                        </DockPanel>
+                    </TabItem>
+                    <TabItem Header="t日志信息">
+                        <DockPanel LastChildFill="True">
+                            <ListView ItemsSource="{Binding TAxis.Log}"
+                                      VerticalAlignment="Top">
+                                <ListView.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="清除" Command="{Binding ClearLogCommand}"/>
+                                    </ContextMenu>
+                                </ListView.ContextMenu>
+                            </ListView>
+                        </DockPanel>
+                    </TabItem>
+                    <TabItem Header="r日志信息">
+                        <DockPanel LastChildFill="True">
+                            <ListView ItemsSource="{Binding RAxis.Log}"
+                                      VerticalAlignment="Top">
+                                <ListView.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="清除" Command="{Binding ClearLogCommand}"/>
+                                    </ContextMenu>
+                                </ListView.ContextMenu>
+                            </ListView>
+                        </DockPanel>
+                    </TabItem>
+                </TabControl>
+                
             </TabItem>
         </TabControl >
 
@@ -263,7 +331,9 @@
                 </Grid>
             </Grid>
         
-            <UniformGrid Columns="2" Grid.Column="1"> 
+            <UniformGrid Columns="2" Grid.Column="1">
+                <RadioButton  Content="使用速度模式" IsChecked="{Binding IsSpeedMode}"/>
+                <RadioButton  Content="使用位置模式" IsChecked="True"/>
                 <Button Content="z轴正方向"  Command="{Binding MoveCommand}" CommandParameter="z_p" Margin="10"/>
                 <Button Content="z轴负方向" Command="{Binding MoveCommand}" CommandParameter="z_n" Margin="10"/>
                 <Button Content="r轴正方向"  Command="{Binding MoveCommand}" CommandParameter="r_p" Margin="10"/>
@@ -282,8 +352,24 @@
                 <TabItem Header="功能测试">
                     <StackPanel >
                         <UniformGrid Columns="4" >
-                            <Button Content="基础测试" Command="{Binding TestMotorDelegateCommand}" Margin="10"/>
-                            <Button Content="丝杆测试" Command="{Binding SmoothnessDetectionCommand}" Margin="10"/>
+                            <Button Content="基础测试" Command="{Binding TestMotorDelegateCommand}" CommandParameter="all" Margin="10"/>
+                            <Button Content="x基础测试" Command="{Binding TestMotorDelegateCommand}" CommandParameter="x" Margin="10"/>
+                            <Button Content="y基础测试" Command="{Binding TestMotorDelegateCommand}" CommandParameter="y" Margin="10"/>
+                            <Button Content="z基础测试" Command="{Binding TestMotorDelegateCommand}" CommandParameter="z" Margin="10"/>
+                            <Button Content="t基础测试" Command="{Binding TestMotorDelegateCommand}" CommandParameter="t" Margin="10"/>
+                            <Button Content="r基础测试" Command="{Binding TestMotorDelegateCommand}" CommandParameter="r" Margin="10"/>
+                            <Button Content="丝杆测试" Command="{Binding SmoothnessDetectionCommand}" CommandParameter="all" Margin="10"/>
+                            <Button Content="x丝杆测试" Command="{Binding SmoothnessDetectionCommand}" CommandParameter="x" Margin="10"/>
+                            <Button Content="y丝杆测试" Command="{Binding SmoothnessDetectionCommand}" CommandParameter="y" Margin="10"/>
+                            <Button Content="z丝杆测试" Command="{Binding SmoothnessDetectionCommand}" CommandParameter="z" Margin="10"/>
+                            <Button Content="t丝杆测试" Command="{Binding SmoothnessDetectionCommand}" CommandParameter="t" Margin="10"/>
+                            <Button Content="r丝杆测试" Command="{Binding SmoothnessDetectionCommand}" CommandParameter="r" Margin="10"/>
+                            <Button Content="数据库测试" Command="{Binding SQLiteTestCommand}" Margin="10"/>
+                            <Button Content="开启性能模式" Command="{Binding TestPerformanceCommand}" Margin="10"/>
+                            <Button Content="关闭性能模式" Command="{Binding CloseTestPerformanceCommand}" Margin="10"/>
+                            <Button Content="保存数据" Command="{Binding SaveDataFileCommand}" Margin="10"/>
+                            <Button Content="加载数据" Command="{Binding ReadDataFileCommand}" Margin="10"/>
+                            <Button Content="关闭xyz软限位" Command="{Binding CloseSlimitedCommand}" Margin="10"/>
                         </UniformGrid>
                     </StackPanel>
                 </TabItem>

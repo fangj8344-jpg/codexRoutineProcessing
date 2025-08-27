@@ -1,4 +1,5 @@
 ﻿using CsvHelper;
+using Newtonsoft.Json;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Legends;
@@ -9,24 +10,29 @@ using Prism.Ioc;
 using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Timers;
+using System.Windows.Controls;
 using UtilityTools.Core.Dialog;
 using UtilityTools.Modules.MotorTest.Protocol;
+using UtilityTools.Modules.MotorTest.SQLite;
 using UtilityTools.Services.Interfaces.IServices;
 using UtilityTools.Services.Services;
 
 namespace UtilityTools.Modules.MotorTest.Model
 {
-    public class ThreeAxisTestModel:BindableBase
+    public class ThreeAxisTestModel : BindableBase
     {
         public ThreeAxisTestModel(IContainerProvider containerProvider)
         {
             _containerProvider = containerProvider;
-         
+
 
             _parser = new SelfMotorParser();
             _parser.PacketReceivedEvent += Parser_PacketReceivedEvent;
@@ -45,20 +51,28 @@ namespace UtilityTools.Modules.MotorTest.Model
             NetUdpService.UpdateResponse += NetUdpService_UpdateResponse;
             Init();
         }
-        
+
         private IContainerProvider _containerProvider;
         private readonly IDialogHostService _dialogHostService;
         private SelfMotorParser _parser;
         private TaskCompletionSource<string> _waitingReply;
-        
+        private Stopwatch _stopwatch;
+        public System.Timers.Timer _getMotorStateTimer;
         private event EventHandler<SelfMotorPacket> _xAxisReturnEvent;
         private event EventHandler<SelfMotorPacket> _yAxisReturnEvent;
         private event EventHandler<SelfMotorPacket> _zAxisReturnEvent;
         private event EventHandler<SelfMotorPacket> _tAxisReturnEvent;
         private event EventHandler<SelfMotorPacket> _rAxisReturnEvent;
-
-
-
+        private BackgroundWorker _work;
+        private bool _isPerformance = false;
+        private bool _isTest = false;
+        private EnumMotorInquiry _testMotorId;
+        private bool _isSpeedMode = false;
+        public bool IsSpeedMode
+        {
+            get { return _isSpeedMode; }
+            set { _isSpeedMode = value;  RaisePropertyChanged(); }
+        }
         private FiveAxisModel _xAxis;
         /// <summary> 
         /// x轴
@@ -166,18 +180,25 @@ namespace UtilityTools.Modules.MotorTest.Model
         private void Init()
         {
             ClearMonitorCommand = new DelegateCommand<string>(ClearMonitor);
-            TestMotorDelegateCommand = new DelegateCommand(TestMotor);
-            AutoAdjustCommand = new DelegateCommand<string> (AutoAdjust);
+            TestMotorDelegateCommand = new DelegateCommand<string>(TestMotor);
+            AutoAdjustCommand = new DelegateCommand<string>(AutoAdjust);
             SaveToFileCommand = new DelegateCommand<string>(SaveToFile);
-            SmoothnessDetectionCommand = new DelegateCommand (SmoothnessDetection);
+            SmoothnessDetectionCommand = new DelegateCommand<string>(SmoothnessDetection);
             MoveCommand = new DelegateCommand<string>(Move);
+            SQLiteTestCommand = new DelegateCommand(SQLiteTest);
+            TestPerformanceCommand = new DelegateCommand(TestPerformance);
+            CloseTestPerformanceCommand = new DelegateCommand(CloseTestPerformance);
+            SaveDataFileCommand = new DelegateCommand(SaveDataFile);
+            ReadDataFileCommand = new DelegateCommand(ReadDataFile);
+            CloseSlimitedCommand = new DelegateCommand(CloseSlimited); 
             ByteQueue = new Queue<byte[]>();
             ImportantByteQueue = new Queue<byte[]>();
-            XAxis = new FiveAxisModel( _containerProvider,EnumMotorId.MOTOR_2, EnumMotorModel.MOTOR_x, "X轴") { };
-            YAxis = new FiveAxisModel(_containerProvider,EnumMotorId.MOTOR_1, EnumMotorModel.MOTOR_y, "Y轴") { };
-            ZAxis = new FiveAxisModel(_containerProvider,EnumMotorId.MOTOR_4, EnumMotorModel.MOTOR_z, "Z轴") { };
+            XAxis = new FiveAxisModel(_containerProvider, Protocol.EnumMotorId.MOTOR_2, EnumMotorModel.MOTOR_x, "X轴") { };
+            YAxis = new FiveAxisModel(_containerProvider, EnumMotorId.MOTOR_1, EnumMotorModel.MOTOR_y, "Y轴") { };
+            ZAxis = new FiveAxisModel(_containerProvider, EnumMotorId.MOTOR_4, EnumMotorModel.MOTOR_z, "Z轴") { };
             TAxis = new FiveAxisModel(_containerProvider, EnumMotorId.MOTOR_3, EnumMotorModel.MOTOR_t, "T轴") { };
             RAxis = new FiveAxisModel(_containerProvider, EnumMotorId.MOTOR_5, EnumMotorModel.MOTOR_r, "R轴") { };
+
             XAxis.AddCmdEvent += AddCmd;
             XAxis.AddImportantCmdEvent += AddImportant;
             YAxis.AddCmdEvent += AddCmd;
@@ -213,8 +234,18 @@ namespace UtilityTools.Modules.MotorTest.Model
             MotorSpeedplotModel.Series.Add(ZAxis.SpeedLine);
             MotorSpeedplotModel.Series.Add(TAxis.SpeedLine);
             MotorSpeedplotModel.Series.Add(RAxis.SpeedLine);
+            XAxis.PiontPlotModel = MotorplotModel;
+            XAxis.SpeedPlotModel = MotorSpeedplotModel;
+            YAxis.PiontPlotModel = MotorplotModel;
+            YAxis.SpeedPlotModel = MotorSpeedplotModel;
+            ZAxis.PiontPlotModel = MotorplotModel;
+            ZAxis.SpeedPlotModel = MotorSpeedplotModel;
+            TAxis.PiontPlotModel = MotorplotModel;
+            TAxis.SpeedPlotModel = MotorSpeedplotModel;
+            RAxis.PiontPlotModel = MotorplotModel;
+            RAxis.SpeedPlotModel = MotorSpeedplotModel;
 
-
+            RegisterTimer();
         }
 
         private void AddCmd(object? sender, byte[] e)
@@ -225,75 +256,248 @@ namespace UtilityTools.Modules.MotorTest.Model
         {
             ImportantByteQueue.Enqueue(e);
         }
-        
-        public DelegateCommand TestMotorDelegateCommand { get; set; } 
+        public DelegateCommand SQLiteTestCommand { get; set; }
+        private void SQLiteTest()
+        {
+
+            SpliteOperate.CreateTable(SpliteOperate.dbName);
+            var time = DateTime.Now.ToString();
+            SpliteOperate.InsertData(SpliteOperate.dbName, "0001", time, "1.10", "1.09", "两轴", "电机数据", "");
+            SpliteOperate.QueryData(SpliteOperate.dbName);
+        }
+
+        public DelegateCommand TestPerformanceCommand { get; set; }
+        private void TestPerformance()
+        {
+            _isPerformance = true;
+            Task.Run(() =>
+            {
+                while (_isPerformance)
+                {
+                    if (_byteQueue.Count == 0)
+                    {
+                        var getMotor2Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_2);
+                        ByteQueue.Enqueue(getMotor2Statuscmd);
+                        var getMotor1Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_1);
+                        ByteQueue.Enqueue(getMotor1Statuscmd);
+                        var getMotor3Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_3);
+                        ByteQueue.Enqueue(getMotor3Statuscmd);
+                        var getMotor4Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_4);
+                        ByteQueue.Enqueue(getMotor4Statuscmd);
+                        var getMotor5Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_5);
+                        ByteQueue.Enqueue(getMotor5Statuscmd);
+                    }
+                    Thread.Sleep(1);
+
+                }
+            });
+
+        }
+        public DelegateCommand CloseTestPerformanceCommand { get; set; }
+        private void CloseTestPerformance()
+        {
+            _isPerformance = false;
+        }
+
+        public DelegateCommand<string> TestMotorDelegateCommand { get; set; }
         /// <summary>
         /// 基础测试
         /// </summary>
-        private void TestMotor()
+        private async void TestMotor(string motor)
         {
-            Task.Run(() => 
+            await Task.Run(async () =>
             {
-                XAxis.TestAll();
+                _testMotorId = EnumMotorInquiry.InquiryMotor_all;
+                TestInquiry();
+                switch (motor)
+                {
+                    case "x": 
+                        _testMotorId = EnumMotorInquiry.InquiryMotor_x;
+                        await XAxis.TestAll();
+                        break;
+                    case "y":
+                        _testMotorId = EnumMotorInquiry.InquiryMotor_y;
+                        await YAxis.TestAll();
+                        break;
+                    case "z":
+                        _testMotorId = EnumMotorInquiry.InquiryMotor_z;
+                        await ZAxis.TestAll(); 
+                        break;
+                    case "t":
+                        _testMotorId = EnumMotorInquiry.InquiryMotor_t;
+                        await TAxis.TestAll();
+                        break;
+                    case "r":
+                        _testMotorId = EnumMotorInquiry.InquiryMotor_r;
+                        await RAxis.TestAll(); 
+                        break;
+                    case "all":
+                        _testMotorId = EnumMotorInquiry.InquiryMotor_x;
+                        await XAxis.TestAll();
+                        _testMotorId = EnumMotorInquiry.InquiryMotor_y;
+                        await YAxis.TestAll();
+                        _testMotorId = EnumMotorInquiry.InquiryMotor_z;
+                        await ZAxis.TestAll();
+                        _testMotorId = EnumMotorInquiry.InquiryMotor_t;
+                        await TAxis.TestAll();
+                        _testMotorId = EnumMotorInquiry.InquiryMotor_r;
+                        await RAxis.TestAll();
+                   
+                        break;
+                }
+                _testMotorId = EnumMotorInquiry.InquiryMotor_null; 
             });
+           
+        }
+        private void TestInquiry()
+        {
             Task.Run(() =>
             {
-                YAxis.TestAll();
-            });
-            Task.Run(() => 
-            {
-                ZAxis.TestAll();
+                while (true)
+                {
+                    if (_byteQueue.Count == 0)
+                    {
+                        switch (_testMotorId)
+                        {
+                            case EnumMotorInquiry.InquiryMotor_x:
+                                var getMotor1Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_2);
+                                ByteQueue.Enqueue(getMotor1Statuscmd);
+                                break;
+                            case EnumMotorInquiry.InquiryMotor_y:
+                                var getMotor2Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_1);
+                                ByteQueue.Enqueue(getMotor2Statuscmd);
+                                break;
+                            case EnumMotorInquiry.InquiryMotor_z:
+                                var getMotor3Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_4);
+                                ByteQueue.Enqueue(getMotor3Statuscmd);
+                                break;
+                            case EnumMotorInquiry.InquiryMotor_t:
+                                var getMotor4Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_3);
+                                ByteQueue.Enqueue(getMotor4Statuscmd);
+                                break;
+                            case EnumMotorInquiry.InquiryMotor_r:
+                                var getMotor5Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_5);
+                                ByteQueue.Enqueue(getMotor5Statuscmd);
+                                break;
+                            case EnumMotorInquiry.InquiryMotor_all:
+                                var getMotor1Statuscmd1 = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_2);
+                                ByteQueue.Enqueue(getMotor1Statuscmd1);
+                                var getMotor2Statuscmd1 = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_1);
+                                ByteQueue.Enqueue(getMotor2Statuscmd1);
+                                var getMotor3Statuscmd1 = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_4);
+                                ByteQueue.Enqueue(getMotor3Statuscmd1);
+                                var getMotor4Statuscmd1 = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_3);
+                                ByteQueue.Enqueue(getMotor4Statuscmd1);
+                                var getMotor5Statuscmd1 = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_5);
+                                ByteQueue.Enqueue(getMotor5Statuscmd1);
+                                break;
+                            case EnumMotorInquiry.InquiryMotor_null: return;
+                        }
+                    }
+                    Thread.Sleep(1);
+
+                }
             });
         }
-        public DelegateCommand SmoothnessDetectionCommand { get; set; }
-        private void SmoothnessDetection()
+        public DelegateCommand<string> SmoothnessDetectionCommand { get; set; }
+        private void SmoothnessDetection(string motor)
         {
-            Task.Run(() =>
+            Task.Run(async () =>
             {
-                XAxis.TestSmoothnessDetection();
+                _testMotorId = EnumMotorInquiry.InquiryMotor_all;
+                TestInquiry();
+                switch (motor)
+                {
+                    case "x":
+                        _testMotorId = EnumMotorInquiry.InquiryMotor_x;
+                        await XAxis.TestSmoothnessDetection();  
+                        break;
+                    case "y":
+                        _testMotorId = EnumMotorInquiry.InquiryMotor_y;
+                        await YAxis.TestSmoothnessDetection();
+                        break;
+                    case "z":
+                        _testMotorId = EnumMotorInquiry.InquiryMotor_z;
+                        await ZAxis.TestSmoothnessDetection();
+                        break;
+                    case "t":
+                        _testMotorId = EnumMotorInquiry.InquiryMotor_t;
+                        await TAxis.TestSmoothnessDetection();
+                        break;
+                    case "r":
+                        _testMotorId = EnumMotorInquiry.InquiryMotor_r;
+                        await RAxis.TestSmoothnessDetection();
+                        break;
+                    case "all":
+                        _testMotorId = EnumMotorInquiry.InquiryMotor_x;
+                        await XAxis.TestSmoothnessDetection();
+                        _testMotorId = EnumMotorInquiry.InquiryMotor_y;
+                        await YAxis.TestSmoothnessDetection();
+                        _testMotorId = EnumMotorInquiry.InquiryMotor_z;
+                        await ZAxis.TestSmoothnessDetection();
+                        _testMotorId = EnumMotorInquiry.InquiryMotor_t;
+                        await TAxis.TestSmoothnessDetection();
+                        _testMotorId = EnumMotorInquiry.InquiryMotor_r;
+                        await RAxis.TestSmoothnessDetection();
+                        break;
+                }
             });
-            Task.Run(() =>
-            {
-                YAxis.TestSmoothnessDetection();
-            });
-            Task.Run(() =>
-            {
-                ZAxis.TestSmoothnessDetection();
-            });
-            Task.Run(() =>
-            {
-                TAxis.TestSmoothnessDetection();
-            });
-            Task.Run(() =>
-            {
-                RAxis.TestSmoothnessDetection();
-            });
+
         }
         public DelegateCommand<string> MoveCommand { get; set; }
         private void Move(string direction)
         {
-            switch (direction)
+            if (IsSpeedMode)
             {
-                case "x_n": XAxis.Move("n"); break;
-                case "x_p": XAxis.Move("p"); break;
-                case "y_n": YAxis.Move("n"); break;
-                case "y_p": YAxis.Move("p"); break;
-                case "z_n": ZAxis.Move("n"); break;
-                case "z_p": ZAxis.Move("p"); break;
-                case "t_p": TAxis.Move("p"); break;
-                case "t_n": TAxis.Move("n"); break;
-                case "r_p": RAxis.Move("p"); break;
-                case "r_n": RAxis.Move("n"); break;
-                case "stop":
-                    {
-                        XAxis.Move("s");
-                        YAxis.Move("s");
-                        ZAxis.Move("s"); 
-                        TAxis.Move("s");
-                        RAxis.Move("s");
-                    }
-                    break;
+                switch (direction)
+                {
+                    case "x_n": XAxis.SpeedModeMove("n"); break;
+                    case "x_p": XAxis.SpeedModeMove("p"); break;
+                    case "y_n": YAxis.SpeedModeMove("n"); break;
+                    case "y_p": YAxis.SpeedModeMove("p"); break;
+                    case "z_n": ZAxis.SpeedModeMove("n"); break;
+                    case "z_p": ZAxis.SpeedModeMove("p"); break;
+                    case "t_p": TAxis.SpeedModeMove("p"); break;
+                    case "t_n": TAxis.SpeedModeMove("n"); break;
+                    case "r_p": RAxis.SpeedModeMove("p"); break;
+                    case "r_n": RAxis.SpeedModeMove("n"); break;
+                    case "stop":
+                        {
+                            XAxis.SpeedModeMove("s");
+                            YAxis.SpeedModeMove("s");
+                            ZAxis.SpeedModeMove("s");
+                            TAxis.SpeedModeMove("s");
+                            RAxis.SpeedModeMove("s");
+                        }
+                        break;
+                }
             }
+            else 
+            {
+                switch (direction)
+                {
+                    case "x_n": XAxis.PosModeMove("n"); break;
+                    case "x_p": XAxis.PosModeMove("p"); break;
+                    case "y_n": YAxis.PosModeMove("n"); break;
+                    case "y_p": YAxis.PosModeMove("p"); break;
+                    case "z_n": ZAxis.PosModeMove("n"); break;
+                    case "z_p": ZAxis.PosModeMove("p"); break;
+                    case "t_p": TAxis.PosModeMove("p"); break;
+                    case "t_n": TAxis.PosModeMove("n"); break;
+                    case "r_p": RAxis.PosModeMove("p"); break;
+                    case "r_n": RAxis.PosModeMove("n"); break;
+                    case "stop":
+                        {
+                            XAxis.PosModeMove("s");
+                            YAxis.PosModeMove("s");
+                            ZAxis.PosModeMove("s");
+                            TAxis.PosModeMove("s");
+                            RAxis.PosModeMove("s");
+                        }
+                        break;
+                }
+            }
+           
         }
         public DelegateCommand<string> ClearMonitorCommand { get; set; }
         /// <summary>
@@ -329,11 +533,11 @@ namespace UtilityTools.Modules.MotorTest.Model
                     {
                         line.Points.Clear();
                     }
-                    XAxis.plotViewSpeedMessages.Clear();
-                    YAxis.plotViewSpeedMessages.Clear();
-                    ZAxis.plotViewSpeedMessages.Clear();
-                    TAxis.plotViewSpeedMessages.Clear();
-                    RAxis.plotViewSpeedMessages.Clear();
+                    XAxis.PlotViewSpeedMessages.Clear();
+                    YAxis.PlotViewSpeedMessages.Clear();
+                    ZAxis.PlotViewSpeedMessages.Clear();
+                    TAxis.PlotViewSpeedMessages.Clear();
+                    RAxis.PlotViewSpeedMessages.Clear();
                 }
                 MotorSpeedplotModel.InvalidatePlot(true);
             }
@@ -357,6 +561,188 @@ namespace UtilityTools.Modules.MotorTest.Model
                     axis.Reset();
                 MotorSpeedplotModel.InvalidatePlot(true);
             }
+
+        }
+
+
+        /// <summary>
+        /// 定时器事件，问询电机状态
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void QueryMotorStatusTimerElapsed(object sender, ElapsedEventArgs e)
+        {
+            var getMotor1Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_1);
+            ByteQueue.Enqueue(getMotor1Statuscmd);
+            var getMotor2Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_2);
+            ByteQueue.Enqueue(getMotor2Statuscmd);
+            var getMotor3Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_3);
+            ByteQueue.Enqueue(getMotor3Statuscmd);
+            var getMotor4Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_4);
+            ByteQueue.Enqueue(getMotor4Statuscmd);
+            var getMotor5Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_5);
+            ByteQueue.Enqueue(getMotor5Statuscmd);
+
+        }
+        private void RegisterTimer()
+        {
+            _getMotorStateTimer = new System.Timers.Timer(1000);
+            _getMotorStateTimer.AutoReset = true;
+            _getMotorStateTimer.Elapsed += QueryMotorStatusTimerElapsed;
+        }
+        private void Worker_DoWork(object sender, DoWorkEventArgs e)
+        {
+            StopTimer();
+
+            while (_work != null && _work.CancellationPending != true)
+            {
+                if (ByteQueue.Count == 0)
+                {
+                    var getMotor1Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_1);
+                    ByteQueue.Enqueue(getMotor1Statuscmd);
+                    var getMotor2Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_2);
+                    ByteQueue.Enqueue(getMotor2Statuscmd);
+                    var getMotor3Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_3);
+                    ByteQueue.Enqueue(getMotor3Statuscmd);
+                    var getMotor4Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_4);
+                    ByteQueue.Enqueue(getMotor4Statuscmd);
+                    var getMotor5Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_5);
+                    ByteQueue.Enqueue(getMotor5Statuscmd);
+                }
+
+            }
+            e.Cancel = true;
+            StartTimer();
+        }
+        public void StartTimer()
+        {
+            _getMotorStateTimer.Start();
+
+
+        }
+        public void StopTimer()
+        {
+            _getMotorStateTimer.Stop();
+        }
+        private void NetUdpService_UpdateResponse(object? sender, byte[] e)
+        {
+            _parser.ReceiveBytes(e);
+        }
+
+        private void SerialPortService_UpdateResponse(object? sender, byte[] e)
+        {
+            _parser.ReceiveBytes(e);
+        }
+        private void Parser_PacketReceivedEvent(object? sender, SelfMotorPacket e)
+        {
+            if (e != null)
+            {
+                _waitingReply.SetResult("Ready");
+                var data = e.DataSource;
+                var channel = (EnumMotorId)(data[0]);//电机通道
+                switch (channel)
+                {
+                    case EnumMotorId.MOTOR_1: _yAxisReturnEvent.Invoke(this, e); break;
+                    case EnumMotorId.MOTOR_2: _xAxisReturnEvent.Invoke(this, e); break;
+                    case EnumMotorId.MOTOR_3: _tAxisReturnEvent.Invoke(this, e); break;
+                    case EnumMotorId.MOTOR_4: _zAxisReturnEvent.Invoke(this, e); break;
+                    case EnumMotorId.MOTOR_5: _rAxisReturnEvent.Invoke(this, e); break;
+                }
+
+            }
+        }
+
+
+        public void SendingThread()
+        {
+            Task.Run(async () =>
+            {
+            List<long> times = new List<long>();
+            while (NetUdpService.IsOpen)
+            {
+                if (_stopwatch == null)
+                {
+                    _stopwatch = new Stopwatch();
+                }
+                if (_stopwatch.IsRunning == false)
+                {
+                    _stopwatch.Start();
+                }
+                if (_importantByteQueue != null && _importantByteQueue.Count > 0)
+                {
+                    NetUdpService.SendMsg(_importantByteQueue.Dequeue());
+                }
+                else
+                {
+                    if (_byteQueue != null && _byteQueue.Count > 0)
+                    {
+                        NetUdpService.SendMsg(_byteQueue.Dequeue());
+                    }
+                }
+                var time = _stopwatch.ElapsedMilliseconds;
+                times.Add(time);
+                Debug.WriteLine($"发送时间间隔{time}");
+
+                _waitingReply = new TaskCompletionSource<string>();
+                Thread.Sleep(1);
+                try
+                {
+                    string result = await _waitingReply.Task.WaitAsync(TimeSpan.FromMilliseconds(300));
+                    if (result == "Ready")
+                    {
+                        continue;
+                    }
+                }
+                catch (Exception ex)
+                {
+
+                }
+            }
+
+
+                while (SerialPortService.IsOpen)
+                {
+                    if (_stopwatch == null)
+                    {
+                        _stopwatch = new Stopwatch();
+                    }
+                    if (_stopwatch.IsRunning == false)
+                    {
+                        _stopwatch.Start();
+                    }
+                    if (_importantByteQueue != null && _importantByteQueue.Count > 0)
+                    {
+                        SerialPortService.SendMsg(_importantByteQueue.Dequeue());
+                    }
+                    else
+                    {
+                        if (_byteQueue != null && _byteQueue.Count > 0)
+                        {
+                            SerialPortService.SendMsg(_byteQueue.Dequeue());
+                        }
+                    }
+                    var time = _stopwatch.ElapsedMilliseconds;
+                    Debug.WriteLine($"发送时间间隔{time}");
+
+                    _waitingReply = new TaskCompletionSource<string>();
+                    Thread.Sleep(1);
+                    try
+                    {
+                        string result = await _waitingReply.Task.WaitAsync(TimeSpan.FromMilliseconds(300));
+                        if (result == "Ready")
+                        {
+                            continue;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+
+                    }
+
+                }
+
+            });
+        
 
         }
         public DelegateCommand<string> SaveToFileCommand { get; set; }
@@ -442,102 +828,56 @@ namespace UtilityTools.Modules.MotorTest.Model
                 NLog.LogManager.GetCurrentClassLogger().Fatal($"保存图表数据异常：目标路径【{filePath}】，异常原因【{ex.Message}】");
             }
         }
-        public void StartTimer()
+        public DelegateCommand SaveDataFileCommand { get; set; }
+        private void SaveDataFile()
         {
-            XAxis._getMotorStateTimer.Start();
-            YAxis._getMotorStateTimer.Start();
-            ZAxis._getMotorStateTimer.Start();
-            TAxis._getMotorStateTimer.Start();
-            RAxis._getMotorStateTimer.Start();
-        }
-        public void StopTimer()
-        {
-            XAxis._getMotorStateTimer.Stop();
-            YAxis._getMotorStateTimer.Stop();
-            ZAxis._getMotorStateTimer.Stop();
-            TAxis._getMotorStateTimer.Stop();
-            RAxis._getMotorStateTimer.Stop();
-        }
-        private void NetUdpService_UpdateResponse(object? sender, byte[] e)
-        {
-            _parser.ReceiveBytes(e);
-        }
-
-        private void SerialPortService_UpdateResponse(object? sender, byte[] e)
-        {
-            _parser.ReceiveBytes(e);
-        }
-        private void Parser_PacketReceivedEvent(object? sender, SelfMotorPacket e)
-        {
-            if (e != null)
+            FolderBrowserDialog dialog = new FolderBrowserDialog();
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.Cancel)
             {
-                _waitingReply.SetResult("Ready");
-                var data = e.DataSource;
-                var channel = (EnumMotorId)(data[0]);//电机通道
-                switch (channel)
-                {
-                    case EnumMotorId.MOTOR_1: _yAxisReturnEvent.Invoke(this,e); break;
-                    case EnumMotorId.MOTOR_2: _xAxisReturnEvent.Invoke(this,e); break;
-                    case EnumMotorId.MOTOR_3: _tAxisReturnEvent.Invoke(this,e); break;
-                    case EnumMotorId.MOTOR_4: _zAxisReturnEvent.Invoke(this, e); break;
-                    case EnumMotorId.MOTOR_5: _rAxisReturnEvent.Invoke(this, e); break;
-                }
+                return;
             }
-        }
-       
-
-        public void SendingThread()
-        {
-            Task.Run(async () =>
+            var path = dialog.SelectedPath;
+            Task.Run(() => 
             {
-                while (NetUdpService.IsOpen || SerialPortService.IsOpen)
-                {
-                    
-                    if (ImportantByteQueue.Count > 0)
-                    {
-                        var cmd = ImportantByteQueue.Dequeue();
-                        if (NetUdpService.IsOpen)
-                        {
-                            NetUdpService.SendMsg(cmd);
-                        }
-                        if (SerialPortService.IsOpen)
-                        {
-                            SerialPortService.SendMsg(cmd);
-                        }
-                    }
-                    else
-                    {
-                        if (ByteQueue.Count > 0)
-                        {
-                            var cmd = ByteQueue.Dequeue();
-                            if (NetUdpService.IsOpen)
-                            {
-                                NetUdpService.SendMsg(cmd);
-                            }
-                            if (SerialPortService.IsOpen)
-                            {
-                                SerialPortService.SendMsg(cmd);
-                            }
-                        }
-                        _waitingReply = new TaskCompletionSource<string>();
-                        try
-                        {
-                            string result = await _waitingReply.Task.WaitAsync(TimeSpan.FromMilliseconds(300));
-                            if (result == "Ready")
-                            {
-                                continue;
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            continue;
-                        }
-                    }
-                }
-
+                XAxis.Serilize(path);
+                YAxis.Serilize(path);
+                ZAxis.Serilize(path);
+                TAxis.Serilize(path);
+                RAxis.Serilize(path);
             });
-        
+            
         }
-       
+
+        public DelegateCommand ReadDataFileCommand { get; set; }
+        private void ReadDataFile()
+        {
+            FolderBrowserDialog dialog = new FolderBrowserDialog();
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.Cancel)
+            {
+                return;
+            }
+            var path = dialog.SelectedPath;
+            Task.Run(() =>
+            {
+                XAxis.Deserilize(path);
+                YAxis.Deserilize(path);
+                ZAxis.Deserilize(path);
+                TAxis.Deserilize(path);
+                RAxis.Deserilize(path);
+            });
+        }
+
+
+        public DelegateCommand CloseSlimitedCommand { get; set; }
+        /// <summary>
+        /// 关闭x，y，z的软限位
+        /// </summary>
+        private void CloseSlimited()
+        {
+            XAxis.CloseSlimited();
+            YAxis.CloseSlimited();
+            ZAxis.CloseSlimited();
+        }
+
     }
 }

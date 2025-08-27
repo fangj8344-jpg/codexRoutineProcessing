@@ -27,7 +27,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             } 
         }
 
-    }
+    } 
     public class MotorParams : BindableBase
     {
         private bool _enable;

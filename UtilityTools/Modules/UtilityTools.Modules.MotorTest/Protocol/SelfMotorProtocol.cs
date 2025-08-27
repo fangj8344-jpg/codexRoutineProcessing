@@ -298,6 +298,19 @@ namespace UtilityTools.Modules.MotorTest.Protocol
         MOTOR_r = 0x05,
 
     }
+    /// <summary>
+    /// 电机问询的枚举
+    /// </summary>
+    public enum EnumMotorInquiry
+    {
+        InquiryMotor_x = 0x01,
+        InquiryMotor_y = 0x02,
+        InquiryMotor_z = 0x03,
+        InquiryMotor_t = 0x04,
+        InquiryMotor_r = 0x05,
+        InquiryMotor_all = 0x06,
+        InquiryMotor_null = 0x07
+    }
     public class SelfMotorProtocol
     {
         private static byte[] DeviceID = BitConverter.GetBytes((short)0x0300);
