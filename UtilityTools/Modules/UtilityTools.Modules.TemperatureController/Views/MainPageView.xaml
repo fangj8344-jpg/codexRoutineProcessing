@@ -168,7 +168,7 @@
                 <DockPanel VerticalAlignment="Center">
                     <Label Content="PID调节"
                            DockPanel.Dock="Left" />
-                    <Label Content="手动调节"
+                    <Label Content="手动调节" 
                            DockPanel.Dock="Right" />
                     <ToggleButton IsChecked="{Binding IsManual}"
                                   HorizontalAlignment="Center" />

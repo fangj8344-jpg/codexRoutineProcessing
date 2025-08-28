@@ -20,7 +20,7 @@ namespace UtilityTools.Views
             this.btnMin.Click += BtnMin_Click;
             this.btnMax.Click += BtnMax_Click;
             this.btnClose.Click += BtnClose_Click;
-
+             
             this.ColorZone.MouseMove += ColorZone_MouseMove;
             this.ColorZone.MouseDoubleClick += ColorZone_MouseDoubleClick;
 

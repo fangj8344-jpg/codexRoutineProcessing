@@ -40,6 +40,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
@@ -321,6 +322,7 @@ namespace UtilityTools.Modules.TemperatureController.Model
                         var cmdIout = TemperatureControllerProtocol.SetManualIOutCommand(SetCurrent);
                         //var cmdImax = TemperatureControllerProtocol.SetIMaxCommand(MaxCurrent);
                         SerialPortService.SendMsg(cmdModel);
+                        SerialPortService.SendMsg(cmdIout);
                         StartManualTimer();
                     }
                     else
@@ -329,6 +331,8 @@ namespace UtilityTools.Modules.TemperatureController.Model
                         var cmdPID = TemperatureControllerProtocol.SetPIDparameterCommand(Pid.Kp, Pid.Ki, Pid.Kd);
                         var cmdImax = TemperatureControllerProtocol.SetIMaxCommand(MaxCurrent);
                         SerialPortService.SendMsg(cmdModel);
+                        SerialPortService.SendMsg(cmdPID);
+                        SerialPortService.SendMsg(cmdImax);
                         if (IsKelvin)
                         {
                             //var cmd = TemperatureControllerProtocol.SetKelvinPidCommand(
@@ -338,6 +342,7 @@ namespace UtilityTools.Modules.TemperatureController.Model
                             //    Pid.Kp, Pid.Ki, Pid.Kd);
                             var cmdtargetTemp = TemperatureControllerProtocol.SetPIDTargetTempCommand(1, TargetTemperature);
                             var cmd = TemperatureControllerProtocol.SetRtimeTempCommand(1);
+                            SerialPortService.SendMsg(cmdtargetTemp);
                             SerialPortService.SendMsg(cmd);
                         }
                         else
@@ -349,6 +354,7 @@ namespace UtilityTools.Modules.TemperatureController.Model
                             //    Pid.Kp, Pid.Ki, Pid.Kd);
                             var cmdtargetTemp = TemperatureControllerProtocol.SetPIDTargetTempCommand(0, TargetTemperature);
                             var cmd = TemperatureControllerProtocol.SetRtimeTempCommand(0);
+                            SerialPortService.SendMsg(cmdtargetTemp);
                             SerialPortService.SendMsg(cmd);
                         }
                     }
@@ -403,6 +409,26 @@ namespace UtilityTools.Modules.TemperatureController.Model
             }
         }
 
+
+        /// <summary>
+        /// 图表数据
+        /// </summary>
+        /// <param name="Temperature">温度值</param>
+        private void TemperatureDataChart(float Temperature)
+        {
+            Task.Run(() =>
+            {
+                while (true)
+                {
+                    _temp.Points.Add(DateTimeAxis.CreateDataPoint(DateTime.Now, Temperature - 273.15));
+                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        TempPlotModel.InvalidatePlot(true);
+                    });
+                    Thread.Sleep(2000);
+                }
+            });
+        }
 
         public DelegateCommand ClearMonitorCommand { get; set; }
 
