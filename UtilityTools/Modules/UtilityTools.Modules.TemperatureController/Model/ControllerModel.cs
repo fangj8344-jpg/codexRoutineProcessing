@@ -34,11 +34,13 @@ using OxyPlot.Wpf;
 using Prism.Commands;
 using Prism.Ioc;
 using Prism.Mvvm;
+using ScottPlot.Drawing.Colormaps;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
@@ -307,36 +309,52 @@ namespace UtilityTools.Modules.TemperatureController.Model
                     return;
                 }
 
-
+                var cmdSwitch = TemperatureControllerProtocol.SetCentigradeCommand(1);
                 BtnContent = "关闭";
                 if (SerialPortService.IsOpen)
                 {
                     if (IsManual)
                     {
-                        var cmd = TemperatureControllerProtocol.SetManualCurrentCommand(
-                            SetCurrent,
-                            MaxCurrent);
-                        SerialPortService.SendMsg(cmd);
+                        //var cmd = TemperatureControllerProtocol.SetManualCurrentCommand(
+                        //    SetCurrent,
+                        //    MaxCurrent);
+                        var cmdModel = TemperatureControllerProtocol.SetCtrlModeCommand(1);
+                        var cmdIout = TemperatureControllerProtocol.SetManualIOutCommand(SetCurrent);
+                        //var cmdImax = TemperatureControllerProtocol.SetIMaxCommand(MaxCurrent);
+                        SerialPortService.SendMsg(cmdModel);
+                        SerialPortService.SendMsg(cmdIout);
                         StartManualTimer();
                     }
                     else
                     {
+                        var cmdModel = TemperatureControllerProtocol.SetCtrlModeCommand(1);
+                        var cmdPID = TemperatureControllerProtocol.SetPIDparameterCommand(Pid.Kp, Pid.Ki, Pid.Kd);
+                        var cmdImax = TemperatureControllerProtocol.SetIMaxCommand(MaxCurrent);
+                        SerialPortService.SendMsg(cmdModel);
+                        SerialPortService.SendMsg(cmdPID);
+                        SerialPortService.SendMsg(cmdImax);
                         if (IsKelvin)
                         {
-                            var cmd = TemperatureControllerProtocol.SetKelvinPidCommand(
-                                TargetTemperature,
-                                SetCurrent,
-                                MaxCurrent,
-                                Pid.Kp, Pid.Ki, Pid.Kd);
+                            //var cmd = TemperatureControllerProtocol.SetKelvinPidCommand(
+                            //    TargetTemperature,
+                            //    SetCurrent,
+                            //    MaxCurrent,
+                            //    Pid.Kp, Pid.Ki, Pid.Kd);
+                            var cmdtargetTemp = TemperatureControllerProtocol.SetPIDTargetTempCommand(1, TargetTemperature);
+                            var cmd = TemperatureControllerProtocol.SetRtimeTempCommand(1);
+                            SerialPortService.SendMsg(cmdtargetTemp);
                             SerialPortService.SendMsg(cmd);
                         }
                         else
                         {
-                            var cmd = TemperatureControllerProtocol.SetCentigradePidCommand(
-                                TargetTemperature,
-                                SetCurrent,
-                                MaxCurrent,
-                                Pid.Kp, Pid.Ki, Pid.Kd);
+                            //var cmd = TemperatureControllerProtocol.SetCentigradePidCommand(
+                            //    TargetTemperature,
+                            //    SetCurrent,
+                            //    MaxCurrent,
+                            //    Pid.Kp, Pid.Ki, Pid.Kd);
+                            var cmdtargetTemp = TemperatureControllerProtocol.SetPIDTargetTempCommand(0, TargetTemperature);
+                            var cmd = TemperatureControllerProtocol.SetRtimeTempCommand(0);
+                            SerialPortService.SendMsg(cmdtargetTemp);
                             SerialPortService.SendMsg(cmd);
                         }
                     }
@@ -391,6 +409,26 @@ namespace UtilityTools.Modules.TemperatureController.Model
             }
         }
 
+
+        /// <summary>
+        /// 图表数据
+        /// </summary>
+        /// <param name="Temperature">温度值</param>
+        private void TemperatureDataChart(float Temperature)
+        {
+            Task.Run(() =>
+            {
+                while (true)
+                {
+                    _temp.Points.Add(DateTimeAxis.CreateDataPoint(DateTime.Now, Temperature - 273.15));
+                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        TempPlotModel.InvalidatePlot(true);
+                    });
+                    Thread.Sleep(2000);
+                }
+            });
+        }
 
         public DelegateCommand ClearMonitorCommand { get; set; }
 

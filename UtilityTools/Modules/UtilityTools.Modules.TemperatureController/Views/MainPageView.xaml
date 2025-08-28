@@ -122,9 +122,9 @@
                 <Label Content="温度类型"
                        VerticalAlignment="Center" />
                 <DockPanel VerticalAlignment="Center">
-                    <Label Content="摄氏温度"
-                           DockPanel.Dock="Right" />
                     <Label Content="开氏温度"
+                           DockPanel.Dock="Right" />
+                    <Label Content="摄氏温度"
                            DockPanel.Dock="left" />
                     <ToggleButton IsChecked="{Binding IsKelvin}"
                                   HorizontalAlignment="Center" />
@@ -168,7 +168,7 @@
                 <DockPanel VerticalAlignment="Center">
                     <Label Content="PID调节"
                            DockPanel.Dock="Left" />
-                    <Label Content="手动调节"
+                    <Label Content="手动调节" 
                            DockPanel.Dock="Right" />
                     <ToggleButton IsChecked="{Binding IsManual}"
                                   HorizontalAlignment="Center" />
