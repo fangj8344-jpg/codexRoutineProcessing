@@ -41,7 +41,7 @@
                         Foreground="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             </DockPanel>
 
-            <local:MainPageView Grid.Row="1"
+            <local:SelectWorkType Grid.Row="1"
                                 DataContext="{Binding Model}" />
         </Grid>
     </md:DialogHost>
