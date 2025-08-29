@@ -108,7 +108,7 @@ namespace UtilityTools.Modules.IonPump.Protocol
 
         public CommandPacketBuilder()
         {
-            this.addr = 5;
+            this.addr = 1;
         }
 
         public CommandPacket GetCmdSysModel()
@@ -135,6 +135,15 @@ namespace UtilityTools.Modules.IonPump.Protocol
         public CommandPacket GetCmdHvReadVoltage()
         {
             return GetReadCmd(EnumCommand.READ_VOLTAGE);
+        }
+
+        public CommandPacket GetCmdStartPump()
+        {
+            return GetReadCmd(EnumCommand.START_PUMP);
+        }
+        public CommandPacket GetCmdStopPump()
+        {
+            return GetReadCmd(EnumCommand.STOP_PUMP);
         }
 
         public CommandPacket GetReadCmd(EnumCommand cmd)
@@ -215,7 +224,7 @@ namespace UtilityTools.Modules.IonPump.Protocol
             _buffer = new byte[BufferSize];
             _idx = 0;
             _buffer_size = BufferSize;
-            addr = 5;
+            addr = 1;
         }
 
         public event EventHandler<ResponsePacket> PacketReceivedEvent;

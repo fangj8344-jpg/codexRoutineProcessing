@@ -326,12 +326,18 @@ namespace UtilityTools.Modules.AutoFocusTest.ViewModels
 
         private bool IsValidImage(String fileName)
         {
+            if (!fileName.Contains('_'))
+                return true;
             var list = fileName.Split('_');
             return list.Count() == 4;
         }
 
         private int GetObValue(string fileName)
         {
+            if (!fileName.Contains('_') && int.TryParse(fileName, out int obValue))
+            { 
+                return obValue;
+            }
             var list = fileName.Split('_');
             if (list.Length == 4 && int.TryParse(list[1], out int value))
             {
