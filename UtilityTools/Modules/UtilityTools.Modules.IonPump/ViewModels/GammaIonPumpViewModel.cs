@@ -119,7 +119,18 @@ namespace UtilityTools.Modules.IonPump.ViewModels
                     {
                         break;
                     }
-
+                case EnumCommand.START_PUMP:
+                    {
+                        var resp = SendAndWaitResponse(_builder.GetCmdStartPump());
+                        RespPacketDataStr = resp.Data;
+                        break;
+                    }
+                case EnumCommand.STOP_PUMP:
+                    {
+                        var resp = SendAndWaitResponse(_builder.GetCmdStopPump());
+                        RespPacketDataStr = resp.Data;
+                        break;
+                    }
                 default:
                     {
                         LOGGER.Warn($"发送命令暂不支持{cmd}");

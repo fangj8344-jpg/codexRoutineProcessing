@@ -5,17 +5,23 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:UtilityTools.Modules.FlyDataTool.Views"
              xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+             xmlns:cv="clr-namespace:UtilityTools.Core.Converter;assembly=UtilityTools.Core"
              xmlns:oxy="http://oxyplot.org/wpf"
              Foreground="Black"
              mc:Ignorable="d"
              d:DesignHeight="450"
              d:DesignWidth="800">
+    <UserControl.Resources>
+        <cv:SecondsToHMSConverter x:Key="secondsToHMSConverter"/>
+    </UserControl.Resources>
+    
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
             <RowDefinition />
             <RowDefinition Height="auto" />
             <RowDefinition />
+            <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
 
         <DockPanel Grid.Row="0"
@@ -124,5 +130,10 @@
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>
+
+        <DockPanel Grid.Row="4" LastChildFill="False">
+            <TextBlock Margin="10,0" Foreground="White" DockPanel.Dock="Right" FontSize="14" Text="{Binding AllFlyTime, Converter={StaticResource secondsToHMSConverter}, StringFormat= 总时长：{0} }"/>
+            <TextBlock Margin="10,0" Foreground="White" DockPanel.Dock="Right" FontSize="14" Text="{Binding MaxSingleTime,Converter={StaticResource secondsToHMSConverter}, StringFormat= 单次最大开枪时长：{0} }"/>
+        </DockPanel>
     </Grid>
 </UserControl>

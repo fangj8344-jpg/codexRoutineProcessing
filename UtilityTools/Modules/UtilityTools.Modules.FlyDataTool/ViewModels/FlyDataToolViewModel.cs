@@ -169,7 +169,6 @@ namespace UtilityTools.Modules.FlyDataTool.ViewModels
                 CreateAllLine();
             }
         }
-
         #endregion
 
         #region ------------Command------------
