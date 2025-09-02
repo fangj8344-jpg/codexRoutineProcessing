@@ -132,7 +132,7 @@
                         <Grid Grid.Row="4" Grid.Column="3">
                             <StackPanel Grid.Column="1">
                                 <Label VerticalAlignment="Center">当前控制模式</Label>
-                                <TextBlock VerticalAlignment="Center" HorizontalAlignment="Left" Width="120" Text="{Binding ReadCtrlMode}"></TextBlock>
+                                <TextBlock VerticalAlignment="Center" HorizontalAlignment="Left" Width="120" Text="{Binding ReadCtrlModeDisplay}"></TextBlock>
                             </StackPanel>
                         </Grid>
 
@@ -140,9 +140,9 @@
                             <Label VerticalAlignment="Center">当前传感器类型</Label>
                             <TextBlock VerticalAlignment="Center" HorizontalAlignment="Left" Width="120" Text="PT100"></TextBlock>
                         </StackPanel>
-                        <StackPanel Grid.Row="6" Grid.Column="2" Orientation="Vertical" >
-                            <Label HorizontalAlignment="Center">实时温度</Label>
-                            <TextBlock Width="120" HorizontalAlignment="Right" Text="{Binding ReadTemperature}"></TextBlock>
+                        <StackPanel Grid.Row="6" Grid.Column="2" Orientation="Vertical" Margin="40,0,0,0">
+                            <Label HorizontalContentAlignment="Center">实时温度</Label>
+                            <TextBlock HorizontalAlignment="Center" Width="120" Text="{Binding ReadTemperature}" Margin="30,0,0,0"></TextBlock>
                         </StackPanel>
                     </Grid>
                     <Grid Grid.Row="1">
@@ -193,7 +193,7 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding ReadTargetTemperature}"></TextBlock>
+                                        <TextBlock Text="{Binding ReadTargetTemperature}" Margin="10,0,0,0"></TextBlock>
                                         <!--<Label Grid.Column="1">℃</Label>-->
                                     </Grid>
 
@@ -205,7 +205,7 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding ReadTemperatureRate}"></TextBlock>
+                                        <TextBlock Text="{Binding ReadTemperatureRate}" Margin="10,0,0,0"></TextBlock>
                                         <!--<Label Grid.Column="1">℃/Min</Label>-->
                                     </Grid>
 
@@ -217,7 +217,7 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding ReadTemperatureCorrection}"></TextBlock>
+                                        <TextBlock Text="{Binding ReadTemperatureCorrection}" Margin="10,0,0,0"></TextBlock>
                                         <!--<Label Grid.Column="1">℃</Label>-->
                                     </Grid>
 
@@ -229,7 +229,7 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding TargetCurrent}"></TextBlock>
+                                        <TextBlock Text="{Binding TargetCurrent}" Margin="10,0,0,0"></TextBlock>
                                         <Label Grid.Column="1">A</Label>
                                     </Grid>
 
@@ -241,7 +241,7 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding ReadMaxCurrent}"></TextBlock>
+                                        <TextBlock Text="{Binding ReadMaxCurrent}" Margin="10,0,0,0"></TextBlock>
                                         <Label Grid.Column="1">A</Label>
                                     </Grid>
 
@@ -253,20 +253,20 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding ReadTimeCtrl}"></TextBlock>
+                                        <TextBlock Text="{Binding ReadTimeCtrl}" Margin="10,0,0,0"></TextBlock>
                                         <Label Grid.Column="1">h</Label>
                                     </Grid>
                                 </StackPanel>
                                 <!--PID参数读取-->
-                                <StackPanel Grid.Row="2" Orientation="Vertical">
+                                <StackPanel Grid.Row="2" Orientation="Vertical" Margin="5,0,0,0">
                                     <Label>P</Label>
                                     <TextBlock Text="{Binding Pid.ReadKp}"></TextBlock>
                                 </StackPanel>
-                                <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Vertical">
+                                <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Vertical" Margin="5,0,0,0">
                                     <Label>I</Label>
                                     <TextBlock Text="{Binding Pid.ReadKi}"></TextBlock>
                                 </StackPanel>
-                                <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Vertical">
+                                <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Vertical" Margin="5,0,0,0">
                                     <Label>D</Label>
                                     <TextBlock Text="{Binding Pid.ReadKd}"></TextBlock>
                                 </StackPanel>

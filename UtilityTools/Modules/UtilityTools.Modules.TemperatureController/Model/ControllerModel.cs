@@ -103,6 +103,7 @@ namespace UtilityTools.Modules.TemperatureController.Model
         private TemperatureControllerParser _parser;
         private System.Timers.Timer _pidTimer;
         private System.Timers.Timer _manualTimer;
+        private uint ReadCtrlMode;
 
         LineSeries _temp;
         #endregion
@@ -259,17 +260,21 @@ namespace UtilityTools.Modules.TemperatureController.Model
             }
         }
 
-        private uint _readCtrlMode;
+        private string _readCtrlModeDisplay;
         /// <summary>
         /// 读到的控制模式
         /// </summary>
-        public uint ReadCtrlMode
+        public string ReadCtrlModeDisplay
         {
-            get { return _readCtrlMode; }
+            get { return _readCtrlModeDisplay; }
             set
             {
-                _readCtrlMode = value;
-                RaisePropertyChanged();
+                if (_readCtrlModeDisplay != value)
+                {
+                    _readCtrlModeDisplay = value;
+                    RaisePropertyChanged();
+                    ReadCtrlModeDisplay = ReadCtrlMode == 0 ? "PID控制" : "Manual";
+                }
             }
         }
 
@@ -621,6 +626,7 @@ namespace UtilityTools.Modules.TemperatureController.Model
             if (!IsDeviceStatus)
             {
                 _dialogHostService.Information("提示", "设备未就绪，请检查设备状态！", CommonModel.TemperatureControllerRegionName);
+                return;
             }
             HandleWorkTypeCommand();
             if (BtnContent.Contains("启动"))
