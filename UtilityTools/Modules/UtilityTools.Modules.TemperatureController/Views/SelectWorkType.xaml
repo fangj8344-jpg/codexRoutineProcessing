@@ -19,7 +19,7 @@
                 <RadioButton x:Name="HotTableRadio" GroupName="WorkType" 
                           Content="热台模式" Margin="10" FontSize="16" IsChecked="True"/>
 
-                <Button Content="确认选择" Click="ConfirmButton_Click" 
+                <Button Content="确认选择" Click="ConfirmButton_Click" Command="{Binding WorkTypeCommand}" 
                      Margin="0,30,0,0" Height="40" FontSize="16"/>
             </StackPanel>
         </Border>

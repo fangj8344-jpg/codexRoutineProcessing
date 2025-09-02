@@ -59,5 +59,29 @@ namespace UtilityTools.Core.Model
 			set { _kd = value; RaisePropertyChanged(); }
 		}
 
-	}
+        private float _readkp;
+
+        public float ReadKp
+        {
+            get { return _readkp; }
+            set { _readkp = value; RaisePropertyChanged(); }
+        }
+
+        private float _readki;
+
+        public float ReadKi
+        {
+            get { return _readki; }
+            set { _readki = value; RaisePropertyChanged(); }
+        }
+
+        private float _readkd;
+
+        public float ReadKd
+        {
+            get { return _readkd; }
+            set { _readkd = value; RaisePropertyChanged(); }
+        }
+
+    }
 }

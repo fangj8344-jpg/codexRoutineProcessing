@@ -140,7 +140,26 @@ namespace UtilityTools.Modules.TemperatureController.Protocol
         CMD_SET_TEMP_CORRECTION = 0x0401,
 
         [Description("获取温度修正值")]
-        CMD_GET_TEMP_CORRECTION = 0x0402
+        CMD_GET_TEMP_CORRECTION = 0x0402,
+
+        [Description("获取全部状态数据")]
+        CMD_GET_DATA_ALL = 0x0410,
+
+        
+        [Description("获取控制器本地温度，也就是冷端温度")]
+        CMD_GET_LOCAL_TEMP = 0x0501,
+        [Description("获取当前温度变化速率")]
+        CMD_GET_CURRENT_RATE = 0x0502,
+        [Description("获取当前控制的目标温度变化速率")]
+        CMD_GET_TARGET_RATE = 0x0503,
+        [Description("设置控制参数")]
+        CMD_SET_CTL_PARAMS = 0x0504,
+        [Description("获取控制参数")]
+        CMD_GET_CTL_PARAMS = 0x0505,
+        [Description("设置稳态降温阶段的PID参数")]
+        CMD_SET_STA_PID = 0x0506,
+        [Description("获取稳态降温阶段的PID参数")]
+        CMD_GET_STA_PID = 0x0507,
     }
 
     internal static class TemperatureControllerProtocol
@@ -325,6 +344,55 @@ namespace UtilityTools.Modules.TemperatureController.Protocol
             ByteWriter writer = new ByteWriter(36);
             writer.Write(tempCorrection);
             return GetCmd(EnumTemperatureControllerCommandType.CMD_SET_TEMP_CORRECTION, writer.EndWrite());
+        }
+
+        /// <summary>
+        /// 获取全部数据
+        /// </summary>
+        /// <param name="allData">温度单位：0：℃  1：K</param>
+        /// <returns></returns>
+        public static byte[] SetAllData(uint allData)
+        {
+            //var cmdImax = TemperatureControllerProtocol.SetIMaxCommand(MaxCurrent);
+            ByteWriter writer = new ByteWriter(36);
+            writer.Write(allData);
+            return GetCmd(EnumTemperatureControllerCommandType.CMD_GET_DATA_ALL, writer.EndWrite());
+        }
+
+        /// <summary>
+        /// 设置控制参数
+        /// </summary>
+        /// <param name="tempRange">触发温度控制的范围（绝对值）也就是温度距离多少时开始精确PID控制，单位℃</param>
+        /// <param name="minRate">最小升温速率，单位℃/s</param>
+        /// <param name="SC">速度控制的衰减变化系数</param>
+        /// <param name="SysC">系统前馈补偿的增益系数</param>
+        /// <returns></returns>
+        public static byte[] SetControlparms(float tempRange,float minRate,float SC,float SysC)
+        {
+            //var cmdImax = TemperatureControllerProtocol.SetIMaxCommand(MaxCurrent);
+            ByteWriter writer = new ByteWriter(36);
+            writer.Write(tempRange);
+            writer.Write(minRate);
+            writer.Write(SC);
+            writer.Write(SysC);
+            return GetCmd(EnumTemperatureControllerCommandType.CMD_SET_CTL_PARAMS, writer.EndWrite());
+        }
+
+        /// <summary>
+        /// 设置稳态降温阶段的PID参数
+        /// </summary>
+        /// <param name="SteadyP"></param>
+        /// <param name="SteadyI"></param>
+        /// <param name="SteadyD"></param>
+        /// <returns></returns>
+        public static byte[] SetSteadyCoolPIDparms(float SteadyP, float SteadyI, float SteadyD)
+        {
+            //var cmdImax = TemperatureControllerProtocol.SetIMaxCommand(MaxCurrent);
+            ByteWriter writer = new ByteWriter(36);
+            writer.Write(SteadyP);
+            writer.Write(SteadyI);
+            writer.Write(SteadyD);
+            return GetCmd(EnumTemperatureControllerCommandType.CMD_SET_STA_PID, writer.EndWrite());
         }
         #endregion
 
