@@ -14,12 +14,12 @@
                 <TextBlock Text="请选择工作类型" FontSize="20" FontWeight="Bold" 
                         HorizontalAlignment="Center" Margin="0,0,0,20"/>
 
-                <RadioButton x:Name="ColdTableRadio" GroupName="WorkType" 
-                          Content="冷台模式" Margin="10" FontSize="16"/>
-                <RadioButton x:Name="HotTableRadio" GroupName="WorkType" 
-                          Content="热台模式" Margin="10" FontSize="16" IsChecked="True"/>
+                <RadioButton x:Name="ColdTableRadio" GroupName="WorkType"
+                          IsChecked="{Binding IsColdModeSelected}" Content="冷台模式" Margin="10" FontSize="16"/>
+                <RadioButton x:Name="HotTableRadio" GroupName="WorkType"
+                          IsChecked="{Binding IsHotModeSelected}" Content="热台模式" Margin="10" FontSize="16"/>
 
-                <Button Content="确认选择" Click="ConfirmButton_Click" Command="{Binding WorkTypeCommand}" 
+                <Button Content="确认选择" Click="ConfirmButton_Click"
                      Margin="0,30,0,0" Height="40" FontSize="16"/>
             </StackPanel>
         </Border>

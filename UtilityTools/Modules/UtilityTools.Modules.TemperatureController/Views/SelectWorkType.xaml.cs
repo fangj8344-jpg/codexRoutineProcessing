@@ -30,15 +30,6 @@ namespace UtilityTools.Modules.TemperatureController.Views
         private void ConfirmButton_Click(object sender, RoutedEventArgs e)
         {
             MainPageView mainpage = new MainPageView();
-            if (ColdTableRadio.Content == "冷台模式")
-            {
-                TemperatureControllerProtocol.SetWorkTypeCommand(0);
-            }
-            else if (HotTableRadio.Content == "热台模式")
-            {
-                TemperatureControllerProtocol.SetWorkTypeCommand(1);
-            }
-
             this.Content = mainpage;
         }
     }

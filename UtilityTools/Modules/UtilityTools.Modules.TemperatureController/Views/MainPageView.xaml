@@ -271,10 +271,7 @@
                                     <TextBlock Text="{Binding Pid.ReadKd}"></TextBlock>
                                 </StackPanel>
                             </Grid>
-
                         </Grid>
-
-
                     </Grid>
                 </Grid>
             </ScrollViewer>
