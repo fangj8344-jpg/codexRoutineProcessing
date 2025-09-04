@@ -10,271 +10,320 @@
              FontSize="24"
              d:DesignHeight="450"
              d:DesignWidth="800">
-    <!--<UserControl.Resources>
+    <UserControl.Resources>
+        <Style x:Key="MonitorBtn" TargetType="Button">
+            <Setter Property="Background" Value="GhostWhite"/>
+            <Setter Property="Height" Value="68"/>
+            <Setter Property="Width" Value="240"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Background" Value="#673AB7"/>
+            <!-- 添加圆角设置 -->
+            <Setter Property="BorderThickness" Value="1"/>
+            <!-- 设置边框厚度 -->
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <!-- 设置边框颜色 -->
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border 
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="8">
+                            <ContentPresenter 
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <!--<Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="White"/>
+                </Trigger>
+            </Style.Triggers>-->
+        </Style>
+
+
+        <Style x:Key="MonitorTextBlock" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="SecondaryMonitorTextBlock" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <!--<Style x:Key="WriteTextBox" TargetType="TextBox">
+            <Setter Property="Width" Value="180"/>
+        </Style>-->
         <cv:KelvinToStringConverter x:Key="kelvinToStringConverter" />
-    </UserControl.Resources>-->
+    </UserControl.Resources>
 
     <TabControl>
         <TabItem Header="主界面">
-            <ScrollViewer>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
                 <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="60*"/>
-                        <RowDefinition Height="40*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Button Style="{StaticResource MonitorBtn}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource MonitorTextBlock}" FontWeight="Bold" Text="实时温度"></TextBlock>
+                            <DockPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Style="{StaticResource MonitorTextBlock}" Text="{Binding ReadTemperature}"></TextBlock>
+                                <Label Content="{Binding IsKelvin, Converter={StaticResource ResourceKey=kelvinToStringConverter}}"></Label>
+                            </DockPanel>
+                        </StackPanel>
+                    </Button>
+                    <Button Grid.Row="1" Style="{StaticResource MonitorBtn}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource MonitorTextBlock}" FontWeight="Bold" Text="目标温度"></TextBlock>
+                            <TextBlock Style="{StaticResource MonitorTextBlock}" Text="{Binding ReadTargetTemperature}"></TextBlock>
+                            <Label Content="{Binding IsKelvin, Converter={StaticResource ResourceKey=kelvinToStringConverter}}"></Label>
+                        </StackPanel>
+                    </Button>
+                    <Button Grid.Column="1" Style="{StaticResource MonitorBtn}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource MonitorTextBlock}" FontWeight="Bold" Text="实时电流"></TextBlock>
+                            <TextBlock Style="{StaticResource MonitorTextBlock}" Text="{Binding ReadCurrent}"></TextBlock>
+                        </StackPanel>
+                    </Button>
+                    <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource MonitorBtn}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource MonitorTextBlock}" FontWeight="Bold" Text="最大电流"></TextBlock>
+                            <TextBlock Style="{StaticResource MonitorTextBlock}" Text="{Binding ReadMaxCurrent}"></TextBlock>
+                        </StackPanel>
+                    </Button>
+                    <Button Grid.Row="2" Style="{StaticResource MonitorBtn}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource MonitorTextBlock}" FontWeight="Bold" Text="工作状态"></TextBlock>
+                            <TextBlock Style="{StaticResource MonitorTextBlock}" Text="未启动"></TextBlock>
+                        </StackPanel>
+                    </Button>
+                    <Button Grid.Row="2" Grid.Column="1" Style="{StaticResource MonitorBtn}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource MonitorTextBlock}" FontWeight="Bold" Text="温控速率"></TextBlock>
+                            <TextBlock Style="{StaticResource MonitorTextBlock}" Text="{Binding ReadTemperatureRate}"></TextBlock>
+                        </StackPanel>
+                    </Button>
+                    <Button Grid.Row="3" Style="{StaticResource MonitorBtn}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource MonitorTextBlock}" FontWeight="Bold" Text="控制模式"></TextBlock>
+                            <TextBlock Style="{StaticResource MonitorTextBlock}" Text="{Binding ReadCtrlModeDisplay}"></TextBlock>
+                        </StackPanel>
+                    </Button>
+                    <Button Grid.Row="3" Grid.Column="1" Style="{StaticResource MonitorBtn}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource MonitorTextBlock}" FontWeight="Bold" Text="定时控制"></TextBlock>
+                            <TextBlock Style="{StaticResource MonitorTextBlock}" Text="Time"></TextBlock>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+                <Grid Grid.Column="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="50*"/>
-                            <RowDefinition Height="50*"/>
-                            <RowDefinition Height="50*"/>
-                            <RowDefinition Height="50*"/>
-                            <RowDefinition Height="50*"/>
-                            <RowDefinition Height="50*"/>
-                            <RowDefinition Height="50*"/>
-                        </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="50*"/>
-                            <ColumnDefinition Width="50*"/>
-                            <ColumnDefinition Width="50*"/>
-                            <ColumnDefinition Width="50*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <DockPanel>
-                            <Label>当前工作类型：</Label>
-                            <Label>冷热台</Label>
-                        </DockPanel>
-                        <DockPanel Grid.Column="2">
-                            <Label>当前设备状态：</Label>
-                            <Label Content="{Binding ReadDeviceStatus}"></Label>
-                        </DockPanel>
-                        <DockPanel Grid.Column="3">
-                            <Label Content="关闭"/>
-                            <ToggleButton Height="28" Width="36" VerticalAlignment="Center" IsChecked="{Binding IsDeviceStatus}" Command="{Binding DeviceStatusCommand}"/>
-                            <Label Content="启动"/>
-                        </DockPanel>
-                        <DockPanel Grid.Row="1">
-                            <Label Content="摄氏度"/>
-                            <ToggleButton Height="28" Width="36" VerticalAlignment="Center" IsChecked="{Binding IsKelvin}"/>
-                            <Label Content="开氏度"/>
-                        </DockPanel>
-                        <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal">
-                            <Label VerticalAlignment="Center">控制模式</Label>
-                            <ComboBox  ItemsSource="{Binding ControlMode}" SelectedItem="{Binding SelectedControlMode}" FontSize="18" VerticalContentAlignment="Center">
-                            </ComboBox>
-                        </StackPanel>
-                        <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal">
-                            <Label VerticalAlignment="Center">传感器</Label>
-                            <ComboBox ItemsSource="{Binding SensorType}" SelectedItem="{Binding SelectedSensorType}" SelectedIndex="0" FontSize="18" VerticalContentAlignment="Center">
-                            </ComboBox>
-                        </StackPanel>
-                        <StackPanel Grid.Row="2" Orientation="Horizontal">
-                            <Label VerticalAlignment="Center">目标温度</Label>
-                            <TextBox VerticalAlignment="Center" Width="120" Text="{Binding TargetTemperature}">
-                            </TextBox>
-                        </StackPanel>
-                        <StackPanel Grid.Row="3" Orientation="Horizontal">
-                            <Label VerticalAlignment="Center">输出电流</Label>
-                            <TextBox VerticalAlignment="Center" Width="120" Text="{Binding SetCurrent}">
-                            </TextBox>
-                        </StackPanel>
-                        <StackPanel Grid.Row="4" Orientation="Horizontal">
-                            <Label VerticalAlignment="Center">P：</Label>
-                            <TextBox VerticalAlignment="Center" Width="120" Text="{Binding Pid.Kp}">
-                            </TextBox>
-                        </StackPanel>
-                        <StackPanel Grid.Row="5" Orientation="Horizontal">
-                            <Label VerticalAlignment="Center">I：</Label>
-                            <TextBox VerticalAlignment="Center" Width="120" Text="{Binding Pid.Ki}"></TextBox>
-                        </StackPanel>
-                        <StackPanel Grid.Row="6" Orientation="Horizontal">
-                            <Label VerticalAlignment="Center">D：</Label>
-                            <TextBox VerticalAlignment="Center" Width="120" Text="{Binding Pid.Kd}"></TextBox>
-                        </StackPanel>
-                        <Grid Grid.Row="6" Grid.Column="1">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="20*"/>
-                                <ColumnDefinition Width="30*"/>
-                            </Grid.ColumnDefinitions>
-                            <Button Grid.Column="1" Height="40" Width="65" Content="{Binding BtnContent}" Command="{Binding StartWorkCommand}"></Button>
-                        </Grid>
-                        <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal">
-                            <Label VerticalAlignment="Center">最大电流</Label>
-                            <TextBox VerticalAlignment="Center" Width="120" Text="{Binding MaxCurrent}"></TextBox>
-                        </StackPanel>
-                        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
-                            <Label VerticalAlignment="Center">温度修正</Label>
-                            <TextBox VerticalAlignment="Center" Width="120" Text="{Binding TemperatureCorrection}"></TextBox>
-                            <Label VerticalAlignment="Center">℃</Label>
-                        </StackPanel>
-                        <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal">
-                            <Label VerticalAlignment="Center">控温速率</Label>
-                            <TextBox VerticalAlignment="Center" Width="120" Text="{Binding TemperatureRate}"></TextBox>
-                            <Label VerticalAlignment="Center">℃/min</Label>
-                        </StackPanel>
-                        <Grid Grid.Row="3" Grid.Column="2">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Label Content="斜率控制:"></Label>
-                            <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                <Label Content="关"/>
-                                <ToggleButton Height="28" Width="36" VerticalAlignment="Center" IsChecked="{Binding BoolSlope}"/>
-                                <Label Content="开"/>
-                            </StackPanel>
-                        </Grid>
-
-                        <StackPanel Grid.Row="2" Grid.Column="3" Orientation="Horizontal">
-                            <Label VerticalAlignment="Center">定时控制</Label>
-                            <TextBox VerticalAlignment="Center" Width="120" Text="{Binding TimeCtrl}"></TextBox>
-                            <Label VerticalAlignment="Center">h</Label>
-                        </StackPanel>
-
-                        <Grid Grid.Row="4" Grid.Column="3">
-                            <StackPanel Grid.Column="1">
-                                <Label VerticalAlignment="Center">当前控制模式</Label>
-                                <TextBlock VerticalAlignment="Center" HorizontalAlignment="Left" Width="120" Text="{Binding ReadCtrlModeDisplay}"></TextBlock>
-                            </StackPanel>
-                        </Grid>
-
-                        <StackPanel Grid.Row="5" Grid.Column="3" Orientation="Vertical">
-                            <Label VerticalAlignment="Center">当前传感器类型</Label>
-                            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Left" Width="120" Text="PT100"></TextBlock>
-                        </StackPanel>
-                        <StackPanel Grid.Row="6" Grid.Column="2" Orientation="Vertical" Margin="40,0,0,0">
-                            <Label HorizontalContentAlignment="Center">实时温度</Label>
-                            <TextBlock HorizontalAlignment="Center" Width="120" Text="{Binding ReadTemperature}" Margin="30,0,0,0"></TextBlock>
-                        </StackPanel>
+                        <Label>温度</Label>
+                        <Label Grid.Column="1">电流</Label>
+                        <Label Grid.Column="2">温控</Label>
                     </Grid>
                     <Grid Grid.Row="1">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="30*"/>
-                            <ColumnDefinition Width="20*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="auto"/>
                         </Grid.ColumnDefinitions>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="80*"/>
-                                <ColumnDefinition Width="20*"/>
-                            </Grid.ColumnDefinitions>
-                            <oxy:PlotView Margin="5">
-
-                            </oxy:PlotView>
-                            <Grid Grid.Column="1">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-                                <StackPanel Orientation="Horizontal">
-                                    <Button Height="34" Width="60" Command="{Binding ClearMonitorCommand}">清空</Button>
-                                </StackPanel>
-                                <StackPanel Grid.Row="1" Orientation="Horizontal">
-                                    <Button Height="34" Width="60" Command="{Binding SaveToFileCommand}">保存</Button>
-                                </StackPanel>
-                            </Grid>
-                        </Grid>
-
+                        <oxy:PlotView Margin="5">
+                        </oxy:PlotView>
                         <Grid Grid.Column="1">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <Button Content="保存" Margin="0,10,0,30" Command="{Binding SaveToFileCommand}"></Button>
+                                <Button Content="清空" Command="{Binding ClearMonitorCommand}"></Button>
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </Grid>
+
+                <Grid Grid.Row="1">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="40*"/>
+                            <RowDefinition Height="60*"/>
+                        </Grid.RowDefinitions>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Style="{StaticResource MonitorBtn}" Width="280" Height="40">
+                                <DockPanel>
+                                    <TextBlock Style="{StaticResource MonitorTextBlock}" FontWeight="Bold" Text="当前工作类型："></TextBlock>
+                                    <TextBlock Style="{StaticResource MonitorTextBlock}" Text="{Binding ReadWorkTypeDisplay}"></TextBlock>
+                                </DockPanel>
+                            </Button>
+
+                            <Button Grid.Column="1" Style="{StaticResource MonitorBtn}"  Width="280" Height="40">
+                                <DockPanel>
+                                    <TextBlock Style="{StaticResource MonitorTextBlock}" FontWeight="Bold" Text="传感器类型："></TextBlock>
+                                    <TextBlock Style="{StaticResource MonitorTextBlock}" Text="{Binding ReadSensorTypeDisplay}"></TextBlock>
+                                </DockPanel>
+                            </Button>
+
+                            <Button Grid.Row="1" Style="{StaticResource MonitorBtn}" Width="280" Height="56">
+                                <StackPanel>
+                                    <TextBlock HorizontalAlignment="Center" Foreground="White" FontSize="18" FontWeight="Bold" Text="PID"></TextBlock>
+                                    <DockPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                        <TextBlock Foreground="White" FontSize="18" Text="{Binding Pid.ReadKp}"></TextBlock>
+                                        <TextBlock Foreground="White" FontSize="18" Text="、"></TextBlock>
+                                        <TextBlock Foreground="White" FontSize="18" Text="{Binding Pid.ReadKi}"></TextBlock>
+                                        <TextBlock Foreground="White" FontSize="18" Text="、"></TextBlock>
+                                        <TextBlock Foreground="White" FontSize="18" Text="{Binding Pid.ReadKd}"></TextBlock>
+                                    </DockPanel>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource MonitorBtn}" Width="280" Height="56">
+                                <StackPanel>
+                                    <TextBlock Foreground="White" FontSize="21" FontWeight="Bold" Text="温度修正参数"></TextBlock>
+                                    <DockPanel HorizontalAlignment="Center">
+                                        <TextBlock Foreground="White" FontSize="18" Text="{Binding ReadTemperatureCorrection}" VerticalAlignment="Center"></TextBlock>
+                                        <Label FontSize="18" Content="{Binding IsKelvin, Converter={StaticResource ResourceKey=kelvinToStringConverter}}" VerticalAlignment="Center"></Label>
+                                    </DockPanel>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid Margin="20,0">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="*"/>
                                     <RowDefinition Height="*"/>
                                     <RowDefinition Height="*"/>
+                                    <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
-                                <StackPanel Orientation="Vertical">
-                                    <Label>目标温度</Label>
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding ReadTargetTemperature}" Margin="10,0,0,0"></TextBlock>
-                                        <!--<Label Grid.Column="1">℃</Label>-->
-                                    </Grid>
-
-                                </StackPanel>
-                                <StackPanel Grid.Column="1" Orientation="Vertical">
-                                    <Label>控温速率</Label>
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding ReadTemperatureRate}" Margin="10,0,0,0"></TextBlock>
-                                        <!--<Label Grid.Column="1">℃/Min</Label>-->
-                                    </Grid>
-
-                                </StackPanel>
-                                <StackPanel Grid.Column="2" Orientation="Vertical">
-                                    <Label>温度修正</Label>
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding ReadTemperatureCorrection}" Margin="10,0,0,0"></TextBlock>
-                                        <!--<Label Grid.Column="1">℃</Label>-->
-                                    </Grid>
-
-                                </StackPanel>
-                                <StackPanel Grid.Row="1"  Orientation="Vertical">
-                                    <Label>目标电流</Label>
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding TargetCurrent}" Margin="10,0,0,0"></TextBlock>
-                                        <Label Grid.Column="1">A</Label>
-                                    </Grid>
-
-                                </StackPanel>
-                                <StackPanel Grid.Row="1" Grid.Column="1"  Orientation="Vertical">
-                                    <Label>最大电流</Label>
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding ReadMaxCurrent}" Margin="10,0,0,0"></TextBlock>
-                                        <Label Grid.Column="1">A</Label>
-                                    </Grid>
-
-                                </StackPanel>
-                                <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Vertical">
-                                    <Label>定时</Label>
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding ReadTimeCtrl}" Margin="10,0,0,0"></TextBlock>
-                                        <Label Grid.Column="1">h</Label>
-                                    </Grid>
-                                </StackPanel>
-                                <!--PID参数读取-->
-                                <StackPanel Grid.Row="2" Orientation="Vertical" Margin="5,0,0,0">
+                                <DockPanel VerticalAlignment="Center">
                                     <Label>P</Label>
-                                    <TextBlock Text="{Binding Pid.ReadKp}"></TextBlock>
-                                </StackPanel>
-                                <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Vertical" Margin="5,0,0,0">
+                                    <TextBox Text="{Binding Pid.Kp}"></TextBox>
+                                </DockPanel>
+                                <DockPanel Grid.Row="1" VerticalAlignment="Center">
                                     <Label>I</Label>
-                                    <TextBlock Text="{Binding Pid.ReadKi}"></TextBlock>
-                                </StackPanel>
-                                <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Vertical" Margin="5,0,0,0">
+                                    <TextBox Text="{Binding Pid.Ki}"></TextBox>
+                                </DockPanel>
+                                <DockPanel Grid.Row="2" VerticalAlignment="Center">
                                     <Label>D</Label>
-                                    <TextBlock Text="{Binding Pid.ReadKd}"></TextBlock>
-                                </StackPanel>
+                                    <TextBox Text="{Binding Pid.Kd}"></TextBox>
+                                </DockPanel>
+                                <Button Grid.Row="3" Content="设置" Width="80" Margin="0,10,0,0" Command="{Binding SetPIDparmsCommand}"></Button>
+                            </Grid>
+                            
+                            <Grid Grid.Column="1" Margin="20,0">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <DockPanel VerticalAlignment="Center">
+                                    <Label>传感器类型</Label>
+                                    <ComboBox ItemsSource="{Binding SensorType}" SelectedItem="{Binding SelectedSensorType}"></ComboBox>
+                                </DockPanel>
+                                <DockPanel Grid.Row="1" VerticalAlignment="Center">
+                                    <Label>温度修正参数</Label>
+                                    <TextBox Text="{Binding TemperatureCorrection}"></TextBox>
+                                </DockPanel>
+                                <Button Grid.Row="3" Width="80" Margin="0,10,0,0" Command="{Binding SetTemperatureCorrectionCommand}">设置</Button>
                             </Grid>
                         </Grid>
                     </Grid>
                 </Grid>
-            </ScrollViewer>
+                <Grid Grid.Row="1" Grid.Column="1" Margin="10,0,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="40*"/>
+                            <ColumnDefinition Width="60*"/>
+                        </Grid.ColumnDefinitions>
+                        <DockPanel VerticalAlignment="Center">
+                            <Label>摄氏度</Label>
+                            <ToggleButton IsChecked="{Binding IsKelvin}"></ToggleButton>
+                            <Label>开氏度</Label>
+                        </DockPanel>
+                        <DockPanel Grid.Column="1" VerticalAlignment="Center">
+                            <Label>控制模式：</Label>
+                            <ComboBox HorizontalAlignment="Left" Width="120" ItemsSource="{Binding ControlMode}" SelectedItem="{Binding SelectedControlMode}"></ComboBox>
+                        </DockPanel>
+                    </Grid>
+                    <DockPanel Grid.Row="1" VerticalAlignment="Center">
+                        <Label>目标温度：</Label>
+                        <TextBox Width="180" Text="{Binding TargetTemperature}"></TextBox>
+                        <Label Content="{Binding IsKelvin, Converter={StaticResource ResourceKey=kelvinToStringConverter}}"></Label>
+                    </DockPanel>
+                    <DockPanel Grid.Row="2" VerticalAlignment="Center">
+                        <Label>电流值：</Label>
+                        <TextBox Width="180" Text="{Binding SetCurrent}"></TextBox>
+                        <Label>A</Label>
+                    </DockPanel>
+                    <DockPanel Grid.Row="3" VerticalAlignment="Center">
+                        <Label>最大电流值：</Label>
+                        <TextBox Width="180" Text="{Binding MaxCurrent}"></TextBox>
+                        <Label>A</Label>
+                    </DockPanel>
+                    <DockPanel Grid.Row="4" VerticalAlignment="Center">
+                        <Label>控温速率：</Label>
+                        <TextBox Width="180" Text="{Binding TemperatureRate}"></TextBox>
+                        <Label>℃/Min</Label>
+                    </DockPanel>
+                    <DockPanel Grid.Row="5" VerticalAlignment="Center">
+                        <Label>定时状态：</Label>
+                        <TextBox Width="180" Text="{Binding TimeCtrl}"></TextBox>
+                        <Label>h</Label>
+                    </DockPanel>
+
+                    <Button Grid.Row="6" Content="{Binding BtnContent}" Command="{Binding StartWorkCommand}"></Button>
+                </Grid>
+            </Grid>
         </TabItem>
         <TabItem Header="调试">
             <Grid Margin="10">
@@ -287,36 +336,61 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <StackPanel>
+                    <Grid Margin="20,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="50"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
                         <Label>控制参数</Label>
-                        <Label>温度控制范围(绝对值)：</Label>
-                        <TextBox Text="{Binding TemperatureRange}"></TextBox>
-                        <Label>最小升温速率(℃/s)：</Label>
-                        <TextBox Text="{Binding MinRate}"></TextBox>
-                        <Label>速度控制衰减变化系数：</Label>
-                        <TextBox Text="{Binding SpeedC}"></TextBox>
-                        <Label>系统前馈补偿的增益系数：</Label>
-                        <TextBox Text="{Binding SystemC}"></TextBox>
-                        <Button Margin="0,10,0,0" Width="80" Command="{Binding SetControlparmsCommand}">设置</Button>
-                    </StackPanel>
-                    <StackPanel Grid.Column="2">
+                        <StackPanel Grid.Row="1">
+                            <Label>温度控制范围(绝对值)</Label>
+                            <TextBox Text="{Binding TemperatureRange}"></TextBox>
+                        </StackPanel>
+                        <StackPanel Grid.Row="2">
+                            <Label>最小升温速率(℃/s)</Label>
+                            <TextBox Text="{Binding MinRate}"></TextBox>
+                        </StackPanel>
+                        <StackPanel Grid.Row="3">
+                            <Label>速度控制衰减变化系数</Label>
+                            <TextBox Text="{Binding SpeedC}"></TextBox>
+                        </StackPanel>
+                        <StackPanel Grid.Row="4">
+                            <Label>系统前馈补偿的增益系数</Label>
+                            <TextBox Text="{Binding SystemC}"></TextBox>
+                        </StackPanel>
+                        <Button Grid.Row="5" Margin="0,10,0,0" Width="80" Command="{Binding SetControlparmsCommand}">设置</Button>
+                    </Grid>
+
+                    <Grid Grid.Column="1" Margin="20,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="50"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
                         <Label>稳态降温阶段的PID参数</Label>
-                        <DockPanel Margin="0,0,0,10">
+                        <DockPanel Grid.Row="1" Margin="0,0,0,10" VerticalAlignment="Center">
                             <Label>P</Label>
                             <TextBox Text="{Binding SteadyCoolPID.SteadySteadyCoolp}"></TextBox>
                         </DockPanel>
-                        <DockPanel Margin="0,0,0,10">
+                        <DockPanel Grid.Row="2" Margin="0,0,0,10" VerticalAlignment="Center">
                             <Label>I</Label>
                             <TextBox Text="{Binding SteadyCoolPID.SteadySteadyCooli}"></TextBox>
                         </DockPanel>
-                        <DockPanel>
+                        <DockPanel Grid.Row="3" VerticalAlignment="Center">
                             <Label>D</Label>
                             <TextBox Text="{Binding SteadyCoolPID.SteadySteadyCoold}"></TextBox>
                         </DockPanel>
-                        <Button Margin="0,10,0,0" Width="80" Command="{Binding SetPIDparmsCommand}">设置</Button>
-                    </StackPanel>
+                        <Button Grid.Row="5" Margin="0,10,0,0" Width="80" Command="{Binding SetSteadyCoolPIDparmsCommand}">设置</Button>
+                    </Grid>
                 </Grid>
-                
+
                 <Grid Grid.Column="1" HorizontalAlignment="Center">
                     <StackPanel Orientation="Vertical">
                         <StackPanel Margin="0,0,0,10" Orientation="Horizontal">
@@ -360,7 +434,6 @@
                             <Label>D值</Label>
                         </StackPanel>
                     </StackPanel>
-                    
                 </Grid>
             </Grid>
         </TabItem>
