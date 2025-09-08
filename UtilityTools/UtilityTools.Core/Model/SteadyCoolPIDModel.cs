@@ -32,5 +32,30 @@ namespace UtilityTools.Core.Model
             get { return _steadySteadyCoold; }
             set { _steadySteadyCoold = value; RaisePropertyChanged(); }
         }
+
+
+        private float _readSteadySteadyCoolp;
+
+        public float ReadSteadySteadyCoolp
+        {
+            get { return _readSteadySteadyCoolp; }
+            set { _readSteadySteadyCoolp = value; RaisePropertyChanged(); }
+        }
+
+        private float _readSteadySteadyCooli;
+
+        public float ReadSteadySteadyCooli
+        {
+            get { return _readSteadySteadyCooli; }
+            set { _readSteadySteadyCooli = value; RaisePropertyChanged(); }
+        }
+
+        private float _readSteadySteadyCoold;
+
+        public float ReadSteadySteadyCoold
+        {
+            get { return _readSteadySteadyCoold; }
+            set { _readSteadySteadyCoold = value; RaisePropertyChanged(); }
+        }
     }
 }

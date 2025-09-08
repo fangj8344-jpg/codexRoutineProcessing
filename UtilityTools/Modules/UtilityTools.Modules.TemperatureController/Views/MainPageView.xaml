@@ -117,13 +117,16 @@
                     <Button Grid.Row="2" Style="{StaticResource MonitorBtn}">
                         <StackPanel>
                             <TextBlock Style="{StaticResource MonitorTextBlock}" FontWeight="Bold" Text="工作状态"></TextBlock>
-                            <TextBlock Style="{StaticResource MonitorTextBlock}" Text="未启动"></TextBlock>
+                            <TextBlock Style="{StaticResource MonitorTextBlock}" Text="{Binding ReadWorkStatusDisplay}"></TextBlock>
                         </StackPanel>
                     </Button>
                     <Button Grid.Row="2" Grid.Column="1" Style="{StaticResource MonitorBtn}">
                         <StackPanel>
                             <TextBlock Style="{StaticResource MonitorTextBlock}" FontWeight="Bold" Text="温控速率"></TextBlock>
-                            <TextBlock Style="{StaticResource MonitorTextBlock}" Text="{Binding ReadTemperatureRate}"></TextBlock>
+                            <DockPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Style="{StaticResource MonitorTextBlock}" Text="{Binding ReadTemperatureRate}"></TextBlock>
+                                <Label Content="℃/Min"></Label>
+                            </DockPanel>
                         </StackPanel>
                     </Button>
                     <Button Grid.Row="3" Style="{StaticResource MonitorBtn}">
@@ -135,7 +138,11 @@
                     <Button Grid.Row="3" Grid.Column="1" Style="{StaticResource MonitorBtn}">
                         <StackPanel>
                             <TextBlock Style="{StaticResource MonitorTextBlock}" FontWeight="Bold" Text="定时控制"></TextBlock>
-                            <TextBlock Style="{StaticResource MonitorTextBlock}" Text="Time"></TextBlock>
+                            <DockPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Style="{StaticResource MonitorTextBlock}" Text="{Binding ReadTimeCtrl}"></TextBlock>
+                                <Label Content="(s)"></Label>
+                            </DockPanel>
+                            
                         </StackPanel>
                     </Button>
                 </Grid>
@@ -160,7 +167,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="auto"/>
                         </Grid.ColumnDefinitions>
-                        <oxy:PlotView Margin="5">
+                        <oxy:PlotView Model="{Binding TempPlotModel}">
                         </oxy:PlotView>
                         <Grid Grid.Column="1">
                             <StackPanel>
@@ -310,11 +317,23 @@
                         <TextBox Width="180" Text="{Binding MaxCurrent}"></TextBox>
                         <Label>A</Label>
                     </DockPanel>
-                    <DockPanel Grid.Row="4" VerticalAlignment="Center">
-                        <Label>控温速率：</Label>
-                        <TextBox Width="180" Text="{Binding TemperatureRate}"></TextBox>
-                        <Label>℃/Min</Label>
-                    </DockPanel>
+                    <Grid Grid.Row="4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="auto"/>
+                        </Grid.ColumnDefinitions>
+                        <DockPanel VerticalAlignment="Center">
+                            <Label>控温速率：</Label>
+                            <TextBox Width="180" Text="{Binding TemperatureRate}"></TextBox>
+                            <Label>℃/Min</Label>
+                        </DockPanel>
+                        <DockPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Label Content="斜率关"></Label>
+                            <ToggleButton IsChecked="{Binding IsSlope}"></ToggleButton>
+                            <Label Content="斜率开"></Label>
+                        </DockPanel>
+                    </Grid>
+                    
                     <DockPanel Grid.Row="5" VerticalAlignment="Center">
                         <Label>定时状态：</Label>
                         <TextBox Width="180" Text="{Binding TimeCtrl}"></TextBox>
@@ -349,6 +368,7 @@
                         <StackPanel Grid.Row="1">
                             <Label>温度控制范围(绝对值)</Label>
                             <TextBox Text="{Binding TemperatureRange}"></TextBox>
+                            <Label>℃</Label>
                         </StackPanel>
                         <StackPanel Grid.Row="2">
                             <Label>最小升温速率(℃/s)</Label>
@@ -399,39 +419,39 @@
                         </StackPanel>
                         <StackPanel Margin="0,0,0,10" Orientation="Horizontal">
                             <Label>当前温度变化速率:</Label>
-                            <Label>温度值</Label>
+                            <Label Content="当前温度变化速率"></Label>
                         </StackPanel>
                         <StackPanel Margin="0,0,0,10" Orientation="Horizontal">
                             <Label>目标温度变化速率:</Label>
-                            <Label>温度值</Label>
+                            <Label Content="目标温度变化速率"></Label>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
                             <Label>温度控制范围:</Label>
-                            <Label>范围值</Label>
+                            <Label Content="{Binding ReadTemperatureRange}"></Label>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
                             <Label>最小升温速率(℃/s):</Label>
-                            <Label>范围值</Label>
+                            <Label Content="{Binding ReadMinRate}"></Label>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
                             <Label>速度控制的衰减变化系数:</Label>
-                            <Label>系数</Label>
+                            <Label Content="{Binding ReadSpeedC}"></Label>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
                             <Label>系统前馈补偿的增益系数:</Label>
-                            <Label>系数</Label>
+                            <Label Content="{Binding ReadSystemC}"></Label>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
                             <Label>P：</Label>
-                            <Label>P值</Label>
+                            <Label Content="{Binding SteadyCoolPID.ReadSteadySteadyCoolp}"></Label>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
                             <Label>I：</Label>
-                            <Label>I值</Label>
+                            <Label Content="{Binding SteadyCoolPID.ReadSteadySteadyCooli}"></Label>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
                             <Label>D：</Label>
-                            <Label>D值</Label>
+                            <Label Content="{Binding SteadyCoolPID.ReadSteadySteadyCooli}"></Label>
                         </StackPanel>
                     </StackPanel>
                 </Grid>
