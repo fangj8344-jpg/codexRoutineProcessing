@@ -230,12 +230,18 @@
                             <Button Content="测试极限性能" Command="{Binding TestPerformanceCommand}" Margin="10"/>
                             <Button Content="关闭极限性能" Command="{Binding NoPerformanceCommand}" Margin="10"/>
                             <Button Content="保存" Command="{Binding SerilizeCommand}" Margin="10"/>
-                            <Button Content="加载" Command="{Binding DeserilizeCommand}" Margin="10"/>
+                            <Button Content="加载单个数据文件夹" Command="{Binding DeserilizeCommand}" Margin="10"/>
+                            <Button Content="加载多个数据文件夹" Command="{Binding AllDeserilizeCommand}" Margin="10"/>
                             <Button Content="五轴测试" Command="{Binding ShowThreeAzisTestModelViewModelCommand}" Margin="10"/>
                             <Button Content="耐久测试" Command="{Binding DurabilityTestgCommand}" Margin="10"/>
                             <Button Content="关闭耐度测试" Command="{Binding ShutDownDurabilityTestCommand}" Margin="10"/>
                             <Button Content="选择保存路径" Command="{Binding DataPathSelectCommand}" Margin="10" />
                         </UniformGrid>
+                        <DockPanel LastChildFill="False">
+
+                            <Button Content="←" Command="{Binding SelectPreviousCommand}" Margin="5"/>
+                            <Button Content="→" Command="{Binding SelectNextCommand}"/>
+                        </DockPanel>
                     </StackPanel>
                 </TabItem>
                 <TabItem Header="电机状态">

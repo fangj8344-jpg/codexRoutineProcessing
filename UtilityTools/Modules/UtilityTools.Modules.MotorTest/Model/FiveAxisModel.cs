@@ -1742,7 +1742,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             MotorModel.MotorParams.MoveDirection = (EmumMotorMoveDirection)MotorRunningDirection;
             MotorModel.MotorParams.SubRatio = unitConversionFactor;
             MotorModel.MotorParams.Pos = pulseCoordinate;
-            AddPoint(_plotViewPointMessage, _plotViewSpeedMessage, MotorModel.MotorParams.Pos, MotorModel);
+            AddPoint(_plotViewPointMessage, _plotViewSpeedMessage, MotorModel.MotorParams.Pos, MotorModel,MotorModel.MotorParams.MoveState);
             //增加限位位置
             if (MotorModel.MotorParams.LimitedState == EnumMotorLimitedState.PhyForwardLimited)
             {
@@ -1803,7 +1803,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             }));
 
         }
-        private void AddPoint(List<PlotViewPointMessage> pointList, List<PlotViewSpeedMessage> speedList, int point, MotorModel motorModel)
+        private void AddPoint(List<PlotViewPointMessage> pointList, List<PlotViewSpeedMessage> speedList, int point, MotorModel motorModel, EnumMotorMoveState moveState)
         {
              
             if (pointList.Count >= 2)
@@ -1811,7 +1811,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                 var data = DateTime.Now;
                 var timeDifference = (data - pointList[pointList.Count - 2].Date).TotalMilliseconds;
                 var speed = (point - pointList[pointList.Count - 2].Point) / (timeDifference * 1.0) * 1000;
-                PlotViewPointMessage pointView = new PlotViewPointMessage() { Date = data, Point = point };
+                PlotViewPointMessage pointView = new PlotViewPointMessage() { Date = data, Point = point, MotorMoveState =  moveState };
                 PlotViewSpeedMessage speedView = new PlotViewSpeedMessage() { SpeedDate = pointList[pointList.Count - 1].Date, Speed = speed };
                 pointList.Add(pointView);
                 speedList.Add(speedView);
@@ -1826,7 +1826,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             else
             {
                 var data = DateTime.Now;
-                PlotViewPointMessage pointView = new PlotViewPointMessage() { Date = data, Point = point };
+                PlotViewPointMessage pointView = new PlotViewPointMessage() { Date = data, Point = point , MotorMoveState = moveState };
                 pointList.Add(pointView);
                 
                 if (PiontPlotModel != null)

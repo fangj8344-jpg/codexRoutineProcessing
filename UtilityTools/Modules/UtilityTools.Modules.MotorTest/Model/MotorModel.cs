@@ -356,8 +356,18 @@ namespace UtilityTools.Modules.MotorTest.Model
             get { return _point; }
             set { _point = value; RaisePropertyChanged(); }
         }
+        private EnumMotorMoveState _motorMoveState;
+        /// <summary>
+        /// 电机此时的状态
+        /// </summary>
+        public EnumMotorMoveState MotorMoveState
+        {
+            get { return _motorMoveState; }
+            set { _motorMoveState = value; RaisePropertyChanged(); }
+        }
 
-      
+
+
     }
     public class PlotViewSpeedMessage : BindableBase
     {
