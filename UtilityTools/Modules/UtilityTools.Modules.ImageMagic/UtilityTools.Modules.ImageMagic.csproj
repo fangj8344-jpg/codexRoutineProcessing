@@ -7,12 +7,10 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+
 	<ItemGroup>
 		<ProjectReference Include="..\..\UtilityTools.Core\UtilityTools.Core.csproj" />
 		<ProjectReference Include="..\..\UtilityTools\UtilityTools.csproj" />
-	</ItemGroup>
-	<ItemGroup>
-	  <Folder Include="Model\" />
 	</ItemGroup>
 
 	<Target Name="CopyTargetFiles" AfterTargets="PostBuildEvent">
