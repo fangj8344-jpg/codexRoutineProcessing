@@ -1,0 +1,86 @@
+<UserControl x:Class="UtilityTools.Modules.ImageMagic.Views.ImageMagicView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:UtilityTools.Modules.ImageMagic.Views"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+    xmlns:views="clr-namespace:UtilityTools.UserControls.Views;assembly=UtilityTools.UserControls"
+    xmlns:cv="clr-namespace:UtilityTools.Core.Converter;assembly=UtilityTools.Core"
+    mc:Ignorable="d" d:DesignHeight="450" d:DesignWidth="800"
+    xmlns:prism="http://prismlibrary.com/" 
+    prism:ViewModelLocator.AutoWireViewModel="True">
+    <UserControl.Resources>
+        <cv:Obj2BoolConverter x:Key="obj2BoolConverter" />
+    </UserControl.Resources>
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        
+        <!-- Header Area -->
+        <DockPanel Grid.Row="0" Margin="10" LastChildFill="False">
+            <TextBlock Text="图片查看器" FontSize="20" FontWeight="Bold" DockPanel.Dock="Left" VerticalAlignment="Center" Margin="0, 0, 10, 0" />
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="目录路径:" VerticalAlignment="Center"/>
+                    <TextBox IsReadOnly="True" Text="{Binding DirectoryPath}" MaxWidth="600" VerticalAlignment="Center" Width="auto"/>
+                </StackPanel>
+                <Button Content="打开目录" Command="{Binding OpenDirectoryCommand}" Margin="10, 0"/>
+            </StackPanel>
+        </DockPanel>
+
+        <!-- Main Content Area -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="250"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Image List -->
+            <DockPanel Grid.Column="0">
+                <TextBlock Text="图片列表" FontWeight="Bold" Margin="5" DockPanel.Dock="Top"/>
+                <ListBox ItemsSource="{Binding ImageFiles}" 
+                         SelectedItem="{Binding CurrentImagePath}"
+                         Margin="5">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Margin="2">
+                                <md:PackIcon Kind="Image" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <TextBlock Text="{Binding Converter={x:Static cv:PathToFileNameConverter.Instance}}" 
+                                           VerticalAlignment="Center"
+                                           ToolTip="{Binding}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                    <i:Interaction.Triggers>
+                        <i:EventTrigger EventName="SelectionChanged">
+                            <i:InvokeCommandAction Command="{Binding SelectImageCommand}" 
+                                                   CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=ListBox}, Path=SelectedItem}"/>
+                        </i:EventTrigger>
+                    </i:Interaction.Triggers>
+                </ListBox>
+            </DockPanel>
+
+            <!-- Splitter -->
+            <GridSplitter Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"/>
+
+            <!-- Image Display Area -->
+            <DockPanel Grid.Column="2">
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="5">
+                    <TextBlock Text="当前图片:" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding CurrentImagePath, Converter={x:Static cv:PathToFileNameConverter.Instance}}" 
+                               VerticalAlignment="Center" Margin="5,0"/>
+                </StackPanel>
+                
+                <views:ImageViewer ImageSource="{Binding CurrentImage}" 
+                                   Margin="5"
+                                   Grid.IsSharedSizeScope="True"/>
+            </DockPanel>
+        </Grid>
+    </Grid>
+</UserControl>
