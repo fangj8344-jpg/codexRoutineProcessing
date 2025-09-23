@@ -1,4 +1,5 @@
-﻿using MaterialDesignThemes.Wpf;
+﻿using ImageMagick;
+using MaterialDesignThemes.Wpf;
 using MathNet.Numerics.Financial;
 using MathNet.Numerics.RootFinding;
 using MathNet.Numerics.Statistics;
@@ -6,6 +7,7 @@ using Microsoft.VisualBasic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NLog;
+using NLog.Fluent;
 using OpenCvSharp.Features2D;
 using OxyPlot;
 using OxyPlot.Axes;
@@ -16,6 +18,7 @@ using Prism.Commands;
 using Prism.Ioc;
 using Prism.Mvvm;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -38,8 +41,11 @@ using System.Windows.Media.Media3D;
 using TouchSocket.Rpc.TouchRpc;
 using UtilityTools.Core.Dialog;
 using UtilityTools.Core.Extension;
+using UtilityTools.Core.Model;
+using UtilityTools.Modules.MotorTest.Entity;
 using UtilityTools.Modules.MotorTest.Protocol;
 using UtilityTools.Modules.MotorTest.Views;
+using UtilityTools.Services.Comms;
 using UtilityTools.Services.Interfaces.IServices;
 using UtilityTools.Services.Services;
 
@@ -78,8 +84,8 @@ namespace UtilityTools.Modules.MotorTest.Model
         private readonly IDialogHostService _dialogHostService;
 
         private SelfMotorParser _parser;
-        private Queue<byte[]> _byteQueue = new Queue<byte[]>();
-        private Queue<byte[]> _importantByteQueue = new Queue<byte[]>();
+        private ConcurrentQueue<byte[]> _byteQueue = new ConcurrentQueue<byte[]>();
+        private ConcurrentQueue<byte[]> _importantByteQueue = new ConcurrentQueue<byte[]>();
         private string[] _directSubDirs;
         private string _selectLoadDataPath;
         private int _selectIndex;
@@ -89,6 +95,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         private TaskCompletionSource<string> _limitedtcs1;
         private TaskCompletionSource<string> _waitingReply;
         private TaskCompletionSource<string> _runStateUpdate;
+        private CancellationTokenSource _cts;
         //private List<int> timePosStallDetectionList;
         private Stopwatch _stopwatch;
         private Stopwatch _testTime;
@@ -236,7 +243,12 @@ namespace UtilityTools.Modules.MotorTest.Model
             get { return _serialPortService; }
             set { _serialPortService = value; RaisePropertyChanged(); }
         }
-
+        private MotorEntity _motorEntity;
+        public MotorEntity MotorEntity
+        { 
+            get { return _motorEntity; }
+            set { _motorEntity = value; RaisePropertyChanged(); }
+        }
         private IAsynRWService _netUdpService;
         /// <summary>
         /// 串口异步通信服务
@@ -335,7 +347,7 @@ namespace UtilityTools.Modules.MotorTest.Model
 
             _xPlotViewSpeedMessage = new List<PlotViewSpeedMessage>();
             _yPlotViewSpeedMessage = new List<PlotViewSpeedMessage>();
-
+            MotorEntity = new MotorEntity(_importantByteQueue, _byteQueue) { };
             MotorTestMessages = new ObservableCollection<MotorTestMessage>();
             MotorTypeMessage = new ObservableCollection<MotorTypeMessage>
             {
@@ -422,35 +434,31 @@ namespace UtilityTools.Modules.MotorTest.Model
 
             switch (direction)
             {
-                case "up":; Goto(EnumMotorId.MOTOR_2, 5000000 + MotorModelY.MotorParams.Pos); break;
-                case "down": Goto(EnumMotorId.MOTOR_2, -5000000 + MotorModelY.MotorParams.Pos); break;
-                case "left": Goto(EnumMotorId.MOTOR_1, -5000000 + MotorModelX.MotorParams.Pos); break;
-                case "right": Goto(EnumMotorId.MOTOR_1, 5000000 + MotorModelX.MotorParams.Pos); break;
-                case "stop":
-                    {
-                        var xstopcmd = SelfMotorProtocol.SetMotorOperatingStatus(EnumMotorId.MOTOR_1, EnumMotorOperatingState.Stop);
-                        var ystopcmd = SelfMotorProtocol.SetMotorOperatingStatus(EnumMotorId.MOTOR_2, EnumMotorOperatingState.Stop);
-                        SendImportantData(xstopcmd);
-                        SendImportantData(ystopcmd);
-                    } break;
+                case "up":; Goto(EnumMotorId.MOTOR_2, true); break;
+                case "down": Goto(EnumMotorId.MOTOR_2, false); break;
+                case "left": Goto(EnumMotorId.MOTOR_1, false); break;
+                case "right": Goto(EnumMotorId.MOTOR_1, true); break;
+                case "stop": StopAll();break;
             }
+        }
+        private void StopAll()
+        {
+            MotorEntity.SetMotorOperatingStatusCommand(EnumMotorId.MOTOR_1, EnumMotorOperatingState.Stop);
+            MotorEntity.SetMotorOperatingStatusCommand(EnumMotorId.MOTOR_2, EnumMotorOperatingState.Stop);
         }
         public DelegateCommand TestPerformanceCommand { get; set; }
         private void TestPerformance()
         {
             _isPerformance = true;
-            Task.Run(() =>
+            Task.Run(async() =>
             {
                 while (_isPerformance)
                 {
-                    if (_byteQueue.Count == 0)
+                    if (_byteQueue.IsEmpty)
                     {
-                        var getMotor2Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_2);
-                        SendData(getMotor2Statuscmd);
-                        var getMotor1Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_1);
-                        SendData(getMotor1Statuscmd);
+                        GetMotorStatus();
                     }
-                    Thread.Sleep(1);
+                    await Task.Delay(10);
 
                 }
             });
@@ -467,7 +475,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         {
             if (parameter == "open")
             {
-                __isInLeadScrewTest = true;
+                
                 _work = new BackgroundWorker();
                 _work.WorkerSupportsCancellation = true;
                 _work.DoWork += Worker_DoWork;
@@ -477,36 +485,52 @@ namespace UtilityTools.Modules.MotorTest.Model
                     _testTime = new Stopwatch();
                 }
                 _testTime.Start();
-                for (int i = 0; i < 60; i++)
+                _cts = new CancellationTokenSource();
+                try
                 {
-                    if (__isInLeadScrewTest = false)
+                    for (int i = 0; i < 60; i++)
                     {
-                        return;
-                    }
-                    bool result1 = await SmoothnessDetection(EnumMotorId.MOTOR_1);
-                    bool result2 = await SmoothnessDetection(EnumMotorId.MOTOR_2);
-                    if (result1 == false || result2 == false)
-                    {
-                        _dialogHostService.Information("提示", "丝杆顺滑度测试错误");
-                        __isInLeadScrewTest = false;
-                        return;
-                    }
+                        
+                        bool result1 = await SmoothnessDetection(EnumMotorId.MOTOR_1, _cts.Token);
+                        bool result2 = await SmoothnessDetection(EnumMotorId.MOTOR_2, _cts.Token);
+                        if (result1 == false || result2 == false)
+                        {
+                            _dialogHostService.Information("提示", "丝杆顺滑度测试错误");
+                            return;
+                        }
 
-                    if (_testTime.ElapsedMilliseconds / 1000.0 / 60 > 60)
-                    {
-                        break;
+                        if (_testTime.ElapsedMilliseconds / 1000.0 / 60 > 60)
+                        {
+                            break;
+                        }
                     }
+                    _dialogHostService.Information("提示", "丝杆顺滑度测试完毕请选择保存路径");
+                    Serilize();
+                    _work.CancelAsync();
+                    _testTime.Stop();
+                    _testTime = null;
                 }
-                _dialogHostService.Information("提示", "丝杆顺滑度测试完毕请选择保存路径");
-                Serilize();
-                _work.CancelAsync();
-                _testTime.Stop();
-                _testTime = null;
-                __isInLeadScrewTest = false;
+                catch (OperationCanceledException)
+                {
+                    DispathcherInvoke($"丝杆测试退出");
+                    StopAll();
+                    _work.CancelAsync();
+                    if (_testTime != null)
+                    {
+                        _testTime.Stop();
+                        _testTime = null;
+                    }
+                   
+                    return;
+                }
+                
             }
             else
             {
-                __isInLeadScrewTest = true;
+                if (_cts != null)
+                {
+                    _cts.Cancel();
+                }
             }
 
 
@@ -521,17 +545,30 @@ namespace UtilityTools.Modules.MotorTest.Model
             _work.DoWork += Worker_DoWork;
             _work?.RunWorkerAsync();
 
+            _cts = new CancellationTokenSource();
             while (_isDurabilityTest)
             {
-                bool result1 = await SmoothnessDetection(EnumMotorId.MOTOR_1);
-                bool result2 = await SmoothnessDetection(EnumMotorId.MOTOR_2);
-                var time = _xPlotViewPointMessage.Last().Date - _xPlotViewPointMessage[0].Date;
-                var min = time.TotalMinutes;
-                if (min > 30)
+                try
                 {
-                    AutoSaveData();
+                    bool result1 = await SmoothnessDetection(EnumMotorId.MOTOR_1, _cts.Token);
+                    bool result2 = await SmoothnessDetection(EnumMotorId.MOTOR_2, _cts.Token);
+                    var time = _xPlotViewPointMessage.Last().Date - _xPlotViewPointMessage[0].Date;
+                    var min = time.TotalMinutes;
+                    if (min > 30)
+                    {
+                        AutoSaveData();
 
+                    }
                 }
+                catch (OperationCanceledException)
+                {
+                    DispathcherInvoke($"耐久测试退出");
+                    StopAll();
+                    _work.CancelAsync();
+                    return;
+                }
+               
+                
 
             }
             _work.CancelAsync();
@@ -541,6 +578,10 @@ namespace UtilityTools.Modules.MotorTest.Model
         private void ShutDownDurabilityTest()
         {
             _isDurabilityTest = false;
+            if (_cts != null)
+            {
+                _cts.Cancel();
+            }
         }
         public DelegateCommand TestAllCommand { get; set; }
         private async void TestAll()
@@ -549,13 +590,10 @@ namespace UtilityTools.Modules.MotorTest.Model
             SetMotorInit(EnumMotorId.MOTOR_1);
             SetMotorInit(EnumMotorId.MOTOR_2);
 
-            Goto(EnumMotorId.MOTOR_2, -1000000);
-            Goto(EnumMotorId.MOTOR_1, -1000000);
+            Goto(EnumMotorId.MOTOR_2,false);
+            Goto(EnumMotorId.MOTOR_1, false);
             Thread.Sleep(4000);
-            var xstopcmd = SelfMotorProtocol.SetMotorOperatingStatus(EnumMotorId.MOTOR_1, EnumMotorOperatingState.Stop);
-            var ystopcmd = SelfMotorProtocol.SetMotorOperatingStatus(EnumMotorId.MOTOR_2, EnumMotorOperatingState.Stop);
-            SendImportantData(xstopcmd);
-            SendImportantData(ystopcmd);
+            StopAll();
             var result = await TestMotorMove();
             if (result != true)
             {
@@ -635,15 +673,10 @@ namespace UtilityTools.Modules.MotorTest.Model
                 }
                 var xposStart = _xPlotViewPointMessage[_xPlotViewPointMessage.Count - 1].Point;
                 var yposStart = _yPlotViewPointMessage[_yPlotViewPointMessage.Count - 1].Point;
-                var xgotocmd = SelfMotorProtocol.SetMotorGoTo(EnumMotorId.MOTOR_1, EnumMotorUnit.Pulse, 1000000);
-                var ygotocmd = SelfMotorProtocol.SetMotorGoTo(EnumMotorId.MOTOR_2, EnumMotorUnit.Pulse, 1000000);
-                SendImportantData(xgotocmd);
-                SendImportantData(ygotocmd);
+                Goto(EnumMotorId.MOTOR_1,true);
+                Goto(EnumMotorId.MOTOR_2,true);
                 Thread.Sleep(3000);
-                var xStopcmd = SelfMotorProtocol.SetMotorOperatingStatus(EnumMotorId.MOTOR_1, EnumMotorOperatingState.Stop);
-                var yStopcmd = SelfMotorProtocol.SetMotorOperatingStatus(EnumMotorId.MOTOR_2, EnumMotorOperatingState.Stop);
-                SendImportantData(xStopcmd);
-                SendImportantData(yStopcmd);
+                StopAll();
                 Thread.Sleep(3000);
                 var xposEnd = _xPlotViewPointMessage[_xPlotViewPointMessage.Count - 1].Point;
                 var yposEnd = _yPlotViewPointMessage[_yPlotViewPointMessage.Count - 1].Point;
@@ -700,7 +733,7 @@ namespace UtilityTools.Modules.MotorTest.Model
 
 
 
-        private void Worker_DoWork(object sender, DoWorkEventArgs e)
+        private void  Worker_DoWork(object sender, DoWorkEventArgs e)
         {
             if (_getMotorStateTimer.Enabled)
             {
@@ -709,12 +742,9 @@ namespace UtilityTools.Modules.MotorTest.Model
 
             while (_work != null && _work.CancellationPending != true)
             {
-                if (_byteQueue.Count < 2)
+                if (_byteQueue.IsEmpty)
                 {
-                    var getMotor2Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_2);
-                    SendData(getMotor2Statuscmd);
-                    var getMotor1Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_1);
-                    SendData(getMotor1Statuscmd);
+                    GetMotorStatus();
                 }
                 Thread.Sleep(10);
 
@@ -748,15 +778,11 @@ namespace UtilityTools.Modules.MotorTest.Model
             {
                 var xposStart = _xPlotViewPointMessage[_xPlotViewPointMessage.Count - 1].Point;
                 var yposStart = _yPlotViewPointMessage[_yPlotViewPointMessage.Count - 1].Point;
-                var xgotocmd = SelfMotorProtocol.SetMotorGoTo(EnumMotorId.MOTOR_1, EnumMotorUnit.Pulse, 5000000);
-                var ygotocmd = SelfMotorProtocol.SetMotorGoTo(EnumMotorId.MOTOR_2, EnumMotorUnit.Pulse, 5000000);
-                SendImportantData(xgotocmd);
-                SendImportantData(ygotocmd);
+                Goto(EnumMotorId.MOTOR_1,true);
+                Goto(EnumMotorId.MOTOR_2,true);
                 Thread.Sleep(2000);
-                var xStopcmd = SelfMotorProtocol.SetMotorOperatingStatus(EnumMotorId.MOTOR_1, EnumMotorOperatingState.Stop);
-                var yStopcmd = SelfMotorProtocol.SetMotorOperatingStatus(EnumMotorId.MOTOR_2, EnumMotorOperatingState.Stop);
-                SendImportantData(xStopcmd);
-                SendImportantData(yStopcmd);
+                StopAll();
+                Thread.Sleep(2000);
                 var xposEnd = _xPlotViewPointMessage[_xPlotViewPointMessage.Count - 1].Point;
                 var yposEnd = _yPlotViewPointMessage[_yPlotViewPointMessage.Count - 1].Point;
                 if (yposEnd - yposStart < 50)
@@ -843,7 +869,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             await Task.Run(async () =>
             {
 
-                Goto(enumMotorId, 1000000);
+                Goto(enumMotorId, true);
                 Thread.Sleep(5000);
                 try
                 {
@@ -875,8 +901,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                         TestMessage.StandardValue = "正常";
                         TestMessage.Description = "正限位反向，请检查";
                         DispathcherInvoke($"电机测试End:{posEnd},Start:{posStart} 行程:{posEnd - posStart}");
-                        var stopcmd = SelfMotorProtocol.SetMotorOperatingStatus(enumMotorId, EnumMotorOperatingState.Stop);
-                        SendImportantData(stopcmd);
+                        MotorEntity.SetMotorOperatingStatusCommand(enumMotorId, EnumMotorOperatingState.Stop);
                     }
                     else
                     {
@@ -899,13 +924,8 @@ namespace UtilityTools.Modules.MotorTest.Model
             posStart = posEnd;
             await Task.Run(async () =>
             {
-                var gotocmd = SelfMotorProtocol.SetMotorGoTo(enumMotorId, EnumMotorUnit.Pulse, -1000000);
-                SendImportantData(gotocmd);
-                Goto(enumMotorId, -1000000);
+                Goto(enumMotorId,false);
                 Thread.Sleep(5000);
-
-
-
                 try
                 {
                     _limitedtcs1 = new TaskCompletionSource<string>();
@@ -927,8 +947,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                         TestMessage2.StandardValue = "正常";
                         TestMessage2.Description = "负限位反向";
                         DispathcherInvoke($"电机测试End:{posEnd},Start:{posStart} 行程:{posEnd - posStart}");
-                        var stopcmd = SelfMotorProtocol.SetMotorOperatingStatus(enumMotorId, EnumMotorOperatingState.Stop);
-                        SendImportantData(stopcmd);
+                        MotorEntity.SetMotorOperatingStatusCommand(enumMotorId, EnumMotorOperatingState.Stop);
                     }
                     else if (result == "PhyBackwardLimited")
                     {
@@ -1002,12 +1021,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             {
                 //单开线程去测试堵转和限位
                 _limitedtcs1 = new TaskCompletionSource<string>();
-
-                SetMotorInit(enumMotorId);
-                var gotocmd = SelfMotorProtocol.SetMotorGoTo(enumMotorId, EnumMotorUnit.Pulse, 1000000);
-                SendImportantData(gotocmd);
-                
-
+                Goto(enumMotorId,true);
                 try
                 {
                     _limitedtcs1 = new TaskCompletionSource<string>();
@@ -1034,8 +1048,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                         TestMessage.TestValue = "不正常";
                         TestMessage.StandardValue = "正常";
                         TestMessage.Description = "正限位反向";
-                        var stopcmd = SelfMotorProtocol.SetMotorOperatingStatus(enumMotorId, EnumMotorOperatingState.Stop);
-                        SendImportantData(stopcmd);
+                        MotorEntity.SetMotorOperatingStatusCommand(enumMotorId, EnumMotorOperatingState.Stop);
                     }
                     else
                     {
@@ -1063,10 +1076,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             await Task.Run(async () =>
             {
                 //单开线程去测试堵转和限位
-                SetMotorInit(enumMotorId);
-                var gotocmd = SelfMotorProtocol.SetMotorGoTo(enumMotorId, EnumMotorUnit.Pulse, -1000000);
-                SendImportantData(gotocmd);
-                 
+                Goto(enumMotorId,false);
                 try
                 {
                     _limitedtcs1 = new TaskCompletionSource<string>();
@@ -1083,9 +1093,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     else if (result == "PhyForwardLimited")
                     {
                         TestMessage.Description = "负限位反向";
-                        var stopcmd = SelfMotorProtocol.SetMotorOperatingStatus(enumMotorId, EnumMotorOperatingState.Stop);
-                        SendImportantData(stopcmd);
-
+                        MotorEntity.SetMotorOperatingStatusCommand(enumMotorId, EnumMotorOperatingState.Stop);
                     }
                     else if (result == "PhyBackwardLimited")
                     {
@@ -1161,10 +1169,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             {
                 //单开线程去测试堵转和限位
                 _limitedtcs1 = new TaskCompletionSource<string>();
-
-                SetMotorInit(enumMotorId);
-                var gotocmd = SelfMotorProtocol.SetMotorGoTo(enumMotorId, EnumMotorUnit.Pulse, 1000000);
-                SendImportantData(gotocmd);
+                Goto(enumMotorId,true);
                 Thread.Sleep(5000);
 
                 try
@@ -1193,8 +1198,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                         TestMessage.TestValue = "不正常";
                         TestMessage.StandardValue = "正常";
                         TestMessage.Description = "正限位反向";
-                        var stopcmd = SelfMotorProtocol.SetMotorOperatingStatus(enumMotorId, EnumMotorOperatingState.Stop);
-                        SendImportantData(stopcmd);
+                        MotorEntity.SetMotorOperatingStatusCommand(enumMotorId, EnumMotorOperatingState.Stop);
                     }
                     else
                     {
@@ -1222,9 +1226,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             await Task.Run(async () =>
             {
                 //单开线程去测试堵转和限位
-                SetMotorInit(enumMotorId);
-                var gotocmd = SelfMotorProtocol.SetMotorGoTo(enumMotorId, EnumMotorUnit.Pulse, -1000000);
-                SendImportantData(gotocmd);
+                Goto(enumMotorId,false);
                 Thread.Sleep(5000);
                 try
                 {
@@ -1241,8 +1243,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     else if (result == "PhyForwardLimited")
                     {
                         TestMessage.Description = "负限位反向";
-                        var stopcmd = SelfMotorProtocol.SetMotorOperatingStatus(enumMotorId, EnumMotorOperatingState.Stop);
-                        SendImportantData(stopcmd);
+                        MotorEntity.SetMotorOperatingStatusCommand(enumMotorId, EnumMotorOperatingState.Stop);
 
                     }
                     else if (result == "PhyBackwardLimited")
@@ -1322,7 +1323,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// 再跑到左限位，记录中间点数
         /// 再跑到右限位，记录中间点数 计算x轴的丝杆顺滑度
 
-        private async Task<bool> SmoothnessDetection(EnumMotorId enumMotorId)
+        private async Task<bool> SmoothnessDetection(EnumMotorId enumMotorId, CancellationToken cancellationToken = default)
         {
             int startIndex = 0, endIndex = 0;
             List<PlotViewSpeedMessage> tempSpeedList;
@@ -1352,14 +1353,15 @@ namespace UtilityTools.Modules.MotorTest.Model
                 //单开线程去测试堵转和限位
                 _limitedtcs1 = new TaskCompletionSource<string>();
                 GotoInSpeedMode(enumMotorId, 10000);
-                Thread.Sleep(3000);
+                // Goto(enumMotorId,true);
+                await Task.Delay(5000, cancellationToken);
 
                 try
                 {
                     _limitedtcs1 = new TaskCompletionSource<string>();
 
-                    Task.Run(() => { MotorStallDetection(enumMotorId); });
-                    result = await _limitedtcs1.Task.WaitAsync(TimeSpan.FromSeconds(50));
+                    Task.Run(() =>  MotorStallDetection(enumMotorId),cancellationToken );
+                    result = await _limitedtcs1.Task.WaitAsync(TimeSpan.FromSeconds(50), cancellationToken);
                     if (result == "stall")
                     {
                         TestMessage.TestResult = "不合格";
@@ -1382,8 +1384,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                         TestMessage.TestValue = "不正常";
                         TestMessage.StandardValue = "正常";
                         TestMessage.Description = "正限位反向";
-                        var stopcmd = SelfMotorProtocol.SetMotorOperatingStatus(enumMotorId, EnumMotorOperatingState.Stop);
-                        SendImportantData(stopcmd);
+                        MotorEntity.SetMotorOperatingStatusCommand(enumMotorId, EnumMotorOperatingState.Stop);
                         DispathcherInvoke($"电机测试丝杆正限位反向{result}");
                     }
                     else
@@ -1403,7 +1404,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     TestMessage.Description = $"请检测网络连接";
                     DispathcherInvoke($"电机测试丝杆异常错误{ex}");
                 }
-            });
+            }, cancellationToken);
             if (!(result == "PhyForwardLimited" || result == "SPLimted"))
             {
 
@@ -1414,13 +1415,14 @@ namespace UtilityTools.Modules.MotorTest.Model
             {
                 //单开线程去测试堵转和限位
                 GotoInSpeedMode(enumMotorId, -10000);
+                //Goto(enumMotorId, false);
                 startIndex = tempSpeedList.Count;
-                Thread.Sleep(3000);
+                Thread.Sleep(5000);
                 try
                 {
                     _limitedtcs1 = new TaskCompletionSource<string>();
-                    Task.Run(() => { MotorStallDetection(enumMotorId); });
-                    string result = await _limitedtcs1.Task.WaitAsync(TimeSpan.FromSeconds(120));
+                    Task.Run(() => MotorStallDetection(enumMotorId), cancellationToken);
+                    string result = await _limitedtcs1.Task.WaitAsync(TimeSpan.FromSeconds(50), cancellationToken);
                     if (result == "stall")
                     {
                         TestMessage.TestResult = "不合格";
@@ -1435,8 +1437,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                         TestMessage.TestValue = "不正常";
                         TestMessage.StandardValue = "正常";
                         TestMessage.Description = "负限位反向";
-                        var stopcmd = SelfMotorProtocol.SetMotorOperatingStatus(enumMotorId, EnumMotorOperatingState.Stop);
-                        SendImportantData(stopcmd);
+                        MotorEntity.SetMotorOperatingStatusCommand(enumMotorId, EnumMotorOperatingState.Stop);
                         DispathcherInvoke($"电机测试负限位反向{result}");
                     }
                     else if (result == "PhyBackwardLimited" || result == "SNLimted")
@@ -1455,11 +1456,16 @@ namespace UtilityTools.Modules.MotorTest.Model
                     DispathcherInvoke($"电机测试错误{ex}");
                 }
 
-            });
+            }, cancellationToken);
             if (result == "PhyBackwardLimited" || result == "SNLimted")
             {
                 TestMessage.Description = $"从正方向到负方向的位置丝杆顺滑度错误";
 
+            }
+            if (cancellationToken.IsCancellationRequested)
+            {
+                MotorEntity.SetMotorOperatingStatusCommand(enumMotorId, EnumMotorOperatingState.Stop);
+                cancellationToken.ThrowIfCancellationRequested();
             }
 
             return true;
@@ -1546,28 +1552,28 @@ namespace UtilityTools.Modules.MotorTest.Model
                 {
                     _limitedtcs1.TrySetResult("PhyForwardLimited");
                     DispathcherInvoke($" {countNumber}:{enumMotorId}到达硬件正向限位，停止");
-                    NLog.LogManager.GetCurrentClassLogger().Info($"{countNumber}:{enumMotorId}到达硬件正向限位，停止");
+                    NLog.LogManager.GetCurrentClassLogger().Debug($"{countNumber}:{enumMotorId}到达硬件正向限位，停止");
                     return;
                 }
                 if (motorModel.MotorParams.LimitedState == EnumMotorLimitedState.PhyBackwardLimited)
                 {
                     _limitedtcs1.TrySetResult("PhyBackwardLimited");
                     DispathcherInvoke($"{countNumber}:{enumMotorId}到达硬件负向限位，停止");
-                    NLog.LogManager.GetCurrentClassLogger().Info($"{countNumber}:{enumMotorId}到达硬件负向限位，停止");
+                    NLog.LogManager.GetCurrentClassLogger().Trace($"{countNumber}:{enumMotorId}到达硬件负向限位，停止");
                     return;
                 }
                 if (motorModel.MotorParams.SPLimted == true)
                 {
                     _limitedtcs1.TrySetResult("SPLimted");
                     DispathcherInvoke($"{countNumber}:{enumMotorId}到达软件正限位，停止");
-                    NLog.LogManager.GetCurrentClassLogger().Info($"{countNumber}:{enumMotorId}到达软件正限位，停止");
+                    NLog.LogManager.GetCurrentClassLogger().Trace($"{countNumber}:{enumMotorId}到达软件正限位，停止");
                     return;
                 }
                 if (motorModel.MotorParams.SNLimted == true)
                 {
                     _limitedtcs1.TrySetResult("SNLimted");
                     DispathcherInvoke($"{countNumber}:{enumMotorId}到达软件负向限位，停止");
-                    NLog.LogManager.GetCurrentClassLogger().Info($"{countNumber}:{enumMotorId}到达软件负向限位，停止");
+                    NLog.LogManager.GetCurrentClassLogger().Trace($"{countNumber}:{enumMotorId}到达软件负向限位，停止");
                     return;
                 }
                 
@@ -1602,7 +1608,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     else
                     {
                         DispathcherInvoke($" ，堵转测试退出");
-                        NLog.LogManager.GetCurrentClassLogger().Info($"参数清空，堵转测试退出");
+                        NLog.LogManager.GetCurrentClassLogger().Trace($"参数清空，堵转测试退出");
                         return;
                     }
                 }
@@ -1618,8 +1624,7 @@ namespace UtilityTools.Modules.MotorTest.Model
 
                     if (Math.Abs(posAndTimeLast.Point - posAndTimeSecondToLast.Point) < 5 && posAndTimeLast.MotorMoveState == EnumMotorMoveState.MotorMove)
                     {
-                        var Stopcmd = SelfMotorProtocol.SetMotorOperatingStatus(enumMotorId, EnumMotorOperatingState.Stop);
-                        SendImportantData(Stopcmd);
+                        MotorEntity.SetMotorOperatingStatusCommand(enumMotorId, EnumMotorOperatingState.Stop);
                         _limitedtcs1.TrySetResult("stall");
                         DispathcherInvoke($"{countNumber}:{enumMotorId}起始:{posAndTimeSecondToLast.Date.ToString("yyy-MM-dd HH:mm:ss.fffffff")}:{posAndTimeSecondToLast.Point}终止:{posAndTimeLast.Date.ToString("yyy-MM-dd HH:mm:ss.fffffff")}:{posAndTimeLast.Point}，. 电机堵转，退出");
                         NLog.LogManager.GetCurrentClassLogger().Error($"{countNumber}:{enumMotorId}起始:{posAndTimeSecondToLast.Date.ToString("yyy-MM-dd HH:mm:ss.fffffff")}:{posAndTimeSecondToLast.Point}终止:{posAndTimeLast.Date.ToString("yyy-MM-dd HH:mm:ss.fffffff")}:{posAndTimeLast.Point}，. 电机堵转，退出");
@@ -1690,14 +1695,10 @@ namespace UtilityTools.Modules.MotorTest.Model
                 {
                     if (MotorModelX.MotorParams.MoveState == EnumMotorMoveState.MotorStop && MotorModelY.MotorParams.MoveState == EnumMotorMoveState.MotorStop)
                     {
-                        var xZeroCmd = SelfMotorProtocol.SetMotorZero(EnumMotorId.MOTOR_1);
-                        var yZeroCmd = SelfMotorProtocol.SetMotorZero(EnumMotorId.MOTOR_2);
-                        NLog.LogManager.GetCurrentClassLogger().Info($"{EnumMotorId.MOTOR_1} :设置电机零点");
+                        MotorEntity.SetMotorZeroCommand(EnumMotorId.MOTOR_1);
+                        MotorEntity.SetMotorZeroCommand(EnumMotorId.MOTOR_2);
                         DispathcherInvoke($"{EnumMotorId.MOTOR_1} :设置电机零点");
-                        NLog.LogManager.GetCurrentClassLogger().Info($"{EnumMotorId.MOTOR_2} :设置电机零点");
                         DispathcherInvoke($"{EnumMotorId.MOTOR_2} :设置电机零点");
-                        SendImportantData(xZeroCmd);
-                        SendImportantData(yZeroCmd);
                         return;
                     }
                     i++;
@@ -1750,7 +1751,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             await Task.Run(async () =>
             {
 
-                Goto(enumMotorId, 100000000);
+                Goto(enumMotorId, true);
                 Thread.Sleep(5000);
                 try
                 {
@@ -1777,8 +1778,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                         _dialogHostService.Information("提示", "正限位反向请检查");
                         DispathcherInvoke($"电机测试End:{posEnd},Start:{posStart} 行程:{posEnd - posStart}");
                         NLog.LogManager.GetCurrentClassLogger().Error($"电机测试End:{posEnd},Start:{posStart} 行程:{posEnd - posStart}");
-                        var stopcmd = SelfMotorProtocol.SetMotorOperatingStatus(enumMotorId, EnumMotorOperatingState.Stop);
-                        SendImportantData(stopcmd);
+                        MotorEntity.SetMotorOperatingStatusCommand(enumMotorId, EnumMotorOperatingState.Stop);
                     }
                     else
                     {
@@ -1794,7 +1794,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             posStart = posEnd;
             await Task.Run(async () =>
             {
-                Goto(enumMotorId, -1000000000);
+                Goto(enumMotorId, false);
                 Thread.Sleep(1000);
                 try
                 {
@@ -1811,8 +1811,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     {
                         _dialogHostService.Information("提示", "负限位反向请检查");
                         DispathcherInvoke($"电机测试End:{posEnd},Start:{posStart} 行程:{posEnd - posStart}");
-                        var stopcmd = SelfMotorProtocol.SetMotorOperatingStatus(enumMotorId, EnumMotorOperatingState.Stop);
-                        SendImportantData(stopcmd);
+                        MotorEntity.SetMotorOperatingStatusCommand(enumMotorId, EnumMotorOperatingState.Stop);
                     }
                     else if (result == "PhyBackwardLimited")
                     {
@@ -1995,26 +1994,17 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// <param name="e"></param>
         private void QueryMotorStatusTimerElapsed(object sender, ElapsedEventArgs e)
         {
-            var getMotor2Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_2);
-            SendData(getMotor2Statuscmd);
-            var getMotor1Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_1);
-            SendData(getMotor1Statuscmd);
+            GetMotorStatus();
 
         }
         public DelegateCommand GetMotorStatusCommand { get; set; }
         private void GetMotorStatus()
         {
-            var getMotor1Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_1);
-            SendImportantData(getMotor1Statuscmd);
-            var getMotor2Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_2);
-            SendImportantData(getMotor2Statuscmd);
+            MotorEntity.GetMotorStatusCommand(EnumMotorId.MOTOR_1);
+            MotorEntity.GetMotorStatusCommand(EnumMotorId.MOTOR_2);
         }
 
-        private void MotorEnable()
-        {
-            var getMotor1Statuscmd = SelfMotorProtocol.GetMotorStatus(EnumMotorId.MOTOR_1);
-            SendImportantData(getMotor1Statuscmd);
-        }
+      
 
         /// <summary>
         /// 设置电机为闭环位置模式和使能
@@ -2033,18 +2023,13 @@ namespace UtilityTools.Modules.MotorTest.Model
             }
             if (motorModel.MotorParams.CtrType != EnumMotorCtrType.CloseLoopPosCtr)
             {
-                var setCtModeCmd = SelfMotorProtocol.SetMotorControlMode(channel, EnumMotorCtrType.CloseLoopPosCtr);
-                SendImportantData(setCtModeCmd);
-                NLog.LogManager.GetCurrentClassLogger().Info($"{channel} 电机设置为闭环位置模式");
-                var setMotorEnableCmd = SelfMotorProtocol.SetMotorEnable(channel, EnumMotorEnable.Enable);
-                NLog.LogManager.GetCurrentClassLogger().Info($"{channel} 电机使能");
-                SendImportantData(setMotorEnableCmd);
+
+                MotorEntity.SetMotorControlModeCommand(channel, EnumMotorCtrType.CloseLoopPosCtr);
+                MotorEntity.SetMotorEnableCommand(channel, EnumMotorEnable.Enable);
             }
             if (motorModel.MotorParams.Enable != true)
             {
-                var setMotorEnableCmd = SelfMotorProtocol.SetMotorEnable(channel, EnumMotorEnable.Enable);
-                NLog.LogManager.GetCurrentClassLogger().Info($"{channel} 电机使能");
-                SendImportantData(setMotorEnableCmd);
+                MotorEntity.SetMotorEnableCommand(channel, EnumMotorEnable.Enable);
             }
 
         }
@@ -2058,21 +2043,24 @@ namespace UtilityTools.Modules.MotorTest.Model
             {
                 if (MotorModelX.MotorParams.CtrType != EnumMotorCtrType.OpenLoopSpeedCtr)
                 {
-                    var setCtModeCmd = SelfMotorProtocol.SetMotorControlMode(channel, EnumMotorCtrType.OpenLoopSpeedCtr);
-                    SendImportantData(setCtModeCmd);
-                    var setMotorEnableCmd = SelfMotorProtocol.SetMotorEnable(channel, EnumMotorEnable.Enable);
-                    SendImportantData(setMotorEnableCmd);
-                    NLog.LogManager.GetCurrentClassLogger().Info($"{channel} 点击设置为闭环位置模式");
+                    MotorEntity.SetMotorControlModeCommand(channel, EnumMotorCtrType.OpenLoopSpeedCtr);
+                    MotorEntity.SetMotorEnableCommand(channel, EnumMotorEnable.Enable);
+                }
+                if(MotorModelX.MotorParams.Enable)
+                {
+                    MotorEntity.SetMotorEnableCommand(channel, EnumMotorEnable.Enable);
                 }
             }
-            else if (channel == EnumMotorId.MOTOR_2)
+            else 
             {
                 if (MotorModelY.MotorParams.CtrType != EnumMotorCtrType.OpenLoopSpeedCtr)
                 {
-                    var setCtModeCmd = SelfMotorProtocol.SetMotorControlMode(channel, EnumMotorCtrType.OpenLoopSpeedCtr);
-                    SendImportantData(setCtModeCmd);
-                    var setMotorEnableCmd = SelfMotorProtocol.SetMotorEnable(channel, EnumMotorEnable.Enable);
-                    SendImportantData(setMotorEnableCmd);
+                    MotorEntity.SetMotorControlModeCommand(channel, EnumMotorCtrType.OpenLoopSpeedCtr);
+                    MotorEntity.SetMotorEnableCommand(channel, EnumMotorEnable.Enable);
+                }
+                if (MotorModelX.MotorParams.Enable)
+                {
+                    MotorEntity.SetMotorEnableCommand(channel, EnumMotorEnable.Enable);
                 }
             }
 
@@ -2084,10 +2072,9 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// <param name="Speed"></param>
         private void GotoInSpeedMode(EnumMotorId enumMotorId, int Speed)
         {
-
+            
             SetMotorSpeedInit(enumMotorId);
-            var gotocmd = SelfMotorProtocol.SetMotorGoTo(enumMotorId, EnumMotorUnit.Pulse, Speed);
-            SendImportantData(gotocmd);
+            MotorEntity.SetMotorGoToCommand(enumMotorId, EnumMotorUnit.Pulse, Speed);
         }
 
 
@@ -2096,12 +2083,42 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// </summary>
         /// <param name="enumMotorId"></param>
         /// <param name="pos"></param>
-        private void Goto(EnumMotorId enumMotorId, int pos)
+        private void Goto(EnumMotorId enumMotorId, bool direction)
         {
+            MotorModel motor;
+            if (enumMotorId == EnumMotorId.MOTOR_1)
+            {
+                motor = MotorModelX;
+            }
+            else
+            {
+                motor = MotorModelY;
+            }
             SetMotorInit(enumMotorId);
-            var gotocmd = SelfMotorProtocol.SetMotorGoTo(enumMotorId, EnumMotorUnit.Pulse, pos);
-            SendImportantData(gotocmd);
-            NLog.LogManager.GetCurrentClassLogger().Info($"{enumMotorId} 电机运动->{pos} 单位{EnumMotorUnit.Pulse}");
+            if (direction)
+            {
+                MotorEntity.SetMotorGoToCommand(enumMotorId, EnumMotorUnit.Pulse, motor.MotorParams.Pos + 2000000);
+            }
+            else
+            {
+                MotorEntity.SetMotorGoToCommand(enumMotorId, EnumMotorUnit.Pulse, motor.MotorParams.Pos - 2000000);
+            }
+               
+           
+        }
+        private void Goto(EnumMotorId enumMotorId, int  pos)
+        {
+            MotorModel motor;
+            if (enumMotorId == EnumMotorId.MOTOR_1)
+            {
+                motor = MotorModelX;
+            }
+            else
+            {
+                motor = MotorModelY;
+            }
+            SetMotorInit(enumMotorId);
+            MotorEntity.SetMotorGoToCommand(enumMotorId, EnumMotorUnit.Pulse, pos);
         }
         public DelegateCommand<string> SetMotorLimitEnableCommand { get; set; }
         /// <summary>
@@ -2118,11 +2135,8 @@ namespace UtilityTools.Modules.MotorTest.Model
             {
                 limitEnable = 0b00011100;
             }
-
-            var cmd1 = SelfMotorProtocol.SetMotorLimitEnable(EnumMotorId.MOTOR_1, limitEnable);
-            var cmd2 = SelfMotorProtocol.SetMotorLimitEnable(EnumMotorId.MOTOR_2, limitEnable);
-            SendImportantData(cmd1);
-            SendImportantData(cmd2);
+            MotorEntity.SetMotorLimitEnableCommand(EnumMotorId.MOTOR_1, limitEnable);
+            MotorEntity.SetMotorLimitEnableCommand(EnumMotorId.MOTOR_2, limitEnable);
         }
 
         public DelegateCommand GetMotorLimitEnableCommand { get; set; }
@@ -2131,57 +2145,11 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// </summary>
         private void GetMotorLimitEnable()
         {
-            var cmd1 = SelfMotorProtocol.GetMotorLimitEnable(EnumMotorId.MOTOR_1);
-            var cmd2 = SelfMotorProtocol.GetMotorLimitEnable(EnumMotorId.MOTOR_2);
-            SendImportantData(cmd1);
-            SendImportantData(cmd2);
+            MotorEntity.GetMotorLimitEnableCommand(EnumMotorId.MOTOR_1);
+            MotorEntity.GetMotorLimitEnableCommand(EnumMotorId.MOTOR_2);
         }
-        private void SendData(byte[] cmd)
-        {
-            if (NetUdpService.IsOpen)
-            {
-                if (_byteQueue == null)
-                {
-                    _byteQueue = new Queue<byte[]>();
-                }
-                if (_importantByteQueue == null || _importantByteQueue.Count == 0)
-                {
-                    _byteQueue.Enqueue(cmd);
-                }
-
-            }
-            else if (SerialPortService.IsOpen)
-            {
-                if (_byteQueue == null)
-                {
-                    _byteQueue = new Queue<byte[]>();
-                }
-                if (_importantByteQueue == null || _importantByteQueue.Count == 0)
-                {
-                    _byteQueue.Enqueue(cmd);
-                }
-
-            }
-        }
-        private void SendImportantData(byte[] cmd)
-        {
-            if (NetUdpService.IsOpen)
-            {
-                if (_importantByteQueue == null)
-                {
-                    _importantByteQueue = new Queue<byte[]>();
-                }
-                _importantByteQueue.Enqueue(cmd);
-            }
-            else if (SerialPortService.IsOpen)
-            {
-                if (_importantByteQueue == null)
-                {
-                    _importantByteQueue = new Queue<byte[]>();
-                }
-                _importantByteQueue.Enqueue(cmd);
-            }
-        }
+      
+       
 
         public async Task SendDataThread()
         {
@@ -2191,18 +2159,15 @@ namespace UtilityTools.Modules.MotorTest.Model
 
                 if (_importantByteQueue != null && _importantByteQueue.Count > 0)
                 {
-                    var cmd = _importantByteQueue.Dequeue();
+                     _importantByteQueue.TryDequeue(out var cmd);
                     NetUdpService.SendMsg(cmd);
-
-                    NLog.LogManager.GetCurrentClassLogger().Info($"网口发送控制指令:{cmd}");
                 }
                 else
                 {
                     if (_byteQueue != null && _byteQueue.Count > 0)
                     {
-                        var cmd = _byteQueue.Dequeue();
+                        _byteQueue.TryDequeue(out var cmd);
                         NetUdpService.SendMsg(cmd);
-                        NLog.LogManager.GetCurrentClassLogger().Info($"网口发送查询指令:{cmd}");
                     }
                 }
                 _waitingReply = new TaskCompletionSource<string>();
@@ -2211,7 +2176,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     string result = await _waitingReply.Task.WaitAsync(TimeSpan.FromMilliseconds(300));
                     if (result == "Ready")
                     {
-                        Thread.Sleep(20);
+                        Thread.Sleep(10);
                         continue;
                     }
                 }
@@ -2228,19 +2193,19 @@ namespace UtilityTools.Modules.MotorTest.Model
             while (SerialPortService.IsOpen)
             {
 
-                if (_importantByteQueue != null && _importantByteQueue.Count > 0)
+                if (_importantByteQueue != null && _importantByteQueue.Count > 0) 
                 {
-                    var cmd = _importantByteQueue.Dequeue();
-                    NetUdpService.SendMsg(cmd);
-                    NLog.LogManager.GetCurrentClassLogger().Info($"串口发送控制指令:{cmd}");
+                    _importantByteQueue.TryDequeue(out var cmd);
+                    SerialPortService.SendMsg(cmd);
+                    NLog.LogManager.GetCurrentClassLogger().Trace($"串口发送控制指令:{cmd}");
                 }
                 else
                 {
                     if (_byteQueue != null && _byteQueue.Count > 0)
                     {
-                        var cmd = _byteQueue.Dequeue();
-                        NetUdpService.SendMsg(cmd);
-                        NLog.LogManager.GetCurrentClassLogger().Info($"串口发送查询指令:{cmd}");
+                         _byteQueue.TryDequeue(out var cmd);
+                        SerialPortService.SendMsg(cmd);
+                        NLog.LogManager.GetCurrentClassLogger().Trace($"串口发送查询指令:{cmd}");
                     }
                 }
                 _waitingReply = new TaskCompletionSource<string>();
@@ -2273,8 +2238,9 @@ namespace UtilityTools.Modules.MotorTest.Model
                 {
                     if (NetUdpService.IsOpen || SerialPortService.IsOpen)
                     {
-                        // 执行发送逻辑
-                        await SendDataThread();
+                        
+                            // 执行发送逻辑
+                         await SendDataThread();
                     }
 
                 }
@@ -2316,16 +2282,16 @@ namespace UtilityTools.Modules.MotorTest.Model
                 switch (e.CmdType)
                 {
                     case EnumSelfMotorCmdType.CMD_SET_RS://设置点击运行/停止命令
-                        NLog.LogManager.GetCurrentClassLogger().Info($"设置运行/停止命令成功");
+                        NLog.LogManager.GetCurrentClassLogger().Info($"(回报提示)设置运行/停止命令成功");
                         break;
                     case EnumSelfMotorCmdType.CMD_SET_SLIM://设置电机使能掩码
-                        NLog.LogManager.GetCurrentClassLogger().Info($"设置是能掩码成功");
+                        NLog.LogManager.GetCurrentClassLogger().Info($"(回报提示)设置是能掩码成功");
                         break;
                     case EnumSelfMotorCmdType.CMD_MOT_GOTO://设置电机绝对运行
-                        NLog.LogManager.GetCurrentClassLogger().Info($"设置点击移动成功");
+                        NLog.LogManager.GetCurrentClassLogger().Info($"(回报提示)设置电机移动成功");
                         break;
                     case EnumSelfMotorCmdType.CMD_SET_MCTL://设置电机的闭环控制状态
-                        NLog.LogManager.GetCurrentClassLogger().Info("设置点击闭环控制状态成功");
+                        NLog.LogManager.GetCurrentClassLogger().Info("(回报提示)设置点击闭环控制状态成功");
                         break;
 
                     case EnumSelfMotorCmdType.CMD_GET_POS:
@@ -2333,10 +2299,10 @@ namespace UtilityTools.Modules.MotorTest.Model
                         var unit = data[1];
                         var pos = BitConverter.ToInt32(data, 2);
                         var ransformationCoefficient = BitConverter.ToSingle(data, 6);
-                        NLog.LogManager.GetCurrentClassLogger().Info($"获取电机的位置成功{chananl}:{pos}");
+                        NLog.LogManager.GetCurrentClassLogger().Trace($"获取电机的位置成功{chananl}:{pos}");
                         break;
                     case EnumSelfMotorCmdType.CMD_GET_STATUS:
-                        NLog.LogManager.GetCurrentClassLogger().Info($"获取电机状态成功");
+                        NLog.LogManager.GetCurrentClassLogger().Trace($"获取电机状态成功");
                         ParserMotorStatus(data);
                         break;
                     case EnumSelfMotorCmdType.CMD_GET_SLIM:
@@ -2393,7 +2359,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             }
             else
             {
-                NLog.LogManager.GetCurrentClassLogger().Info($"电机状态解析异常，退出");
+                
                 return;
             }
             motorModel.MotorParams.MotorType = (EnumMotorType)motorType;
@@ -2425,7 +2391,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             {
                 motorModel.MotorParams.NegativeLimitPosition = motorModel.MotorParams.Pos;
             }
-            NLog.LogManager.GetCurrentClassLogger().Info($"获取电机的状态成功:通道:{channel},电机类型:{motorModel.MotorParams.MotorType},控制类型:{motorModel.MotorParams.CtrType},单位:{motorModel.MotorParams.Unit},使能状态:{motorModel.MotorParams.Enable}" +
+            NLog.LogManager.GetCurrentClassLogger().Trace($"获取电机的状态成功:通道:{channel},电机类型:{motorModel.MotorParams.MotorType},控制类型:{motorModel.MotorParams.CtrType},单位:{motorModel.MotorParams.Unit},使能状态:{motorModel.MotorParams.Enable}" +
                 $",电机移动状态{motorModel.MotorParams.MoveState},电机限位状态:{motorModel.MotorParams.LimitedState},电机移动方向{motorModel.MotorParams.MoveDirection},电机位置{motorModel.MotorParams.Pos}");
         }
 
