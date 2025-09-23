@@ -24,6 +24,7 @@
  *----------------------------------------------------------------*/
 #endregion
 
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -38,7 +39,9 @@ namespace UtilityTools.Services.Services
         #region ------------Constructor------------
         public TcpNetAsynDevice()
         {
-
+            DeviceInstance = new TcpNetConfigModel();
+            DeviceInstance.ReceiveDataEvent += DeviceInstance_ReceiveDataEvent;
+            MinWriteInterval = 20;
         }
         #endregion
 
@@ -61,6 +64,7 @@ namespace UtilityTools.Services.Services
         public string Name { get; set; }
 
         public bool IsBinary { get; set; }
+        
 
         /// <summary>
         /// 两次写入最小间隔 ms
@@ -82,27 +86,37 @@ namespace UtilityTools.Services.Services
         #region ------------PublicMethod------------
         public void Close()
         {
-            throw new NotImplementedException();
+            DeviceInstance.Close();
         }
 
         public object GetHandle()
         {
-            throw new NotImplementedException();
+            return DeviceInstance;
         }
 
         public bool Open()
         {
-            throw new NotImplementedException();
+           if(DeviceInstance.IsOpen())
+                return false;
+            if (DeviceInstance.Open())
+            {
+                return true;
+            }
+            return DeviceInstance.IsOpen();
+            
         }
 
         public void SendMsg(byte[] cmd)
         {
-            throw new NotImplementedException();
+            DeviceInstance.Send(cmd);
         }
 
         public void SetHandle(object obj)
         {
-            throw new NotImplementedException();
+            if (obj is NetConfigModel sp)
+            {
+                DeviceInstance = sp;
+            }
         }
 
         /// <summary>
@@ -123,6 +137,19 @@ namespace UtilityTools.Services.Services
         #endregion
 
         #region ------------PrivateMethod------------
+        private void DeviceInstance_ReceiveDataEvent(object sender, byte[] response)
+        {
+            try
+            {
+                LogManager.GetCurrentClassLogger().Debug($"{Name} 接收 : {GetCmdString(response, response.Length)}");
+                UpdateResponse?.Invoke(this, response);
+            }
+            catch (Exception ex)
+            {
+                LogManager.GetCurrentClassLogger().Error(ex.Message);
+                return;
+            }
+        }
         #endregion
 
         #region ------------StaticMethod------------

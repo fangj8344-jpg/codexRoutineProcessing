@@ -49,7 +49,7 @@ namespace UtilityTools.Services.Services
             _sendQueue = new ConcurrentQueue<byte[]>();
             DeviceInstance = new UdpNetConfigModel();
             DeviceInstance.ReceiveDataEvent += DeviceInstance_ReceiveDataEvent;
-            MinWriteInterval = 100;
+            MinWriteInterval = 10;
         }
 
         #endregion
