@@ -129,11 +129,11 @@
                             DockPanel.Dock="Top"
                             Margin="5"
                             HorizontalAlignment="Center">
-                    <Button Content="按钮1"
+                    <Button Content="美图"
                             Width="80"
                             Height="30"
                             Margin="5" />
-                    <Button Content="按钮2"
+                    <Button Content="批处理"
                             Width="80"
                             Height="30"
                             Margin="5" />
