@@ -11,6 +11,7 @@ using UtilityTools.Core.Dialog;
 using UtilityTools.Core.Mvvm;
 using UtilityTools.Core.Model;
 using UtilityTools.Modules.ImageMagic.Model;
+using OpenCvSharp;
 
 namespace UtilityTools.Modules.ImageMagic.ViewModels
 {
@@ -426,7 +427,8 @@ namespace UtilityTools.Modules.ImageMagic.ViewModels
                 BatchProcessCommand.RaiseCanExecuteChanged();
 
                 // 调用美图API
-                string beautifiedBase64 = await MeituAlgorithmMethod.PostByFile(CurrentImagePath);
+                Mat mat = new Mat(CurrentImagePath);
+                string beautifiedBase64 = await MeituAlgorithmMethod.PostByMat(mat);
                 
                 if (!string.IsNullOrEmpty(beautifiedBase64))
                 {
