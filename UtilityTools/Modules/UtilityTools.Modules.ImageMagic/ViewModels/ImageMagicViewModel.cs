@@ -57,6 +57,8 @@ namespace UtilityTools.Modules.ImageMagic.ViewModels
         #region Commands
         public DelegateCommand OpenDirectoryCommand { get; set; } = null!;
         public DelegateCommand<string> SelectImageCommand { get; set; } = null!;
+        public DelegateCommand BeautifyImageCommand { get; set; } = null!;
+        public DelegateCommand BatchProcessCommand { get; set; } = null!;
 
         private void OpenDirectory()
         {
@@ -99,6 +101,12 @@ namespace UtilityTools.Modules.ImageMagic.ViewModels
 
                 // 更新元数据
                 UpdateMetadata(imagePath);
+                
+                // 检查并加载对应的美化图
+                LoadBeautifiedImageIfExists(imagePath);
+                
+                // 更新美图命令状态
+                BeautifyImageCommand.RaiseCanExecuteChanged();
             }
             catch (Exception ex)
             {
@@ -162,6 +170,85 @@ namespace UtilityTools.Modules.ImageMagic.ViewModels
                 RaisePropertyChanged();
             }
         }
+
+        // 美图相关属性
+        private BitmapImage? _beautifiedImage;
+        public BitmapImage? BeautifiedImage
+        {
+            get { return _beautifiedImage; }
+            set
+            {
+                _beautifiedImage = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private string _beautifiedImagePath = string.Empty;
+        public string BeautifiedImagePath
+        {
+            get { return _beautifiedImagePath; }
+            set
+            {
+                _beautifiedImagePath = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private bool _isBeautifying;
+        public bool IsBeautifying
+        {
+            get { return _isBeautifying; }
+            set
+            {
+                _isBeautifying = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        // 批处理相关属性
+        private bool _isBatchProcessing;
+        public bool IsBatchProcessing
+        {
+            get { return _isBatchProcessing; }
+            set
+            {
+                _isBatchProcessing = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private int _batchProgress;
+        public int BatchProgress
+        {
+            get { return _batchProgress; }
+            set
+            {
+                _batchProgress = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private int _batchTotal;
+        public int BatchTotal
+        {
+            get { return _batchTotal; }
+            set
+            {
+                _batchTotal = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private string _batchStatus = string.Empty;
+        public string BatchStatus
+        {
+            get { return _batchStatus; }
+            set
+            {
+                _batchStatus = value;
+                RaisePropertyChanged();
+            }
+        }
         #endregion
 
         #region Private Methods
@@ -169,6 +256,8 @@ namespace UtilityTools.Modules.ImageMagic.ViewModels
         {
             OpenDirectoryCommand = new DelegateCommand(OpenDirectory);
             SelectImageCommand = new DelegateCommand<string>(SelectImage);
+            BeautifyImageCommand = new DelegateCommand(BeautifyImage, CanBeautifyImage);
+            BatchProcessCommand = new DelegateCommand(BatchProcess, CanBatchProcess);
         }
 
         private void InitProperty()
@@ -204,9 +293,14 @@ namespace UtilityTools.Modules.ImageMagic.ViewModels
             ImageFiles.Clear();
             CurrentImage = null;
             CurrentImagePath = string.Empty;
+            
+            // 清空美化图显示
+            BeautifiedImage = null;
+            BeautifiedImagePath = string.Empty;
 
             var files = Directory.GetFiles(directoryPath)
                 .Where(file => _supportedExtensions.Contains(Path.GetExtension(file).ToLower()))
+                .Where(file => !Path.GetFileNameWithoutExtension(file).EndsWith("_beautified")) // 过滤掉美化图文件
                 .OrderBy(f => f)
                 .ToList();
 
@@ -220,6 +314,9 @@ namespace UtilityTools.Modules.ImageMagic.ViewModels
             {
                 SelectImage(ImageFiles.First());
             }
+            
+            // 更新批处理命令状态
+            BatchProcessCommand.RaiseCanExecuteChanged();
         }
 
         private void UpdateMetadata(string imagePath)
@@ -307,6 +404,204 @@ namespace UtilityTools.Modules.ImageMagic.ViewModels
                         }
                     }
                 }
+            }
+        }
+
+        private bool CanBeautifyImage()
+        {
+            return !string.IsNullOrEmpty(CurrentImagePath) && !IsBeautifying;
+        }
+
+        private async void BeautifyImage()
+        {
+            if (string.IsNullOrEmpty(CurrentImagePath))
+            {
+                return;
+            }
+
+            try
+            {
+                IsBeautifying = true;
+                BeautifyImageCommand.RaiseCanExecuteChanged();
+                BatchProcessCommand.RaiseCanExecuteChanged();
+
+                // 调用美图API
+                string beautifiedBase64 = await MeituAlgorithmMethod.PostByFile(CurrentImagePath);
+                
+                if (!string.IsNullOrEmpty(beautifiedBase64))
+                {
+                    // 将Base64转换为BitmapImage
+                    BeautifiedImage = MeituAlgorithmMethod.Base64ToImage(beautifiedBase64);
+                    
+                    // 保存美化后的图片到原图所在目录
+                    string originalDirectory = Path.GetDirectoryName(CurrentImagePath) ?? string.Empty;
+                    string originalFileName = Path.GetFileNameWithoutExtension(CurrentImagePath);
+                    string originalExtension = Path.GetExtension(CurrentImagePath);
+                    string beautifiedFileName = $"{originalFileName}_beautified{originalExtension}";
+                    string beautifiedFilePath = Path.Combine(originalDirectory, beautifiedFileName);
+                    
+                    // 将Base64转换为字节数组并保存
+                    byte[] imageBytes = Convert.FromBase64String(beautifiedBase64);
+                    File.WriteAllBytes(beautifiedFilePath, imageBytes);
+                    
+                    BeautifiedImagePath = beautifiedFilePath;
+                    LogManager.GetCurrentClassLogger().Info($"美化图片已保存到: {beautifiedFilePath}");
+                }
+                else
+                {
+                    LogManager.GetCurrentClassLogger().Warn("美图API返回空结果");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.GetCurrentClassLogger().Error($"美图处理失败: {ex.Message}");
+                // 可以显示错误消息给用户
+            }
+            finally
+            {
+                IsBeautifying = false;
+                BeautifyImageCommand.RaiseCanExecuteChanged();
+                BatchProcessCommand.RaiseCanExecuteChanged();
+            }
+        }
+
+        private void LoadBeautifiedImageIfExists(string imagePath)
+        {
+            try
+            {
+                // 生成对应的美化图路径
+                string originalDirectory = Path.GetDirectoryName(imagePath) ?? string.Empty;
+                string originalFileName = Path.GetFileNameWithoutExtension(imagePath);
+                string originalExtension = Path.GetExtension(imagePath);
+                string beautifiedFileName = $"{originalFileName}_beautified{originalExtension}";
+                string beautifiedFilePath = Path.Combine(originalDirectory, beautifiedFileName);
+
+                // 检查美化图文件是否存在
+                if (File.Exists(beautifiedFilePath))
+                {
+                    // 加载美化图
+                    var beautifiedBitmap = new BitmapImage();
+                    beautifiedBitmap.BeginInit();
+                    beautifiedBitmap.UriSource = new Uri(beautifiedFilePath);
+                    beautifiedBitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    beautifiedBitmap.EndInit();
+                    beautifiedBitmap.Freeze();
+
+                    BeautifiedImage = beautifiedBitmap;
+                    BeautifiedImagePath = beautifiedFilePath;
+                }
+                else
+                {
+                    // 清空美化图显示
+                    BeautifiedImage = null;
+                    BeautifiedImagePath = string.Empty;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.GetCurrentClassLogger().Error($"加载美化图失败: {ex.Message}");
+                // 清空美化图显示
+                BeautifiedImage = null;
+                BeautifiedImagePath = string.Empty;
+            }
+        }
+
+        private bool CanBatchProcess()
+        {
+            return ImageFiles.Count > 0 && !IsBatchProcessing && !IsBeautifying;
+        }
+
+        private async void BatchProcess()
+        {
+            if (ImageFiles.Count == 0)
+            {
+                return;
+            }
+
+            try
+            {
+                IsBatchProcessing = true;
+                BatchProgress = 0;
+                BatchTotal = ImageFiles.Count;
+                BatchStatus = "开始批量处理...";
+                
+                // 更新命令状态
+                BatchProcessCommand.RaiseCanExecuteChanged();
+                BeautifyImageCommand.RaiseCanExecuteChanged();
+
+                int successCount = 0;
+                int failCount = 0;
+
+                for (int i = 0; i < ImageFiles.Count; i++)
+                {
+                    string imagePath = ImageFiles[i];
+                    string fileName = Path.GetFileName(imagePath);
+                    
+                    try
+                    {
+                        BatchStatus = $"正在处理: {fileName} ({i + 1}/{BatchTotal})";
+                        
+                        // 检查是否已经存在美化图
+                        string originalDirectory = Path.GetDirectoryName(imagePath) ?? string.Empty;
+                        string originalFileName = Path.GetFileNameWithoutExtension(imagePath);
+                        string originalExtension = Path.GetExtension(imagePath);
+                        string beautifiedFileName = $"{originalFileName}_beautified{originalExtension}";
+                        string beautifiedFilePath = Path.Combine(originalDirectory, beautifiedFileName);
+
+                        if (File.Exists(beautifiedFilePath))
+                        {
+                            LogManager.GetCurrentClassLogger().Info($"跳过已存在的美化图: {beautifiedFilePath}");
+                            BatchProgress = i + 1;
+                            continue;
+                        }
+
+                        // 调用美图API
+                        string beautifiedBase64 = await MeituAlgorithmMethod.PostByFile(imagePath);
+                        
+                        if (!string.IsNullOrEmpty(beautifiedBase64))
+                        {
+                            // 保存美化后的图片
+                            byte[] imageBytes = Convert.FromBase64String(beautifiedBase64);
+                            File.WriteAllBytes(beautifiedFilePath, imageBytes);
+                            
+                            successCount++;
+                            LogManager.GetCurrentClassLogger().Info($"美化图片成功: {beautifiedFilePath}");
+                        }
+                        else
+                        {
+                            failCount++;
+                            LogManager.GetCurrentClassLogger().Warn($"美化图片失败（API返回空）: {imagePath}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        failCount++;
+                        LogManager.GetCurrentClassLogger().Error($"美化图片失败: {imagePath}, 错误: {ex.Message}");
+                    }
+                    
+                    BatchProgress = i + 1;
+                }
+
+                BatchStatus = $"批量处理完成! 成功: {successCount}, 失败: {failCount}";
+                LogManager.GetCurrentClassLogger().Info($"批量处理完成，成功: {successCount}, 失败: {failCount}");
+                
+                // 如果当前选中的图片有了新的美化图，重新加载
+                if (!string.IsNullOrEmpty(CurrentImagePath))
+                {
+                    LoadBeautifiedImageIfExists(CurrentImagePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                BatchStatus = $"批量处理出错: {ex.Message}";
+                LogManager.GetCurrentClassLogger().Error($"批量处理出错: {ex.Message}");
+            }
+            finally
+            {
+                IsBatchProcessing = false;
+                // 更新命令状态
+                BatchProcessCommand.RaiseCanExecuteChanged();
+                BeautifyImageCommand.RaiseCanExecuteChanged();
             }
         }
         #endregion

@@ -62,22 +62,54 @@
             </Grid.ColumnDefinitions>
 
             <!-- Image Display Area -->
-            <DockPanel Grid.Row="0" Grid.Column="0">
-                <StackPanel DockPanel.Dock="Top"
-                            Orientation="Horizontal"
-                            Margin="5">
-                    <TextBlock Text="当前图片:"
-                               FontWeight="Bold"
-                               VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding CurrentImagePath}"
-                               VerticalAlignment="Center"
-                               Margin="5,0" />
-                </StackPanel>
+            <Grid Grid.Row="0" Grid.Column="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="5" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                
+                <!-- 原图显示区域 -->
+                <DockPanel Grid.Column="0">
+                    <StackPanel DockPanel.Dock="Top"
+                                Orientation="Horizontal"
+                                Margin="5">
+                        <TextBlock Text="原图:"
+                                   FontWeight="Bold"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding CurrentImagePath}"
+                                   VerticalAlignment="Center"
+                                   Margin="5,0" />
+                    </StackPanel>
 
-                <views:ImageViewer ImageSource="{Binding CurrentImage}"
-                                   Margin="5"
-                                   Grid.IsSharedSizeScope="True" />
-            </DockPanel>
+                    <views:ImageViewer ImageSource="{Binding CurrentImage}"
+                                       Margin="5"
+                                       Grid.IsSharedSizeScope="True" />
+                </DockPanel>
+
+                <!-- 分割线 -->
+                <GridSplitter Grid.Column="1"
+                              HorizontalAlignment="Stretch"
+                              VerticalAlignment="Stretch" />
+
+                <!-- 美化图显示区域 -->
+                <DockPanel Grid.Column="2">
+                    <StackPanel DockPanel.Dock="Top"
+                                Orientation="Horizontal"
+                                Margin="5">
+                        <TextBlock Text="美化图:"
+                                   FontWeight="Bold"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding BeautifiedImagePath}"
+                                   VerticalAlignment="Center"
+                                   Margin="5,0" />
+                    </StackPanel>
+
+                    <views:ImageViewer ImageSource="{Binding BeautifiedImage}"
+                                       Margin="5"
+                                       Grid.IsSharedSizeScope="True" />
+                </DockPanel>
+            </Grid>
 
             <!-- Image List -->
             <DockPanel Grid.Row="1" Grid.Column="0">
@@ -132,16 +164,36 @@
                     <Button Content="美图"
                             Width="80"
                             Height="30"
-                            Margin="5" />
+                            Margin="5"
+                            Command="{Binding BeautifyImageCommand}" />
                     <Button Content="批处理"
                             Width="80"
                             Height="30"
-                            Margin="5" />
+                            Margin="5"
+                            Command="{Binding BatchProcessCommand}" />
                 </StackPanel>
                 <TextBlock Text="图片属性"
                            FontWeight="Bold"
                            Margin="5"
                            DockPanel.Dock="Top" />
+                
+                <!-- 批处理状态显示 -->
+                <StackPanel DockPanel.Dock="Top" 
+                            Margin="5"
+                            Visibility="{Binding IsBatchProcessing, Converter={StaticResource obj2BoolConverter}}">
+                    <TextBlock Text="{Binding BatchStatus}" 
+                               FontWeight="Bold"
+                               Margin="0,0,0,5" />
+                    <ProgressBar Value="{Binding BatchProgress}"
+                                 Maximum="{Binding BatchTotal}"
+                                 Height="10"
+                                 Margin="0,0,0,5" />
+                    <TextBlock Text="{Binding BatchProgress, StringFormat='进度: {0}'}" 
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding BatchTotal, StringFormat='/ {0}'}" 
+                               HorizontalAlignment="Center" />
+                </StackPanel>
+                
                 <DataGrid ItemsSource="{Binding Items}"
                           IsReadOnly="True"
                           CanUserAddRows="False"
