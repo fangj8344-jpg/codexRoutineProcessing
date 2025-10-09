@@ -333,13 +333,12 @@
                             <Label Content="斜率开"></Label>
                         </DockPanel>
                     </Grid>
-                    
+
                     <DockPanel Grid.Row="5" VerticalAlignment="Center">
                         <Label>定时状态：</Label>
                         <TextBox Width="180" Text="{Binding TimeCtrl}"></TextBox>
                         <Label>h</Label>
                     </DockPanel>
-
                     <Button Grid.Row="6" Content="{Binding BtnContent}" Command="{Binding StartWorkCommand}"></Button>
                 </Grid>
             </Grid>
@@ -367,8 +366,14 @@
                         <Label>控制参数</Label>
                         <StackPanel Grid.Row="1">
                             <Label>温度控制范围(绝对值)</Label>
-                            <TextBox Text="{Binding TemperatureRange}"></TextBox>
-                            <Label>℃</Label>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Text="{Binding TemperatureRange}"></TextBox>
+                                <Label Grid.Column="1">℃</Label>
+                            </Grid>
                         </StackPanel>
                         <StackPanel Grid.Row="2">
                             <Label>最小升温速率(℃/s)</Label>
