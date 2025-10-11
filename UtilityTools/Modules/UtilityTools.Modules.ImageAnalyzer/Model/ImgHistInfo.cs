@@ -30,9 +30,9 @@ namespace UtilityTools.Modules.ImageAnalyzer.Model
             }
             else if (_meta.IsSignificantBitValid())
             {
-                var sbp = new SignificantBitParser(_meta.SignificantBit);
-                gray &= sbp.SignificantMask;
-                gray /= Math.Pow(2, sbp.SignificantLow);
+                //var sbp = new SignificantBitParser(_meta.SignificantBit);
+                //gray &= sbp.SignificantMask;
+                //gray /= Math.Pow(2, sbp.SignificantLow);
             }
 
             hist = CvHelper.CalcGrayHist(gray, histWindowSize);
