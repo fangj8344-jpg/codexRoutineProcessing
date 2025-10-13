@@ -436,6 +436,8 @@ namespace UtilityTools.Modules.FlyDataTool.ViewModels
                 str = table.Rows[i][1].ToString().Trim();
                 if (double.TryParse(str, out double acc))
                 {
+                    if (acc < 1000)
+                        continue;
                     model.AccVol = acc;
                 }
                 else
