@@ -11,6 +11,7 @@
     <ProjectReference Include="..\..\Services\UtilityTools.Services.Interfaces\UtilityTools.Services.Interfaces.csproj" />
     <ProjectReference Include="..\..\Services\UtilityTools.Services\UtilityTools.Services.csproj" />
     <ProjectReference Include="..\..\UtilityTools.Core\UtilityTools.Core.csproj" />
+    <ProjectReference Include="..\..\UtilityTools\UtilityTools.csproj" />
     <ProjectReference Include="..\UtilityTools.Modules.Motor5Controller\UtilityTools.Modules.Motor5Controller.csproj" />
   </ItemGroup>
   <Target Name="CopyTargetFiles" AfterTargets="PostBuildEvent">

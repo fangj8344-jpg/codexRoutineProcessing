@@ -282,10 +282,10 @@ namespace UtilityTools.Modules.MotorTest.Protocol
     }
     public enum EnumMotorModel
     {
-        [Description("y轴电机")]
+        [Description("x轴电机")]
         MOTOR_x = 0x01,
 
-        [Description("x轴电机")]
+        [Description("y轴电机")]
         MOTOR_y = 0x02,
 
         [Description("t轴电机")]

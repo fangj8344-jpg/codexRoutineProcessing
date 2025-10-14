@@ -1,10 +1,12 @@
-﻿using Prism.Commands;
+﻿using OxyPlot;
+using Prism.Commands;
 using Prism.Ioc;
 using Prism.Services.Dialogs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using UtilityTools.Core.Dialog;
 using UtilityTools.Core.Mvvm;

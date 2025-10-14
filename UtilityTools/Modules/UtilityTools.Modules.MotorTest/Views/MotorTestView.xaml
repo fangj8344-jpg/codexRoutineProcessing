@@ -6,7 +6,7 @@
              xmlns:cv="clr-namespace:UtilityTools.Core.Converter;assembly=UtilityTools.Core"
              xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:model="clr-namespace:UtilityTools.Modules.MotorTest.Model"
-            
+             xmlns:items="clr-namespace:UtilityTools.UserControls.Views;assembly=UtilityTools.UserControls"
              xmlns:local="clr-namespace:UtilityTools.Modules.MotorTest.Views"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
@@ -39,6 +39,7 @@
                     Content="{md:PackIcon Kind=UsbPort, Size=24}"
                     Style="{StaticResource MaterialDesignToolButton}"
                     Foreground="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+               
             </DockPanel>
 
             <local:MotorTestControl Grid.Row="1" DataContext="{Binding Model}" />

@@ -2,19 +2,30 @@
 using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Media.Media3D;
 using UtilityTools.Modules.MotorTest.Protocol;
+using UtilityTools.Modules.MotorTest.SQLite;
 
 namespace UtilityTools.Modules.MotorTest.Model
 {
     public class MotorModel:BindableBase
     {
-        public MotorModel()
+        public MotorModel(EnumMotorModel enumMotorModel)
         {
+            MotorModelAxis = enumMotorModel;
+            PointListBuffer = new List<PlotViewPointMessage>();
+            SpeedListBuffer = new List<PlotViewSpeedMessage>();
+            PointList = new List<PlotViewPointMessage>();
+            SpeedList = new List<PlotViewSpeedMessage>();
             MotorParams = new MotorParams();
+          
+           
         }
+       
         private MotorParams _motorParams;
         public MotorParams MotorParams 
         {
@@ -24,9 +35,52 @@ namespace UtilityTools.Modules.MotorTest.Model
             { 
                 _motorParams = value;
                RaisePropertyChanged();
-            } 
+            }
+             
         }
-
+       
+        private List<PlotViewPointMessage> _pointListBuffer;
+        /// <summary>
+        /// 保存到数据库的位置缓存区
+        /// </summary>
+        public List<PlotViewPointMessage> PointListBuffer
+        {
+            get { return _pointListBuffer; }
+            set { _pointListBuffer = value; }
+        }
+        private List<PlotViewSpeedMessage> _speedListBuffer;
+        /// <summary>
+        /// 保存到数据库的速度缓存区
+        /// </summary>
+        public List<PlotViewSpeedMessage> SpeedListBuffer
+        {
+            get { return _speedListBuffer; }
+            set { _speedListBuffer = value; }
+        }
+        private List<PlotViewPointMessage> _pointList;
+        /// <summary>
+        /// 保存到数据库的位置
+        /// </summary>
+        public List<PlotViewPointMessage> PointList
+        {
+            get { return _pointList; }
+            set { _pointList = value; RaisePropertyChanged(); }
+        }
+        private List<PlotViewSpeedMessage> _speedList;
+        /// <summary>
+        /// 保存到数据库的速度
+        /// </summary>
+        public List<PlotViewSpeedMessage> SpeedList
+        {
+            get { return _speedList; }
+            set { _speedList = value; RaisePropertyChanged(); }
+        }
+        private EnumMotorModel _motorModelAxis;
+        public EnumMotorModel MotorModelAxis
+        {
+            get { return _motorModelAxis; }
+            set { _motorModelAxis = value; }
+        }
     } 
     public class MotorParams : BindableBase
     {
@@ -335,61 +389,53 @@ namespace UtilityTools.Modules.MotorTest.Model
        
 
     }
-    public class PlotViewPointMessage : BindableBase
+    public class PlotViewPointMessage 
     {
-        private DateTime _date;
+
+        public int Id { get; set; }
+        /// <summary>
+        /// 电机轴的类型
+        /// </summary>
+        public EnumMotorModel MotorModelAxis;
         /// <summary>
         /// 时间
         /// </summary>
-        public DateTime Date
-        {
-            get { return _date; }
-            set { _date = value; RaisePropertyChanged(); }
-        }
-
-        private int _point;
+        public DateTime Date { get; set; }
+       
         /// <summary>
         /// 位置
         /// </summary>
-        public int Point
-        {
-            get { return _point; }
-            set { _point = value; RaisePropertyChanged(); }
-        }
-        private EnumMotorMoveState _motorMoveState;
+        public int Point { get; set; }
         /// <summary>
         /// 电机此时的状态
         /// </summary>
-        public EnumMotorMoveState MotorMoveState
-        {
-            get { return _motorMoveState; }
-            set { _motorMoveState = value; RaisePropertyChanged(); }
-        }
-
-
-
+        public EnumMotorMoveState MotorMoveState { get; set; }
     }
-    public class PlotViewSpeedMessage : BindableBase
+    public class PlotViewSpeedMessage
     {
-        private DateTime _speedDate;
+
+        public int Id { get; set; }
+
+        public EnumMotorModel MotorModelAxis;
         /// <summary>
         /// 速度的时间
         /// </summary>
-        public DateTime SpeedDate
-        {
-            get { return _speedDate; }
-            set { _speedDate = value; RaisePropertyChanged(); }
-        }
-
-        private double _speed;
+        public DateTime SpeedDate { get; set; }
+      
         /// <summary>
         /// 速度
         /// </summary>
-        public double Speed
-        {
-            get { return _speed; }
-            set { _speed = value; RaisePropertyChanged(); }
-        }
+        public double Speed { get; set; }
+      
+    }
+    public class MotorPlotMessage
+    {
+        [Key]
+        public int Id { get; set; }
+        public PlotViewSpeedMessage PlotViewSpeedMessage { get; set; }
+        public PlotViewPointMessage PlotViewPointMessage { get; set; }
+
+
     }
 
 }

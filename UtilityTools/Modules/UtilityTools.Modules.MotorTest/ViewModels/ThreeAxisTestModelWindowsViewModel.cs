@@ -118,12 +118,12 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
                     IsConnected = Model.SerialPortService.IsOpen;
                     if (IsConnected == true)
                     {
-                        Model.StartTimer();
+                        Model.QueryStatusTask();
                         Model.SendingThread();
                     }
                     else
                     {
-                        Model.StopTimer();
+                        Model.CloseQueryStatusTask();
                     }
                 }
             }
@@ -148,12 +148,12 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
                     NetIsConnected = Model.NetUdpService.IsOpen;
                     if (NetIsConnected == true)
                     {
-                        Model.StartTimer();
+                        Model.QueryStatusTask();
                         Model.SendingThread();
                     }
                     else
                     {
-                        Model.StopTimer();
+                        Model.CloseQueryStatusTask();
                     }
                 }
             }
