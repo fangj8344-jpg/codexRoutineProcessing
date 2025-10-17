@@ -296,6 +296,8 @@ namespace UtilityTools.Modules.MotorTest.Protocol
 
         [Description("r轴电机")]
         MOTOR_r = 0x05,
+        [Description("其他电机")]
+        MOTOR_other = 0x09,
 
     }
     /// <summary>

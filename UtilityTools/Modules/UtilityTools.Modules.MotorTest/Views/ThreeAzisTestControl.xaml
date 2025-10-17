@@ -76,8 +76,7 @@
                       Command="{Binding AutoAdjustCommand}"  CommandParameter="point" />
                                 <MenuItem Header="清除"
                       Command="{Binding ClearMonitorCommand}"  CommandParameter="point"/>
-                                <MenuItem Header="另存为"
-                      Command="{Binding SaveToFileCommand}" CommandParameter="point" />
+                      
                             </ContextMenu>
                         </oxy:PlotView.ContextMenu>
                     </oxy:PlotView>
@@ -90,8 +89,7 @@
                                   Command="{Binding AutoAdjustCommand}"  CommandParameter="speed"/>
                                 <MenuItem Header="清除"
                                   Command="{Binding ClearMonitorCommand}"  CommandParameter="speed"/>
-                                <MenuItem Header="另存为"
-                                  Command="{Binding SaveToFileCommand}" CommandParameter="speed" />
+                              
                             </ContextMenu>
                         </oxy:PlotView.ContextMenu>
                     </oxy:PlotView>
@@ -120,10 +118,10 @@
                                     <Button Content="←" Command="{Binding ReverseMoveCommand}" CommandParameter="{Binding IsChecked, ElementName=IsSpeedMode}" Margin="10"/>
                                     <Button Content="→" Command="{Binding ForwardMoveCommand}" CommandParameter="{Binding IsChecked, ElementName=IsSpeedMode}" Margin="10"/>
                                     <Button Content="停止" Command="{Binding StopMotorCommand}" Margin="10"/>
-                                    <TextBlock Text="速度" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="10"/>
-                                    <TextBlock Text="{Binding MotorModel.MotorParams.Speed,StringFormat={}{0:N0}脉冲/秒}" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="10"/>
-                                    <TextBlock Text="位置" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="10"/>
-                                    <TextBlock Text="{Binding MotorModel.MotorParams.Pos,StringFormat={}{0:N0}脉冲}" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="10"/>
+                                    <TextBlock Text="速度" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="10,10,1,10"/>
+                                    <TextBlock Text="{Binding MotorModel.MotorParams.Speed,StringFormat={}{0:N0}脉冲/秒}" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="1,10,10,10"/>
+                                    <TextBlock Text="位置" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="5,10,1,10"/>
+                                    <TextBlock Text="{Binding MotorModel.MotorParams.Pos,StringFormat={}{0:N0}脉冲}" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="1,10,5,10"/>
                                 </DockPanel>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -137,10 +135,12 @@
                 </StackPanel>
                 <DockPanel LastChildFill="False" Grid.Column="1">
                     <StackPanel Width="auto" DockPanel.Dock="Right">
-                        <Button Content="同步基础测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="BaseTest" Margin="10"/>
-                        <Button Content="同步丝杆测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="TestSmoothnessDetection" Margin="10"/>
-                        <Button Content="异步基础测试" Command="{Binding IndependentMotortestCommand}" CommandParameter="BaseTest" Margin="10"/>
-                        <Button Content="异步丝杆测试" Command="{Binding IndependentMotortestCommand}" CommandParameter="TestSmoothnessDetection" Margin="10"/>
+                        <Button Content="同步基础测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="BaseTest" Margin="5"/>
+                        <Button Content="同步丝杆测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="TestSmoothnessDetection" Margin="5"/>
+                        <Button Content="同步耐久测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="DurabilityTest" Margin="5"/>
+                        <Button Content="异步基础测试" Command="{Binding IndependentMotortestCommand}" CommandParameter="BaseTest" Margin="5"/>
+                        <Button Content="异步丝杆测试" Command="{Binding IndependentMotortestCommand}" CommandParameter="TestSmoothnessDetection" Margin="5"/>
+                        <Button Content="异步耐久测试" Command="{Binding IndependentMotorDurabilityTestCommand}" Margin="5"/>
                         
                     </StackPanel>
                 </DockPanel>
@@ -160,7 +160,7 @@
                                 <Button Content="开启性能模式" Command="{Binding TestPerformanceCommand}" Margin="10"/>
                                 <Button Content="关闭性能模式" Command="{Binding CloseTestPerformanceCommand}" Margin="10"/>
                                 <Button Content="数据库加载" Command="{Binding SqliteLoadCommand}" Margin="10"/>
-                                
+                                <Button Content="关闭测试" Command="{Binding ShotDownCommand}" Margin="10"/>
                             </UniformGrid>
                         </StackPanel>
                     </TabItem>
@@ -282,6 +282,12 @@
             </StatusBarItem>
             <StatusBarItem>
                 <TextBlock Text="版本：1.0"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <DockPanel LastChildFill="False">
+                    <Label Content="保存数据点数量:" Foreground="Black"/>
+                    <Label Content="{Binding TotalSize}" Foreground="Black"/>
+                </DockPanel>
             </StatusBarItem>
         </StatusBar>
     </Grid>

@@ -250,7 +250,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     }
                     else
                     {
-                        _motorModel.XAxis.EnumMotorId = EnumMotorId.MOTOR_2;
+                        _motorModel.YAxis.EnumMotorId = EnumMotorId.MOTOR_2;
                     }
                     _motorModel.Motors.Add(_motorModel.YAxis);
                 }
@@ -282,7 +282,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     }
                     else
                     {
-                        _motorModel.XAxis.EnumMotorId = EnumMotorId.MOTOR_1;
+                        _motorModel.YAxis.EnumMotorId = EnumMotorId.MOTOR_1;
                     }
                     _motorModel.Motors.Add(_motorModel.YAxis);
                 }
@@ -444,6 +444,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     _motorModel.Motors[i].PosLine.DataFieldY = "Point";
                     _motorModel.MotorplotModel.Series.Add(_motorModel.Motors[i].PosLine);
                     _motorModel.MotorSpeedplotModel.Series.Add(_motorModel.Motors[i].SpeedLine);
+                   var x =  _motorModel.Motors[i].MotorModel.MotorModelAxis;
                 }
             }
         }

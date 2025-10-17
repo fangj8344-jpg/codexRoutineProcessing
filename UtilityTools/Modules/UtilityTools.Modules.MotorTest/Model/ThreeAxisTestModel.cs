@@ -21,6 +21,7 @@ using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Controls;
@@ -58,7 +59,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             NetUdpService.UpdateResponse += NetUdpService_UpdateResponse;
             Init();
         }
-
+        private object _lockobj = new object();
         private IContainerProvider _containerProvider;
         private readonly IDialogHostService _dialogHostService;
         private SelfMotorParser _parser;
@@ -258,6 +259,15 @@ namespace UtilityTools.Modules.MotorTest.Model
             get { return _loadSize; }
             set { _loadSize = value; RaisePropertyChanged(); }
         }
+        private CancellationTokenSource _cancellationToken;
+        /// <summary>
+        /// 取消令牌
+        /// </summary>
+        public CancellationTokenSource CancellationToken
+        {
+            get { return _cancellationToken; }
+            set { _cancellationToken = value; RaisePropertyChanged(); }
+        }
         private void Init()
         {
             _fiveAxisDbContextBase = new FiveAxisDbContextBase();
@@ -269,8 +279,9 @@ namespace UtilityTools.Modules.MotorTest.Model
             IndependentMotortestCommand = new DelegateCommand<string>(IndependentMotortest);
             AutoAdjustCommand = new DelegateCommand<string>(AutoAdjust);
             SaveToFileCommand = new DelegateCommand<string>(SaveToFile);
-            
-      
+            IndependentMotorDurabilityTestCommand = new DelegateCommand(IndependentMotorDurabilityTest);
+            ShotDownCommand = new DelegateCommand(ShotDown);
+
             SQLiteTestCommand = new DelegateCommand(SQLiteTest);
             TestPerformanceCommand = new DelegateCommand(TestPerformance);
             CloseTestPerformanceCommand = new DelegateCommand(CloseTestPerformance);
@@ -297,6 +308,8 @@ namespace UtilityTools.Modules.MotorTest.Model
        
         public DelegateCommand SQLiteTestCommand { get; set; }
         int plontPoint = 0;
+ 
+
         private void SQLiteTest()
         {
             //using var context = new AppDbContext();
@@ -361,46 +374,53 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// <summary>
         /// 每个轴基础测试一起测试(同步测试)
         /// </summary>
-        private async void TestMotorTogether(string testModel)
+        private  void TestMotorTogether(string testModel)
         {
-            var tasks = new List<Task>();
-            TestPerformance();
-            await Task.Run( () =>
-            {
-                
-                if (Motors!=null  && Motors.Count > 0)
-                {
-                    for (int i = 0; i < Motors.Count; i++)
-                    {
-                        int index = i;
-                        if (testModel == "BaseTest")
-                        {
-                            tasks.Add( Task.Run(() =>
-                            {
-                                Motors[index].BaseTest();
-                            }));
-                        }
-                        else
-                        {
-                            tasks.Add( Task.Run(() =>
-                            {
-                                Motors[index].TestSmoothnessDetection();
-                            }));
-                           
-                        }
-                    }
-                }
-               
-            });
             try
             {
-                await Task.WhenAll(tasks);
+                Task.Run(() =>
+               {
+                   CancellationToken = new CancellationTokenSource();
+                   TestPerformance();
+                   if (Motors != null && Motors.Count > 0)
+                   {
+                       for (int i = 0; i < Motors.Count; i++)
+                       {
+                           int index = i;
+                           switch (testModel)
+                           {
+                               case "BaseTest":
+                                   Task.Run(() =>
+                                {
+                                    Motors[index].BaseTest(CancellationToken.Token);
+                                }, CancellationToken.Token);
+                                   break;
+                               case "TestSmoothnessDetection":
+                                   Task.Run(() =>
+                                   {
+                                       Motors[index].TestSmoothnessDetection(CancellationToken.Token);
+                                   }, CancellationToken.Token); break;
+                               case "DurabilityTest":
+                                   Task.Run(() =>
+                                   {
+                                       Motors[index].DurabilityTest(CancellationToken.Token);
+                                   }, CancellationToken.Token); break;
+                           }
+                       }
+
+                   }
+
+
+               });
             }
-            catch (Exception ex) 
+            catch (Exception OperationCanceledException) 
             {
 
+                for (int j = 0; j < Motors.Count; j++)
+                {
+                    Motors[j].StopMotor();
+                }
             }
-            CloseTestPerformance();
         }
         public DelegateCommand<string> IndependentMotortestCommand { get; set; }
         /// <summary>
@@ -409,36 +429,87 @@ namespace UtilityTools.Modules.MotorTest.Model
         private async void IndependentMotortest(string testModel)
         {
             TestPerformance();
-            await Task.Run(async () =>
+            try
             {
-                
+                await Task.Run(async () =>
+               {
+                CancellationToken = new CancellationTokenSource();
                 if (Motors != null && Motors.Count > 0)
                 {
                     for (int i = 0; i < Motors.Count; i++)
                     {
                         await Task.Run(async () =>
                         {
-                            switch (testModel)
-                            {
-                                case "BaseTest": await Motors[i].BaseTest(); break;
-                                case "TestSmoothnessDetection": await Motors[i].TestSmoothnessDetection(); break;
-                            }
-                        });
+                            
+                                switch (testModel)
+                                {
+                                    case "BaseTest": await Motors[i].BaseTest(CancellationToken.Token); break;
+                                    case "TestSmoothnessDetection": await Motors[i].TestSmoothnessDetection(CancellationToken.Token); break;
+                                }
+                        }, CancellationToken.Token);
                     }
                 }
-               
-            });
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                for (int j = 0; j < Motors.Count; j++)
+                {
+                    Motors[j].StopMotor();
+                }
+            }
             CloseTestPerformance();
         }
-      
+        public DelegateCommand ShotDownCommand { get; set; }
+        private void ShotDown()
+        {
+            if (CancellationToken != null)
+            {
+                CancellationToken.Cancel();
+            }
+        }
+        public DelegateCommand IndependentMotorDurabilityTestCommand { get; set; }
+        /// <summary>
+        /// 异步耐久测试
+        /// </summary> 
+        private async void IndependentMotorDurabilityTest()
+        {
+            CancellationToken = new CancellationTokenSource();
+            while (!CancellationToken.IsCancellationRequested)
+            {
+                if (Motors != null && Motors.Count > 0)
+                {
+                    for (int i = 0; i < Motors.Count; i++)
+                    {
+                        try
+                        {
+                            await Task.Run(async () =>
+                            {
+                                await Motors[i].SmoothnessDetection(CancellationToken.Token);
+                            }, CancellationToken.Token);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            for (int j = 0; j < Motors.Count; j++)
+                            {
+                                Motors[j].StopMotor();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
         public DelegateCommand<string> ClearMonitorCommand { get; set; }
         /// <summary>
         /// 清除监控数据
         /// </summary>
         private void ClearMonitor(string parameter)
         {
-            if (parameter == "point")
+            if (parameter == "point" && MotorplotModel.Series.Count > 0)
             {
+
                 foreach (var series in MotorplotModel.Series)
                 {
                     var line = series as LineSeries;
@@ -451,17 +522,20 @@ namespace UtilityTools.Modules.MotorTest.Model
                     {
                         for (int i = 0; i < Motors.Count; i++)
                         {
-                             Task.Run( () =>
+                           
+                            lock (_lockobj)
                             {
                                 Motors[i].MotorModel.PointList.Clear();
-                              
-                            });
+                            }
+
+                            MotorplotModel.InvalidatePlot(true);
+
                         }
                     }
 
                 }
 
-                MotorplotModel.InvalidatePlot(true);
+               
             }
             else if (parameter == "speed")
             {
@@ -477,11 +551,8 @@ namespace UtilityTools.Modules.MotorTest.Model
                     {
                         for (int i = 0; i < Motors.Count; i++)
                         {
-                            Task.Run(() =>
-                            {
-                                Motors[i].MotorModel.SpeedList.Clear();
-
-                            });
+                        
+                            Motors[i].MotorModel.SpeedList.Clear();
                         }
                     }
                 }
@@ -620,12 +691,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             }
             catch (Exception ex)
             { 
-               
             }
-            
-
-        
-
         }
         public DelegateCommand<string> SaveToFileCommand { get; set; }
         /// <summary>
@@ -771,7 +837,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             var tPointList = point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_t).ToList();
             var rPointList = point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_r).ToList();
 
-            var xSpeedList = speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_x).ToList();
+            var xSpeedList = speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_x).ToList(); 
             var ySpeedList = speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_y).ToList();
             var zSpeedList = speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_z).ToList();
             var tSpeedList = speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_t).ToList();
@@ -790,9 +856,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             speedList.Add(rSpeedList);
             if (Motors != null && Motors.Count > 0)
             {
-
-            }
-            for (int i = 0; i < Motors.Count; i++)
+                   for (int i = 0; i < Motors.Count; i++)
             {
                 Motors[i].MotorModel.PointList = pointList[i];
                 Motors[i].PosLine.ItemsSource = Motors[i].MotorModel.PointList;
@@ -804,6 +868,8 @@ namespace UtilityTools.Modules.MotorTest.Model
                 Motors[i].SpeedLine.DataFieldX = "SpeedDate";
                 Motors[i].SpeedLine.DataFieldY = "Speed";
             }
+            }
+         
             MotorSpeedplotModel.InvalidatePlot(true);
             MotorplotModel.InvalidatePlot(true);
 

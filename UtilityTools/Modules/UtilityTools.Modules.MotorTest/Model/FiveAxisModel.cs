@@ -46,7 +46,6 @@ namespace UtilityTools.Modules.MotorTest.Model
         }
         #endregion
       
-        private readonly string _name;
         ThreeAxisTestModel _testModel;
         private IContainerProvider _containerProvider;
         private readonly IDialogHostService _dialogHostService;
@@ -167,9 +166,19 @@ namespace UtilityTools.Modules.MotorTest.Model
             get { return _motorModel; }
             set { _motorModel = value; RaisePropertyChanged(); }
         }
+        private string _name;
+        public string Name
+        {
+            get { return _name; }
+            set 
+            {
+                _name = value; 
+                RaisePropertyChanged();
+            }
+        }
 
         #endregion
-      
+
         private EnumMotorOperatingState _operatingState;
         /// <summary>
         /// 电机的运行状态
@@ -235,6 +244,9 @@ namespace UtilityTools.Modules.MotorTest.Model
 
         private void Init()
         {
+            ReverseMoveCommand = new DelegateCommand<bool?>(ReverseMove);
+            ForwardMoveCommand = new DelegateCommand<bool?>(ForwardMove);
+            StopMotorCommand = new DelegateCommand(StopMotor);
             ByteQueue = new Queue<byte[]>();
             ImportantByteQueue = new Queue<byte[]>();
             PosLine = new LineSeries();
@@ -256,6 +268,37 @@ namespace UtilityTools.Modules.MotorTest.Model
                 Log.Clear();
             }
         }
+        public DelegateCommand<bool?> ReverseMoveCommand { get; set; }
+        /// <summary>
+        /// 反向移动
+        /// </summary>
+        private void ReverseMove(bool? moveModel)
+        {
+            if (moveModel == true)
+            {
+                GotoInSpeedMode(_enumMotorId, -5000000);
+            }
+            else
+            {
+                Goto(_enumMotorId, false);
+            }
+        }
+        public DelegateCommand<bool?> ForwardMoveCommand { get; set; }
+        /// <summary>
+        /// 正向移动
+        /// </summary>
+        private void ForwardMove(bool? moveModel)
+        {
+            if (moveModel == true)
+            {
+                GotoInSpeedMode(_enumMotorId, 5000000);
+            }
+            else
+            {
+                Goto(_enumMotorId, true);
+            }
+        }
+       
         public void PosModeMove(string direction)
         {
 
@@ -300,7 +343,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             _isPerformance = false; ;
 
         }
-        public async Task TestSmoothnessDetection()
+        public async Task TestSmoothnessDetection(CancellationToken CancellationToken = default)
         {
 
             if (_testTime == null)
@@ -311,7 +354,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             for (int i = 0; i < 50; i++)
             {
 
-                bool result1 = await SmoothnessDetection(_enumMotorId);
+                bool result1 = await SmoothnessDetection(CancellationToken);
                 if (result1 == false)
                 {
                     DispathcherInvoke($"电机限位测试失败，测试退出");
@@ -326,8 +369,32 @@ namespace UtilityTools.Modules.MotorTest.Model
             _testTime = null;
            
         }
+        public async Task DurabilityTest(CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested) 
+            {
+                try
+                {
+                    bool result1 = await SmoothnessDetection(cancellationToken);
+                    if (result1 == false)
+                    {
+                        DispathcherInvoke($"电机异常，请注意");
+
+                    }
+                    await Task.Delay(100,cancellationToken);
+                }
+                catch (OperationCanceledException ex)
+                {
+                    break;
+                }
+               
+            }
+ 
+            
+
+        }
         public DelegateCommand BaseTestCommand { get; set; }
-        public async Task BaseTest()
+        public async Task BaseTest(CancellationToken cancellationToken)
         {
            
             System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
@@ -337,9 +404,9 @@ namespace UtilityTools.Modules.MotorTest.Model
            
             SetMotorInit();
             Goto(_enumMotorId, false);
-            Thread.Sleep(4000);
+            await Task.Delay(4000, cancellationToken);
             _testModel.MotorEntity.SetMotorOperatingStatusCommand(_enumMotorId, EnumMotorOperatingState.Stop);
-            var result = await TestMotorMove();
+            var result = await TestMotorMove(cancellationToken);
             if (result != true)
             {
                 DispathcherInvoke($"电机移动测试失败，测试退出");
@@ -348,7 +415,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                 return;
             }
 
-            result = await EncoderDirectionTest();
+            result = await EncoderDirectionTest(cancellationToken);
             if (result != true)
             {
                
@@ -358,7 +425,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             }
             else
             {
-                result = await LimitSwitchTest();
+                result = await LimitSwitchTest(cancellationToken);
                 if (result != true)
                 {
                     DispathcherInvoke($"电机限位测试失败，测试退出");
@@ -366,9 +433,9 @@ namespace UtilityTools.Modules.MotorTest.Model
                 }
             }
             
-            var point = await FullTravelTest(_enumMotorId);
+            var point = await FullTravelTest(cancellationToken);
           
-            result = await LimitPositioningAccuracyDetection();
+            result = await LimitPositioningAccuracyDetection(cancellationToken);
             Goto(_enumMotorId, point);
             Thread.Sleep(5000);
             //await SmoothnessDetection();
@@ -378,7 +445,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// <summary>
         /// 电机位置移动检测
         /// </summary>
-        private async Task<bool> TestMotorMove()
+        private async Task<bool> TestMotorMove(CancellationToken cancellationToken = default)
         {
            
             MotorTestMessage TestMessage = new MotorTestMessage();
@@ -413,7 +480,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     TestMessage.Description = "电机响应正常";
                 }
                 DispathcherInvoke($"电机移动测试测试End:{posEnd},Start:{posStart} 行程:{posEnd - posStart}");
-            });
+            }, cancellationToken);
             System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
             {
                 MotorTestMessages.Add(TestMessage);
@@ -432,7 +499,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// <summary>
         /// 编码器测试
         /// </summary>
-        private async Task<bool> EncoderDirectionTest()
+        private async Task<bool> EncoderDirectionTest(CancellationToken cancellationToken = default)
         {
             
             MotorTestMessage TestMessage = new MotorTestMessage();
@@ -462,7 +529,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     TestMessage.Description = "编码器正常";
                 }
                 DispathcherInvoke($"电机测试End:{posEnd},Start:{posStart} 行程:{posEnd - posStart}");
-            });
+            }, cancellationToken);
             System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
             {
                 MotorTestMessages.Add(TestMessage);
@@ -479,7 +546,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// <summary>
         /// 限位测试
         /// </summary>
-        private async Task<bool> LimitSwitchTest()
+        private async Task<bool> LimitSwitchTest(CancellationToken cancellationToken)
         {
           
             MotorTestMessage TestMessage1 = new MotorTestMessage();
@@ -501,8 +568,8 @@ namespace UtilityTools.Modules.MotorTest.Model
                 {
                     _limitedtcs1 = new TaskCompletionSource<string>();
                     //单开线程去测试堵转和限位
-                    Task.Run(() => { MotorStallDetection(_enumMotorId); });
-                    string result = await _limitedtcs1.Task.WaitAsync(TimeSpan.FromSeconds(60));
+                    Task.Run(() => { MotorStallDetection(_enumMotorId); }, cancellationToken);
+                    string result = await _limitedtcs1.Task.WaitAsync(TimeSpan.FromSeconds(60), cancellationToken);
                     posEnd = MotorModel.PointList[MotorModel.PointList.Count - 1].Point;
                     if (result == "stall")
                     {
@@ -565,8 +632,8 @@ namespace UtilityTools.Modules.MotorTest.Model
                 try
                 {
                     _limitedtcs1 = new TaskCompletionSource<string>();
-                    Task.Run(() => { MotorStallDetection(_enumMotorId); });
-                    string result = await _limitedtcs1.Task.WaitAsync(TimeSpan.FromSeconds(60));
+                    Task.Run(() => { MotorStallDetection(_enumMotorId); }, cancellationToken);
+                    string result = await _limitedtcs1.Task.WaitAsync(TimeSpan.FromSeconds(60), cancellationToken);
                     posEnd = MotorModel.PointList[MotorModel.PointList.Count - 1].Point;
                     if (result == "stall")
                     {
@@ -621,7 +688,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     DispathcherInvoke($"电机测试负限位测试引发异常:{ex}");
                 }
                 DispathcherInvoke($"电机负限位测试End:{posEnd},Start:{posStart} 行程:{posEnd - posStart}");
-            });
+            }, cancellationToken);
             System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
             {
                 MotorTestMessages.Add(TestMessage1);
@@ -642,7 +709,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// <summary>
         /// 满行程测试
         /// </summary>
-        private async Task<int> FullTravelTest(EnumMotorId _enumMotorId)
+        private async Task<int> FullTravelTest(CancellationToken cancellationToken = default)
         {
             
             (int positiveLimitPosition, int negativeLimitPositionendPos) posMessage = (-1, 1);
@@ -664,8 +731,8 @@ namespace UtilityTools.Modules.MotorTest.Model
                 {
                     _limitedtcs1 = new TaskCompletionSource<string>();
 
-                    Task.Run(() => { MotorStallDetection(_enumMotorId); });
-                    result = await _limitedtcs1.Task.WaitAsync(TimeSpan.FromSeconds(50));
+                    Task.Run(() => { MotorStallDetection(_enumMotorId); }, cancellationToken);
+                    result = await _limitedtcs1.Task.WaitAsync(TimeSpan.FromSeconds(50), cancellationToken);
                     if (result == "stall")
                     {
                         TestMessage.TestResult = "不合格";
@@ -713,7 +780,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     TestMessage.StandardValue = "正常";
                     TestMessage.Description = $"检测时间超时:{ex}";
                 }
-            });
+            }, cancellationToken);
             if (!(result == "PhyForwardLimited" || result == "SPLimted"))
             {
                 System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
@@ -806,7 +873,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// <summary>
         /// 定位精度检测
         /// </summary>
-        private async Task<bool> LimitPositioningAccuracyDetection()
+        private async Task<bool> LimitPositioningAccuracyDetection(CancellationToken cancellationToken = default)
         {
             
             (int positiveLimitPosition, int negativeLimitPositionendPos) posMessage = (-1, 1);
@@ -826,8 +893,8 @@ namespace UtilityTools.Modules.MotorTest.Model
                 {
                     _limitedtcs1 = new TaskCompletionSource<string>();
 
-                    Task.Run(() => { MotorStallDetection(_enumMotorId); });
-                    result = await _limitedtcs1.Task.WaitAsync(TimeSpan.FromSeconds(50));
+                    Task.Run(() => { MotorStallDetection(_enumMotorId); }, cancellationToken);
+                    result = await _limitedtcs1.Task.WaitAsync(TimeSpan.FromSeconds(50), cancellationToken);
                     switch (result)
                     {
                         case "stall":
@@ -871,7 +938,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     TestMessage.StandardValue = "正常";
                     TestMessage.Description = $"检测时间超时:{ex}";
                 }
-            });
+            }, cancellationToken);
             if (!(result == "PhyForwardLimited" || result == "SPLimted"))
             {
                 System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
@@ -890,8 +957,8 @@ namespace UtilityTools.Modules.MotorTest.Model
                 try
                 {
                     _limitedtcs1 = new TaskCompletionSource<string>();
-                    Task.Run(() => { MotorStallDetection(_enumMotorId); });
-                    string result = await _limitedtcs1.Task.WaitAsync(TimeSpan.FromSeconds(50));
+                    Task.Run(() => { MotorStallDetection(_enumMotorId); }, cancellationToken);
+                    string result = await _limitedtcs1.Task.WaitAsync(TimeSpan.FromSeconds(50), cancellationToken);
 
                    
                     if (result == "stall")
@@ -975,7 +1042,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     TestMessage.Description = $"检测时间超时:{ex}";
                 }
 
-            });
+            }, cancellationToken);
             System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
             {
                 MotorTestMessages.Add(TestMessage);
@@ -999,7 +1066,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// 再跑到左限位，记录中间点数
         /// 再跑到右限位，记录中间点数 计算x轴的丝杆顺滑度
 
-        private async Task<bool> SmoothnessDetection(EnumMotorId _enumMotorId)
+        public async Task<bool> SmoothnessDetection(CancellationToken cancellationToken = default)
         {
             int startIndex = 0, endIndex = 0;
             (int positiveLimitPosition, int negativeLimitPositionendPos) posMessage = (-1, 1);
@@ -1016,8 +1083,8 @@ namespace UtilityTools.Modules.MotorTest.Model
                 {
                     _limitedtcs1 = new TaskCompletionSource<string>();
 
-                    Task.Run(() => { MotorStallDetection(_enumMotorId); });
-                    result = await _limitedtcs1.Task.WaitAsync(TimeSpan.FromSeconds(50));
+                    Task.Run(() => { MotorStallDetection(_enumMotorId, cancellationToken); }, cancellationToken);
+                    result = await _limitedtcs1.Task.WaitAsync(TimeSpan.FromSeconds(50), cancellationToken);
                     if (result == "stall")
                     {
                         TestMessage.TestResult = "不合格";
@@ -1064,7 +1131,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     TestMessage.StandardValue = "正常";
                     TestMessage.Description = $"异常{ex}";
                 }
-            });
+            }, cancellationToken);
             if (!(result == "PhyForwardLimited" || result == "SPLimted" ))
             {
                 System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
@@ -1084,8 +1151,8 @@ namespace UtilityTools.Modules.MotorTest.Model
                 try
                 {
                     _limitedtcs1 = new TaskCompletionSource<string>();
-                    Task.Run(() => { MotorStallDetection(_enumMotorId); });
-                    result = await _limitedtcs1.Task.WaitAsync(TimeSpan.FromSeconds(120));
+                    Task.Run(() => { MotorStallDetection(_enumMotorId, cancellationToken); }, cancellationToken);
+                    result = await _limitedtcs1.Task.WaitAsync(TimeSpan.FromSeconds(120), cancellationToken);
                     if (result == "stall")
                     {
                         TestMessage.TestResult = "不合格";
@@ -1118,30 +1185,13 @@ namespace UtilityTools.Modules.MotorTest.Model
                 }
                
 
-            });
+            }, cancellationToken);
             if (!(result == "PhyBackwardLimited" || result == "SNLimted"))
             {
                 TestMessage.Description = $" 触发{result}从正方向到负方向的位置丝杆顺滑度错误";
                 return false;
 
             }
-          
-            if (!SmoothnessTest(startIndex, endIndex, MotorModel.SpeedList))
-            {
-
-                TestMessage.TestResult = "不合格";
-                TestMessage.TestValue = "不正常";
-                TestMessage.StandardValue = "正常";
-                TestMessage.Description = $"触发{result}正方向到负方向丝杆顺滑度不达标，请重新安装";
-                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
-                {
-                    MotorTestMessages.Add(TestMessage);
-
-                }));
-                return false;
-            }
-            
-
             System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
             {
                 MotorTestMessages.Add(TestMessage);
@@ -1160,7 +1210,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// <summary>
         /// 电机堵转和限位检测
         /// </summary>
-        private void MotorStallDetection(EnumMotorId _enumMotorId)
+        private void MotorStallDetection(EnumMotorId _enumMotorId, CancellationToken cancellationToken = default)
         {
             if (timePosStallDetectionList == null)
             {
@@ -1432,7 +1482,8 @@ namespace UtilityTools.Modules.MotorTest.Model
             message.StandardValue = StandardValue;
             message.Description = Descriptiondes;
         }
-        private void StopMotor()
+        public DelegateCommand StopMotorCommand { get; set; }
+        public void StopMotor()
         {
             _testModel.MotorEntity.SetMotorOperatingStatusCommand(_enumMotorId, EnumMotorOperatingState.Stop);
         }
@@ -1814,7 +1865,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             else
             {
                 var data = DateTime.Now;
-                PlotViewPointMessage pointView = new PlotViewPointMessage() { Date = data, Point = MotorModel.MotorParams.Pos, MotorMoveState = MotorModel.MotorParams.MoveState };
+                PlotViewPointMessage pointView = new PlotViewPointMessage() { Date = data, Point = MotorModel.MotorParams.Pos, MotorMoveState = MotorModel.MotorParams.MoveState , MotorModelAxis = MotorModel.MotorModelAxis };
                 MotorModel.PointList.Add(pointView);
                 
                 if (_testModel.MotorplotModel != null)
@@ -1824,7 +1875,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                 
             }
         }
-        private void SqliteSaveDate()
+        private async void SqliteSaveDate()
         {
             var speedBuffer = MotorModel.SpeedListBuffer.ToList();
             var pointBuffer = MotorModel.PointListBuffer.ToList();
@@ -1834,13 +1885,15 @@ namespace UtilityTools.Modules.MotorTest.Model
             {
                 _testModel.TwoMotorSpliteOperat.AddPlotViewSpeedListMessagesSimpleAsync(speedBuffer);
                 _testModel.TwoMotorSpliteOperat.AddPlotViewPointListMessagesSimpleAsync(pointBuffer);
+                _testModel.TotalSize = await _testModel.TwoMotorSpliteOperat.GetPlotViewPointMessageCountAsync();
             }
             else
             {
                 _testModel.FiveMotorSpliteOperat.AddPlotViewSpeedListMessagesSimpleAsync(speedBuffer);
                 _testModel.FiveMotorSpliteOperat.AddPlotViewPointListMessagesSimpleAsync(pointBuffer);
+                _testModel.TotalSize = await _testModel.FiveMotorSpliteOperat.GetPlotViewPointMessageCountAsync();
             }
-            
+           
             MotorModel.SpeedListBuffer.RemoveRange(0, speedCoint);
             MotorModel.PointListBuffer.RemoveRange(0, pointCoint);
         }

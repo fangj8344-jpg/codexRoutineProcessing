@@ -2458,7 +2458,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                 var data = DateTime.Now;
                 var timeDifference = (data - motorModel.PointList[motorModel.PointList.Count - 2].Date).TotalMilliseconds;
                 var speed = (motorModel.MotorParams.Pos - motorModel.PointList[motorModel.PointList.Count - 2].Point) / (timeDifference * 1.0) * 1000;
-                PlotViewPointMessage pointView= new PlotViewPointMessage() { Date = data, Point = motorModel.MotorParams.Pos, MotorMoveState = motorModel.MotorParams.MoveState, MotorModelAxis = motorModel.MotorModelAxis};
+                PlotViewPointMessage pointView= new PlotViewPointMessage() { Date = data, Point = motorModel.MotorParams.Pos, MotorMoveState = motorModel.MotorParams.MoveState, MotorModelAxis = motorModel.MotorModelAxis };
                 PlotViewSpeedMessage speedView = new PlotViewSpeedMessage() { SpeedDate = motorModel.PointList[motorModel.PointList.Count - 1].Date, Speed = speed, MotorModelAxis = motorModel.MotorModelAxis };
                 
                 lock (_lockobj)
@@ -2477,11 +2477,11 @@ namespace UtilityTools.Modules.MotorTest.Model
                     var sp = motorModel.SpeedListBuffer.ToList();
                     motorModel.PointListBuffer.Clear();
                     motorModel.SpeedListBuffer.Clear();
-                    await Task.Run(() =>
+                    await Task.Run(async () =>
                     {
                         var x = channelId;
-                        SpliteOperate.AddPlotViewPointListMessagesSimpleAsync(pt);
-                        SpliteOperate.AddPlotViewSpeedListMessagesSimpleAsync(sp);
+                       await SpliteOperate.AddPlotViewPointListMessagesSimpleAsync(pt);
+                       await SpliteOperate.AddPlotViewSpeedListMessagesSimpleAsync(sp);
                       
                     });
                     TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync();

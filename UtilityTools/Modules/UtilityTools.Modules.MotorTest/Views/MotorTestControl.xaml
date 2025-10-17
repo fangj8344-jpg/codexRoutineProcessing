@@ -232,7 +232,7 @@
                             <Button Content="保存" Command="{Binding SerilizeCommand}" Margin="10"/>
                             <Button Content="加载单个数据文件夹" Command="{Binding DeserilizeCommand}" Margin="10"/>
                             <Button Content="加载多个数据文件夹" Command="{Binding AllDeserilizeCommand}" Margin="10"/>
-                            <Button Content="五轴测试" Command="{Binding ShowThreeAzisTestModelViewModelCommand}" Margin="10"/>
+                            <Button Content="多轴测试" Command="{Binding ShowThreeAzisTestModelViewModelCommand}" Margin="10"/>
                             <Button Content="耐久测试" Command="{Binding DurabilityTestgCommand}" Margin="10"/>
                             <Button Content="关闭耐度测试" Command="{Binding ShutDownDurabilityTestCommand}" Margin="10"/>
                             <Button Content="选择保存路径" Command="{Binding DataPathSelectCommand}" Margin="10" />

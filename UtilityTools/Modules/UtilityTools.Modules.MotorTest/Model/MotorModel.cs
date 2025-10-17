@@ -59,7 +59,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         }
         private List<PlotViewPointMessage> _pointList;
         /// <summary>
-        /// 保存到数据库的位置
+        /// 位置
         /// </summary>
         public List<PlotViewPointMessage> PointList
         {
@@ -68,7 +68,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         }
         private List<PlotViewSpeedMessage> _speedList;
         /// <summary>
-        /// 保存到数据库的速度
+        /// 速度
         /// </summary>
         public List<PlotViewSpeedMessage> SpeedList
         {
@@ -396,7 +396,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// <summary>
         /// 电机轴的类型
         /// </summary>
-        public EnumMotorModel MotorModelAxis;
+        public EnumMotorModel MotorModelAxis { get; set; }
         /// <summary>
         /// 时间
         /// </summary>
@@ -416,7 +416,7 @@ namespace UtilityTools.Modules.MotorTest.Model
 
         public int Id { get; set; }
 
-        public EnumMotorModel MotorModelAxis;
+        public EnumMotorModel MotorModelAxis { get; set; }
         /// <summary>
         /// 速度的时间
         /// </summary>
