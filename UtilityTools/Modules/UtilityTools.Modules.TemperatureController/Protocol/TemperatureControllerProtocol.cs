@@ -195,7 +195,7 @@ namespace UtilityTools.Modules.TemperatureController.Protocol
         /// </summary>
         /// <param name="CtrlMode">0:PID；1：手动控制</param>
         /// <returns></returns>
-        public static byte[] SetCtrlModeCommand(uint CtrlMode)
+        public static byte[] SetCtrlModeCommand(byte CtrlMode)
         {
             ByteWriter writer = new ByteWriter(36);
             writer.Write(CtrlMode);
@@ -207,7 +207,7 @@ namespace UtilityTools.Modules.TemperatureController.Protocol
         /// </summary>
         /// <param name="Tempunit">温度单位：0：℃  1：K</param>
         /// <returns></returns>
-        public static byte[] SetRtimeTempCommand(uint Tempunit)
+        public static byte[] SetRtimeTempCommand(byte Tempunit)
         {
             ByteWriter writer = new ByteWriter(36);
             writer.Write(Tempunit);
@@ -220,7 +220,7 @@ namespace UtilityTools.Modules.TemperatureController.Protocol
         /// </summary>
         /// <param name="Switch">0：关闭 1:开启</param>
         /// <returns></returns>
-        public static byte[] SetCentigradeCommand(uint Switch)
+        public static byte[] SetCentigradeCommand(byte Switch)
         {
             ByteWriter writer = new ByteWriter(36);
             writer.Write(Switch);
@@ -233,7 +233,7 @@ namespace UtilityTools.Modules.TemperatureController.Protocol
         /// <param name="tempunit">温度单位：0：℃  1：K</param>
         /// <param name="targetTemp">目标温度值</param>
         /// <returns></returns>
-        public static byte[] SetPIDTargetTempCommand(uint tempunit,float targetTemp)
+        public static byte[] SetPIDTargetTempCommand(byte tempunit,float targetTemp)
         {
             ByteWriter writer = new ByteWriter(36);
             writer.Write(tempunit);
@@ -286,7 +286,7 @@ namespace UtilityTools.Modules.TemperatureController.Protocol
         /// </summary>
         /// <param name="workType">0:冷台；1：热台</param>
         /// <returns></returns>
-        public static byte[] SetWorkTypeCommand(uint workType)
+        public static byte[] SetWorkTypeCommand(byte workType)
         {
             ByteWriter writer = new ByteWriter(36);
             writer.Write(workType);
@@ -298,11 +298,17 @@ namespace UtilityTools.Modules.TemperatureController.Protocol
         /// </summary>
         /// <param name="sensorType">0：PT100； 0x11：K型热电偶</param>
         /// <returns></returns>
-        public static byte[] SetSensorTypeCommand(uint sensorType)
+        public static byte[] SetSensorTypeCommand(byte sensorType)
         {
             ByteWriter writer = new ByteWriter(36);
             writer.Write(sensorType);
             return GetCmd(EnumTemperatureControllerCommandType.CMD_SET_SENSOR_TYPE, writer.EndWrite());
+        }
+
+        public static byte[] GetSensorTypeCommand()
+        {
+            ByteWriter writer = new ByteWriter(36);
+            return GetCmd(EnumTemperatureControllerCommandType.CMD_GET_SENSOR_TYPE, writer.EndWrite());
         }
 
         /// <summary>
@@ -311,7 +317,7 @@ namespace UtilityTools.Modules.TemperatureController.Protocol
         /// <param name="closeTime">定时关闭时间，单位为秒</param>
         /// <param name="Switch">定时开关：0关；1开</param>
         /// <returns></returns>
-        public static byte[] SetControlTimeCommand(float closeTime,uint Switch)
+        public static byte[] SetControlTimeCommand(float closeTime,byte Switch)
         {
             ByteWriter writer = new ByteWriter(36);
             writer.Write(closeTime);
@@ -325,7 +331,7 @@ namespace UtilityTools.Modules.TemperatureController.Protocol
         /// <param name="rate">控温速率，单位为℃/Min</param>
         /// <param name="controlSwitch">斜率控制开关：0关；1开</param>
         /// <returns></returns>
-        public static byte[] SetTempControlRateCommand(float rate, uint controlSwitch)
+        public static byte[] SetTempControlRateCommand(float rate, byte controlSwitch)
         {
             ByteWriter writer = new ByteWriter(36);
             writer.Write(rate);
@@ -338,12 +344,17 @@ namespace UtilityTools.Modules.TemperatureController.Protocol
         /// </summary>
         /// <param name="tempCorrection">温度修正值（矫正硬件偏差）</param>
         /// <returns></returns>
-        public static byte[] SetControlTimeCommand(float tempCorrection)
+        public static byte[] SetTempCorrectionCommand(float tempCorrection)
         {
-            //var cmdImax = TemperatureControllerProtocol.SetIMaxCommand(MaxCurrent);
             ByteWriter writer = new ByteWriter(36);
             writer.Write(tempCorrection);
             return GetCmd(EnumTemperatureControllerCommandType.CMD_SET_TEMP_CORRECTION, writer.EndWrite());
+        }
+
+        public static byte[] GetControlTimeCommand()
+        {
+            ByteWriter writer = new ByteWriter(36);
+            return GetCmd(EnumTemperatureControllerCommandType.CMD_GET_TEMP_CORRECTION, writer.EndWrite());
         }
 
         /// <summary>
@@ -351,7 +362,7 @@ namespace UtilityTools.Modules.TemperatureController.Protocol
         /// </summary>
         /// <param name="allData">温度单位：0：℃  1：K</param>
         /// <returns></returns>
-        public static byte[] SetAllData(uint allData)
+        public static byte[] SetAllData(byte allData)
         {
             //var cmdImax = TemperatureControllerProtocol.SetIMaxCommand(MaxCurrent);
             ByteWriter writer = new ByteWriter(36);
@@ -393,6 +404,24 @@ namespace UtilityTools.Modules.TemperatureController.Protocol
             writer.Write(SteadyI);
             writer.Write(SteadyD);
             return GetCmd(EnumTemperatureControllerCommandType.CMD_SET_STA_PID, writer.EndWrite());
+        }
+
+        /// <summary>
+        /// 获取当前PID参数
+        /// </summary>
+        /// <returns></returns>
+        public static byte[] GetPIDparms()
+        {
+            //var cmdImax = TemperatureControllerProtocol.SetIMaxCommand(MaxCurrent);
+            ByteWriter writer = new ByteWriter(36);
+            return GetCmd(EnumTemperatureControllerCommandType.CMD_GET_PID, writer.EndWrite());
+        }
+
+        public static byte[] GetWorkType()
+        {
+            //var cmdImax = TemperatureControllerProtocol.SetIMaxCommand(MaxCurrent);
+            ByteWriter writer = new ByteWriter(36);
+            return GetCmd(EnumTemperatureControllerCommandType.CMD_GET_WORKER_TYPE, writer.EndWrite());
         }
         #endregion
 

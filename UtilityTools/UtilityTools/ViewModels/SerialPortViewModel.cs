@@ -219,7 +219,7 @@ namespace UtilityTools.ViewModels
         {
             if (string.IsNullOrEmpty(Model.PortName))
             {
-                // Send Message 
+                // Send Message
                 aggregator.SendMessage("请选择正确的端口名称");
                 return;
             }
@@ -232,8 +232,8 @@ namespace UtilityTools.ViewModels
             else
             {
                 Model.SerialPort.BaudRate = Model.BaudRate;
-                Model.SerialPort.PortName = Model.PortName;
                 Model.SerialPort.DataBits = Model.DataBits;
+                Model.SerialPort.PortName = Model.PortName;
                 Model.SerialPort.StopBits = Model.StopBits;
                 Model.SerialPort.Parity = Model.Parity;
 
