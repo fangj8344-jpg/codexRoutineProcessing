@@ -8,6 +8,7 @@
     <PackageReference Include="CsvHelper" Version="30.0.1" />
     <PackageReference Include="ExcelDataReader" Version="3.6.0" />
     <PackageReference Include="ExcelDataReader.DataSet" Version="3.6.0" />
+    <PackageReference Include="GemBox.Document" Version="2025.10.101" />
     <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="13.6.0" />
     <PackageReference Include="Magick.NET.Core" Version="13.6.0" />
     <PackageReference Include="MaterialDesignThemes" Version="4.9.0" />
