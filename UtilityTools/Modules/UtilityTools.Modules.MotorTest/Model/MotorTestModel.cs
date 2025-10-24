@@ -362,18 +362,8 @@ namespace UtilityTools.Modules.MotorTest.Model
             get { return _totalSize; }
             set { _totalSize = value; RaisePropertyChanged(); }
         }
-        private TwoAxisDbContextBase _axisDbContext;
-        public TwoAxisDbContextBase AxisDbContext
-        {
-            get { return _axisDbContext; }
-            set { _axisDbContext = value; }
-        }
-        private SpliteOperate _spliteOperate;
-        public SpliteOperate SpliteOperate
-        {
-            get { return _spliteOperate; }
-            set { _spliteOperate = value; }
-        }
+      
+      
 
         private async Task Init()
         {
@@ -382,10 +372,11 @@ namespace UtilityTools.Modules.MotorTest.Model
             MotorModelY = new MotorModel(EnumMotorModel.MOTOR_y);
             MotorplotModel = new PlotModel();
             MotorSpeedplotModel = new PlotModel();
-            AxisDbContext = new TwoAxisDbContextBase();
-            SpliteOperate = new SpliteOperate(AxisDbContext);
-            TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync();
-
+           
+            using (var AxisDbContext = new TwoAxisDbContextBase())
+            {
+                TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync(AxisDbContext);
+            }
             MotorEntity = new MotorEntity(_importantByteQueue, _byteQueue) { };
             MotorTestMessages = new ObservableCollection<MotorTestMessage>();
             MotorTypeMessage = new ObservableCollection<MotorTypeMessage>
@@ -601,7 +592,8 @@ namespace UtilityTools.Modules.MotorTest.Model
                     var min = time.TotalMinutes;
                     if (min > 30)
                     {
-                        AutoSaveData();
+                        MotorModelX.PointList.Clear();
+                        MotorModelY.PointList.Clear();
 
                     }
                 }
@@ -2480,11 +2472,16 @@ namespace UtilityTools.Modules.MotorTest.Model
                     await Task.Run(async () =>
                     {
                         var x = channelId;
-                       await SpliteOperate.AddPlotViewPointListMessagesSimpleAsync(pt);
-                       await SpliteOperate.AddPlotViewSpeedListMessagesSimpleAsync(sp);
+                        using (var db = new TwoAxisDbContextBase ())
+                        {
+
+                            await SpliteOperate.AddPlotViewPointListMessagesSimpleAsync(pt, db);
+                            await SpliteOperate.AddPlotViewSpeedListMessagesSimpleAsync(sp, db);
+                            TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
+                        }
                       
                     });
-                    TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync();
+                   
                 }
 
             }
@@ -2701,7 +2698,11 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// </summary>
         private async void SelectPrevious()
         {
-            TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync();
+            using (var db =new TwoAxisDbContextBase())
+            {
+                TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
+            }
+               
             if (headIndex == 0)
             {
                 if (TotalSize <= LoadSize)
@@ -2734,7 +2735,10 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// </summary>
         private async void SelectNext()
         {
-            TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync();
+            using (var db = new TwoAxisDbContextBase())
+            {
+                TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
+            }
             if (headIndex + LoadSize >= TotalSize)
             {
 
@@ -2760,40 +2764,45 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// </summary>
         private async void SqliteLoad()
         {
-            TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync();
-            var pointNumber = await SpliteOperate.GetPlotViewPointMessageCountAsync();
-            var point = await SpliteOperate.GetPlotViewPointMessagesAsync(headIndex, LoadSize> pointNumber ? pointNumber : LoadSize);
-            var speedNumber =await SpliteOperate.GetPlotViewSpeedMessageCountAsync();
-            var speed = await SpliteOperate.GetPlotViewSpeedMessagesAsync(headIndex, LoadSize > speedNumber ? speedNumber : LoadSize);
+            using (var db = new TwoAxisDbContextBase())
+            {
+                TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
+                var pointNumber = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
+                var point = await SpliteOperate.GetPlotViewPointMessagesAsync(db,headIndex, LoadSize > pointNumber ? pointNumber : LoadSize);
+                var speedNumber = await SpliteOperate.GetPlotViewSpeedMessageCountAsync(db);
+                var speed = await SpliteOperate.GetPlotViewSpeedMessagesAsync(db, LoadSize > speedNumber ? speedNumber : LoadSize);
+                var xPointList = point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_x).ToList();
+                var yPointList = point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_y).ToList();
 
-            var xPointList = point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_x).ToList();
-            var yPointList = point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_y).ToList();
+                var xSpeedList = speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_x).ToList();
+                var ySpeedList = speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_y).ToList();
 
-            var xSpeedList = speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_x).ToList();
-            var ySpeedList = speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_y).ToList();
+                MotorModelX.PointList = xPointList;
+                _xPosLine.ItemsSource = MotorModelX.PointList;
+                _xPosLine.DataFieldX = "Date";
+                _xPosLine.DataFieldY = "Point";
 
-            MotorModelX.PointList = xPointList;
-            _xPosLine.ItemsSource = MotorModelX.PointList;
-            _xPosLine.DataFieldX = "Date";
-            _xPosLine.DataFieldY = "Point";
+                MotorModelX.SpeedList = xSpeedList;
+                _xSpeedPosLine.ItemsSource = MotorModelX.SpeedList;
+                _xSpeedPosLine.DataFieldX = "SpeedDate";
+                _xSpeedPosLine.DataFieldY = "Speed";
+                ;
+                MotorModelY.PointList = yPointList;
+                _yPosLine.ItemsSource = MotorModelY.PointList;
+                _yPosLine.DataFieldX = "Date";
+                _yPosLine.DataFieldY = "Point";
 
-            MotorModelX.SpeedList = xSpeedList;
-            _xSpeedPosLine.ItemsSource = MotorModelX.SpeedList;
-            _xSpeedPosLine.DataFieldX = "SpeedDate";
-            _xSpeedPosLine.DataFieldY = "Speed";
-;
-            MotorModelY.PointList = yPointList;
-            _yPosLine.ItemsSource = MotorModelY.PointList;
-            _yPosLine.DataFieldX = "Date";
-            _yPosLine.DataFieldY = "Point";
+                MotorModelY.SpeedList = ySpeedList;
+                _ySpeedPosLine.ItemsSource = MotorModelY.SpeedList;
+                _ySpeedPosLine.DataFieldX = "SpeedDate";
+                _ySpeedPosLine.DataFieldY = "Speed";
 
-            MotorModelY.SpeedList = ySpeedList;
-            _ySpeedPosLine.ItemsSource = MotorModelY.SpeedList;
-            _ySpeedPosLine.DataFieldX = "SpeedDate";
-            _ySpeedPosLine.DataFieldY = "Speed";
+                MotorSpeedplotModel.InvalidatePlot(true);
+                MotorplotModel.InvalidatePlot(true);
+            }
+               
 
-            MotorSpeedplotModel.InvalidatePlot(true);
-            MotorplotModel.InvalidatePlot(true);
+            
         }
        
     }

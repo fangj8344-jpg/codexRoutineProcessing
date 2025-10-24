@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:oxy="http://oxyplot.org/wpf"
+             xmlns:oxy="http://oxyplot.org/wpf" 
              xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:bh="clr-namespace:UtilityTools.Core.Behavior;assembly=UtilityTools.Core"
              xmlns:local="clr-namespace:UtilityTools.Modules.MotorTest.Views"
@@ -30,7 +30,11 @@
             </MenuItem>
             <MenuItem Header="设置">
                 <MenuItem Header="电机选择">
-                    <MenuItem Header="电机轴选择" >
+                    <MenuItem Header="电机型号" >
+                        <RadioButton  Content="Zem20系列" />
+                        <RadioButton  Content="Zem18系列" IsChecked="{Binding MotorTypeModel.IsZem18}"/>
+                    </MenuItem>
+                    <MenuItem Header="电机轴" >
                         <StackPanel Orientation="Horizontal">
                             <CheckBox Content="X" IsChecked="{Binding MotorTypeModel.IsXMotor}" Margin="10,0,0,0" />
                             <CheckBox Content="Y" IsChecked="{Binding MotorTypeModel.IsYMotor}" Margin="10,0,0,0"/>
@@ -39,18 +43,19 @@
                             <CheckBox Content="R" IsChecked="{Binding MotorTypeModel.IsRMotor}" Margin="10,0,0,0"/>
                         </StackPanel>
                     </MenuItem>
-                    <MenuItem Header="电机类型选择">
+                    <MenuItem Header="电机类型">
                         <StackPanel  Orientation="Horizontal">
-                            <RadioButton  Content="普通两轴电机" IsChecked="{Binding MotorTypeModel.IsTwoAxisMotor}"/>
-                            <RadioButton  Content="普通三轴电机" IsChecked="{Binding MotorTypeModel.IsThreeAxisMotor}"/>
-                            <RadioButton  Content="普通五轴电机" IsChecked="{Binding MotorTypeModel.IsFiveAxisMotor}"/>
+                            <RadioButton  Content="两轴电机" IsChecked="{Binding MotorTypeModel.IsTwoAxisMotor}"/>
+                            <RadioButton  Content="三轴电机" IsChecked="{Binding MotorTypeModel.IsThreeAxisMotor}"/>
+                            <RadioButton  Content="五轴电机" IsChecked="{Binding MotorTypeModel.IsFiveAxisMotor}"/>
                         </StackPanel>
                     </MenuItem>
                 </MenuItem>
-                <MenuItem Header="测试模式" >
-                    <MenuItem Header="耐久测试"  IsCheckable="True"/>
-                    <MenuItem Header="丝杆测试"  IsCheckable="True"/>
-                    <MenuItem Header="基础测试"  IsCheckable="True"/>
+                <MenuItem Header="位移设置" >
+                    <DockPanel  LastChildFill="False">
+                        <Label Content="速度模式下速度大小:"/>
+                        <TextBox Text="{Binding MagnitudeOfSpeed}" />
+                    </DockPanel>
                 </MenuItem>
            
             </MenuItem>
@@ -135,12 +140,9 @@
                 </StackPanel>
                 <DockPanel LastChildFill="False" Grid.Column="1">
                     <StackPanel Width="auto" DockPanel.Dock="Right">
-                        <Button Content="同步基础测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="BaseTest" Margin="5"/>
-                        <Button Content="同步丝杆测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="TestSmoothnessDetection" Margin="5"/>
-                        <Button Content="同步耐久测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="DurabilityTest" Margin="5"/>
-                        <Button Content="异步基础测试" Command="{Binding IndependentMotortestCommand}" CommandParameter="BaseTest" Margin="5"/>
-                        <Button Content="异步丝杆测试" Command="{Binding IndependentMotortestCommand}" CommandParameter="TestSmoothnessDetection" Margin="5"/>
-                        <Button Content="异步耐久测试" Command="{Binding IndependentMotorDurabilityTestCommand}" Margin="5"/>
+                        
+                        
+                        
                         
                     </StackPanel>
                 </DockPanel>
@@ -153,10 +155,16 @@
                     <TabItem Header="功能测试">
                         <StackPanel >
                             <UniformGrid Columns="4" >
-                                <Button Content="同步基础测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="BaseTest" Margin="10"/>
-                                <Button Content="同步丝杆测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="TestSmoothnessDetection" Margin="10"/>
-                                <Button Content="异步基础测试" Command="{Binding IndependentMotortestCommand}" CommandParameter="BaseTest" Margin="10"/>
-                                <Button Content="异步丝杆测试" Command="{Binding IndependentMotortestCommand}" CommandParameter="TestSmoothnessDetection" Margin="10"/>
+                                <Button Content="并行基础测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="BaseTest" Margin="5"/>
+                                <Button Content="并行丝杆测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="TestSmoothnessDetection" Margin="5"/>
+                                <Button Content="并行耐久测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="DurabilityTest" Margin="5"/>
+                                <Button Content="并行行程测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="TotalJourneyGeneralMotorTestDetectionion" Margin="5"/>
+                                <Button Content="并行定位测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="PositioningAccuracyGeneralMotorTestDetectionion" Margin="5"/>
+                                <Button Content="串行基础测试" Command="{Binding IndependentMotortestCommand}" CommandParameter="BaseTest" Margin="5"/>
+                                <Button Content="串行丝杆测试" Command="{Binding IndependentMotortestCommand}" CommandParameter="TestSmoothnessDetection" Margin="5"/>
+                                <Button Content="串行耐久测试" Command="{Binding IndependentMotorDurabilityTestCommand}" Margin="5"/>
+                                <Button Content="串行行程测试" Command="{Binding IndependentMotortestCommand}" CommandParameter="TotalJourneyGeneralMotorTestDetectionion" Margin="5"/>
+                                <Button Content="串行定位测试" Command="{Binding IndependentMotortestCommand}" CommandParameter="PositioningAccuracyGeneralMotorTestDetectionion" Margin="5"/>
                                 <Button Content="开启性能模式" Command="{Binding TestPerformanceCommand}" Margin="10"/>
                                 <Button Content="关闭性能模式" Command="{Binding CloseTestPerformanceCommand}" Margin="10"/>
                                 <Button Content="数据库加载" Command="{Binding SqliteLoadCommand}" Margin="10"/>

@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Ink;
 using System.Windows.Media;
 
 using UtilityTools.Modules.MotorTest.Protocol;
@@ -26,7 +27,8 @@ namespace UtilityTools.Modules.MotorTest.Model
         }
         private IContainerProvider _containerProvider;
         private ThreeAxisTestModel _motorModel;
-        private EnumMotorAxisType? _enumMotorAxisType = Protocol.EnumMotorAxisType.FiveAxisMotor;
+        private EnumMotorAxisType? _enumMotorAxisType = Protocol.EnumMotorAxisType.TwoAxisMotor;
+        
         /// <summary>
         /// 电机类型
         /// </summary>
@@ -45,8 +47,16 @@ namespace UtilityTools.Modules.MotorTest.Model
                 
             }
         }
+        private bool _isZem18 = true;
+        /// <summary>
+        /// 是否是zem18系列
+        /// </summary>
+        public bool IsZem18
+        {
+            get { return _isZem18; }
+            set { _isZem18 = value; RaisePropertyChanged(); }
+        }
 
-        private bool _isfirstRemove = true;
         private bool _isFiveAxisMotor = true;
         /// <summary>
         /// 是否是五轴电机
@@ -317,117 +327,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             }
             AxisUpdate();
         }
-        private void XUpdateEnevt(bool isAdd)
-        {
-            if (isAdd)
-            {
-                if (_motorModel.MotorplotModel.Series.Contains(_motorModel.XAxis.PosLine))
-                {
-                   
-                }
-                else
-                {
-                    _motorModel.XAxis.PosLine.ItemsSource = _motorModel.XAxis.MotorModel.PointList;
-                    _motorModel.XAxis.PosLine.DataFieldX = "Date";
-                    _motorModel.XAxis.PosLine.DataFieldY = "Point";
-                    _motorModel.MotorplotModel.Series.Add(_motorModel.XAxis.PosLine);
-                }
-
-                if (_motorModel.MotorplotModel.Series.Contains(_motorModel.XAxis.SpeedLine))
-                {
-                    
-
-                }
-                else
-                {
-                    _motorModel.XAxis.SpeedLine.ItemsSource = _motorModel.XAxis.MotorModel.SpeedList;
-                    _motorModel.XAxis.SpeedLine.DataFieldX = "SpeedDate";
-                    _motorModel.XAxis.SpeedLine.DataFieldY = "Speed";
-                    _motorModel.MotorSpeedplotModel.Series.Add(_motorModel.XAxis.SpeedLine);
-                }
-
-            }
-            else
-            {
-                if (_motorModel.MotorplotModel.Series.Contains(_motorModel.XAxis.PosLine))
-                {
-                    _motorModel.MotorplotModel.Series.Remove(_motorModel.XAxis.PosLine);
-                }
-                if (_motorModel.MotorplotModel.Series.Contains(_motorModel.XAxis.SpeedLine))
-                {
-                    _motorModel.MotorplotModel.Series.Remove(_motorModel.XAxis.SpeedLine);
-                }
-            }
-           
-            
-            _motorModel.MotorplotModel.InvalidatePlot(true);
-            _motorModel.MotorSpeedplotModel.InvalidatePlot(true);
-
-        }
-        private void YUpdateEnevt(bool isAdd)
-        {
-
-            if (isAdd)
-            {
-                if (!_motorModel.MotorplotModel.Series.Contains(_motorModel.YAxis.PosLine))
-                {
-                    _motorModel.YAxis.PosLine.ItemsSource = _motorModel.YAxis.MotorModel.PointList;
-                    _motorModel.YAxis.PosLine.DataFieldX = "Date";
-                    _motorModel.YAxis.PosLine.DataFieldY = "Point";
-                    _motorModel.MotorplotModel.Series.Add(_motorModel.YAxis.PosLine);
-                }
-                
-
-                if (!_motorModel.MotorplotModel.Series.Contains(_motorModel.YAxis.SpeedLine))
-                {
-
-                    _motorModel.YAxis.SpeedLine.ItemsSource = _motorModel.YAxis.MotorModel.SpeedList;
-                    _motorModel.YAxis.SpeedLine.DataFieldX = "SpeedDate";
-                    _motorModel.YAxis.SpeedLine.DataFieldY = "Speed";
-                    _motorModel.MotorSpeedplotModel.Series.Add(_motorModel.YAxis.SpeedLine);
-                }
-
-            }
-            else
-            {
-                if (_motorModel.MotorplotModel.Series.Contains(_motorModel.YAxis.PosLine))
-                {
-                    _motorModel.MotorplotModel.Series.Remove(_motorModel.YAxis.PosLine);
-                }
-                if (_motorModel.MotorplotModel.Series.Contains(_motorModel.YAxis.SpeedLine))
-                {
-                    _motorModel.MotorplotModel.Series.Remove(_motorModel.YAxis.SpeedLine);
-                }
-            }
-
-
-            _motorModel.MotorplotModel.InvalidatePlot(true);
-            _motorModel.MotorSpeedplotModel.InvalidatePlot(true);
-        }
-        private void ZUpdateEnevt()
-        {
-     
-            //_motorModel.ZAxis.PiontPlotModel = _motorModel.MotorplotModel;
-            //_motorModel.ZAxis.SpeedPlotModel = _motorModel.MotorSpeedplotModel;
-            //_motorModel.ZAxis.PiontPlotModel.InvalidatePlot(true);
-            //_motorModel.ZAxis.SpeedPlotModel.InvalidatePlot(true);
-        }
-        private void TUpdateEnevt()
-        {
-
-            //_motorModel.TAxis.PiontPlotModel = _motorModel.MotorplotModel;
-            //_motorModel.TAxis.SpeedPlotModel = _motorModel.MotorSpeedplotModel;
-            //_motorModel.TAxis.PiontPlotModel.InvalidatePlot(true);
-            //_motorModel.TAxis.SpeedPlotModel.InvalidatePlot(true);
-        }
-        private void RUpdateEnevt()
-        {
-
-            //_motorModel.RAxis.PiontPlotModel = _motorModel.MotorplotModel;
-            //_motorModel.RAxis.SpeedPlotModel = _motorModel.MotorSpeedplotModel;
-            //_motorModel.RAxis.PiontPlotModel.InvalidatePlot(true);
-            //_motorModel.RAxis.SpeedPlotModel.InvalidatePlot(true); 
-        }
+        
 
         private void AxisUpdate()
         {
@@ -445,7 +345,10 @@ namespace UtilityTools.Modules.MotorTest.Model
                     _motorModel.MotorplotModel.Series.Add(_motorModel.Motors[i].PosLine);
                     _motorModel.MotorSpeedplotModel.Series.Add(_motorModel.Motors[i].SpeedLine);
                    var x =  _motorModel.Motors[i].MotorModel.MotorModelAxis;
+
+                    _motorModel.Motors[i].ConfirmTheStandardStroke();
                 }
+                
             }
         }
 
@@ -496,6 +399,6 @@ namespace UtilityTools.Modules.MotorTest.Model
                 _motorModel.MotorSpeedplotModel.Series.Remove(_motorModel.RAxis.SpeedLine);
             }
         }
-
+       
     }
 }

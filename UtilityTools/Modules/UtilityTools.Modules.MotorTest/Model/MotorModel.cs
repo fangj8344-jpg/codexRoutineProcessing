@@ -410,6 +410,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// 电机此时的状态
         /// </summary>
         public EnumMotorMoveState MotorMoveState { get; set; }
+       
     }
     public class PlotViewSpeedMessage
     {
@@ -427,6 +428,30 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// </summary>
         public double Speed { get; set; }
       
+    }
+    public class MotorMessage
+    {
+        public int Id { get; set; }
+        /// <summary>
+        /// 电机名称
+        /// </summary>
+        public string Name { get; set; }
+        /// <summary>
+        /// 电机轴
+        /// </summary>
+        public EnumMotorModel MotorModelAxis { get; set; }
+        /// <summary>
+        /// 总行程
+        /// </summary>
+        public int TotalDistance { get; set; }
+        /// <summary>
+        /// 左限位位置
+        /// </summary>
+        public int LeftLimitPosition { get; set; }
+        /// <summary>
+        /// 右限位位置
+        /// </summary>
+        public int RightLimitPosition { get; set; }
     }
     public class MotorPlotMessage
     {

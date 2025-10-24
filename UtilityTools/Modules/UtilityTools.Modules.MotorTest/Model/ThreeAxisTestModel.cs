@@ -11,6 +11,7 @@ using Prism.Ioc;
 using Prism.Mvvm;
 using ScottPlot.Drawing.Colormaps;
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -73,19 +74,9 @@ namespace UtilityTools.Modules.MotorTest.Model
         private bool _isQueryInterval = true;
         private Double _progressValue;
         private FiveAxisDbContextBase _fiveAxisDbContextBase;
-        private SpliteOperate _fiveMotorSpliteOperat;
-        public SpliteOperate FiveMotorSpliteOperat
-        {
-            get { return _fiveMotorSpliteOperat; }
-            set { _fiveMotorSpliteOperat = value;RaisePropertyChanged(); }
-        }
+       
         private FiveAxisDbContextBase _twoAxisDbContextBase;
-        private SpliteOperate _twoMotorSpliteOperat;
-        public SpliteOperate TwoMotorSpliteOperat
-        {
-            get { return _twoMotorSpliteOperat; }
-            set { _twoMotorSpliteOperat = value; RaisePropertyChanged(); }
-        }
+       
         public Double ProgressValue
         {
             get { return _progressValue; }
@@ -268,12 +259,13 @@ namespace UtilityTools.Modules.MotorTest.Model
             get { return _cancellationToken; }
             set { _cancellationToken = value; RaisePropertyChanged(); }
         }
+        private int _magnitudeOfSpeed = 10000;
+        /// <summary>
+        /// 速度模式移动的速度大小
+        /// </summary>
+        public int MagnitudeOfSpeed = 10000;
         private void Init()
         {
-            _fiveAxisDbContextBase = new FiveAxisDbContextBase();
-            FiveMotorSpliteOperat = new SpliteOperate(_fiveAxisDbContextBase);
-            _twoAxisDbContextBase = new FiveAxisDbContextBase();
-            TwoMotorSpliteOperat = new SpliteOperate(_twoAxisDbContextBase);
             ClearMonitorCommand = new DelegateCommand<string>(ClearMonitor);
             TestMotorTogetherCommand = new DelegateCommand<string>(TestMotorTogether);
             IndependentMotortestCommand = new DelegateCommand<string>(IndependentMotortest);
@@ -372,15 +364,13 @@ namespace UtilityTools.Modules.MotorTest.Model
 
         public DelegateCommand<string> TestMotorTogetherCommand { get; set; }
         /// <summary>
-        /// 每个轴基础测试一起测试(同步测试)
+        /// 每个轴基础测试一起测试(并行测试)
         /// </summary>
         private  void TestMotorTogether(string testModel)
         {
             try
             {
-                Task.Run(() =>
-               {
-                   CancellationToken = new CancellationTokenSource();
+                CancellationToken = new CancellationTokenSource(); 
                    TestPerformance();
                    if (Motors != null && Motors.Count > 0)
                    {
@@ -405,22 +395,31 @@ namespace UtilityTools.Modules.MotorTest.Model
                                    {
                                        Motors[index].DurabilityTest(CancellationToken.Token);
                                    }, CancellationToken.Token); break;
-                           }
+                            case "TotalJourneyGeneralMotorTestDetectionion":
+                                Task.Run(() =>
+                                {
+                                    Motors[index].TotalJourneyGeneralMotorTestDetectionion(CancellationToken.Token);
+                                }, CancellationToken.Token); break;
+                            case "PositioningAccuracyGeneralMotorTestDetectionion":
+                                Task.Run(() =>
+                                {
+                                    Motors[index].PositioningAccuracyGeneralMotorTestDetectionion(CancellationToken.Token);
+                                }, CancellationToken.Token); break;
+
+                        }
                        }
-
-                   }
-
-
-               });
+                   } 
             }
             catch (Exception OperationCanceledException) 
             {
 
+                NLog.LogManager.GetCurrentClassLogger().Error($"并行测试异常{OperationCanceledException}");
                 for (int j = 0; j < Motors.Count; j++)
                 {
                     Motors[j].StopMotor();
                 }
             }
+         
         }
         public DelegateCommand<string> IndependentMotortestCommand { get; set; }
         /// <summary>
@@ -431,8 +430,6 @@ namespace UtilityTools.Modules.MotorTest.Model
             TestPerformance();
             try
             {
-                await Task.Run(async () =>
-               {
                 CancellationToken = new CancellationTokenSource();
                 if (Motors != null && Motors.Count > 0)
                 {
@@ -445,17 +442,19 @@ namespace UtilityTools.Modules.MotorTest.Model
                                 {
                                     case "BaseTest": await Motors[i].BaseTest(CancellationToken.Token); break;
                                     case "TestSmoothnessDetection": await Motors[i].TestSmoothnessDetection(CancellationToken.Token); break;
-                                }
+                                    case "TotalJourneyGeneralMotorTestDetectionion": await Motors[i].TotalJourneyGeneralMotorTestDetectionion(CancellationToken.Token); break;
+                                case "PositioningAccuracyGeneralMotorTestDetectionion": await Motors[i].PositioningAccuracyGeneralMotorTestDetectionion(CancellationToken.Token); break;
+                            }
                         }, CancellationToken.Token);
                     }
                 }
-                });
             }
             catch (OperationCanceledException)
             {
                 for (int j = 0; j < Motors.Count; j++)
                 {
-                    Motors[j].StopMotor();
+                    int index = j;
+                    Motors[index].StopMotor();
                 }
             }
             CloseTestPerformance();
@@ -477,16 +476,26 @@ namespace UtilityTools.Modules.MotorTest.Model
             CancellationToken = new CancellationTokenSource();
             while (!CancellationToken.IsCancellationRequested)
             {
+                
                 if (Motors != null && Motors.Count > 0)
                 {
+                    
                     for (int i = 0; i < Motors.Count; i++)
                     {
+                        int index = i;
                         try
                         {
                             await Task.Run(async () =>
                             {
-                                await Motors[i].SmoothnessDetection(CancellationToken.Token);
+                                await Motors[index].SmoothnessGeneralMotorTestDetectionion(CancellationToken.Token);
                             }, CancellationToken.Token);
+                            var time = Motors[index].MotorModel.PointList.Last().Date -  Motors[i].MotorModel.PointList[0].Date;
+                            var min = time.TotalMinutes;
+                            if (min > 30)
+                            {
+                                Motors[index].MotorModel.PointList.Clear();
+                                Motors[index].MotorModel.SpeedList.Clear();
+                            }
                         }
                         catch (OperationCanceledException)
                         {
@@ -589,7 +598,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         {
             _parser.ReceiveBytes(e);
         }
-        private void Parser_PacketReceivedEvent(object? sender, SelfMotorPacket e)
+        private async void Parser_PacketReceivedEvent(object? sender, SelfMotorPacket e)
         {
             if (e != null)
             {
@@ -603,11 +612,19 @@ namespace UtilityTools.Modules.MotorTest.Model
                     {
                         if (Motors[i].EnumMotorId == channel)
                         {
-                            Motors[i].Parser_PacketReceivedEvent(e);
+                            await Task.Run(() =>
+                            {
+                                Motors[i].Parser_PacketReceivedEvent(e);
+                            });
+                           
                         }
                     }
                 }
-                 _waitingReply.SetResult("Ready");
+                if (_waitingReply != null && !_waitingReply.Task.IsCompleted)
+                {
+                    _waitingReply.SetResult("Ready");
+                }
+                 
             }
         }
 
@@ -810,26 +827,32 @@ namespace UtilityTools.Modules.MotorTest.Model
         public DelegateCommand SqliteLoadCommand { get; set; }
         private async void SqliteLoad()
         {
-            TotalSize = await FiveMotorSpliteOperat.GetPlotViewPointMessageCountAsync();
+            
+               
             int pointNumber, speedNumber;
             List<PlotViewPointMessage> point = new List<PlotViewPointMessage>();
             List<PlotViewSpeedMessage> speed = new List<PlotViewSpeedMessage>();
             if (MotorTypeModel.EnumMotorAxisType == EnumMotorAxisType.TwoAxisMotor)
             {
-                pointNumber = await TwoMotorSpliteOperat.GetPlotViewPointMessageCountAsync();
-                point = await TwoMotorSpliteOperat.GetPlotViewPointMessagesAsync(HeadIndex, LoadSize > pointNumber ? pointNumber : LoadSize);
-                speedNumber = await TwoMotorSpliteOperat.GetPlotViewSpeedMessageCountAsync();
-                speed = await TwoMotorSpliteOperat.GetPlotViewSpeedMessagesAsync(HeadIndex, LoadSize > speedNumber ? speedNumber : LoadSize);
-            
+                using (var db = new TwoAxisDbContextBase())
+                {
+                    TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
+                    pointNumber = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
+                    point = await SpliteOperate.GetPlotViewPointMessagesAsync(db,HeadIndex, LoadSize > pointNumber ? pointNumber : LoadSize);
+                    speedNumber = await SpliteOperate.GetPlotViewSpeedMessageCountAsync(db);
+                    speed = await SpliteOperate.GetPlotViewSpeedMessagesAsync(db,HeadIndex, LoadSize > speedNumber ? speedNumber : LoadSize);
+                } 
             }
             else
             {
-                pointNumber = await FiveMotorSpliteOperat.GetPlotViewPointMessageCountAsync();
-                point = await FiveMotorSpliteOperat.GetPlotViewPointMessagesAsync(HeadIndex, LoadSize > pointNumber ? pointNumber : LoadSize);
-                speedNumber = await FiveMotorSpliteOperat.GetPlotViewSpeedMessageCountAsync();
-                speed = await FiveMotorSpliteOperat.GetPlotViewSpeedMessagesAsync(HeadIndex, LoadSize > speedNumber ? speedNumber : LoadSize);
-
-                
+                using (var db = new FiveAxisDbContextBase())
+                {
+                    TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
+                    pointNumber = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
+                    point = await SpliteOperate.GetPlotViewPointMessagesAsync(db,HeadIndex, LoadSize > pointNumber ? pointNumber : LoadSize);
+                    speedNumber = await SpliteOperate.GetPlotViewSpeedMessageCountAsync(db);
+                    speed = await SpliteOperate.GetPlotViewSpeedMessagesAsync(db,HeadIndex, LoadSize > speedNumber ? speedNumber : LoadSize);
+                }  
             }
             var xPointList = point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_x).ToList();
             var yPointList = point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_y).ToList();
@@ -841,6 +864,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             var ySpeedList = speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_y).ToList();
             var zSpeedList = speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_z).ToList();
             var tSpeedList = speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_t).ToList();
+
             var rSpeedList = speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_r).ToList();
             List<List<PlotViewPointMessage>> pointList = new List<List<PlotViewPointMessage>>();
             pointList.Add(xPointList);

@@ -22,15 +22,21 @@ namespace UtilityTools.Modules.MotorTest.SQLite
         /// </summary>
         public DbSet<PlotViewPointMessage>  PlotViewPointMessages { get; set; }
         public DbSet<PlotViewSpeedMessage>  PlotViewSpeedMessages { get; set; }
-  
-        
+        /// <summary>
+        /// 代表数据库中的PlotViewPointMessages元素
+        /// </summary>
+        public DbSet<MotorMessage> MotorMessages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             //根据轴名设置表名
             modelBuilder.Entity<PlotViewPointMessage>().ToTable($"PlotViewPointMessages");
             modelBuilder.Entity<PlotViewSpeedMessage>().ToTable($"PlotViewSpeedMessages");
+            modelBuilder.Entity<MotorMessage>().ToTable($"MotorMessage");
+
         }
+
+
 
 
     }
@@ -77,6 +83,25 @@ namespace UtilityTools.Modules.MotorTest.SQLite
         }
 
        
+    }
+    public class MotorMessageDbContextBase : DbContextBase
+    {
+
+        public MotorMessageDbContextBase()
+        {
+        }
+        /// <summary>
+        /// 配置数据库连接
+        /// </summary>
+        /// <param name="optionsBuilder"></param>
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            if (!optionsBuilder.IsConfigured)
+            {
+                //使用SQLite，并指定数据库文件路径
+                optionsBuilder.UseSqlite("Data Source=TwoMotorTetsMessages.db");
+            }
+        }
     }
 
 }

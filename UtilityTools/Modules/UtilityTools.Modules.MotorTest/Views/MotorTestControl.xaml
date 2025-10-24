@@ -245,7 +245,7 @@
                             <Label Content="加载数量"/>
                             <TextBox Text="{Binding LoadSize}" Width="50"/>
                             <Label Content="总数"/>
-                            <Label Content="{Binding TotalSize}"/>
+                            <Label Content="{Binding TotalSize}" MinWidth="50"/>
                             <Button Content="←" Command="{Binding SelectPreviousCommand}" Margin="5"/>
                             <Button Content="→" Command="{Binding SelectNextCommand}" Margin="5"/>
                         </DockPanel>
