@@ -23,7 +23,6 @@ using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
 using UtilityTools.Core.Dialog;
-using UtilityTools.Modules.Motor5Controller.Model;
 using UtilityTools.Modules.MotorTest.Entity;
 using UtilityTools.Modules.MotorTest.Protocol;
 using UtilityTools.Modules.MotorTest.SQLite;

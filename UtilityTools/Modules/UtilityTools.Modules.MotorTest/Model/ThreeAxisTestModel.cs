@@ -189,10 +189,8 @@ namespace UtilityTools.Modules.MotorTest.Model
         }
 
         private IAsynRWService _netUdpService;
-
-
         /// <summary>
-        /// 串口异步通信服务
+        /// 网口异步通信服务
         /// </summary>
         public IAsynRWService NetUdpService
         {
