@@ -15,25 +15,49 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
         {
             _multiChannelHVEntity = multiChannelHVEntity;
             _channel = channel;
+            if (_channel == 13)
+            {
+                MaxHV = 6000;
+            }
             InitCommand();
         }
         private MultiChannelHVEntity _multiChannelHVEntity;
         private readonly byte _channel;
+        public HVMaxModel hVMaxModel;
         public byte Channel
         {
             get { return _channel; }
         }
-        private int _readHV = 0;
-        public int ReadHV  
+        private float _readHV = 0;
+        public float ReadHV  
         {
             get { return _readHV; }
             set { _readHV = value;  RaisePropertyChanged(); }
         }
-        private int _writeHV = 0;
-        public int WriteHV
+        private ushort _writeHV = 0;
+        public ushort WriteHV
         {
             get { return _writeHV; }
-            set { _writeHV = value; RaisePropertyChanged(); }
+            set 
+            {
+                if (value > MaxHV)
+                {
+                    _writeHV = MaxHV;
+                }
+                else
+                {
+                    _writeHV = value;
+                }
+                
+                RaisePropertyChanged();
+            }
+        }
+        private ushort _maxHV = 2000;
+
+        public ushort MaxHV
+        {
+            get { return _maxHV; }
+            set { _maxHV = value; RaisePropertyChanged() ; }
         }
         public DelegateCommand SetIVCommand { get; set; }
         public DelegateCommand GetIVCommand { get; set; }
@@ -45,5 +69,18 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
         }
         
 
+    }
+
+    public class HVMaxModel
+    {
+        public HVMaxModel()
+        {
+            HVMax = 30000;
+            IV1_12Max = 2000;
+            IV13Max = 6000;
+        }
+        public float HVMax { get; set; }
+        public float IV1_12Max { get; set; }
+        public float IV13Max { get; set; }
     }
 }

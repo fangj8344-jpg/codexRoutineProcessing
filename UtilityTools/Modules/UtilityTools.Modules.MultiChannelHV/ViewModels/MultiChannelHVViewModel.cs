@@ -17,10 +17,11 @@ namespace UtilityTools.Modules.MultiChannelHV.ViewModels
     public class MultiChannelHVViewModel: RegionViewModelBase
     {
         #region ------------Constructor------------
-        public MultiChannelHVViewModel(IContainerProvider containerProvider, IDialogHostService dialogHostService)
+        public MultiChannelHVViewModel(IContainerProvider containerProvider, IDialogHostService dialogHostService,IDialogService dialogService)
             : base(containerProvider)
         {
             _dialogHostService = dialogHostService;
+           
             InitProperty();
             InitCommand();
         }
@@ -28,6 +29,7 @@ namespace UtilityTools.Modules.MultiChannelHV.ViewModels
 
         #region ------------Field------------
         private readonly IDialogHostService _dialogHostService;
+      
         #endregion
 
         #region ------------Property------------
@@ -74,6 +76,7 @@ namespace UtilityTools.Modules.MultiChannelHV.ViewModels
         public DelegateCommand ShowDeviceCommand { get; set; }
 
         public DelegateCommand ShowNetDeviceCommand { get; set; }
+        public DelegateCommand ShowPasswordDialogCommand { get; set; }
         #endregion
 
         #region ------------PublicMethod------------
@@ -87,6 +90,7 @@ namespace UtilityTools.Modules.MultiChannelHV.ViewModels
         {
             ShowDeviceCommand = new DelegateCommand(ShowDevice);
             ShowNetDeviceCommand = new DelegateCommand(ShowNetDevice);
+     
         }
 
         /// <summary>
@@ -105,6 +109,7 @@ namespace UtilityTools.Modules.MultiChannelHV.ViewModels
         private async void ShowDevice()
         {
             DialogParameters parameter = new DialogParameters();
+            parameter.Add("Value", Model.SerialPortService);
             var diaglogResult = await this._dialogHostService.ShowDialog("SerialPortView", parameter, CommonModel.MultiChannelHVRegionName);
             if (diaglogResult == null)
                 return;
@@ -114,10 +119,11 @@ namespace UtilityTools.Modules.MultiChannelHV.ViewModels
                 if (value != null)
                 {
                     Model.SerialPortService = value;
-                    IsConnected = Model.SerialPortService.IsOpen;
+                   IsConnected = Model.SerialPortService.IsOpen;
                     if (IsConnected == true)
                     {
                         Model.InitTimer();
+                        Model.MultiChannelHVEntity.GetFVCommand();
                     }
                     else
                     {
@@ -147,6 +153,7 @@ namespace UtilityTools.Modules.MultiChannelHV.ViewModels
                     if (NetIsConnected == true)
                     {
                         Model.InitTimer();
+                        Model.MultiChannelHVEntity.GetFVCommand();
                     }
                     else
                     {
@@ -156,6 +163,7 @@ namespace UtilityTools.Modules.MultiChannelHV.ViewModels
             }
         }
         
+
         #endregion
 
         #region ------------StaticMethod------------

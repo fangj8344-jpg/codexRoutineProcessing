@@ -4,32 +4,72 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:UtilityTools.Modules.MultiChannelHV.Views"
+             xmlns:converter ="clr-namespace:UtilityTools.Core.Converter;assembly=UtilityTools.Core"
+             xmlns:prism="http://prismlibrary.com/"
+             prism:ViewModelLocator.AutoWireViewModel="True"
              xmlns:mm="clr-namespace:UtilityTools.Modules.MultiChannelHV.Model"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <converter:EnumDescriptionConverter x:Key="EnumSescConverter"/>
+        <converter:BoolToVisibilityCollapsedConverter x:Key="BoolToVisibilityCollapsedConverter"/>
+    </UserControl.Resources>
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
         <StackPanel>
+          
             <DockPanel LastChildFill="False">
-                <Button Content="功能初始化" Command="{Binding SetInitCommand}" Margin="10"/>
-                <Button Content="隔离板错误清除" Command="{Binding IErrorClearCommand}" Margin="10"/>
-                <Button Content="关闭输出" Command="{Binding DisableOutputCommand}" Margin="10"/>
+                <Button Content="功能初始化" Command="{Binding SetInitCommand}" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                <Button Content="隔离板错误清除" Command="{Binding IErrorClearCommand}" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                <Button Content="关闭输出" Command="{Binding DisableOutputCommand}" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                <Button Content="设置" Command="{Binding ShowPasswordDialogCommand}" VerticalAlignment="Center" HorizontalAlignment="Center" DockPanel.Dock="Right"/>
+                <Button Content="设置完成" Command="{Binding SettingCompleteCommand }"  VerticalAlignment="Center" HorizontalAlignment="Center" DockPanel.Dock="Right" Visibility="{Binding IsSetting,Converter={StaticResource BoolToVisibilityCollapsedConverter}}"/>
             </DockPanel>
+
             <DockPanel LastChildFill="False">
-                <TextBlock Text="{Binding ReadHV, StringFormat={}当前高压:{0:N0}}" DockPanel.Dock="Left" Margin="10"/>
-                <Button Content="设置高压" Margin="10"/>
-                <TextBox Text="{Binding WriteHV}"  BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="100" Margin="10" />
+                <Button Content="自动初始化" Command="{Binding InitMultiChannelHVCommand}" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                <Button Content="设置悬浮高压" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center" Command="{Binding SetHVCommand}"/>
+                <TextBox Text="{Binding WriteHV}"  BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="100" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center" >
+                    <TextBox.InputBindings>
+                        <KeyBinding  Key="Return"  Command="{Binding SetHVCommand}" />
+                    </TextBox.InputBindings>
+                </TextBox>
+                <TextBox Text="{Binding MaxHV}"  BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="100" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"
+                         Visibility="{Binding IsSetting,Converter={StaticResource BoolToVisibilityCollapsedConverter}}">
+                  
+                </TextBox>
+                <TextBlock Text="V" DockPanel.Dock="Left" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                <TextBlock Text="{Binding ReadHV, StringFormat='当前电压:{0,10:#####0.000}V'}" DockPanel.Dock="Left" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                <TextBlock Text="{Binding ReadI, StringFormat='当前电流:{0,10:#####0.000}μA'}"  DockPanel.Dock="Left" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
             </DockPanel>
-            <ScrollViewer  Height="600"  VerticalScrollBarVisibility="Auto">
+         
+            <ScrollViewer  Height="auto"  HorizontalScrollBarVisibility="Auto"   VerticalScrollBarVisibility="Auto"  Width="auto">       
                 <ItemsControl ItemsSource="{Binding HVMessageModels}" >
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type mm:HVMessageModel}">
                             <DockPanel LastChildFill="False">
-                                <TextBlock Text="{Binding Channel, StringFormat={}{0:N0}通道:}"  Width="100" DockPanel.Dock="Left" Margin="10"/>
-                                <TextBlock Text="{Binding ReadHV, StringFormat={}当前隔离电压:{0:N0}}" DockPanel.Dock="Left" Margin="10"/>
+                                <TextBlock Text="{Binding Channel, StringFormat='通道号:{0:00}'}"  Width="100" DockPanel.Dock="Left" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                <TextBlock  Text="{Binding ReadHV, StringFormat='当前隔离电压:{0,10:#####0.000} V'}"  Width="200"  DockPanel.Dock="Left" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                                 <Border BorderThickness="2" DockPanel.Dock="Left">
                                     <DockPanel LastChildFill="False">
-                                        <Button Command="{Binding SetIVCommand}" Content="设置隔离电压" DockPanel.Dock="Left" Margin="10"/>
-                                        <TextBox Text="{Binding WriteHV}"  BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="100" Margin="10" />
+                                        <Button Command="{Binding SetIVCommand}" 
+                                                Content="设置隔离电压" 
+                                                DockPanel.Dock="Left" 
+                                                Margin="5" VerticalAlignment="Center"
+                                                HorizontalAlignment="Center"></Button>
+
+                                        <TextBox Text="{Binding WriteHV}"  BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="100" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center" >
+                                            <TextBox.InputBindings>
+                                                <KeyBinding  Key="Return"  Command="{Binding SetIVCommand}" />
+                                            </TextBox.InputBindings>
+                                        </TextBox>
+                                        <TextBox Text="{Binding MaxHV}"  BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="100" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"   
+                                                 Visibility="{Binding DataContext.IsSetting,Converter={StaticResource BoolToVisibilityCollapsedConverter}, RelativeSource={RelativeSource AncestorType={x:Type  local:MultiChannelHVContentView}}}" >
+                                        </TextBox>
+                                        <TextBlock Text="V" DockPanel.Dock="Left" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                                     </DockPanel>
                                 </Border>
                             </DockPanel>
@@ -37,11 +77,23 @@
                     </ItemsControl.ItemTemplate>
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <StackPanel />
+                            <UniformGrid Columns="2" />
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                 </ItemsControl>
             </ScrollViewer>
         </StackPanel>
+        <!--<状态栏>-->
+        <StatusBar  Grid.Row="1">
+            <StatusBarItem>
+                <DockPanel LastChildFill="False">
+                    <TextBlock Text="初始化状态:"  Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding HVInitState,Converter={StaticResource EnumSescConverter}}"   Margin="5"  VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding Prompt,StringFormat='提示信息:{0}'}" Margin="5"  VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding FirmwareVersion,StringFormat='当前固件版本:{0}'}"  Margin="5"  VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </DockPanel>
+            </StatusBarItem>
+          
+        </StatusBar>
     </Grid>
 </UserControl>

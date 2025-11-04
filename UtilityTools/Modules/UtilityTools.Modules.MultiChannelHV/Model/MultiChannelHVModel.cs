@@ -1,8 +1,14 @@
 ﻿using CsvHelper;
 using Prism.Commands;
 using Prism.Mvvm;
+using Prism.Regions;
+using Prism.Services.Dialogs;
+using System.Collections;
 using System.Collections.ObjectModel;
+using System.Text;
+using System.Threading.Tasks;
 using System.Timers;
+using TouchSocket.Core;
 using UtilityTools.Modules.MultiChannelHighVoltageCabinetControl.Protocol;
 using UtilityTools.Modules.MultiChannelHV.Entity;
 using UtilityTools.Services.Interfaces.IServices;
@@ -11,15 +17,20 @@ using static UtilityTools.Modules.MultiChannelHighVoltageCabinetControl.Protocol
 
 namespace UtilityTools.Modules.MultiChannelHV.Model
 {
-    public class MultiChannelHVModel:BindableBase
+    public class MultiChannelHVModel : BindableBase
     {
-        public MultiChannelHVModel() 
+        public MultiChannelHVModel(IDialogService dialogService)
         {
+            _dialogService = dialogService;
             Init();
             InitCommand();
         }
+        private readonly IDialogService _dialogService;
+        private TaskCompletionSource<string> _waitingInitReply;
         private System.Timers.Timer _timer;
         private MultiChannelHVParser _parser;
+
+
         public MultiChannelHVEntity MultiChannelHVEntity;
         private IAsynRWService _serialPortService;
         /// <summary>
@@ -41,36 +52,102 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
             get { return _netUdpService; }
             set { _netUdpService = value; RaisePropertyChanged(); }
         }
-        private ObservableCollection<HVMessageModel>  _hVMessageModels;
+        private ObservableCollection<HVMessageModel> _hVMessageModels;
         public ObservableCollection<HVMessageModel> HVMessageModels
         {
             get { return _hVMessageModels; }
             set { _hVMessageModels = value; RaisePropertyChanged(); }
         }
-        private int _readHV = 0;
-        public int ReadHV
+        private bool _isSetting = false;
+        public bool IsSetting
+        {
+            get { return _isSetting; }
+            set { _isSetting = value; RaisePropertyChanged(); }
+        }
+        private float _readHV = 0;
+        public float ReadHV
         {
             get { return _readHV; }
             set { _readHV = value; RaisePropertyChanged(); }
         }
-        private int _writeHV = 0;
-        public int WriteHV
+        private float _readI = 0;
+        public float ReadI
+        {
+            get { return _readI; }
+            set { _readI = value; RaisePropertyChanged(); }
+        }
+        private ushort _writeHV = 0;
+        public ushort WriteHV
         {
             get { return _writeHV; }
-            set { _writeHV = value; RaisePropertyChanged(); }
+            set 
+            {
+                if (value > MaxHV)
+                {
+                    _writeHV = MaxHV;
+                }
+                else
+                {
+                    _writeHV = value;
+                } 
+                
+                RaisePropertyChanged();
+            }
+        }
+        private ushort _maxHV = 30000;
+        public ushort MaxHV
+        {
+            get { return _maxHV; }
+            set { _maxHV = value; RaisePropertyChanged() ; }
+        }
+        private MultiChannelHVInitState _hvInitState = MultiChannelHVInitState.IDLE;
+        /// <summary>
+        /// 初始化状态
+        /// </summary>
+        public MultiChannelHVInitState HVInitState
+
+        {
+            get { return _hvInitState; }
+            set { _hvInitState = value; RaisePropertyChanged(); }
+        }
+        private string _prompt;
+        /// <summary>
+        /// 界面提示
+        /// </summary>
+        public string Prompt
+        {
+            get { return _prompt; }
+            set { _prompt = value; RaisePropertyChanged(); }
+        }
+      
+        private string _firmwareVersion = "";
+        /// <summary>
+        /// 固件版本
+        /// </summary>
+        public string FirmwareVersion
+        {
+            get { return _firmwareVersion; }
+            set { _firmwareVersion = value; RaisePropertyChanged(); }
         }
         public DelegateCommand SetHVCommand { get; set; }
         public DelegateCommand GetHVCommand { get; set; }
         public DelegateCommand SetInitCommand { get; set; }
+        public DelegateCommand GetInitStateCommand { get; set; }
         public DelegateCommand IErrorClearCommand { get; set; }
         public DelegateCommand DisableOutputCommand { get; set; }
+        public DelegateCommand InitMultiChannelHVCommand { get; set; }
+        public DelegateCommand SettingCompleteCommand { get; set; }
         private void InitCommand()
         {
-            SetHVCommand = new DelegateCommand(() => MultiChannelHVEntity?.SetHVCommand(WriteHV)); 
+            InitMultiChannelHVCommand = new DelegateCommand(InitMultiChannelHV);
+            SetHVCommand = new DelegateCommand(() => MultiChannelHVEntity?.SetHVCommand(WriteHV));
             GetHVCommand = new DelegateCommand(() => MultiChannelHVEntity?.GetHVCommand());
             SetInitCommand = new DelegateCommand(() => MultiChannelHVEntity?.SetInitCommand());
-            IErrorClearCommand = new DelegateCommand(()=> MultiChannelHVEntity?.IErrorClearCommand());
+            GetInitStateCommand = new DelegateCommand(() => MultiChannelHVEntity?.GetInitStateCommand());
+            IErrorClearCommand = new DelegateCommand(() => MultiChannelHVEntity?.IErrorClearCommand());
             DisableOutputCommand = new DelegateCommand(() => MultiChannelHVEntity?.DisableOutputCommand());
+            ShowPasswordDialogCommand = new DelegateCommand(ShowPasswordDialog);
+            SettingCompleteCommand = new DelegateCommand(()=> IsSetting = false);
         }
         private void Init()
         {
@@ -91,15 +168,12 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
 
             MultiChannelHVEntity = new MultiChannelHVEntity(SerialPortService, NetUdpService);
             HVMessageModels = new ObservableCollection<HVMessageModel>();
-            for (byte i = 0; i < 13; i++)
+            for (byte i = 1; i <= 13; i++)
             {
-                HVMessageModel hVMessageModel = new HVMessageModel(MultiChannelHVEntity,i);
+                HVMessageModel hVMessageModel = new HVMessageModel(MultiChannelHVEntity, i);
                 HVMessageModels.Add(hVMessageModel);
             }
         }
-
-      
-
         private void NetUdpService_UpdateResponse(object? sender, byte[] e)
         {
             _parser.ReceiveBytes(e);
@@ -130,31 +204,273 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
         {
             _timer?.Stop();
             _timer?.Dispose();
+            _timer = null;
         }
         private void OnTimerElapsed(object sender, ElapsedEventArgs e)
         {
-            GetHVCommand.Execute();
-            for (byte i = 0; i < HVMessageModels.Count; i++)
+            MultiChannelHVEntity.GetHVCommand();
+            MultiChannelHVEntity.Get1To6IVCommand();
+            MultiChannelHVEntity.Get7To13IVCommand();
+            MultiChannelHVEntity.GetInitStateCommand();
+        }
+       
+     
+        
+        /// <summary>
+        /// 自动初始化
+        /// </summary>
+        private async void InitMultiChannelHV()
+        {
+            MultiChannelHVEntity.DisableOutputCommand();
+            for (int i = 0; i < 3; i++)
             {
-                HVMessageModels[i].GetIVCommand.Execute();
-
-            }
+                try
+                {
+                    _waitingInitReply = new TaskCompletionSource<string>();
+                    MultiChannelHVEntity?.SetInitCommand();
+                    var result = await _waitingInitReply.Task.WaitAsync(TimeSpan.FromMilliseconds(5000));
+                    if (result == "InitSuccessful")
+                    {
+                        MultiChannelHVEntity?.IErrorClearCommand();
+                        return;
+                    }
+                    else
+                    {
+                        
+                        continue;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Prompt =  $"第{i+1}次自动初始化错误";
+                    continue;
+                }
+            } 
         }
         private void Parser_PacketReceivedEvent(object? sender, MultiChannelHVPacket e)
         {
-
             var data = e.DataSource;
             switch (e.CmdType)
             {
-                case MultiChannelHVFunctionCode.SET_HV:break;
-                case MultiChannelHVFunctionCode.GET_HV: break;
-                case MultiChannelHVFunctionCode.SET_IV: break;
-                case MultiChannelHVFunctionCode.GET_IV: break;
-                case MultiChannelHVFunctionCode.DISABLE_OUTPUT: break;
-                case MultiChannelHVFunctionCode.ERROR_CLEAR: break;
-                case MultiChannelHVFunctionCode.SET_INIT: break;
+                //获取单路隔离电压
+                case MultiChannelHVFunctionCode.GET_IV:
+                    GET_IVReturnParsing(data); break;
+                //获取1-6路隔离电压
+                case MultiChannelHVFunctionCode.GET_P1_6_IV:
+                    GET_P1_6_IVReturnParsing(data); break;
+                //获取7-13路隔离电压
+                case MultiChannelHVFunctionCode.GET_P7_13_IV:
+                    GET_P7_13_IVReturnParsing(data); break;
+                //设置单路隔离电压
+                case MultiChannelHVFunctionCode.SET_IV:
+                    SET_IVReturnParsing(data); break;
+                //获取整机悬浮高压
+                case MultiChannelHVFunctionCode.GET_HV:
+                    GET_HVReturnParsing(data); break;
+                //设置整机悬浮高压
+                case MultiChannelHVFunctionCode.SET_HV:
+                    SET_HVParsing(data); break;
+                //设置高压控制板初始化
+                case MultiChannelHVFunctionCode.SET_INIT:
+                    SET_INITReturnParsing(data); break;
+                //高压初始化状态查询
+                case MultiChannelHVFunctionCode.GET_INIT_STATE:
+                    GET_INIT_STATEReturnParsing(data); break;
+                //隔离板错误清除
+                case MultiChannelHVFunctionCode.ERROR_CLEAR:
+                    ERROR_CLEARReturnParsing(data); break;
+                //高压箱初始化取消，关闭输出
+                case MultiChannelHVFunctionCode.DISABLE_OUTPUT:
+                    DISABLE_OUTPUTReturnParsing(data); break;
+                case MultiChannelHVFunctionCode.FV: GetFv(data); break;
             }
-          
+
+        }
+        /// <summary>
+        /// 获取单路隔离电压回报解析
+        /// </summary>
+        private void GET_IVReturnParsing(byte[] data)
+        {
+            var channel = data[0];
+            var hv = BitConverter.ToSingle(data, 1);
+            for (byte i = 0; i < HVMessageModels.Count; i++)
+            {
+                if (HVMessageModels[i].Channel == channel)
+                {
+                    HVMessageModels[i].ReadHV = hv;
+                    return;
+                }
+            }
+        }
+        /// <summary>
+        /// 获取1-6路隔离电压回报解析
+        /// </summary>
+        private void GET_P1_6_IVReturnParsing(byte[] data)
+        {
+            float[] ivs = new float[6];
+            for (int i = 0; i < 6; i++)
+            {
+                var hv = BitConverter.ToSingle(data, i * 4);
+                ivs[i] = hv;
+            }
+            for (int j = 0; j < 6; j++)
+            {
+                HVMessageModels[j].ReadHV = ivs[j];
+            }
+        }
+        /// <summary>
+        /// 获取7-13路隔离电压回报解析
+        /// </summary>
+        private void GET_P7_13_IVReturnParsing(byte[] data)
+        {
+            float[] ivs = new float[7];
+            for (int i = 0; i < 7; i++)
+            {
+                var hv = BitConverter.ToSingle(data, i * 4);
+                ivs[i] = hv;
+            }
+            for (int j = 0; j < 7; j++)
+            {
+                HVMessageModels[6 + j].ReadHV = ivs[j];
+            }
+        }
+        /// <summary>
+        /// 设置单路隔离电压回报解析
+        /// </summary>
+        private void SET_IVReturnParsing(byte[] data)
+        {
+            Prompt = " 下位机收到设置单路隔离电压命令";
+        }
+        /// <summary>
+        /// 获取整机悬浮高压回报解析
+        /// </summary>
+        private void GET_HVReturnParsing(byte[] data)
+        {
+            var hv = BitConverter.ToSingle(data, 0);
+            var i = BitConverter.ToSingle(data, 4);
+            ReadHV = hv;
+            ReadI = i;
+        }
+        /// <summary>
+        /// 设置整机悬浮高压回报解析
+        /// </summary>
+        private void SET_HVParsing(byte[] data)
+        {
+            Prompt = " 下位机收到设置整机悬浮电压命令";
+        }
+        /// <summary>
+        /// 设置高压控制板初始化回报解析
+        /// </summary>
+        private void SET_INITReturnParsing(byte[] data)
+        {
+            var initReturnResult = data[0];
+            if (initReturnResult == 0xff)
+            {
+                //执行初始化
+                Prompt = " 下位机收到设置高压控制板初始化命令，并执行初始化";
+            }
+            else
+            {
+                Prompt = " 下位机收到设置高压控制板初始化命令，初始化发生错误";
+                _waitingInitReply?.TrySetResult("Execution Error");
+            }
+
+        }
+        /// <summary>
+        /// 高压初始化状态查询回报解析
+        /// </summary>
+        private void GET_INIT_STATEReturnParsing(byte[] data)
+        {
+
+            MultiChannelHVInitState initResult = (MultiChannelHVInitState)data[0];
+
+            if (initResult == MultiChannelHVInitState.RUNNUNG)
+            {
+                _waitingInitReply?.TrySetResult("InitSuccessful");
+            }
+            else if (initResult == MultiChannelHVInitState.INITALIZING)
+            {
+                //发送初始化中
+            }
+            else
+            {
+                _waitingInitReply?.TrySetResult("InitError");
+                
+            }
+
+            HVInitState = initResult;
+
+        }
+        /// <summary>
+        /// 隔离板错误清除回报解析
+        /// </summary>
+        private void ERROR_CLEARReturnParsing(byte[] data)
+        {
+            var executionResult = data[0];
+            if (executionResult == 0xff)
+            {
+                // 隔离板错误清除成功
+                Prompt = " 下位机隔离板错误清除成功";
+            }
+            else
+            {
+                // 隔离板错误清除失败
+                Prompt = " 下位机隔离板错误清除失败";
+            }
+        }
+        /// <summary>
+        /// 高压箱初始化取消，关闭输出回报解析
+        /// </summary>
+        private void DISABLE_OUTPUTReturnParsing(byte[] data)
+        {
+            var executionResult = data[0];
+            if (executionResult == 0xff)
+            {
+                // 关闭输出成功
+                HVInitState = MultiChannelHVInitState.IDLE;
+                Prompt = " 下位机关闭输出成功";
+            }
+            else
+            {
+                Prompt = " 下位机关闭输出成功";
+                // 关闭输出失败
+            }
+        }
+        private void GetFv(byte[] data)
+        {
+            FirmwareVersion = Encoding.ASCII.GetString(data);
+        }
+        public DelegateCommand ShowPasswordDialogCommand { get; set; }
+        private void ShowPasswordDialog()
+        {
+            // 1. 准备传入对话框的参数
+            var parameters = new DialogParameters();
+            parameters.Add("Title", "请输入管理员密码"); // 传递标题参数
+
+            // 2. 调用对话框（模态），并处理返回结果
+            _dialogService.ShowDialog(
+                "PasswordDialog", // 对话框注册的键名
+                parameters,       // 传入的参数
+                result =>         // 回调：处理返回结果
+                {
+                    if (result.Result == ButtonResult.OK)
+                    {
+                        // 从返回结果中获取密码
+                        var enteredPassword = result.Parameters.GetValue<string>("EnteredPassword");
+                        // 执行验证逻辑（例如和预设密码比较）
+                        if (string.Equals(enteredPassword, "zeptools", StringComparison.Ordinal))
+                        {
+                            // 验证成功
+                            IsSetting = true;
+                        }
+                    }
+                    else if (result.Result == ButtonResult.Cancel)
+                    {
+
+                        // 用户取消
+                    }
+                }
+            );
         }
     }
 }

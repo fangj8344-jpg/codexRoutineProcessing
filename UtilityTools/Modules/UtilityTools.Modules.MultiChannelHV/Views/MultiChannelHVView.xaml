@@ -14,6 +14,7 @@
     <UserControl.Resources>
         <cv:BoolToColorConverter x:Key="BoolToColorConverter" />
     </UserControl.Resources>
+  
     <md:DialogHost Identifier="{x:Static model:CommonModel.MultiChannelHVRegionName}"
              DialogTheme="Inherit">
         <Grid>
@@ -30,13 +31,16 @@
                    DockPanel.Dock="Left"
                    VerticalAlignment="Center" />
                 <Button DockPanel.Dock="Right"
-                        Content="{md:PackIcon Kind=EthernetCable, Size=24}"
-                        Foreground="{Binding NetIsConnected, Converter={StaticResource BoolToColorConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                        Content="{md:PackIcon Kind= UsbPort, Size=24}"
+                        Foreground="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                        Style="{StaticResource MaterialDesignToolButton}"
                         Command="{Binding ShowDeviceCommand}"/>
                 <Button DockPanel.Dock="Right"
-                        Content="{md:PackIcon Kind=UsbPort, Size=24}"
-                        Foreground="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
-                        Command="{Binding ShowNetDeviceCommand}"/>
+                        Content="{md:PackIcon Kind=EthernetCable, Size=24}"
+                        Foreground="{Binding  NetIsConnected, Converter={StaticResource BoolToColorConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                        Command="{Binding ShowNetDeviceCommand}"
+                        Style="{StaticResource MaterialDesignToolButton}"/>
+                
             </DockPanel>
             <local:MultiChannelHVContentView Grid.Row="1" DataContext="{Binding Model}" />
         </Grid>
