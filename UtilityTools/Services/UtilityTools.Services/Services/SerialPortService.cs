@@ -32,6 +32,7 @@ using System.ComponentModel;
 using System.IO.Ports;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using UtilityTools.Core.Helper;
 using UtilityTools.Core.Model;
 using UtilityTools.Services.Interfaces.IServices;
@@ -43,11 +44,12 @@ namespace UtilityTools.Services.Services
         #region ------------Constructor------------
         public SerialPortService()
         {
-            _syncObject = new object();
             _sendQueue = new ConcurrentQueue<byte[]>();
             DeviceInstance = new SerialPortModel();
             DeviceInstance.SerialPort.DataReceived += SerialPort_DataReceived;
             MinWriteInterval = 100;
+            WaitInterval = 1000;
+
         }
 
         #endregion
@@ -55,8 +57,7 @@ namespace UtilityTools.Services.Services
         #region ------------Field------------
         private Thread _sendThread;
         private CancellationTokenSource _sendThreadToken;
-
-        private object _syncObject;
+        private TaskCompletionSource<string> _waitingReply;
         private ConcurrentQueue<byte[]> _sendQueue;
         #endregion
 
@@ -106,6 +107,11 @@ namespace UtilityTools.Services.Services
         /// 两次写入最小间隔 ms, 特别是串口通讯需要根据设备情况进行设置
         /// </summary>
         public int MinWriteInterval { get; set; }
+        /// <summary>
+        /// 等待回复间隔
+        /// </summary>
+        public int WaitInterval { get; set; }
+        public int BusBufferTime { get; set; }
         #endregion
 
         #region ------------Event------------
@@ -234,10 +240,7 @@ namespace UtilityTools.Services.Services
         private void Enqueue(byte[] data)
         {
             _sendQueue.Enqueue(data);
-            lock (_syncObject)
-            {
-                Monitor.Pulse(_syncObject);
-            }
+           
         }
 
         /// <summary>
@@ -250,10 +253,6 @@ namespace UtilityTools.Services.Services
                 _sendThreadToken.Cancel();
             }
 
-            lock (_syncObject)
-            {
-                Monitor.Pulse(_syncObject);
-            }
             _sendThread.Join();
             _sendThread = null;
             _sendThreadToken.Dispose();
@@ -270,13 +269,9 @@ namespace UtilityTools.Services.Services
             {
                 if (_sendQueue.TryDequeue(out var data))
                     return data;
-
-                lock (_syncObject)
-                {
-                    Monitor.Wait(_syncObject);
-                }
             }
         }
+        /*
 
         /// <summary>
         /// 发送线程
@@ -315,7 +310,51 @@ namespace UtilityTools.Services.Services
                 LogManager.GetCurrentClassLogger().Debug($"{Name}结束发送线程");
             }
         }
+        */
+        /// 发送线程
+        /// </summary>
+        private async void SendThreadFunction()
+        {
+            LogManager.GetCurrentClassLogger().Debug($"{Name}开启发送线程");
+            try
+            {
+                while (true)
+                {
+                    _waitingReply = new TaskCompletionSource<string>();
+                    if (_sendQueue.TryDequeue(out var cmd))
+                    {
+                        // 发送业务
+                        DeviceInstance.SerialPort.Write(cmd, 0, cmd.Length);
+                        LogManager.GetCurrentClassLogger().Debug($"{Name} 发送 : {GetCmdString(cmd, cmd.Length)}");
+                        try
+                        {
+                            var result = await  _waitingReply?.Task.WaitAsync(TimeSpan.FromMilliseconds(WaitInterval));
+                            await Task.Delay(20);
+                        }
+                        catch (Exception ex)
+                        {
+                            LogManager.GetCurrentClassLogger().Error($"{ex}");
+                        }
+                    }
 
+                    while (_sendQueue.Count == 0)
+                    {
+                        await Task.Delay(MinWriteInterval);
+                    }
+                   
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.GetCurrentClassLogger().Error($"{Name}发送线程异常：{ex.Message}");
+            }
+            finally
+            {
+                LogManager.GetCurrentClassLogger().Debug($"{Name}结束发送线程");
+                DeviceInstance.SerialPort.Close();
+                _sendQueue.Clear();
+            }
+        }
         /// <summary>
         /// 串口数据接收回调函数
         /// </summary>
@@ -345,8 +384,9 @@ namespace UtilityTools.Services.Services
                     response = new byte[size];
                     realLen = dev.Read(response, 0, size);
                     LogManager.GetCurrentClassLogger().Debug($"{Name} 接收 : {GetCmdString(response, realLen)}");
-
+                   
                     UpdateResponse?.Invoke(this, response);
+                    _waitingReply?.TrySetResult("reply");
                 }
                 catch (Exception ex)
                 {
