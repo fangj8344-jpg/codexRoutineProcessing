@@ -6,6 +6,7 @@ using Prism.Services.Dialogs;
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Timers;
 using TouchSocket.Core;
@@ -25,17 +26,22 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
             Init();
             InitCommand();
         }
+        public MultiChannelHVModel()
+        {
+           
+        }
         private readonly IDialogService _dialogService;
         private TaskCompletionSource<string> _waitingInitReply;
         private System.Timers.Timer _timer;
         private MultiChannelHVParser _parser;
 
-
+        private DataContainer dataContainer;
         public MultiChannelHVEntity MultiChannelHVEntity;
         private IAsynRWService _serialPortService;
         /// <summary>
         /// 串口异步通信服务
         /// </summary>
+        [JsonIgnore]
         public IAsynRWService SerialPortService
         {
             get { return _serialPortService; }
@@ -47,6 +53,7 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
         /// <summary>
         /// 网口异步通信服务
         /// </summary>
+        [JsonIgnore]
         public IAsynRWService NetUdpService
         {
             get { return _netUdpService; }
@@ -59,24 +66,28 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
             set { _hVMessageModels = value; RaisePropertyChanged(); }
         }
         private bool _isSetting = false;
+        [JsonIgnore]
         public bool IsSetting
         {
             get { return _isSetting; }
             set { _isSetting = value; RaisePropertyChanged(); }
         }
         private float _readHV = 0;
+        [JsonIgnore]
         public float ReadHV
         {
             get { return _readHV; }
             set { _readHV = value; RaisePropertyChanged(); }
         }
         private float _readI = 0;
+        [JsonIgnore]
         public float ReadI
         {
             get { return _readI; }
             set { _readI = value; RaisePropertyChanged(); }
         }
         private ushort _writeHV = 0;
+
         public ushort WriteHV
         {
             get { return _writeHV; }
@@ -104,6 +115,7 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
         /// <summary>
         /// 初始化状态
         /// </summary>
+          [JsonIgnore]
         public MultiChannelHVInitState HVInitState
 
         {
@@ -114,6 +126,7 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
         /// <summary>
         /// 界面提示
         /// </summary>
+        [JsonIgnore]
         public string Prompt
         {
             get { return _prompt; }
@@ -124,19 +137,33 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
         /// <summary>
         /// 固件版本
         /// </summary>
+        [JsonIgnore]
         public string FirmwareVersion
         {
             get { return _firmwareVersion; }
             set { _firmwareVersion = value; RaisePropertyChanged(); }
         }
+        [JsonIgnore]
         public DelegateCommand SetHVCommand { get; set; }
+        [JsonIgnore]
         public DelegateCommand GetHVCommand { get; set; }
+        [JsonIgnore]
         public DelegateCommand SetInitCommand { get; set; }
+        [JsonIgnore]
         public DelegateCommand GetInitStateCommand { get; set; }
+        [JsonIgnore]
         public DelegateCommand IErrorClearCommand { get; set; }
+        [JsonIgnore]
         public DelegateCommand DisableOutputCommand { get; set; }
+        [JsonIgnore]
         public DelegateCommand InitMultiChannelHVCommand { get; set; }
+        [JsonIgnore]
         public DelegateCommand SettingCompleteCommand { get; set; }
+        [JsonIgnore]
+        public DelegateCommand ShowPasswordDialogCommand { get; set; }
+        [JsonIgnore]
+        public DelegateCommand SaveDaraCommand { get; set; }
+
         private void InitCommand()
         {
             InitMultiChannelHVCommand = new DelegateCommand(InitMultiChannelHV);
@@ -148,6 +175,7 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
             DisableOutputCommand = new DelegateCommand(() => MultiChannelHVEntity?.DisableOutputCommand());
             ShowPasswordDialogCommand = new DelegateCommand(ShowPasswordDialog);
             SettingCompleteCommand = new DelegateCommand(()=> IsSetting = false);
+            SaveDaraCommand = new DelegateCommand(() => dataContainer.SaveData());
         }
         private void Init()
         {
@@ -173,6 +201,8 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
                 HVMessageModel hVMessageModel = new HVMessageModel(MultiChannelHVEntity, i);
                 HVMessageModels.Add(hVMessageModel);
             }
+            dataContainer = new DataContainer(this);
+            dataContainer.LoadData();
         }
         private void NetUdpService_UpdateResponse(object? sender, byte[] e)
         {
@@ -440,7 +470,7 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
         {
             FirmwareVersion = Encoding.ASCII.GetString(data);
         }
-        public DelegateCommand ShowPasswordDialogCommand { get; set; }
+        
         private void ShowPasswordDialog()
         {
             // 1. 准备传入对话框的参数
@@ -462,6 +492,7 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
                         {
                             // 验证成功
                             IsSetting = true;
+                            dataContainer.SaveData();
                         }
                     }
                     else if (result.Result == ButtonResult.Cancel)

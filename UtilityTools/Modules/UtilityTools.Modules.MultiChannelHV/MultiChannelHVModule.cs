@@ -18,7 +18,7 @@ namespace UtilityTools.Modules.MultiChannelHV
 
         public void RegisterTypes(IContainerRegistry containerRegistry)
         {
-            containerRegistry.RegisterForNavigation<MultiChannelHVView, MultiChannelHVViewModel>();
+            containerRegistry.RegisterForNavigation<MultiChannelHVView, MultiChannelHVViewModel>("MultiChannelHVView");
             containerRegistry.RegisterSingleton<MultiChannelHVModel>();
             // 注册对话框：键名"PasswordDialog"用于后续调用，视图类型是PasswordDialog
             containerRegistry.RegisterDialog<PasswordDialogView, PasswordDialogViewModel>("PasswordDialog");

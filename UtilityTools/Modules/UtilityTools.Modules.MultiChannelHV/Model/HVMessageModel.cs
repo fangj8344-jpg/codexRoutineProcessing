@@ -2,8 +2,11 @@
 using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using UtilityTools.Modules.MultiChannelHV.Entity;
 
@@ -21,14 +24,18 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
             }
             InitCommand();
         }
+        public HVMessageModel()
+        {
+            
+        }
         private MultiChannelHVEntity _multiChannelHVEntity;
         private readonly byte _channel;
-        public HVMaxModel hVMaxModel;
         public byte Channel
         {
             get { return _channel; }
         }
         private float _readHV = 0;
+        [JsonIgnore]
         public float ReadHV  
         {
             get { return _readHV; }
@@ -59,7 +66,9 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
             get { return _maxHV; }
             set { _maxHV = value; RaisePropertyChanged() ; }
         }
+        [JsonIgnore]
         public DelegateCommand SetIVCommand { get; set; }
+        [JsonIgnore]
         public DelegateCommand GetIVCommand { get; set; }
 
         private void InitCommand()
@@ -71,16 +80,37 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
 
     }
 
-    public class HVMaxModel
+    public class DataContainer
     {
-        public HVMaxModel()
+        public DataContainer(MultiChannelHVModel multiChannelHVModel)
         {
-            HVMax = 30000;
-            IV1_12Max = 2000;
-            IV13Max = 6000;
+            MultiChannelHVModel = multiChannelHVModel;
         }
-        public float HVMax { get; set; }
-        public float IV1_12Max { get; set; }
-        public float IV13Max { get; set; }
+        public MultiChannelHVModel MultiChannelHVModel { get; set; }
+        public void SaveData()
+        {
+            string json = JsonSerializer.Serialize(MultiChannelHVModel);
+            if (!Directory.Exists("data"))
+            {
+                Directory.CreateDirectory("data");
+            }
+            File.WriteAllText("data\\MultiChannelHVModel.json", json);
+        }
+        public void LoadData() 
+        {
+            if (File.Exists("data\\MultiChannelHVModel.json"))
+            {
+                string jsonString = File.ReadAllText("data\\MultiChannelHVModel.json");
+                var Model = JsonSerializer.Deserialize<MultiChannelHVModel>(jsonString);
+                MultiChannelHVModel.MaxHV = Model.MaxHV;
+                MultiChannelHVModel.WriteHV = Model.WriteHV;
+                for (int i = 0; i < MultiChannelHVModel.HVMessageModels.Count; i++) 
+                {
+                    MultiChannelHVModel.HVMessageModels[i].WriteHV = Model.HVMessageModels[i].WriteHV;
+                    MultiChannelHVModel.HVMessageModels[i].MaxHV = Model.HVMessageModels[i].MaxHV;
+                }
+            }  
+        }
     }
+    
 }
