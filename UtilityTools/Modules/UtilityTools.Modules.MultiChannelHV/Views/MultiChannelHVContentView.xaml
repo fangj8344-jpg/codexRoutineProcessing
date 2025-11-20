@@ -26,7 +26,6 @@
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
         <StackPanel>
-          
             <DockPanel LastChildFill="False">
                 <Button Content="功能初始化" Command="{Binding SetInitCommand}" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 <Button Content="隔离板错误清除" Command="{Binding IErrorClearCommand}" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
@@ -49,8 +48,11 @@
                   
                 </TextBox>
                 <TextBlock Text="V" DockPanel.Dock="Left" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                <Label Content="步进值(v/s):" DockPanel.Dock="Left" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                <TextBox Text="{Binding Step}" BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="100" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center" />
                 <TextBlock Text="{Binding ReadHV, StringFormat='当前电压:{0,10:#####0.000}V'}" DockPanel.Dock="Left" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 <TextBlock Text="{Binding ReadI, StringFormat='当前电流:{0,10:#####0.000}μA'}"  DockPanel.Dock="Left" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+               
             </DockPanel>
          
             <ScrollViewer  Height="auto"  HorizontalScrollBarVisibility="Auto"   VerticalScrollBarVisibility="Auto"  Width="auto">       
@@ -68,15 +70,17 @@
                                                 Margin="5" VerticalAlignment="Center"
                                                 HorizontalAlignment="Center"></Button>
 
-                                        <TextBox Text="{Binding WriteHV}"  BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="100" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center" >
+                                        <TextBox Text="{Binding WriteHV}"  BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="60" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center" >
                                             <TextBox.InputBindings>
                                                 <KeyBinding  Key="Return"  Command="{Binding SetIVCommand}" />
                                             </TextBox.InputBindings>
                                         </TextBox>
-                                        <TextBox Text="{Binding MaxHV}"  BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="100" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"   
+                                        <TextBox Text="{Binding MaxHV}"  BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="60" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"   
                                                  Visibility="{Binding DataContext.IsSetting,Converter={StaticResource BoolToVisibilityCollapsedConverter}, RelativeSource={RelativeSource AncestorType={x:Type  local:MultiChannelHVContentView}}}" >
                                         </TextBox>
                                         <TextBlock Text="V" DockPanel.Dock="Left" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="步进值(v/s)" DockPanel.Dock="Left" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <TextBox Text="{Binding Step}" BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="60" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center" />
                                     </DockPanel>
                                 </Border>
                             </DockPanel>

@@ -24,6 +24,7 @@
  *----------------------------------------------------------------*/
 #endregion
 
+using HarfBuzzSharp;
 using NLog;
 using Prism.Mvvm;
 using System;
@@ -252,16 +253,26 @@ namespace UtilityTools.Core.Model
         /// <returns></returns>
         public override bool Open()
         {
+           
             if (Socket != null)
                 return true;
-
-            Socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            Socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, IsSupportBroadcast);
-            _sendEndPoint = new IPEndPoint(IPAddress.Parse(TargetIp), TargetPort);
-            _recvEndPoint = new IPEndPoint(IPAddress.Parse(HostIp), HostPort);
-            Socket.Bind(_recvEndPoint);
-            Socket.BeginReceiveFrom(_dataBuff, 0, _dataBuff.Length, SocketFlags.None, ref _sendEndPoint, ReceiveCallback, null);
-            return true;
+            try
+            {
+                Socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                Socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, IsSupportBroadcast);
+                _sendEndPoint = new IPEndPoint(IPAddress.Parse(TargetIp), TargetPort);
+                _recvEndPoint = new IPEndPoint(IPAddress.Parse(HostIp), HostPort);
+                Socket.Bind(_recvEndPoint);
+                Socket.BeginReceiveFrom(_dataBuff, 0, _dataBuff.Length, SocketFlags.None, ref _sendEndPoint, ReceiveCallback, null);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogManager.GetCurrentClassLogger().Error($"{TargetPort}{HostPort}Socket绑定错误{ex}");
+                Close();
+                return false;
+            }
+            
         }
 
         /// <summary>

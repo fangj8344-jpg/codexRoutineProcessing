@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace UtilityTools.Modules.MotorTest.Model
 {
-    internal class MotorTestReportModel
+    public class MotorTestReportModel
     {
         public MotorTestReportModel(ThreeAxisTestModel testModel, List<List<MotorTestMessage>> motorTestMessages)
         {
@@ -18,7 +18,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         }
         List<List<MotorTestMessage>> _motorTestMessages;
         public ThreeAxisTestModel _testModel { get; set; } 
-        private void add( )
+        public void GenerateMotorReport( )
         {
             // 激活GemBox.Document免费版（需先在官网获取免费密钥：https://www.gemboxsoftware.com/document/free-version）
             ComponentInfo.SetLicense("FREE-LIMITED-KEY");
@@ -46,6 +46,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             section.Blocks.Add(new Paragraph(doc, "测试数据统计："));
             for (int i = 0; i < _testModel.Motors.Count; i ++)
             {
+                int numberCount = 0;
                 // 插入表格（3行3列）
                 Table table = new Table(doc, 2, 6);
                 int count = _motorTestMessages[i].Count;
@@ -59,13 +60,14 @@ namespace UtilityTools.Modules.MotorTest.Model
                 table.Rows[0].Cells[5].Blocks.Add(new Paragraph(doc, "说明"));
                 for (int j = 1; j < count; j++)
                 {
+                    numberCount++;
                     // 内容行
-                    table.Rows[j].Cells[0].Blocks.Add(new Paragraph(doc, $"{_motorTestMessages}"));
-                    table.Rows[j].Cells[1].Blocks.Add(new Paragraph(doc, "电机控制测试"));
-                    table.Rows[j].Cells[2].Blocks.Add(new Paragraph(doc, "合格"));
-                    table.Rows[j].Cells[3].Blocks.Add(new Paragraph(doc, "移动距离15851:"));
-                    table.Rows[j].Cells[4].Blocks.Add(new Paragraph(doc, "正常"));
-                    table.Rows[j].Cells[5].Blocks.Add(new Paragraph(doc, "无"));
+                    table.Rows[j].Cells[0].Blocks.Add(new Paragraph(doc, $"{numberCount:D3}"));
+                    table.Rows[j].Cells[1].Blocks.Add(new Paragraph(doc, $"{_motorTestMessages[i][j].TestProject}"));
+                    table.Rows[j].Cells[2].Blocks.Add(new Paragraph(doc, $"{_motorTestMessages[i][j].TestResult}"));
+                    table.Rows[j].Cells[3].Blocks.Add(new Paragraph(doc, $"{_motorTestMessages[i][j].TestResult}移动距离15851:"));
+                    table.Rows[j].Cells[4].Blocks.Add(new Paragraph(doc, $"{_motorTestMessages} 正常"));
+                    table.Rows[j].Cells[5].Blocks.Add(new Paragraph(doc, $"{_motorTestMessages} 无"));
                     section.Blocks.Add(table);
                 }
                 

@@ -50,6 +50,8 @@ namespace UtilityTools.Services.Services
             DeviceInstance = new UdpNetConfigModel();
             DeviceInstance.ReceiveDataEvent += DeviceInstance_ReceiveDataEvent;
             MinWriteInterval = 10;
+            WaitInterval = 1000;
+       
         }
 
         #endregion
@@ -60,6 +62,7 @@ namespace UtilityTools.Services.Services
 
         private object _syncObject;
         private ConcurrentQueue<byte[]> _sendQueue;
+        private TaskCompletionSource<string> _waitingReply;
         #endregion
 
         #region ------------Property------------
@@ -103,6 +106,7 @@ namespace UtilityTools.Services.Services
         /// 两次写入最小间隔 ms, 特别是串口通讯需要根据设备情况进行设置
         /// </summary>
         public int MinWriteInterval { get; set; }
+        public double WaitInterval { get;  set; }
         #endregion
 
         #region ------------Event------------
@@ -262,7 +266,7 @@ namespace UtilityTools.Services.Services
         /// <summary>
         /// 发送线程
         /// </summary>
-        private void SendThreadFunction()
+        private async void SendThreadFunction()
         {
             LogManager.GetCurrentClassLogger().Debug($"{Name}开启发送线程");
             var token = _sendThreadToken.Token;
@@ -270,20 +274,25 @@ namespace UtilityTools.Services.Services
             {
                 while (!token.IsCancellationRequested)
                 {
+                    _waitingReply = new TaskCompletionSource<string>();
                     if (_sendQueue.TryDequeue(out var cmd))
                     {
                         // 发送业务
                         DeviceInstance.Send(cmd);
                         LogManager.GetCurrentClassLogger().Debug($"{Name} 发送 : {GetCmdString(cmd, cmd.Length)}");
-                        Thread.Sleep(MinWriteInterval);
                     }
-
-                    lock (_syncObject)
+                    try
                     {
-                        if (_sendQueue.Count == 0)
-                        {
-                            Monitor.Wait(_syncObject);
-                        }
+                        var result = await _waitingReply?.Task.WaitAsync(TimeSpan.FromMilliseconds(WaitInterval));
+                        await Task.Delay(20);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogManager.GetCurrentClassLogger().Error($"{ex}");
+                    }
+                    while (_sendQueue.Count == 0)
+                    {
+                        await Task.Delay(MinWriteInterval);
                     }
                 }
             }
@@ -294,6 +303,8 @@ namespace UtilityTools.Services.Services
             finally
             {
                 LogManager.GetCurrentClassLogger().Debug($"{Name}结束发送线程");
+                DeviceInstance.Close();
+                _sendQueue.Clear();
             }
         }
 
@@ -304,6 +315,7 @@ namespace UtilityTools.Services.Services
             {
                 LogManager.GetCurrentClassLogger().Debug($"{Name} 接收 : {GetCmdString(response, response.Length)}");
                 UpdateResponse?.Invoke(this, response);
+                _waitingReply?.TrySetResult("reply");
             }
             catch (Exception ex)
             {

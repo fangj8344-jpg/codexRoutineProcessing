@@ -57,7 +57,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             set { _isZem18 = value; RaisePropertyChanged(); }
         }
 
-        private bool _isFiveAxisMotor = true;
+        private bool _isFiveAxisMotor = false;
         /// <summary>
         /// 是否是五轴电机
         /// </summary>
@@ -97,7 +97,7 @@ namespace UtilityTools.Modules.MotorTest.Model
 
 
         }
-        private bool _isTwoAxisMotor;
+        private bool _isTwoAxisMotor = true;
         /// <summary>
         /// 是否是两轴电机
         /// </summary>

@@ -1,4 +1,5 @@
 ﻿using CsvHelper;
+using HarfBuzzSharp;
 using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Regions;
@@ -33,8 +34,10 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
         private readonly IDialogService _dialogService;
         private TaskCompletionSource<string> _waitingInitReply;
         private System.Timers.Timer _timer;
+        private System.Timers.Timer _setHvTimer;
+        private ushort _bufferHv;
+        private bool _direction = true;
         private MultiChannelHVParser _parser;
-
         private DataContainer dataContainer;
         public MultiChannelHVEntity MultiChannelHVEntity;
         private IAsynRWService _serialPortService;
@@ -111,6 +114,15 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
             get { return _maxHV; }
             set { _maxHV = value; RaisePropertyChanged() ; }
         }
+        private ushort _step = 500;
+        /// <summary>
+        /// 步进值
+        /// </summary>
+        public ushort Step
+        {
+            get { return _step; }
+            set { _step = value; RaisePropertyChanged() ; }
+        }
         private MultiChannelHVInitState _hvInitState = MultiChannelHVInitState.IDLE;
         /// <summary>
         /// 初始化状态
@@ -167,7 +179,7 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
         private void InitCommand()
         {
             InitMultiChannelHVCommand = new DelegateCommand(InitMultiChannelHV);
-            SetHVCommand = new DelegateCommand(() => MultiChannelHVEntity?.SetHVCommand(WriteHV));
+            SetHVCommand = new DelegateCommand(SetHv);
             GetHVCommand = new DelegateCommand(() => MultiChannelHVEntity?.GetHVCommand());
             SetInitCommand = new DelegateCommand(() => MultiChannelHVEntity?.SetInitCommand());
             GetInitStateCommand = new DelegateCommand(() => MultiChannelHVEntity?.GetInitStateCommand());
@@ -276,6 +288,84 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
                     continue;
                 }
             } 
+        }
+        private void SetHv()
+        {
+
+            _bufferHv = WriteHV;
+            if (_bufferHv > ReadHV)
+            {
+                _direction = true;
+            }
+            else
+            {
+                _direction = false;
+            }
+            StopSetHvTimer();
+            InitSetHVTimer();
+
+        }
+
+        public void InitSetHVTimer()
+        {
+            // 1. 创建定时器，设置间隔时间（单位：毫秒，此处为 1000ms = 1秒）
+            if (_setHvTimer == null)
+            {
+                _setHvTimer = new System.Timers.Timer(1000);
+            }
+            if (_setHvTimer.Enabled)
+            {
+                _setHvTimer.Stop();
+            }
+            // 2. 绑定定时触发的事件
+            _setHvTimer.Elapsed += SetHvTimerElapsed;
+
+            // 3. 设置是否重复触发（true = 循环触发，false = 只触发一次）
+            _setHvTimer.AutoReset = true;
+
+            // 4. 启动定时器
+            _setHvTimer.Enabled = true;
+        }
+        public void StopSetHvTimer()
+        {
+            _setHvTimer?.Stop();
+            _setHvTimer?.Dispose();
+            _setHvTimer = null;
+        }
+        private void SetHvTimerElapsed(object sender, ElapsedEventArgs e)
+        {
+
+            if (_direction)
+            {
+                var _middleBufferHv = (ushort)ReadHV;
+                var differ = _bufferHv - _middleBufferHv;
+
+                if (differ / Step > 0)
+                {
+                    MultiChannelHVEntity?.SetHVCommand((ushort)(_middleBufferHv + Step));
+                }
+                else
+                {
+                    MultiChannelHVEntity?.SetHVCommand(_bufferHv);
+                    StopSetHvTimer();
+                }
+
+            }
+            else
+            {
+                var _middleBufferHv = (ushort)ReadHV;
+                var differ = _middleBufferHv - _bufferHv;
+
+                if (differ / Step > 0)
+                {
+                    MultiChannelHVEntity?.SetHVCommand((ushort)(_middleBufferHv - Step));
+                }
+                else
+                {
+                    MultiChannelHVEntity?.SetHVCommand(_bufferHv);
+                    StopSetHvTimer();
+                }
+            }
         }
         private void Parser_PacketReceivedEvent(object? sender, MultiChannelHVPacket e)
         {
@@ -469,6 +559,8 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
         private void GetFv(byte[] data)
         {
             FirmwareVersion = Encoding.ASCII.GetString(data);
+            var x = "a";
+            
         }
         
         private void ShowPasswordDialog()
