@@ -2,6 +2,7 @@
 using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
@@ -19,8 +20,8 @@ namespace UtilityTools.Modules.MotorTest.Model
             MotorModelAxis = enumMotorModel;
             PointListBuffer = new List<PlotViewPointMessage>();
             SpeedListBuffer = new List<PlotViewSpeedMessage>();
-            PointList = new List<PlotViewPointMessage>();
-            SpeedList = new List<PlotViewSpeedMessage>();
+            PointList = new ObservableCollection<PlotViewPointMessage>();
+            SpeedList = new ObservableCollection<PlotViewSpeedMessage>();
             MotorParams = new MotorParams();
           
            
@@ -57,20 +58,20 @@ namespace UtilityTools.Modules.MotorTest.Model
             get { return _speedListBuffer; }
             set { _speedListBuffer = value; }
         }
-        private List<PlotViewPointMessage> _pointList;
+        private ObservableCollection<PlotViewPointMessage> _pointList;
         /// <summary>
         /// 位置
         /// </summary>
-        public List<PlotViewPointMessage> PointList
+        public ObservableCollection<PlotViewPointMessage> PointList
         {
             get { return _pointList; }
             set { _pointList = value; RaisePropertyChanged(); }
         }
-        private List<PlotViewSpeedMessage> _speedList;
+        private ObservableCollection<PlotViewSpeedMessage> _speedList;
         /// <summary>
         /// 速度
         /// </summary>
-        public List<PlotViewSpeedMessage> SpeedList
+        public ObservableCollection<PlotViewSpeedMessage> SpeedList
         {
             get { return _speedList; }
             set { _speedList = value; RaisePropertyChanged(); }

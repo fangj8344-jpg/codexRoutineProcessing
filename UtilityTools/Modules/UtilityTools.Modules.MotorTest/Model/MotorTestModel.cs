@@ -431,8 +431,6 @@ namespace UtilityTools.Modules.MotorTest.Model
             MotorplotModel.Series.Add(_xPosLine);
             MotorplotModel.Series.Add(_yPosLine);
 
-
-  
             _xPosLine.ItemsSource = MotorModelX.PointList;
             _xPosLine.DataFieldX = "Date";
             _xPosLine.DataFieldY = "Point";
@@ -594,7 +592,6 @@ namespace UtilityTools.Modules.MotorTest.Model
                     {
                         MotorModelX.PointList.Clear();
                         MotorModelY.PointList.Clear();
-
                     }
                 }
                 catch (OperationCanceledException)
@@ -892,7 +889,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                 TestMessage2.TestProject = "Y轴负限位测试";
             }
 
-            List<PlotViewPointMessage> pos;
+            ObservableCollection<PlotViewPointMessage> pos;
             if (enumMotorId == EnumMotorId.MOTOR_1)
             {
                 pos = MotorModelX.PointList;
@@ -1559,7 +1556,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             int Movecount = 0;
             countNumber++;
             MotorModel motorModel;
-            List<PlotViewPointMessage> pos; ;
+            ObservableCollection<PlotViewPointMessage> pos; ;
             if (enumMotorId == EnumMotorId.MOTOR_1)
             {
                 motorModel = MotorModelX;
@@ -1768,7 +1765,7 @@ namespace UtilityTools.Modules.MotorTest.Model
 
             }
 
-            List<PlotViewPointMessage> pos;
+            ObservableCollection<PlotViewPointMessage> pos;
             if (enumMotorId == EnumMotorId.MOTOR_1)
             {
                 pos = MotorModelX.PointList;
@@ -2355,15 +2352,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             motorModel.MotorParams.Unit = (EnumMotorUnit)unit;
             motorModel.MotorParams.Enable = statusMaskBits[0];
             motorModel.MotorParams.MoveState = statusMaskBits[4] == false ? EnumMotorMoveState.MotorStop : EnumMotorMoveState.MotorMove;
-            //if (motorModel.MotorParams.MoveState == EnumMotorMoveState.MotorMove)
-            //{
-            //    if (_runStateUpdate != null)
-            //    {
-            //        _runStateUpdate.SetResult("move");
-            //    }
-
-            //}
-
+           
             var x = statusMaskBits[5];
             motorModel.MotorParams.LimitedState = statusMaskBits[5] == true ? EnumMotorLimitedState.PhyBackwardLimited : (statusMaskBits[7] == true ? EnumMotorLimitedState.PhyForwardLimited : EnumMotorLimitedState.None);
             motorModel.MotorParams.MoveDirection = (EmumMotorMoveDirection)MotorRunningDirection;
@@ -2452,9 +2441,17 @@ namespace UtilityTools.Modules.MotorTest.Model
                 var speed = (motorModel.MotorParams.Pos - motorModel.PointList[motorModel.PointList.Count - 2].Point) / (timeDifference * 1.0) * 1000;
                 PlotViewPointMessage pointView= new PlotViewPointMessage() { Date = data, Point = motorModel.MotorParams.Pos, MotorMoveState = motorModel.MotorParams.MoveState, MotorModelAxis = motorModel.MotorModelAxis };
                 PlotViewSpeedMessage speedView = new PlotViewSpeedMessage() { SpeedDate = motorModel.PointList[motorModel.PointList.Count - 1].Date, Speed = speed, MotorModelAxis = motorModel.MotorModelAxis };
-                
+
                 lock (_lockobj)
                 {
+                    while (motorModel.PointList.Count>=30000)
+                    {
+                        motorModel.PointList.RemoveAt(0);
+                    }
+                    while (motorModel.SpeedList.Count>=30000)
+                    {
+                        motorModel.SpeedList.RemoveAt(0);
+                    }
                     motorModel.PointList.Add(pointView);
                     motorModel.SpeedList.Add(speedView);
                 }
@@ -2474,16 +2471,12 @@ namespace UtilityTools.Modules.MotorTest.Model
                         var x = channelId;
                         using (var db = new TwoAxisDbContextBase ())
                         {
-
                             await SpliteOperate.AddPlotViewPointListMessagesSimpleAsync(pt, db);
                             await SpliteOperate.AddPlotViewSpeedListMessagesSimpleAsync(sp, db);
                             TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
                         }
-                      
                     });
-                   
                 }
-
             }
             else
             {
@@ -2655,23 +2648,23 @@ namespace UtilityTools.Modules.MotorTest.Model
             string testMessgaejsonfilePath = Path.Combine(path, testMessgaefilePathfileName); // 组合完整路径
             if (File.Exists(xPointjsonfilePath))
             {
-                MotorModelX.PointList = JsonConvert.DeserializeObject<List<PlotViewPointMessage>>(File.ReadAllText(xPointjsonfilePath));
+                MotorModelX.PointList = new ObservableCollection<PlotViewPointMessage>(JsonConvert.DeserializeObject<List<PlotViewPointMessage>>(File.ReadAllText(xPointjsonfilePath)));
             }
             if (File.Exists(yPointjsonfilePath))
             {
-                MotorModelY.PointList = JsonConvert.DeserializeObject<List<PlotViewPointMessage>>(File.ReadAllText(yPointjsonfilePath));
+                MotorModelY.PointList = new ObservableCollection<PlotViewPointMessage>(JsonConvert.DeserializeObject<List<PlotViewPointMessage>>(File.ReadAllText(yPointjsonfilePath)));
             }
             if (File.Exists(xSpeedjsonfilePath))
             {
-                MotorModelX.SpeedList = JsonConvert.DeserializeObject<List<PlotViewSpeedMessage>>(File.ReadAllText(xSpeedjsonfilePath));
+                MotorModelX.SpeedList = new ObservableCollection<PlotViewSpeedMessage>(JsonConvert.DeserializeObject<List<PlotViewSpeedMessage>>(File.ReadAllText(xSpeedjsonfilePath))); 
             }
             if (File.Exists(ySpeedjsonfilePath))
             {
-                MotorModelY.SpeedList = JsonConvert.DeserializeObject<List<PlotViewSpeedMessage>>(File.ReadAllText(ySpeedjsonfilePath));
+                MotorModelY.SpeedList = new ObservableCollection<PlotViewSpeedMessage>(JsonConvert.DeserializeObject<List<PlotViewSpeedMessage>>(File.ReadAllText(ySpeedjsonfilePath))); 
             }
             if (File.Exists(testMessgaejsonfilePath))
             {
-                MotorTestMessages = JsonConvert.DeserializeObject<ObservableCollection<MotorTestMessage>>(File.ReadAllText(testMessgaejsonfilePath));
+                MotorTestMessages = new ObservableCollection<MotorTestMessage>(JsonConvert.DeserializeObject<ObservableCollection<MotorTestMessage>>(File.ReadAllText(testMessgaejsonfilePath))); 
             }
 
             _xSpeedPosLine.ItemsSource = MotorModelX.SpeedList;
@@ -2771,11 +2764,11 @@ namespace UtilityTools.Modules.MotorTest.Model
                 var point = await SpliteOperate.GetPlotViewPointMessagesAsync(db,headIndex, LoadSize > pointNumber ? pointNumber : LoadSize);
                 var speedNumber = await SpliteOperate.GetPlotViewSpeedMessageCountAsync(db);
                 var speed = await SpliteOperate.GetPlotViewSpeedMessagesAsync(db, LoadSize > speedNumber ? speedNumber : LoadSize);
-                var xPointList = point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_x).ToList();
-                var yPointList = point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_y).ToList();
+                ObservableCollection<PlotViewPointMessage> xPointList = new ObservableCollection<PlotViewPointMessage>(point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_x).ToList());
+                ObservableCollection<PlotViewPointMessage> yPointList = new ObservableCollection<PlotViewPointMessage>(point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_y).ToList());
 
-                var xSpeedList = speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_x).ToList();
-                var ySpeedList = speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_y).ToList();
+                ObservableCollection<PlotViewSpeedMessage> xSpeedList = new ObservableCollection<PlotViewSpeedMessage>(speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_x).ToList());
+                ObservableCollection<PlotViewSpeedMessage> ySpeedList = new ObservableCollection<PlotViewSpeedMessage>(speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_y).ToList());
 
                 MotorModelX.PointList = xPointList;
                 _xPosLine.ItemsSource = MotorModelX.PointList;
@@ -2799,15 +2792,8 @@ namespace UtilityTools.Modules.MotorTest.Model
 
                 MotorSpeedplotModel.InvalidatePlot(true);
                 MotorplotModel.InvalidatePlot(true);
-            }
-               
-
-            
+            }   
         }
-       
     }
-   
-
-   
 }
 

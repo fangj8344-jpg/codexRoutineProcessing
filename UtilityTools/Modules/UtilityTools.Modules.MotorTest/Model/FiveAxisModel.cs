@@ -269,8 +269,28 @@ namespace UtilityTools.Modules.MotorTest.Model
 
 
             _TestMessage = new MotorTestMessage();
-            SpeedLine = new LineSeries() { Title = _name, RenderInLegend = true };
-            PosLine = new LineSeries() { Title = _name, RenderInLegend = true };
+            SpeedLine = new LineSeries()
+            {
+                Title = _name,
+                RenderInLegend = true,
+                StrokeThickness = 1,
+                LineStyle = LineStyle.Solid,
+                CanTrackerInterpolatePoints = false,
+                MarkerType = MarkerType.None, // 禁用点标记
+                MarkerSize = 0,
+
+            };
+            PosLine = new LineSeries() 
+            {
+                Title = _name, 
+                RenderInLegend = true,
+                StrokeThickness = 1,
+                LineStyle = LineStyle.Solid,
+                CanTrackerInterpolatePoints = false,
+                MarkerType = MarkerType.None, // 禁用点标记
+                MarkerSize = 0,
+
+            };
 
 
         }
@@ -520,10 +540,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                 return false;
             }
         }
-       
-
-
-       
+      
         /// <summary>
         /// 通用检测
         /// </summary>
@@ -1386,7 +1403,15 @@ namespace UtilityTools.Modules.MotorTest.Model
                
 
                 if (_testModel.MotorSpeedplotModel != null && _testModel.MotorplotModel != null)
-                {  
+                {
+                    while (MotorModel.PointList.Count>= _testModel .MaxCount)
+                    {
+                        MotorModel.PointList.RemoveAt(0);
+                    }
+                    while (MotorModel.SpeedList.Count >= _testModel.MaxCount)
+                    {
+                        MotorModel.SpeedList.RemoveAt(0);
+                    }
                     MotorModel.PointList.Add(pointView);
                     MotorModel.SpeedList.Add(speedView);
                     MotorModel.PointListBuffer.Add(pointView);
@@ -1500,11 +1525,11 @@ namespace UtilityTools.Modules.MotorTest.Model
             string testMessgaejsonfilePath = Path.Combine(path, testMessgaefilePathfileName); // 组合完整路径
             if (File.Exists(PointjsonfilePath))
             {
-                MotorModel.PointList = JsonConvert.DeserializeObject<List<PlotViewPointMessage>>(File.ReadAllText(PointjsonfilePath));
+                MotorModel.PointList = new ObservableCollection<PlotViewPointMessage>(JsonConvert.DeserializeObject<List<PlotViewPointMessage>>(File.ReadAllText(PointjsonfilePath)));  
             }
             if (File.Exists(SpeedjsonfilePath))
             {
-                MotorModel.SpeedList = JsonConvert.DeserializeObject<List<PlotViewSpeedMessage>>(File.ReadAllText(SpeedjsonfilePath));
+                MotorModel.SpeedList = new ObservableCollection<PlotViewSpeedMessage>(JsonConvert.DeserializeObject<List<PlotViewSpeedMessage>>(File.ReadAllText(SpeedjsonfilePath))); 
             }
             if (File.Exists(testMessgaejsonfilePath))
             {

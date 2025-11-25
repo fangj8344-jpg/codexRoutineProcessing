@@ -76,6 +76,12 @@ namespace UtilityTools.Modules.MotorTest.Model
         private FiveAxisDbContextBase _fiveAxisDbContextBase;
        
         private FiveAxisDbContextBase _twoAxisDbContextBase;
+        private int _maxCount = 30000;
+        public int MaxCount
+        {
+            get { return _maxCount; }
+            set { _maxCount = value; RaisePropertyChanged(); }
+        }
        
         public Double ProgressValue
         {
@@ -825,20 +831,18 @@ namespace UtilityTools.Modules.MotorTest.Model
         public DelegateCommand SqliteLoadCommand { get; set; }
         private async void SqliteLoad()
         {
-            
-               
             int pointNumber, speedNumber;
-            List<PlotViewPointMessage> point = new List<PlotViewPointMessage>();
-            List<PlotViewSpeedMessage> speed = new List<PlotViewSpeedMessage>();
+            ObservableCollection<PlotViewPointMessage> point;
+            ObservableCollection<PlotViewSpeedMessage> speed;
             if (MotorTypeModel.EnumMotorAxisType == EnumMotorAxisType.TwoAxisMotor)
             {
                 using (var db = new TwoAxisDbContextBase())
                 {
                     TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
                     pointNumber = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
-                    point = await SpliteOperate.GetPlotViewPointMessagesAsync(db,HeadIndex, LoadSize > pointNumber ? pointNumber : LoadSize);
+                    point = new ObservableCollection<PlotViewPointMessage>(await SpliteOperate.GetPlotViewPointMessagesAsync(db, HeadIndex, LoadSize > pointNumber ? pointNumber : LoadSize));
                     speedNumber = await SpliteOperate.GetPlotViewSpeedMessageCountAsync(db);
-                    speed = await SpliteOperate.GetPlotViewSpeedMessagesAsync(db,HeadIndex, LoadSize > speedNumber ? speedNumber : LoadSize);
+                    speed = new ObservableCollection<PlotViewSpeedMessage>(await SpliteOperate.GetPlotViewSpeedMessagesAsync(db, HeadIndex, LoadSize > speedNumber ? speedNumber : LoadSize)) ;
                 } 
             }
             else
@@ -847,30 +851,29 @@ namespace UtilityTools.Modules.MotorTest.Model
                 {
                     TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
                     pointNumber = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
-                    point = await SpliteOperate.GetPlotViewPointMessagesAsync(db,HeadIndex, LoadSize > pointNumber ? pointNumber : LoadSize);
+                    point = new ObservableCollection<PlotViewPointMessage>(await SpliteOperate.GetPlotViewPointMessagesAsync(db, HeadIndex, LoadSize > pointNumber ? pointNumber : LoadSize)); 
                     speedNumber = await SpliteOperate.GetPlotViewSpeedMessageCountAsync(db);
-                    speed = await SpliteOperate.GetPlotViewSpeedMessagesAsync(db,HeadIndex, LoadSize > speedNumber ? speedNumber : LoadSize);
+                    speed = new ObservableCollection<PlotViewSpeedMessage>(await SpliteOperate.GetPlotViewSpeedMessagesAsync(db, HeadIndex, LoadSize > speedNumber ? speedNumber : LoadSize)); 
                 }  
             }
-            var xPointList = point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_x).ToList();
-            var yPointList = point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_y).ToList();
-            var zPointList = point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_z).ToList();
-            var tPointList = point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_t).ToList();
-            var rPointList = point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_r).ToList();
+            ObservableCollection<PlotViewPointMessage> xPointList = new ObservableCollection<PlotViewPointMessage>(point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_x).ToList());
+            ObservableCollection<PlotViewPointMessage> yPointList = new ObservableCollection<PlotViewPointMessage>(point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_y).ToList());
+            ObservableCollection<PlotViewPointMessage> zPointList = new ObservableCollection<PlotViewPointMessage>(point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_z).ToList());
+            ObservableCollection<PlotViewPointMessage> tPointList = new ObservableCollection<PlotViewPointMessage>(point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_t).ToList());
+            ObservableCollection<PlotViewPointMessage> rPointList = new ObservableCollection<PlotViewPointMessage>(point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_r).ToList());
 
-            var xSpeedList = speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_x).ToList(); 
-            var ySpeedList = speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_y).ToList();
-            var zSpeedList = speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_z).ToList();
-            var tSpeedList = speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_t).ToList();
-
-            var rSpeedList = speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_r).ToList();
-            List<List<PlotViewPointMessage>> pointList = new List<List<PlotViewPointMessage>>();
+            ObservableCollection<PlotViewSpeedMessage> xSpeedList = new ObservableCollection<PlotViewSpeedMessage>(speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_x).ToList());
+            ObservableCollection<PlotViewSpeedMessage> ySpeedList = new ObservableCollection<PlotViewSpeedMessage>(speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_y).ToList());
+            ObservableCollection<PlotViewSpeedMessage> zSpeedList = new ObservableCollection<PlotViewSpeedMessage>(speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_z).ToList());
+            ObservableCollection<PlotViewSpeedMessage> tSpeedList = new ObservableCollection<PlotViewSpeedMessage>(speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_t).ToList());
+            ObservableCollection<PlotViewSpeedMessage> rSpeedList = new ObservableCollection<PlotViewSpeedMessage>(speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_r).ToList()); 
+            List<ObservableCollection<PlotViewPointMessage>> pointList = new List<ObservableCollection<PlotViewPointMessage>>();
             pointList.Add(xPointList);
             pointList.Add(yPointList);
             pointList.Add(zPointList);
             pointList.Add(tPointList);
             pointList.Add(rPointList);
-            List<List<PlotViewSpeedMessage>> speedList = new List<List<PlotViewSpeedMessage>>();
+            List<ObservableCollection<PlotViewSpeedMessage>> speedList = new List<ObservableCollection<PlotViewSpeedMessage>>();
             speedList.Add(xSpeedList);
             speedList.Add(ySpeedList);
             speedList.Add(zSpeedList);
@@ -878,23 +881,23 @@ namespace UtilityTools.Modules.MotorTest.Model
             speedList.Add(rSpeedList);
             if (Motors != null && Motors.Count > 0)
             {
-                   for (int i = 0; i < Motors.Count; i++)
-            {
-                Motors[i].MotorModel.PointList = pointList[i];
-                Motors[i].PosLine.ItemsSource = Motors[i].MotorModel.PointList;
-                Motors[i].PosLine.DataFieldX = "Date";
-                Motors[i].PosLine.DataFieldY = "Point";
+                  
+                for (int i = 0; i < Motors.Count; i++)  
+                {
+                
+                    Motors[i].MotorModel.PointList = pointList[i];
+                    Motors[i].PosLine.ItemsSource = Motors[i].MotorModel.PointList;
+                    Motors[i].PosLine.DataFieldX = "Date";
+                    Motors[i].PosLine.DataFieldY = "Point";
 
-                Motors[i].MotorModel.SpeedList = speedList[i];
-                Motors[i].SpeedLine.ItemsSource = Motors[i].MotorModel.SpeedList;
-                Motors[i].SpeedLine.DataFieldX = "SpeedDate";
-                Motors[i].SpeedLine.DataFieldY = "Speed";
-            }
+                    Motors[i].MotorModel.SpeedList = speedList[i];
+                    Motors[i].SpeedLine.ItemsSource = Motors[i].MotorModel.SpeedList;
+                    Motors[i].SpeedLine.DataFieldX = "SpeedDate";
+                    Motors[i].SpeedLine.DataFieldY = "Speed";
+                }
             }
          
             MotorSpeedplotModel.InvalidatePlot(true);
-            MotorplotModel.InvalidatePlot(true);
-
         }
        
     }

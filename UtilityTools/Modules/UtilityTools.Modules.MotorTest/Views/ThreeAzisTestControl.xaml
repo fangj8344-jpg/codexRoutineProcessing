@@ -25,7 +25,11 @@
                         <TextBox Text="{Binding HeadIndex}" MinWidth="30"/>
                         <Label Content="加载点数"/>
                         <TextBox Text="{Binding LoadSize}" MinWidth="30"/>
+                      
                     </DockPanel>
+                    <MenuItem Header="最大显示点数">
+                        <TextBox  Text="{Binding MaxCount}" BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="60" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    </MenuItem>
                 </MenuItem>
             </MenuItem>
             <MenuItem Header="设置">
@@ -52,10 +56,9 @@
                     </MenuItem>
                 </MenuItem>
                 <MenuItem Header="位移设置" >
-                    <DockPanel  LastChildFill="False">
-                        <Label Content="速度模式下速度大小:"/>
-                        <TextBox Text="{Binding MagnitudeOfSpeed}" />
-                    </DockPanel>
+                    <MenuItem Header="速度模式下速度大小" >
+                        <TextBox  Text="{Binding MagnitudeOfSpeed}" BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="60" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    </MenuItem>
                 </MenuItem>
            
             </MenuItem>
@@ -140,10 +143,6 @@
                 </StackPanel>
                 <DockPanel LastChildFill="False" Grid.Column="1">
                     <StackPanel Width="auto" DockPanel.Dock="Right">
-                        
-                        
-                        
-                        
                     </StackPanel>
                 </DockPanel>
                 
@@ -289,12 +288,13 @@
                 <ProgressBar Value="{Binding ProgressValue}" Width="150"/>
             </StatusBarItem>
             <StatusBarItem>
-                <TextBlock Text="版本：1.0"/>
+                <TextBlock Text="版本：3.2.2"/>
             </StatusBarItem>
             <StatusBarItem>
                 <DockPanel LastChildFill="False">
                     <Label Content="保存数据点数量:" Foreground="Black"/>
                     <Label Content="{Binding TotalSize}" Foreground="Black"/>
+               
                 </DockPanel>
             </StatusBarItem>
         </StatusBar>
