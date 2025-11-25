@@ -5,24 +5,25 @@ using System.Text;
 using System.Threading.Tasks;
 using UtilityTools.Modules.FDC12CHVBox.Protocol;
 using UtilityTools.Services.Interfaces.IServices;
+using UtilityTools.Services.Services;
 using static UtilityTools.Modules.FDC12CHVBox.Protocol.FDC12CHVBoxProtocol;
 
 namespace UtilityTools.Modules.FDC12CHVBox.Entity
 {
     public class FDC12CHVBoxEntity
     {
-        public FDC12CHVBoxEntity( IAsynRWService netUdpService, byte channel)
+        public FDC12CHVBoxEntity(UdpNetAsyncDevice netUdpService, byte channel)
         {
           
             _netUdpService = netUdpService;
             _channed = channel;
         }
-        private IAsynRWService _netUdpService;
+        private UdpNetAsyncDevice _netUdpService;
         private byte _channed;
-
-       /// <summary>
-       /// 读取高压信息
-       /// </summary>
+        private TaskCompletionSource<string> _waitingReply;
+        /// <summary>
+        /// 读取高压信息
+        /// </summary>
         public async void GetHvReadCommand()
         {
             NLog.LogManager.GetCurrentClassLogger().Debug($"{_channed}通道，读取高压信息");
@@ -97,10 +98,8 @@ namespace UtilityTools.Modules.FDC12CHVBox.Entity
         }
         private async Task SentData(byte[] bytes)
         {
-   
             if (_netUdpService.IsOpen)
                 _netUdpService.SendMsg(bytes);
-            await Task.Delay(20);
         }
     }
 }

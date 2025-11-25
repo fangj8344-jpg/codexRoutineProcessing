@@ -1,5 +1,6 @@
 ﻿using HarfBuzzSharp;
 using Microsoft.Win32;
+using Newtonsoft.Json.Linq;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Legends;
@@ -9,6 +10,7 @@ using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -24,9 +26,9 @@ using static UtilityTools.Modules.FDC12CHVBox.Protocol.FDC12CHVBoxProtocol;
 
 namespace UtilityTools.Modules.FDC12CHVBox.Model
 {
-    public class FDC12CHVBoxModel:BindableBase
+    public class FDC12CHVBoxModel : BindableBase
     {
-        public FDC12CHVBoxModel() 
+        public FDC12CHVBoxModel()
         {
             Init();
         }
@@ -39,13 +41,25 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         private ushort _startBufferHv = 0;
         private bool _direction = true;
         private System.Timers.Timer _setHvTimer;
+        private System.Timers.Timer _timer;
+        private int _connectCount;
+        private List<string> listTime;
+        private bool _isAllCheck;
+        public bool IsAllCheck
+        {
+            get { return _isAllCheck; }
+            set
+            {
+                _isAllCheck = value;
+                RaisePropertyChanged(); }
+        }
         private string _localIp;
         public string LocalIp
         {
             get { return _localIp; }
             set { _localIp = value; RaisePropertyChanged(); }
         }
-        private int _portStart = 6000;
+        private int _portStart = 0;
         public int PortStart
         {
             get { return _portStart; }
@@ -55,7 +69,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         public string RemoteIp
         {
             get { return _remoteIp; }
-            set { _remoteIp = value;RaisePropertyChanged(); }
+            set { _remoteIp = value; RaisePropertyChanged(); }
         }
         private int _remotePort = 1030;
         public int RemotePort
@@ -63,22 +77,13 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             get { return _remotePort; }
             set { _remotePort = value; RaisePropertyChanged(); }
         }
-        private ushort _writeHV = 0;
-        public ushort WriteHV
+        private ushort _writeHv = 0;
+        public ushort WriteHv
         {
-            get { return _writeHV; }
+            get { return _writeHv; }
             set
             {
-                if (value > _maxHV)
-                {
-                    _writeHV = _maxHV;
-                }
-                else
-                {
-                    _writeHV = value;
-                }
-
-                RaisePropertyChanged();
+                _writeHv = value; RaisePropertyChanged();
             }
         }
         private ushort _setHV;
@@ -90,26 +95,13 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             get { return _setHV; }
             set { _setHV = value; RaisePropertyChanged(); }
         }
-        private ushort _wirteStep = 5;
-        public ushort WriteStep
+        private ushort _wirteAllStep = 5;
+        public ushort WriteAllStep
         {
-            get { return _wirteStep; }
-            set {
-                if (WriteStep > _maxStep)
-                {
-                    _wirteStep = _maxStep;
-                }
-                else if (WriteStep < _minStep)
-                {
-                    _wirteStep = _minStep;
-                }
-                else
-                {
-                    _wirteStep = value;
-                }
-                RaisePropertyChanged(); }
+            get { return _wirteAllStep; }
+            set { _wirteAllStep = value; RaisePropertyChanged(); }
         }
-       
+
         private ushort _setStep = 5;
         public ushort SetStep
         {
@@ -143,21 +135,22 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         public DelegateCommand AutoAdjustCommand { get; set; }
         public DelegateCommand ExportMultipleSeriesToCsvCommand { get; set; }
         public DelegateCommand ClearMonitorCommand { get; set; }
+        public DelegateCommand CloseOutPutCommand { get; set; }
+        public DelegateCommand IsAllCheckChangeCommand { get; set; }
         private void Init()
         {
 
             _localIp = NetMethodModel.GetLocalIPAddress().ToString();
             HVBoxModels = new ObservableCollection<HVBoxModel>();
-            PlotModel = new PlotModel() { Title = "电流电压曲线"};
+            PlotModel = new PlotModel() { Title = "电流电压曲线" };
             PlotModel.Legends.Add(new Legend());
-            PlotModel.Axes.Add(new DateTimeAxis() { Title="时间",Position=AxisPosition.Bottom});
+            PlotModel.Axes.Add(new DateTimeAxis() { Title = "时间", Position = AxisPosition.Bottom });
             PlotModel.Axes.Add(new LinearAxis() { Title = "数值", Position = AxisPosition.Left });
             for (byte i = 0; i < 12; i++)
             {
-                var HVBoxModel = new HVBoxModel((byte)(i+1), _localIp, _portStart + i, _remoteIp, _remotePort + i,this);
+                var HVBoxModel = new HVBoxModel((byte)(i + 1), _localIp, PortStart, _remoteIp, _remotePort + i, this);
                 HVBoxModels.Add(HVBoxModel);
-                PlotModel.Series.Add(HVBoxModel.IlineSeries);
-                PlotModel.Series.Add(HVBoxModel.HVlineSeries);
+
             }
             SetHvCommand = new DelegateCommand(SetHv);
             SetHvStepCommand = new DelegateCommand(SetHvStep);
@@ -165,8 +158,12 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             AutoAdjustCommand = new DelegateCommand(AutoAdjust);
             ExportMultipleSeriesToCsvCommand = new DelegateCommand(ExportMultipleSeriesToCsv);
             ClearMonitorCommand = new DelegateCommand(ClearMonitor);
+            CloseOutPutCommand = new DelegateCommand(CloseOutPut);
+            TestCommand = new DelegateCommand(Test);
+            IsAllCheckChangeCommand = new DelegateCommand(IsAllCheckChange);    
+            listTime = new List<string>();
         }
-       
+
         public void InitSetHVTimer()
         {
             // 1. 创建定时器，设置间隔时间（单位：毫秒，此处为 1000ms = 1秒）
@@ -192,59 +189,174 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             _setHvTimer?.Stop();
             _setHvTimer?.Dispose();
             _setHvTimer = null;
+
         }
         private void SetHvTimerElapsed(object sender, ElapsedEventArgs e)
         {
-            _setHvCount++;
-            if (_direction)
+
+            try
             {
-                if (_setHvCount >= _setHvTotalCount)
+                StopTimer();
+                if (_direction)
                 {
-                    _startBufferHv = _endBufferHv;
-                    for (int i = 0; i < HVBoxModels.Count; i++)
+                    if (_startBufferHv >= _endBufferHv || _startBufferHv + SetStep >= _endBufferHv)
                     {
-                        HVBoxModels[i].Entity.SetHvCommand((ushort)(_endBufferHv));
+                        _startBufferHv = _endBufferHv;
+                        for (int i = 0; i < HVBoxModels.Count; i++)
+                        {
+                            HVBoxModels[i].DirectlySetHV((ushort)(_endBufferHv));
+
+
+                        }
+                        StopSetHvTimer();
+                        InitTimer();
+                        return;
+                    }
+                    else
+                    {
+                        _startBufferHv = (ushort)(_startBufferHv + SetStep);
+                    }
+
+                    if (_startBufferHv > 41000)
+                    {
+                        for (int i = 0; i < HVBoxModels.Count; i++)
+                        {
+                            HVBoxModels[i].DirectlySetHV((ushort)(0));
+                        }
+                        StopSetHvTimer();
+                        InitTimer();
+                        return;
+
+                    }
+                    else if (_startBufferHv > 30000)
+                    {
+                        for (int i = 0; i < HVBoxModels.Count; i++)
+                        {
+                            HVBoxModels[i].DirectlySetHV((ushort)(30000));
+                        }
+                        StopSetHvTimer();
+                        InitTimer();
+                        return;
+                    }
+                    else
+                    {
+                        for (int i = 0; i < HVBoxModels.Count; i++)
+                        {
+                            HVBoxModels[i].DirectlySetHV(_startBufferHv);
+                        }
                     }
                 }
                 else
                 {
-                    _startBufferHv = (ushort)(_startBufferHv + SetStep);
-                    for (int i = 0; i < HVBoxModels.Count; i++)
+                    if (_endBufferHv >= _startBufferHv || _endBufferHv >= _startBufferHv - SetStep || _startBufferHv > 30000 || _startBufferHv - SetStep > 30000)
                     {
-                        HVBoxModels[i].Entity.SetHvCommand((ushort)(_startBufferHv));
+                        _startBufferHv = _endBufferHv;
+                        for (int i = 0; i < HVBoxModels.Count; i++)
+                        {
+                            HVBoxModels[i].DirectlySetHV(_endBufferHv);
+                        }
+                        StopSetHvTimer();
+                        InitTimer();
+                        return;
                     }
+                    else
+                    {
+                        _startBufferHv = (ushort)(_startBufferHv - SetStep);
+                    }
+                    if (_startBufferHv > 41000)
+                    {
+                        for (int i = 0; i < HVBoxModels.Count; i++)
+                        {
+                            HVBoxModels[i].DirectlySetHV(0);
+                        }
+                        StopSetHvTimer();
+                        InitTimer();
+                    }
+                    else if (_startBufferHv > 30000)
+                    {
+                        for (int i = 0; i < HVBoxModels.Count; i++)
+                        {
+                            HVBoxModels[i].DirectlySetHV(30000);
+                        }
+                        StopSetHvTimer();
+                        InitTimer();
+                    }
+                    else
+                    {
+                        for (int i = 0; i < HVBoxModels.Count; i++)
+                        {
+                            HVBoxModels[i].DirectlySetHV(_startBufferHv);
+                        }
+                    }
+
                 }
             }
-            else
+            catch (Exception ex)
             {
-                if (_setHvCount >= _setHvTotalCount)
-                {
-                    _startBufferHv = _endBufferHv;
-                    for (int i = 0; i < HVBoxModels.Count; i++)
-                    {
-                        HVBoxModels[i].Entity.SetHvCommand((ushort)(_endBufferHv));
-                    }     
-                }
-                else
-                {
-                    _startBufferHv = (ushort)(_startBufferHv - SetStep);
-                    for (int i = 0; i < HVBoxModels.Count; i++)
-                    {
-                        HVBoxModels[i].Entity.SetHvCommand((ushort)(_startBufferHv));
-                    }
-                }
+                NLog.LogManager.GetCurrentClassLogger().Error($"设置所有高压出现错误 {ex}");
             }
-            if (_setHvCount >= _setHvTotalCount)
+            finally
             {
-                StopSetHvTimer();
+                QueryHvMessage();
+
+            }
+
+
+        }
+        // 定时触发的方法
+        public void InitTimer()
+        {
+            // 1. 创建定时器，设置间隔时间（单位：毫秒，此处为 1000ms = 1秒）
+            if (_timer == null)
+            {
+                _timer = new System.Timers.Timer(1000);
+            }
+            // 2. 绑定定时触发的事件
+            _timer.Elapsed += OnTimerElapsed;
+
+            // 3. 设置是否重复触发（true = 循环触发，false = 只触发一次）
+            _timer.AutoReset = true;
+
+            // 4. 启动定时器
+            _timer.Enabled = true;
+        }
+        public void StopTimer()
+        {
+            _timer?.Stop();
+            _timer?.Dispose();
+            _timer = null;
+        }
+        private void OnTimerElapsed(object sender, ElapsedEventArgs e)
+        {
+            for (int i = 0; i < HVBoxModels.Count; i++)
+            {
+                HVBoxModels[i].Entity?.GetHvReadCommand();
+                HVBoxModels[i].Entity?.GetHvInitCommand();
+            }
+            _connectCount++;
+            if (_connectCount >= 10)
+            {
+                _connectCount = 0;
+                for (int i = 0; i < HVBoxModels.Count; i++)
+                {
+                    HVBoxModels[i].CheckConnect(); ;
+                }
+
             }
         }
-       
+        private void QueryHvMessage()
+        {
+            for (int i = 0; i < HVBoxModels.Count; i++)
+            {
+                HVBoxModels[i].Entity?.GetHvReadCommand();
+                HVBoxModels[i].Entity?.GetHvInitCommand();
+            }
+        }
         private void SetHv()
         {
             _setHvCount = 0;
             _startBufferHv = (ushort)HVBoxModels[0].ReadHV;
-            _endBufferHv = WriteHV;
+            _endBufferHv = _writeHv;
             if (_endBufferHv > _startBufferHv)
             {
                 _setHvTotalCount = (_endBufferHv - _startBufferHv) / SetStep + 1;
@@ -259,17 +371,28 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             InitSetHVTimer();
         }
 
-        private void SetHvStep() 
+        private void SetHvStep()
         {
-            SetStep = WriteStep;
+
+            SetStep = WriteAllStep;
         }
+        private void CloseOutPut()
+        {
+
+            for (int i = 0; i < HVBoxModels.Count; i++)
+            {
+                HVBoxModels[i].CloseOutput();
+            }
+        }
+
         private void Connect()
         {
             for (int i = 0; i < HVBoxModels.Count; i++)
             {
 
-                HVBoxModels[i].InitConnect(_portStart + i, NetMethodModel.GetLocalIPAddress().ToString(), _remotePort + i, _remoteIp);
+                HVBoxModels[i].InitConnect(0, _localIp, _remotePort + i, _remoteIp);
             }
+            InitTimer();
         }
         private void AutoAdjust()
         {
@@ -278,6 +401,26 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
                 axis.Reset();
                 // 通知图表重绘
                 PlotModel.InvalidatePlot(true);
+            }
+        }
+        private void IsAllCheckChange()
+        {
+            if (IsAllCheck)
+            {
+
+                for (int i = 0; i < HVBoxModels.Count; i++)
+                {
+                    HVBoxModels[i].IsCheck = true;
+                }
+
+
+            }
+            else
+            {
+                for (int i = 0; i < HVBoxModels.Count; i++)
+                {
+                    HVBoxModels[i].IsCheck = false;
+                }
             }
         }
         private void ClearMonitor()
@@ -291,43 +434,48 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         public void ExportMultipleSeriesToCsv()
         {
             // 1. 获取所有 LineSeries 并按 Title 排序（确保顺序一致）
-            List<List<HvMessage>> allLineSeries = new List<List<HvMessage>>();
-            List<string> head = new List<string>();
-            for (int i = 0; i < HVBoxModels.Count; i++)
-            {
-                var list = HVBoxModels[i].HvMessages.ToList();
-                allLineSeries.Add(list);
-                head.Add(HVBoxModels[i].Channel.ToString() + "时间");
-                head.Add(HVBoxModels[i].Channel.ToString() + "电压");
-                head.Add(HVBoxModels[i].Channel.ToString() + "电流");
-            }
+           
+          
        
             // 4. 打开保存文件对话框
             string savePath = GetSavePath();
+            List<string> csvfile = new List<string>();
             if (string.IsNullOrEmpty(savePath)) return;
             try
             {
-                var csvLines = new List<string>();
-
-               
-                csvLines.Add(string.Join(",", head));
-
                 // 6. 构建数据行（按时间排序）
-                foreach (var timeEntry in allLineSeries)
+                for (int i = 0; i < HVBoxModels.Count; i++)
                 {
-                    var rowParts = new List<string>();
-                    foreach (var series in timeEntry)
-                    {
-                        rowParts.Add(series.DateTime.ToString("yyyy年MM月dd日 HH:mm:ss"));
-                        rowParts.Add(series.HV.ToString());
-                        rowParts.Add(series.I.ToString());
-                    }
-                    csvLines.Add(string.Join(",", rowParts));
-                }
 
+                    var timeCsvLines = new List<string>();
+                    var setCsvLines1 = new List<string>();
+                    var hvCsvLines1 = new List<string>();
+                    var iCsvLines1 = new List<string>();
+                  
+
+                    if (HVBoxModels[i].HvMessages!=null && HVBoxModels[i].HvMessages.Count>0)
+                    {
+
+                        timeCsvLines.Add(HVBoxModels[i].Channel.ToString() + "时间");
+                        hvCsvLines1.Add(HVBoxModels[i].Channel.ToString() + "高压");
+                        iCsvLines1.Add(HVBoxModels[i].Channel.ToString() + "电流");
+                        for (int j = 0; j < HVBoxModels[i].HvMessages.Count; j++)
+                        {
+                            timeCsvLines.Add(HVBoxModels[i].HvMessages[j].DateTime.ToString("yyyy年MM月dd日 HH:mm:ss"));
+                            setCsvLines1.Add(HVBoxModels[i].HvMessages[j].I.ToString());
+                            hvCsvLines1.Add(HVBoxModels[i].HvMessages[j].HV.ToString());
+                            iCsvLines1.Add(HVBoxModels[i].HvMessages[j].I.ToString());
+                           
+                        }
+                        csvfile.Add(string.Join(",", timeCsvLines));
+                        csvfile.Add(string.Join(",", hvCsvLines1));
+                        csvfile.Add(string.Join(",", iCsvLines1));
+                    }
+                }
+                                      
                 // 7. 写入文件
-                File.WriteAllLines(savePath, csvLines, System.Text.Encoding.UTF8);
-                ShowMessage($"所有 {allLineSeries.Count} 个系列的数据已成功导出到：{savePath}");
+                File.WriteAllLines(savePath, csvfile, System.Text.Encoding.UTF8);
+                ShowMessage($"成功导出到：{savePath}");
             }
             catch (Exception ex)
             {
@@ -352,6 +500,19 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         {
             System.Windows.MessageBox.Show(message);
             
+        }
+        public DelegateCommand TestCommand { get; set; }
+        private void Test()
+        {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            for (int i = 0; i < HVBoxModels.Count; i++)
+            {
+                HVBoxModels[i].Entity.SetHvCommand(50);
+                listTime.Add($"通道{HVBoxModels[i].Channel}:{stopwatch.Elapsed.TotalMilliseconds.ToString()}ms");
+            }
+            var x = listTime;
+            stopwatch.Stop();
         }
 
     }
