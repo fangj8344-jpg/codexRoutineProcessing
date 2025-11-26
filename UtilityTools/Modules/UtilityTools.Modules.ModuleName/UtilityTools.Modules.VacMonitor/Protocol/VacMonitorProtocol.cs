@@ -24,6 +24,7 @@
  *----------------------------------------------------------------*/
 #endregion
 
+using NLog;
 using OpenCvSharp.Flann;
 using System;
 using System.Collections.Generic;
@@ -31,6 +32,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UtilityTools.Core.Helper;
 using UtilityTools.Core.Model;
 using UtilityTools.Core.Protocol;
 using UtilityTools.Services.Interfaces.IServices;
@@ -54,6 +56,14 @@ namespace UtilityTools.Modules.VacMonitor.Protocol
         [Description("所有通道")]
         VACCHANNEL_CH0 = 0x0400
     }
+    public enum VacFunctionCode
+    {
+        [Description("读规数值")]
+        CMD_GETVAC = 0x0800,
+
+        [Description("读规得类型")]
+        CMD_GETALLVAC = 0x0900,
+    }
     public class VacMonitorProtocol
     {
         #region ------------Constructor------------
@@ -69,12 +79,21 @@ namespace UtilityTools.Modules.VacMonitor.Protocol
         #endregion
 
         #region ------------PrivateMethod------------
+        private static byte[] DeviceID = BitConverter.GetBytes((short)0x0101);
+        private static byte[] DeviceAddr = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x01, 0x01 };
         #endregion
 
         #region ------------StaticMethod------------
-        public static byte[] GetCmd( byte[] data)
+        /// <summary>
+        /// 指令生成方法
+        /// </summary>
+        /// <param name="command">指令类型</param>
+        /// <param name="motorId">电机编号</param>
+        /// <param name="data">指令参数</param>
+        /// <returns></returns>
+        private static byte[] GetCmd(VacFunctionCode command, byte[] data)
         {
-            // data段固定36字节，不足用零填充
+            // 五轴电机的data段固定36字节，不足用零填充
             if (data.Length < 36)
             {
                 var tmp = new byte[36];
@@ -83,11 +102,10 @@ namespace UtilityTools.Modules.VacMonitor.Protocol
                 Buffer.BlockCopy(data, 0, tmp, 0, data.Length);
                 data = tmp;
             }
-            var addr = new byte[6] { 0x00,0x00,0x00,0x00,0x01,0x01};
-            var cmd = BitConverter.GetBytes((ushort)0x0800);//0x0800 获取读取真空规数值的命令码
-            var id = BitConverter.GetBytes((ushort)0x0101);
-           return ZepGenericProtocol.GetCmd(addr,id, cmd, data);
-           //return ZepGenericProtocol.GetCmd( id, cmd, data);
+
+            var cmd = BitConverter.GetBytes((ushort)command);
+            var id = DeviceID;
+            return ZepGenericProtocol.GetCmd(DeviceAddr,id, cmd, data);
         }
         public class VacDataPacket
         {
@@ -144,16 +162,16 @@ namespace UtilityTools.Modules.VacMonitor.Protocol
             bytes[5] = 0x0D;
             return bytes;
         }
-        /// <summary>
-        /// 新协议获取真空读数指令码
+        /// 读取所有通道真空
         /// </summary>
-        /// <param name="channelNumer"> 通道号</param>
         /// <returns></returns>
-        public static byte[] GetVacuumValueNew(uint channelNumer)
+        public static byte[] GetAllVacuumValueNew()
         {
-            return  GetCmd(BitConverter.GetBytes(channelNumer));
+            ByteWriter writer = new ByteWriter(36);
+           
+            return GetCmd(VacFunctionCode.CMD_GETVAC, writer.EndWrite());
+           
         }
-
         /// <summary>
         /// 获取枪头真空度
         /// </summary>

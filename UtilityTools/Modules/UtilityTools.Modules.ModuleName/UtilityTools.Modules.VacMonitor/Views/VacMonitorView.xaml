@@ -67,6 +67,8 @@
                             <MenuItem Header="清除" Command="{Binding ClearMonitorCommand}" CommandParameter="ImageParam"/>
                             <MenuItem Header="自适应" Command="{Binding AutoAdjustComamnd}" CommandParameter="ImageParam"/>
                             <MenuItem Header="保存到文件" Command="{Binding SaveToFileCommand}" CommandParameter="ImageParam"/>
+                            <MenuItem Header="导出" Command="{Binding VacExportToCsvCommand}"/> 
+                            <MenuItem Header="导入" Command="{Binding VacImportFromCsvCommand}"/>
                         </ContextMenu>
                     </oxy:PlotView.ContextMenu>
                 </oxy:PlotView>

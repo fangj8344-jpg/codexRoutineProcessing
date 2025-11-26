@@ -24,49 +24,51 @@
  *----------------------------------------------------------------*/
 #endregion
 
+using CsvHelper;
+using ImageMagick;
+using Microsoft.Win32;
+using NLog;
+using OpenCvSharp;
 using OxyPlot;
+using OxyPlot.Axes;
 using OxyPlot.Legends;
 using OxyPlot.Series;
+using OxyPlot.Wpf;
 using Prism.Commands;
 using Prism.Ioc;
 using Prism.Services.Dialogs;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.IO.Ports;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
-using UtilityTools.Core.Dialog;
-using UtilityTools.Core.Mvvm;
-using UtilityTools.Core.Model;
-using UtilityTools.Modules.VacMonitor.Model;
-using System.IO.Ports;
-using UtilityTools.Modules.VacMonitor.Protocol;
 using System.Windows;
-using NLog;
-using UtilityTools.Services.Interfaces.IServices;
-using System.Windows.Interop;
-using UtilityTools.Services.Interfaces;
-using System.Threading;
-using Microsoft.Win32;
-using OxyPlot.Wpf;
 using System.Windows.Forms;
-using System.IO;
-using OxyPlot.Axes;
-using static UtilityTools.Modules.VacMonitor.Protocol.VacMonitorProtocol;
-using CsvHelper;
-using ImageMagick;
-using OpenCvSharp;
+using System.Windows.Interop;
+using TouchSocket.Core;
+using UtilityTools.Core.Dialog;
+using UtilityTools.Core.Model;
+using UtilityTools.Core.Mvvm;
+using UtilityTools.Modules.VacMonitor.Model;
+using UtilityTools.Modules.VacMonitor.Protocol;
 using UtilityTools.Services;
+using UtilityTools.Services.Interfaces;
+using UtilityTools.Services.Interfaces.IServices;
 using UtilityTools.Services.Services;
+using Microsoft.Win32;
+using static UtilityTools.Modules.VacMonitor.Protocol.VacMonitorProtocol;
 
 namespace UtilityTools.Modules.VacMonitor.ViewModels
 {
     public class VacMonitorViewModel : RegionViewModelBase
     {
         #region ------------Constructor------------
-        public VacMonitorViewModel(IDialogHostService dialogHostService, IContainerProvider containerProvider) 
+        public VacMonitorViewModel(IDialogHostService dialogHostService, Prism.Ioc.IContainerProvider containerProvider) 
             : base(containerProvider)
         {
             this._containerProvider = containerProvider;
@@ -87,16 +89,16 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
                 _timer = null;
             }
 
-            if (Service != null)
+            if (SericalService != null)
             {
-                Service.Close();
+                SericalService.Close();
             }
         }
         #endregion
 
         #region ------------Field------------
         private readonly IDialogHostService _dialogHostService;
-        private readonly IContainerProvider _containerProvider;
+        private readonly Prism.Ioc.IContainerProvider _containerProvider;
         private System.Timers.Timer _timer;
 
         LineSeries _vacuum1;
@@ -105,7 +107,7 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         LineSeries _vacuum4;
 
         private VacMonitorProtocolParser _parser1;
-        private VacMonitorProtocolParser _parser2; 
+
         #endregion
 
         #region ------------Property------------
@@ -131,7 +133,15 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         /// <summary>
         /// 下位机服务端串接口
         /// </summary>
-        public IAsynRWService Service { get; set; }
+        public IAsynRWService _sericalService;
+        /// <summary>
+        /// 串口通信
+        /// </summary>
+        public IAsynRWService SericalService
+        { 
+            get { return _sericalService; }
+            set{ _sericalService = value;RaisePropertyChanged(); }
+        }
         private IAsynRWService _netUdpService;
         /// <summary>
         /// 网口异步通信服务
@@ -195,6 +205,31 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
             get { return _logSource; }
             set { _logSource = value; RaisePropertyChanged(); }
         }
+        private ObservableCollection<VacMessageModel> _vac1MessageModels;
+        public ObservableCollection<VacMessageModel> Vac1MessageModels
+        {
+            get { return _vac1MessageModels; }
+            set { _vac1MessageModels = value; RaisePropertyChanged(); }
+        }
+        private ObservableCollection<VacMessageModel> _vac2MessageModels;
+        public ObservableCollection<VacMessageModel> Vac2MessageModels
+        {
+            get { return _vac2MessageModels; }
+            set { _vac2MessageModels = value; RaisePropertyChanged(); }
+        }
+        private ObservableCollection<VacMessageModel> _vac3MessageModels;
+        public ObservableCollection<VacMessageModel> Vac3MessageModels
+        {
+            get { return _vac3MessageModels; }
+            set { _vac3MessageModels = value; RaisePropertyChanged(); }
+        }
+        private ObservableCollection<VacMessageModel> _vac4MessageModels;
+        public ObservableCollection<VacMessageModel> Vac4MessageModels
+        {
+            get { return _vac4MessageModels; }
+            set { _vac4MessageModels = value; RaisePropertyChanged(); }
+        }
+
         #endregion
 
         #region ------------Command------------
@@ -204,6 +239,8 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         public DelegateCommand ClearMonitorCommand { get; set; }
         public DelegateCommand AutoAdjustComamnd { get; set; }
         public DelegateCommand SaveToFileCommand { get; set; }
+        public DelegateCommand VacImportFromCsvCommand { get; set; }
+        public DelegateCommand VacExportToCsvCommand { get; set; }
         #endregion
 
         #region ------------PublicMethod------------
@@ -221,6 +258,8 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
             ClearMonitorCommand = new DelegateCommand(ClearMonitor);
             AutoAdjustComamnd = new DelegateCommand(AutoAdjust);
             SaveToFileCommand = new DelegateCommand(Save);
+            VacImportFromCsvCommand = new DelegateCommand(VacImportFromCsv);
+            VacExportToCsvCommand = new DelegateCommand(VacExportToCsv);
         }
 
         /// <summary>
@@ -229,7 +268,7 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         private void InitProperty()
         {
             IsConnected = false;
-            Service = _containerProvider.Resolve<IServiceFactory>().GetAsynRWService("SPVM");
+            SericalService = _containerProvider.Resolve<IServiceFactory>().GetAsynRWService("SPVM");
             var netUdp = new UdpNetAsyncDevice();
             netUdp.Name = "真空检测";
             netUdp.DeviceInstance.TargetIp = "192.168.1.88";
@@ -240,27 +279,28 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
             NetUdpService = netUdp;
             MonitorState = "开始监控";
             MonitorInterval = 1000;
-
+            Vac1MessageModels = new ObservableCollection<VacMessageModel>();
+            Vac2MessageModels = new ObservableCollection<VacMessageModel>();
+            Vac3MessageModels = new ObservableCollection<VacMessageModel>();
+            Vac4MessageModels = new ObservableCollection<VacMessageModel>();
             _parser1 = new VacMonitorProtocolParser();
-            _parser2 = new VacMonitorProtocolParser();
-            _parser1.Service = Service;
+            _parser1.Service = SericalService;
             _parser1.Service = NetUdpService;
-            Service.UpdateResponse += Service_VacuumMonitoringResponse;
+            SericalService.UpdateResponse += Service_VacuumMonitoringResponse;
             NetUdpService.UpdateResponse += NetUdpService_VacuumMonitoringResponse;
             _parser1.PacketReceivedEvent += Parser_VacuumMonitoringResponse;
-            _parser2.PacketReceivedEvent += Parser_VacuumMonitoringResponse;
 
             // 初始化图表信息
-            VacuumPlotModel = new PlotModel();
+            VacuumPlotModel = new PlotModel() { Title="真空曲线"};
             VacuumPlotModel.Legends.Add(new Legend());
 
-            VacuumPlotModel.Axes.Add(new LinearAxis() { Title = "时间", Position = OxyPlot.Axes.AxisPosition.Bottom });
+            VacuumPlotModel.Axes.Add(new DateTimeAxis() { Title = "时间", Position = OxyPlot.Axes.AxisPosition.Bottom });
             VacuumPlotModel.Axes.Add(new LogarithmicAxis() { Title = "真空值", Position = OxyPlot.Axes.AxisPosition.Left });
 
-            _vacuum1 = new LineSeries() { Title = "Vac1", RenderInLegend = true };
-            _vacuum2 = new LineSeries() { Title = "Vac2", RenderInLegend = true };
-            _vacuum3 = new LineSeries() { Title = "Vac3", RenderInLegend = true };
-            _vacuum4 = new LineSeries() { Title = "Vac4", RenderInLegend = true };
+            _vacuum1 = new LineSeries() { Title = "Vac1", RenderInLegend = true,ItemsSource = Vac1MessageModels, DataFieldX= "DateTime", DataFieldY= "VacValue" };
+            _vacuum2 = new LineSeries() { Title = "Vac2", RenderInLegend = true,ItemsSource = Vac2MessageModels, DataFieldX = "DateTime", DataFieldY = "VacValue" };
+            _vacuum3 = new LineSeries() { Title = "Vac3", RenderInLegend = true,ItemsSource = Vac3MessageModels, DataFieldX = "DateTime", DataFieldY = "VacValue" };
+            _vacuum4 = new LineSeries() { Title = "Vac4", RenderInLegend = true,ItemsSource = Vac4MessageModels, DataFieldX = "DateTime", DataFieldY = "VacValue" };
             VacuumPlotModel.Series.Add(_vacuum1);
             VacuumPlotModel.Series.Add(_vacuum2);
             VacuumPlotModel.Series.Add(_vacuum3);
@@ -269,7 +309,70 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
             LogSource = new ObservableCollection<VacuumLogModel>();
         }
 
-       
+        private void Service_VacuumMonitoringResponse(object sender, byte[] e)
+        {
+            if (NewAgreement == false)
+                if (sender is SerialPort dev)
+                {
+                    // 解析回包数据
+                    try
+                    {
+                        var msg = dev.ReadLine();
+
+                        System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+                        {
+                            LogSource.Insert(0, new VacuumLogModel()
+                            {
+                                Time = DateTime.Now,
+                                Message = msg,
+                                Direct = "R"
+                            });
+
+                            int length = LogSource.Count;
+                            if (length > 1000)
+                            {
+                                LogSource.RemoveAt(length - 1);
+                            }
+                        }));
+
+                        if (VacMonitorProtocol.TryParseResponse(msg, out int index, out double vac))
+                        {
+                            VacMessageModel vacMessageModel = new VacMessageModel() { DateTime = DateTime.Now, VacValue = vac };
+                            switch (index)
+                            {
+                                case 1:
+                                    {
+                                        Vac1MessageModels.Add(vacMessageModel);
+                                        break;
+                                    }
+                                case 2:
+                                    {
+                                        Vac2MessageModels.Add(vacMessageModel);
+                                        break;
+                                    }
+                                case 3:
+                                    {
+                                        Vac3MessageModels.Add(vacMessageModel);
+                                        break;
+                                    }
+                            }
+
+                        }
+                        VacuumPlotModel.InvalidatePlot(true);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogManager.GetCurrentClassLogger().Error($"{dev.PortName} ReadLine Error: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    _parser1.ReceiveBytes(e);
+                }
+           
+        }
+
+
 
         /// <summary>
         /// 串口显示设备弹窗
@@ -277,7 +380,7 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         private async void ShowDevice()
         {
             DialogParameters parameter = new DialogParameters();
-            parameter.Add("Value", Service);
+            parameter.Add("Value", SericalService);
             var diaglogResult = await this._dialogHostService.ShowDialog("SerialPortView", parameter, CommonModel.VacMonitorRegionName);
             if (diaglogResult == null)
                 return;
@@ -286,8 +389,8 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
                 var value = diaglogResult.Parameters.GetValue<IAsynRWService>("Value");
                 if(value != null) 
                 {
-                    Service = value;
-                    IsConnected = Service.IsOpen;
+                    SericalService = value;
+                    IsConnected = SericalService.IsOpen;
                 }
             }
         }
@@ -346,10 +449,10 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         /// </summary>
         private void ClearMonitor()
         {
-            _vacuum1.Points.Clear();
-            _vacuum2.Points.Clear();
-            _vacuum3.Points.Clear();
-            _vacuum4.Points.Clear();
+            Vac1MessageModels.Clear();
+            Vac2MessageModels.Clear();
+            Vac3MessageModels.Clear();
+            Vac4MessageModels.Clear();
             VacuumPlotModel.InvalidatePlot(true);
         }
 
@@ -429,7 +532,7 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
         {
             if (NewAgreement == false)
             {
-                if (Service.IsOpen)
+                if (SericalService.IsOpen)
                 {
                     // Work
                     SendMsg(VacMonitorProtocol.GetVacuumValue(1));
@@ -451,82 +554,20 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
             }
             else
             {
-                if (Service.IsOpen)
+                if (SericalService.IsOpen)
                 {
-                    SendMsg(VacMonitorProtocol.GetVacuumValueNew(0));
-                    Thread.Sleep(MonitorInterval);
+                    SendMsg(VacMonitorProtocol.GetAllVacuumValueNew());
+    
                 }
                 if (NetUdpService.IsOpen)
                 {
-                    NetUdpSendMsg(VacMonitorProtocol.GetVacuumValueNew(0));
-                    Thread.Sleep(MonitorInterval);
+                    NetUdpSendMsg(VacMonitorProtocol.GetAllVacuumValueNew());
+   
                 }
                
             }
-           
         }
 
-        /// <summary>
-        /// 串口通讯数据回报接收函数
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        /// <exception cref="NotImplementedException"></exception>
-        
-
-        private void SerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
-        {
-            if (sender is SerialPort dev)
-            {
-                // 解析回包数据
-                try
-                {
-                    var msg = dev.ReadLine();
-
-                    System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
-                    {
-                        LogSource.Insert(0, new VacuumLogModel()
-                        {
-                            Time = DateTime.Now,
-                            Message = msg,
-                            Direct = "R"
-                        });
-
-                        int length = LogSource.Count;
-                        if (length > 1000)
-                        {
-                            LogSource.RemoveAt(length - 1);
-                        }
-                    }));
-
-                    if (VacMonitorProtocol.TryParseResponse(msg, out int index, out double vac))
-                    {
-                        switch (index)
-                        {
-                            case 1:
-                                {
-                                    _vacuum1.Points.Add(new DataPoint(_vacuum1.Points.Count(), vac));
-                                    break;
-                                }
-                            case 2:
-                                {
-                                    _vacuum2.Points.Add(new DataPoint(_vacuum2.Points.Count(), vac));
-                                    break;
-                                }
-                            case 3:
-                                {
-                                    _vacuum3.Points.Add(new DataPoint(_vacuum3.Points.Count(), vac));
-                                    break;
-                                }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    LogManager.GetCurrentClassLogger().Error($"{dev.PortName} ReadLine Error: {ex.Message}");
-                }
-            }
-        }
         /// <summary>
         /// 网口回报事件
         /// </summary>
@@ -558,88 +599,30 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
                                 LogSource.RemoveAt(length - 1);
                             }
                         }));
-
+                       
                         if (VacMonitorProtocol.TryParseResponse(msg, out int index, out double vac))
                         {
+                            VacMessageModel vacMessageModel = new VacMessageModel() { DateTime = DateTime.Now, VacValue = vac };
                             switch (index)
                             {
                                 case 1:
                                     {
-                                        _vacuum1.Points.Add(new DataPoint(_vacuum1.Points.Count(), vac));
+                                        Vac1MessageModels.Add(vacMessageModel);
                                         break;
                                     }
                                 case 2:
                                     {
-                                        _vacuum2.Points.Add(new DataPoint(_vacuum2.Points.Count(), vac));
+                                        Vac2MessageModels.Add(vacMessageModel);
                                         break;
                                     }
                                 case 3:
                                     {
-                                        _vacuum3.Points.Add(new DataPoint(_vacuum3.Points.Count(), vac));
+                                        Vac3MessageModels.Add(vacMessageModel);
                                         break;
                                     }
-                            }
-                            VacuumPlotModel.InvalidatePlot(true);
-                        }
-                    }
-                }
-            }
-            else
-            {
-                _parser2.ReceiveBytes(e);
-            }
-        }
-
-
-        /// <summary>
-        /// 回报事件
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void Service_VacuumMonitoringResponse(object sender, byte[] e)
-        {
-            if (NewAgreement == false)
-            {
-                var sourceMsg = Encoding.Default.GetString(e);
-                var list = sourceMsg.Split((char)0x0D);
-
-                foreach (var msg in list)
-                {
-                    if (msg.Length != 0)
-                    {
-                        System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
-                        {
-                            LogSource.Insert(0, new VacuumLogModel()
-                            {
-                                Time = DateTime.Now,
-                                Message = msg,
-                                Direct = "R"
-                            });
-
-                            int length = LogSource.Count;
-                            if (length > 1000)
-                            {
-                                LogSource.RemoveAt(length - 1);
-                            }
-                        }));
-
-                        if (VacMonitorProtocol.TryParseResponse(msg, out int index, out double vac))
-                        {
-                            switch (index)
-                            {
-                                case 1:
+                                case 4:
                                     {
-                                        _vacuum1.Points.Add(new DataPoint(_vacuum1.Points.Count(), vac));
-                                        break;
-                                    }
-                                case 2:
-                                    {
-                                        _vacuum2.Points.Add(new DataPoint(_vacuum2.Points.Count(), vac));
-                                        break;
-                                    }
-                                case 3:
-                                    {
-                                        _vacuum3.Points.Add(new DataPoint(_vacuum3.Points.Count(), vac));
+                                        Vac4MessageModels.Add(vacMessageModel);
                                         break;
                                     }
                             }
@@ -653,6 +636,9 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
                 _parser1.ReceiveBytes(e);
             }
         }
+
+
+      
         /// <summary>
         /// 新协议回报事件
         /// </summary>
@@ -670,9 +656,8 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
             //0x0800是读取真空规数字的命令码
             if (e.cmd == 0x0800)
             {
-                ushort channel = BitConverter.ToUInt16(e.DataSource,0);
-                ushort floatNumber = BitConverter.ToUInt16(e.DataSource,2);
-                
+                byte channel = e.DataSource[3];
+                byte floatNumber = e.DataSource[2];
                 var msg = BitConverter.ToString (e.DataSource);
                 System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
                 {
@@ -686,59 +671,47 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
                     int length = LogSource.Count;
                     if (length > 1000)
                     {
-                        LogSource.RemoveAt(length - 1);
+                        LogSource.RemoveAt(0);
                     }
                 }));
-            
                 float vacFloat1 = BitConverter.ToSingle(e.DataSource.Skip(4).Take(4).ToArray());
                 float vacFloat2 = BitConverter.ToSingle(e.DataSource.Skip(8).Take(4).ToArray());
                 float vacFloat3 = BitConverter.ToSingle(e.DataSource.Skip(12).Take(4).ToArray());
                 float vacFloat4 = BitConverter.ToSingle(e.DataSource.Skip(16).Take(4).ToArray());
+                VacMessageModel vac1MessageModel = new VacMessageModel() { DateTime = DateTime.Now, VacValue = vacFloat1 };
+                VacMessageModel vac2MessageModel = new VacMessageModel() { DateTime = DateTime.Now, VacValue = vacFloat2 };
+                VacMessageModel vac3MessageModel = new VacMessageModel() { DateTime = DateTime.Now, VacValue = vacFloat3 };
+                VacMessageModel vac4MessageModel = new VacMessageModel() { DateTime = DateTime.Now, VacValue = vacFloat4 };
+
+
                 switch (channel)
                 {
                     case 1:
-                        _vacuum1.Points.Add(new DataPoint(_vacuum1.Points.Count(), vacFloat1));
+                        Vac1MessageModels.Add(vac1MessageModel);
                         break;
                     case 2:
-                        _vacuum1.Points.Add(new DataPoint(_vacuum2.Points.Count(), vacFloat1));
+                        Vac2MessageModels.Add(vac2MessageModel);
                         break;
                     case 3:
-                        _vacuum1.Points.Add(new DataPoint(_vacuum3.Points.Count(), vacFloat1));
+                        Vac3MessageModels.Add(vac3MessageModel);
                         break;
-
                     case 4:
-                        _vacuum1.Points.Add(new DataPoint(_vacuum4.Points.Count(), vacFloat1));
+                        Vac4MessageModels.Add(vac4MessageModel);
                         break;
                     case 0:
-                        {
-                            switch (floatNumber)
-                            {
-                                case 4:
-                                    _vacuum4.Points.Add(new DataPoint(_vacuum4.Points.Count(), vacFloat4));
-                                    _vacuum3.Points.Add(new DataPoint(_vacuum3.Points.Count(), vacFloat3));
-                                    _vacuum2.Points.Add(new DataPoint(_vacuum2.Points.Count(), vacFloat2));
-                                    _vacuum1.Points.Add(new DataPoint(_vacuum2.Points.Count(), vacFloat1));
-                                    break;
-                                case 3: 
-                                    _vacuum3.Points.Add(new DataPoint(_vacuum3.Points.Count(), vacFloat3));
-                                    _vacuum2.Points.Add(new DataPoint(_vacuum2.Points.Count(), vacFloat2));
-                                    _vacuum1.Points.Add(new DataPoint(_vacuum2.Points.Count(), vacFloat1));
-                                    break;
-                                case 2:
-                                    _vacuum2.Points.Add(new DataPoint(_vacuum2.Points.Count(), vacFloat2));
-                                    _vacuum1.Points.Add(new DataPoint(_vacuum2.Points.Count(), vacFloat1)); 
-                                    break;
-                                case 1: _vacuum1.Points.Add(new DataPoint(_vacuum2.Points.Count(), vacFloat1));
-                                    break;
-                            }
-
-                            break;
-                        }
+                        
+                        Vac1MessageModels.Add(vac1MessageModel);
+                        Vac2MessageModels.Add(vac2MessageModel);
+                        Vac3MessageModels.Add(vac3MessageModel);
+                        Vac4MessageModels.Add(vac4MessageModel);
+                        break;
+                        
                 }
                 VacuumPlotModel.InvalidatePlot(true);
 
             }
         }
+
         /// <summary>
         /// 串口通讯异常数据回报接收函数
         /// </summary>
@@ -764,15 +737,14 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
             {
                 if ((NewAgreement == true))
                 {
-                    if (NewAgreement == true)
+                    
+                    LogSource.Insert(0, new VacuumLogModel()
                     {
-                        LogSource.Insert(0, new VacuumLogModel()
-                        {
-                            Time = DateTime.Now,
-                            Message = BitConverter.ToString(msg.Skip(18).Take(4).ToArray()),
-                            Direct = "W"
-                        });
-                    }
+                        Time = DateTime.Now,
+                        Message = BitConverter.ToString(msg.Skip(18).Take(4).ToArray()),
+                        Direct = "W"
+                    });
+                    
                 }
                 else
                 {
@@ -784,7 +756,6 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
                     });
 
                 }
-
                 int length = LogSource.Count;
                 if (length > 1000)
                 {
@@ -792,7 +763,7 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
                 }
             }));
 
-            Service.SendMsg(msg);
+            SericalService.SendMsg(msg);
         }
         private void NetUdpSendMsg(byte[] msg)
         {
@@ -823,8 +794,232 @@ namespace UtilityTools.Modules.VacMonitor.ViewModels
                     LogSource.RemoveAt(length - 1);
                 }
             }));
-
+            NLog.LogManager.GetCurrentClassLogger().Debug($"msg.ToString():{msg.ToString()}");
+            NLog.LogManager.GetCurrentClassLogger().Debug($"BitConverter.ToString(msg): {BitConverter.ToString(msg)}");
+           
             NetUdpService.SendMsg(msg);
+        }
+        
+        public void VacExportToCsv()
+        {
+            var filePath = SelectFolder();
+            if (filePath == null)
+            {
+                return; 
+            }
+            
+            if (Vac1MessageModels?.Count>0 )
+            {
+                for (int i = 0; i < 100; i++)
+                {
+                    var path = Path.Combine(filePath, $"Vac1MessageModels_{i}.csv");
+                    if (!File.Exists(path))
+                    {
+                        ExportToCsv(Vac1MessageModels, path);
+                        break;
+                    }
+                }
+               
+            }
+            if (Vac2MessageModels?.Count > 0)
+            {
+                for (int i = 0; i < 100; i++)
+                {
+                    var path = Path.Combine(filePath, $"Vac2MessageModels_{i}.csv");
+                    if (!File.Exists(path))
+                    {
+                        ExportToCsv(Vac2MessageModels, path);
+                        break;
+                    }
+                }
+               
+            }
+            if (Vac3MessageModels?.Count > 0)
+            {
+                for (int i = 0; i < 100; i++)
+                {
+                    var path = Path.Combine(filePath, $"Vac3MessageModels_{i}.csv");
+                    if (!File.Exists(path))
+                    {
+                        ExportToCsv(Vac3MessageModels, path);
+                        break;
+                    }
+                }          
+            }
+            if (Vac4MessageModels?.Count > 0)
+            {
+                for (int i = 0; i < 100; i++)
+                {
+                    var path = Path.Combine(filePath, $"Vac4MessageModels_{i}.csv");
+                    if (!File.Exists(path))
+                    {
+                        ExportToCsv(Vac4MessageModels, path);
+                        break;
+                    }
+                }
+            }
+        } 
+      
+        public void VacImportFromCsv()
+        {
+            var filePath = SelectFolder();
+            if (filePath == null)
+            {
+                return;
+            }
+            var files1 = Directory.GetFiles(filePath, "Vac1MessageModels_*.csv");
+            if (files1?.Length>0)
+            {
+                var file =  files1.OrderBy(f=>f).First();
+                Vac1MessageModels = ImportFromCsv(file);
+                _vacuum1.ItemsSource = Vac1MessageModels;
+                _vacuum1.DataFieldX = "DateTime";
+                _vacuum1.DataFieldY = "VacValue";
+                VacuumPlotModel.InvalidatePlot(true);
+            }
+            var files2 = Directory.GetFiles(filePath, "Vac2MessageModels_*.csv");
+            if (files2?.Length > 0)
+            {
+                var file = files2.OrderBy(f => f).First();
+                Vac2MessageModels = ImportFromCsv(file);
+                _vacuum2.ItemsSource = Vac2MessageModels;
+                _vacuum2.DataFieldX = "DateTime";
+                _vacuum2.DataFieldY = "VacValue";
+                VacuumPlotModel.InvalidatePlot(true);
+            }
+            var files3 = Directory.GetFiles(filePath, "Vac3MessageModels_*.csv");
+            if (files3?.Length > 0)
+            {
+                var file = files3.OrderBy(f => f).First();
+                Vac3MessageModels = ImportFromCsv(file);
+                _vacuum3.ItemsSource = Vac3MessageModels;
+                _vacuum3.DataFieldX = "DateTime";
+                _vacuum3.DataFieldY = "VacValue";
+                VacuumPlotModel.InvalidatePlot(true);
+            }
+            var files4 = Directory.GetFiles(filePath, "Vac4MessageModels_*.csv");
+            if (files4?.Length > 0)
+            {
+                var file = files4.OrderBy(f => f).First();
+                Vac4MessageModels = ImportFromCsv(file);
+                _vacuum4.ItemsSource = Vac4MessageModels;
+                _vacuum4.DataFieldX = "DateTime";
+                _vacuum4.DataFieldY = "VacValue";
+                VacuumPlotModel.InvalidatePlot(true);
+            }
+        }
+        public void ExportToCsv(ObservableCollection<VacMessageModel> data,string filePath)
+        {
+           
+            if (filePath == null)
+            {
+                return;
+            }
+            // 使用 StreamWriter 写入文件，并指定 UTF-8 编码以支持中文等特殊字符
+            using (var writer = new StreamWriter(filePath, false, Encoding.UTF8))
+            {
+                // 写入表头
+                writer.WriteLine("时间,真空值");
+
+                // 遍历数据并写入每一行
+                foreach (var item in data)
+                {
+                    // 为了避免值本身包含逗号导致格式错乱，可以用引号将每个字段括起来
+                    // 时间格式化为标准的 ISO 格式，便于解析
+                    string timeStr = item.DateTime.ToString("o"); // "o" 格式会生成如 "2023-10-27T15:30:45.1234567" 的字符串
+                    string valueStr = item.VacValue.ToString(System.Globalization.CultureInfo.InvariantCulture); // 使用不变文化，避免逗号和点号的问题
+
+                    writer.WriteLine($"{timeStr},{valueStr}");
+                }
+            }
+            System.Windows.MessageBox.Show($"数据已成功导出到 {filePath}");
+        }
+        public ObservableCollection<VacMessageModel> ImportFromCsv(string filePath)
+        {
+            
+            var data = new ObservableCollection<VacMessageModel>();
+
+            if (!File.Exists(filePath))
+            {
+                Console.WriteLine($"文件 {filePath} 不存在。");
+                return data;
+            }
+
+            using (var reader = new StreamReader(filePath, Encoding.UTF8))
+            {
+                // 跳过第一行表头
+                string line = reader.ReadLine();
+
+                while ((line = reader.ReadLine()) != null)
+                {
+                    if (string.IsNullOrWhiteSpace(line))
+                        continue;
+
+                    // 分割行数据
+                    string[] parts = line.Split(',');
+
+                    // 简单验证数据格式
+                    if (parts.Length >= 2)
+                    {
+                        var model = new VacMessageModel();
+                        // 解析时间，使用 TryParse 增加健壮性
+                        if (DateTime.TryParse(parts[0], out DateTime time))
+                        {
+                            model.DateTime = time;
+                        }
+                        else
+                        {
+                            Console.WriteLine($"警告：无法解析时间 '{parts[0]}'，该行将被忽略。");
+                            continue;
+                        }
+
+                        // 解析值
+                        if (double.TryParse(parts[1], System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double value))
+                        {
+                            model.VacValue = value;
+                        }
+                        else
+                        {
+                            Console.WriteLine($"警告：无法解析值 '{parts[1]}'，该行将被忽略。");
+                            continue;
+                        }
+
+                        data.Add(model);
+                    }
+                }
+            }
+            Console.WriteLine($"数据已成功从 {filePath} 导入。");
+            return data;
+        }
+        public  string SelectFolder()
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog();
+            dialog.ValidateNames = false;
+            dialog.CheckFileExists = false;
+            dialog.CheckPathExists = true;
+            dialog.FileName = "选择文件夹";
+
+            if (dialog.ShowDialog() == true)
+            {
+                return System.IO.Path.GetDirectoryName(dialog.FileName);
+            }
+            return null;
+        }
+        public string SelectCsvFile()
+        {
+            Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
+
+            // 设置文件过滤器，只显示 .csv 文件
+            openFileDialog.Filter = "CSV 文件 (*.csv)|*.csv|所有文件 (*.*)|*.*";
+            openFileDialog.FilterIndex = 1; // 默认选择第一个过滤器
+            openFileDialog.Title = "选择 CSV 文件";
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                return openFileDialog.FileName;
+            }
+
+            return null;
         }
         #endregion
 
