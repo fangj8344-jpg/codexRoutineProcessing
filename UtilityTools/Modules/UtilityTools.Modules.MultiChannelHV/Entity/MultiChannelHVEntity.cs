@@ -82,7 +82,7 @@ namespace UtilityTools.Modules.MultiChannelHV.Entity
         /// <returns></returns>
         public  async void SetHVCommand(UInt16 hv)
         {
-            NLog.LogManager.GetCurrentClassLogger().Info($"设置整机高压:{hv}KV");
+            NLog.LogManager.GetCurrentClassLogger().Info($"设置整机高压:{hv}V");
             var cmdData = MultiChannelHVProtocol.SetHV(hv);
             await SentData(cmdData);
         }

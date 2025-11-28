@@ -21,7 +21,7 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
             _channel = channel;
             if (_channel == 13)
             {
-                MaxHV = 6000;
+                MaxIV = 6000;
             }
             InitCommand();
         }
@@ -29,7 +29,7 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
         {
             
         }
-        private ushort _bufferHv;
+        private ushort _endBufferIv;
         // 底层定时器实例
         private System.Timers.Timer _timer;
         // 任务执行的回调方法（由外部传入）
@@ -58,9 +58,9 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
             get { return _writeHV; }
             set 
             {
-                if (value > MaxHV)
+                if (value > MaxIV)
                 {
-                    _writeHV = MaxHV;
+                    _writeHV = MaxIV;
                 }
                 else
                 {
@@ -70,18 +70,38 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
                 RaisePropertyChanged();
             }
         }
-        private ushort _maxHV = 2000;
+        private ushort _maxIV = 2000;
 
-        public ushort MaxHV
+        public ushort MaxIV
         {
-            get { return _maxHV; }
-            set { _maxHV = value; RaisePropertyChanged() ; }
+            get { return _maxIV; }
+            set { _maxIV = value; RaisePropertyChanged() ; }
         }
         private ushort _step = 200;
         public ushort Step
         {
             get { return _step; }
             set { _step = value; RaisePropertyChanged(); }
+        }
+        private int _bufferIv;
+        private int BufferIv
+        {
+            get { return _bufferIv; }
+            set 
+            {
+                if (value < 0)
+                {
+                    _bufferIv = 0;
+                }
+                else if (value > MaxIV)
+                {
+                    _bufferIv = MaxIV;
+                }
+                else
+                {
+                    _bufferIv = value;
+                }
+            }
         }
         [JsonIgnore]
         public DelegateCommand SetIVCommand { get; set; }
@@ -96,9 +116,10 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
 
         private  void SetIv()
         {
-            
-            _bufferHv = WriteHV;
-            if (_bufferHv > ReadHV)
+
+            _endBufferIv = WriteHV;
+            _bufferIv = (ushort)ReadHV;
+            if (_endBufferIv > ReadHV)
             {
                 _direction = true;
             }
@@ -139,36 +160,49 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
         }
         private void OnTimerElapsed(object sender, ElapsedEventArgs e)
         {
-
             if (_direction)
             {
-                var _middleBufferHv = (ushort)ReadHV;
-                var differ = _bufferHv - _middleBufferHv;
 
-                if (differ / Step > 0)
+                var differ = _endBufferIv - _bufferIv;
+
+                if (_endBufferIv < _bufferIv || _endBufferIv < _bufferIv + Step)
                 {
-                    _multiChannelHVEntity?.SetIVCommand(Channel, (ushort)(_middleBufferHv + Step));
+
+                    _multiChannelHVEntity?.SetIVCommand(_channel,(ushort)(_endBufferIv));
+                    StopTimer();
                 }
                 else
                 {
-                    _multiChannelHVEntity?.SetIVCommand(Channel, _bufferHv);
-                    StopTimer();
+                    _bufferIv = (ushort)(_bufferIv + Step);
+                    if (_bufferIv > _endBufferIv)
+                    {
+                        _multiChannelHVEntity?.SetIVCommand(_channel,(ushort)(_endBufferIv));
+                        StopTimer();
+                        return;
+                    }
+                    _multiChannelHVEntity?.SetIVCommand(_channel,(ushort)_bufferIv);
                 }
-
             }
             else
             {
-                var _middleBufferHv = (ushort)ReadHV;
-                var differ = _middleBufferHv -  _bufferHv;
-
-                if (differ / Step > 0)
+                var differ = _endBufferIv - _bufferIv;
+                if (_endBufferIv > _bufferIv || _endBufferIv > _bufferIv - Step || _bufferIv - Step > MaxIV || _bufferIv > MaxIV)
                 {
-                    _multiChannelHVEntity?.SetIVCommand(Channel, (ushort)(_middleBufferHv - Step));
+
+                    _multiChannelHVEntity?.SetIVCommand(_channel,(ushort)(_endBufferIv));
+                    StopTimer();
                 }
                 else
                 {
-                    _multiChannelHVEntity?.SetIVCommand(Channel, _bufferHv);
-                    StopTimer();
+                    _bufferIv = (_bufferIv - Step);
+                    if (_bufferIv > MaxIV)
+                    {
+                        _multiChannelHVEntity?.SetIVCommand(_channel,_endBufferIv);
+                        StopTimer();
+                        return;
+                    }
+                    _multiChannelHVEntity?.SetIVCommand(_channel,(ushort)_bufferIv);
+
                 }
             }
         }
@@ -198,11 +232,11 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
                 var Model = JsonSerializer.Deserialize<MultiChannelHVModel>(jsonString);
                 MultiChannelHVModel.MaxHV = Model.MaxHV;
                 MultiChannelHVModel.WriteHV = Model.WriteHV;
-                MultiChannelHVModel.Step = Model.Step;
+                MultiChannelHVModel.HvStep = Model.HvStep;
                 for (int i = 0; i < MultiChannelHVModel.HVMessageModels.Count; i++) 
                 {
                     MultiChannelHVModel.HVMessageModels[i].WriteHV = Model.HVMessageModels[i].WriteHV;
-                    MultiChannelHVModel.HVMessageModels[i].MaxHV = Model.HVMessageModels[i].MaxHV;
+                    MultiChannelHVModel.HVMessageModels[i].MaxIV = Model.HVMessageModels[i].MaxIV;
                     MultiChannelHVModel.HVMessageModels[i].Step = Model.HVMessageModels[i].Step;
                 }
             }  

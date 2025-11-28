@@ -40,7 +40,7 @@
                 <Button Content="设置悬浮高压" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center" Command="{Binding SetHVCommand}"/>
                 <TextBox Text="{Binding WriteHV}"  BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="100" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center" >
                     <TextBox.InputBindings>
-                        <KeyBinding  Key="Return"  Command="{Binding SetHVCommand}" />
+                        <KeyBinding  Key="Return"  Command="{Binding SetHVCommand,UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}" />
                     </TextBox.InputBindings>
                 </TextBox>
                 <TextBox Text="{Binding MaxHV}"  BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="100" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"
@@ -49,13 +49,13 @@
                 </TextBox>
                 <TextBlock Text="V" DockPanel.Dock="Left" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 <Label Content="步进值(v/s):" DockPanel.Dock="Left" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                <TextBox Text="{Binding Step}" BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="100" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                <TextBox Text="{Binding HvStep,UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}" BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="100" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center" />
                 <TextBlock Text="{Binding ReadHV, StringFormat='当前电压:{0,10:#####0.000}V'}" DockPanel.Dock="Left" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 <TextBlock Text="{Binding ReadI, StringFormat='当前电流:{0,10:#####0.000}μA'}"  DockPanel.Dock="Left" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                
             </DockPanel>
          
-            <ScrollViewer  Height="auto"  HorizontalScrollBarVisibility="Auto"   VerticalScrollBarVisibility="Auto"  Width="auto">       
+            <ScrollViewer  MinHeight="500"  HorizontalScrollBarVisibility="Auto"   VerticalScrollBarVisibility="Auto"  Width="auto">       
                 <ItemsControl ItemsSource="{Binding HVMessageModels}" >
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type mm:HVMessageModel}">
@@ -72,15 +72,15 @@
 
                                         <TextBox Text="{Binding WriteHV}"  BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="60" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center" >
                                             <TextBox.InputBindings>
-                                                <KeyBinding  Key="Return"  Command="{Binding SetIVCommand}" />
+                                                <KeyBinding  Key="Return"  Command="{Binding SetIVCommand ,UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"  />
                                             </TextBox.InputBindings>
                                         </TextBox>
-                                        <TextBox Text="{Binding MaxHV}"  BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="60" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"   
+                                        <TextBox Text="{Binding MaxIV}"  BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="60" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"   
                                                  Visibility="{Binding DataContext.IsSetting,Converter={StaticResource BoolToVisibilityCollapsedConverter}, RelativeSource={RelativeSource AncestorType={x:Type  local:MultiChannelHVContentView}}}" >
                                         </TextBox>
                                         <TextBlock Text="V" DockPanel.Dock="Left" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                                         <TextBlock Text="步进值(v/s)" DockPanel.Dock="Left" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                                        <TextBox Text="{Binding Step}" BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="60" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                                        <TextBox Text="{Binding Step, UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}" BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="60" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center" />
                                     </DockPanel>
                                 </Border>
                             </DockPanel>

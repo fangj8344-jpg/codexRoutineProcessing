@@ -36,10 +36,12 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
         private System.Timers.Timer _timer;
         private System.Timers.Timer _setHvTimer;
         private ushort _bufferHv;
+        private ushort _endBufferHv;
         private bool _direction = true;
         private MultiChannelHVParser _parser;
         private DataContainer dataContainer;
         public MultiChannelHVEntity MultiChannelHVEntity;
+        
         private IAsynRWService _serialPortService;
         /// <summary>
         /// 串口异步通信服务
@@ -114,14 +116,16 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
             get { return _maxHV; }
             set { _maxHV = value; RaisePropertyChanged() ; }
         }
-        private ushort _step = 500;
+        private ushort _hvStep = 500;
         /// <summary>
         /// 步进值
         /// </summary>
-        public ushort Step
+        public ushort HvStep
         {
-            get { return _step; }
-            set { _step = value; RaisePropertyChanged() ; }
+            get { return _hvStep; }
+            set 
+                { _hvStep = value; 
+                RaisePropertyChanged() ; }
         }
         private MultiChannelHVInitState _hvInitState = MultiChannelHVInitState.IDLE;
         /// <summary>
@@ -292,13 +296,15 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
         private void SetHv()
         {
 
-            _bufferHv = WriteHV;
-            if (_bufferHv > ReadHV)
+            _endBufferHv = WriteHV;
+            if (_endBufferHv > ReadHV)
             {
+                _bufferHv = (ushort)ReadHV;
                 _direction = true;
             }
             else
             {
+                _bufferHv = (ushort)ReadHV;
                 _direction = false;
             }
             StopSetHvTimer();
@@ -337,33 +343,47 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
 
             if (_direction)
             {
-                var _middleBufferHv = (ushort)ReadHV;
-                var differ = _bufferHv - _middleBufferHv;
-
-                if (differ / Step > 0)
+                
+                var differ = _endBufferHv - _bufferHv;
+                
+                if (_endBufferHv < _bufferHv || _endBufferHv<_bufferHv + HvStep)
                 {
-                    MultiChannelHVEntity?.SetHVCommand((ushort)(_middleBufferHv + Step));
+
+                    MultiChannelHVEntity?.SetHVCommand((ushort)(_endBufferHv));
+                    StopSetHvTimer();
                 }
                 else
                 {
+                    _bufferHv = (ushort)(_bufferHv + HvStep);
+                    if (_bufferHv > _endBufferHv)
+                    {
+                        MultiChannelHVEntity?.SetHVCommand((ushort)(_endBufferHv));
+                        StopSetHvTimer();
+                        return;
+                    }
                     MultiChannelHVEntity?.SetHVCommand(_bufferHv);
-                    StopSetHvTimer();
                 }
-
             }
             else
             {
-                var _middleBufferHv = (ushort)ReadHV;
-                var differ = _middleBufferHv - _bufferHv;
-
-                if (differ / Step > 0)
+                var differ = _endBufferHv - _bufferHv;
+                if (_endBufferHv > _bufferHv || _endBufferHv > _bufferHv - HvStep || _bufferHv - HvStep > MaxHV|| _bufferHv> MaxHV)
                 {
-                    MultiChannelHVEntity?.SetHVCommand((ushort)(_middleBufferHv - Step));
+
+                    MultiChannelHVEntity?.SetHVCommand((ushort)(_endBufferHv));
+                    StopSetHvTimer();
                 }
                 else
                 {
+                    _bufferHv = (ushort)(_bufferHv - HvStep);
+                    if (_bufferHv > MaxHV)
+                    {
+                        MultiChannelHVEntity?.SetHVCommand(_endBufferHv);
+                        StopSetHvTimer();
+                        return;
+                    }
                     MultiChannelHVEntity?.SetHVCommand(_bufferHv);
-                    StopSetHvTimer();
+
                 }
             }
         }
