@@ -96,6 +96,17 @@ namespace UtilityTools.Modules.FDC12CHVBox.Entity
             var cmdData = FDC12CHVBoxProtocol.GetHvInit();
             await SentData(cmdData);
         }
+
+        /// <summary>
+        /// 高压初关闭输出
+        /// </summary>
+        /// <returns></returns>
+        public async void SetHvDeInitCommand()
+        {
+            NLog.LogManager.GetCurrentClassLogger().Debug($"{_channed}通道关闭输出");
+            var cmdData = FDC12CHVBoxProtocol.SetHvDeInit();
+            await SentData(cmdData);
+        }
         private async Task SentData(byte[] bytes)
         {
             if (_netUdpService.IsOpen)

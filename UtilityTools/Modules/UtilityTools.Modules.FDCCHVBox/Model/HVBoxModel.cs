@@ -585,7 +585,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         }
         public void CloseOutput()
         {
-            Entity?.SetHvCommand(0);
+            Entity?.SetHvDeInitCommand();
         }
     }
     public class HvMessage 

@@ -31,6 +31,8 @@ namespace UtilityTools.Modules.FDC12CHVBox.Protocol
             SET_HV_INIT = 0x0400,
             [Description("高压初始化状态查询")]
             GET_HV_INIT = 0x0401,
+            [Description("高压箱初始化曲线，关闭输出")]
+            SET_HV_DEINIT = 0x0403,
             [Description("固件版本获取")]
             FV = 0x0005,
         }
@@ -140,6 +142,15 @@ namespace UtilityTools.Modules.FDC12CHVBox.Protocol
         {
             ByteWriter writer = new ByteWriter(36);
             return GetCmd(FDC12CHVBoxFunctionCode.GET_HV_INIT, writer.EndWrite());
+        }
+        /// <summary>
+        /// 高压箱关闭输出
+        /// </summary>
+        /// <returns></returns>
+        public static byte[] SetHvDeInit()
+        {
+            ByteWriter writer = new ByteWriter(36);
+            return GetCmd(FDC12CHVBoxFunctionCode.SET_HV_DEINIT, writer.EndWrite());
         }
 
     }

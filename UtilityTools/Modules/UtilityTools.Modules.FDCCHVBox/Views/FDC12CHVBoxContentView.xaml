@@ -32,7 +32,6 @@
                         <TextBlock Text="RemotePort"    DockPanel.Dock="Left" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                         <TextBox Text="{Binding RemotePort}" BorderThickness="0,0,0,2"   Margin="5" DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="100"  VerticalAlignment="Center" HorizontalAlignment="Center" />
                         <Button Content="Connect" Command="{Binding ConnectCommand}"  Margin="5" />
-                        <Button Content="测试" Command="{Binding TestCommand}"/>
                     </DockPanel>
                     <DockPanel LastChildFill="False" Grid.Row="1" >
                         <TextBlock  Text="全选"  DockPanel.Dock="Left" Margin="1" VerticalAlignment="Center" HorizontalAlignment="Center"/>
