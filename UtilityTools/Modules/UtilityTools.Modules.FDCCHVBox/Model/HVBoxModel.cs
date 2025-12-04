@@ -136,6 +136,14 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             set {_setHV = value; RaisePropertyChanged(); }
         }
         private ushort _wirteStep = 5;
+
+        private UInt32 _timerInterval = 1000;
+        public UInt32 TimerInterval
+        {
+            get { return _timerInterval; }
+            set { _timerInterval = value; RaisePropertyChanged(); }
+        }
+        
         public ushort WriteStep
         {
             get { return _wirteStep; }
@@ -263,9 +271,8 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
                 ItemsSource = HvMessages,
                 DataFieldX = "DateTime",
                 DataFieldY = "HV",
-                CanTrackerInterpolatePoints = false,   // 禁用平滑
-                Decimator = null,                       // 禁用采样器
-                MarkerType = MarkerType.Circle,
+                StrokeThickness = 1,
+                CanTrackerInterpolatePoints = false,
                 TrackerFormatString = "曲线: {0}\n时间: {2:yyyy-MM-dd HH:mm:ss.fff}\n数值: {4:0.000000}", // 毫秒级精度
             };
             IlineSeries = new LineSeries()
@@ -275,9 +282,8 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
                 ItemsSource = HvMessages,
                 DataFieldX = "DateTime",
                 DataFieldY = "I",
-                CanTrackerInterpolatePoints = false,   // 禁用平滑
-                Decimator = null,                       // 禁用采样器
-                MarkerType = MarkerType.Circle,
+                StrokeThickness = 1,
+                CanTrackerInterpolatePoints = false, 
                 TrackerFormatString =  "曲线: {0}\n时间: {2:yyyy-MM-dd HH:mm:ss.fff}\n数值: {4:0.000000}", // 毫秒级精度
             };
             SetHVSeries = new LineSeries()
@@ -287,9 +293,8 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
                 ItemsSource = HvMessages,
                 DataFieldX = "DateTime",
                 DataFieldY = "setHv",
-                CanTrackerInterpolatePoints = false,   // 禁用平滑
-                Decimator = null,                       // 禁用采样器
-                MarkerType = MarkerType.Circle,
+                StrokeThickness = 1,
+                CanTrackerInterpolatePoints = false,
                 TrackerFormatString = "{曲线: {0}\n时间: {2:yyyy-MM-dd HH:mm:ss.fff}\n数值: {4:0.000000}", // 毫秒级精度
             };
 
@@ -329,44 +334,13 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         {
             Entity.SetHvInitCommand();
         }
-        // 定时触发的方法
-        public void InitTimer()
-        {
-            // 1. 创建定时器，设置间隔时间（单位：毫秒，此处为 1000ms = 1秒）
-            if (_timer == null)
-            {
-                _timer = new System.Timers.Timer(1000);
-            }
-            // 2. 绑定定时触发的事件
-            _timer.Elapsed += OnTimerElapsed;
-
-            // 3. 设置是否重复触发（true = 循环触发，false = 只触发一次）
-            _timer.AutoReset = true;
-
-            // 4. 启动定时器
-            _timer.Enabled = true;
-        }
-        public void StopTimer()
-        {
-            _timer?.Stop();
-            _timer?.Dispose();
-            _timer = null;
-        }
-        private void OnTimerElapsed(object sender, ElapsedEventArgs e)
-        {
-           
-            _entity.GetHvReadCommand();
-            _entity.GetHvInitCommand();
-           
-           
-
-        }
+        //单路设置定时器
         public void InitSetHVTimer()
         {
             // 1. 创建定时器，设置间隔时间（单位：毫秒，此处为 1000ms = 1秒）
             if (_setHvTimer == null)
             {
-                _setHvTimer = new System.Timers.Timer(1000);
+                _setHvTimer = new System.Timers.Timer(TimerInterval);
             }
             if (_setHvTimer.Enabled)
             {
@@ -455,10 +429,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         public void DirectlySetHV(ushort hv)
         {
             Entity?.SetHvCommand(hv);
-            //if (IsEnable)
-            //{
-            //    Entity?.SetHvCommand(hv);
-            //}
+                 
         }
         private void Parser_PacketReceivedEvent(object? sender, FDC12CHVBoxPacket e)
         {

@@ -16,6 +16,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
@@ -44,6 +45,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         private System.Timers.Timer _timer;
         private int _connectCount;
         private List<string> listTime;
+        private bool _isTimeQuery = true;
         private bool _isAllCheck;
         public bool IsAllCheck
         {
@@ -125,6 +127,12 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             get { return _hVBoxModels; }
             set { _hVBoxModels = value; RaisePropertyChanged(); }
         }
+        private UInt32 _timerInterval = 1000;
+        public UInt32 TimerInterval
+        {
+            get { return _timerInterval; }
+            set { _timerInterval = value; RaisePropertyChanged(); }
+        }
         [JsonIgnore]
         public DelegateCommand SetHvCommand { get; set; }
         [JsonIgnore]
@@ -137,6 +145,8 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         public DelegateCommand ClearMonitorCommand { get; set; }
         public DelegateCommand CloseOutPutCommand { get; set; }
         public DelegateCommand IsAllCheckChangeCommand { get; set; }
+        public DelegateCommand TestCommand { get; set; }
+
         private void Init()
         {
 
@@ -152,16 +162,21 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
                 HVBoxModels.Add(HVBoxModel);
 
             }
+
+          
             SetHvCommand = new DelegateCommand(SetHv);
             SetHvStepCommand = new DelegateCommand(SetHvStep);
             ConnectCommand = new DelegateCommand(Connect);
             AutoAdjustCommand = new DelegateCommand(AutoAdjust);
-            ExportMultipleSeriesToCsvCommand = new DelegateCommand(ExportMultipleSeriesToCsv);
+            ExportMultipleSeriesToCsvCommand = new DelegateCommand(ExportToCsv);
             ClearMonitorCommand = new DelegateCommand(ClearMonitor);
             CloseOutPutCommand = new DelegateCommand(CloseOutPut);
             TestCommand = new DelegateCommand(Test);
-            IsAllCheckChangeCommand = new DelegateCommand(IsAllCheckChange);    
+            IsAllCheckChangeCommand = new DelegateCommand(IsAllCheckChange);
+            SaveParameterCommand = new DelegateCommand(SaveParameter);
             listTime = new List<string>();
+            var SaveParametersModel = new SaveParametersModel();
+            SaveParametersModel.LoadParameter(this);
         }
 
         public void InitSetHVTimer()
@@ -193,7 +208,6 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         }
         private void SetHvTimerElapsed(object sender, ElapsedEventArgs e)
         {
-
             try
             {
                 StopTimer();
@@ -205,8 +219,6 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
                         for (int i = 0; i < HVBoxModels.Count; i++)
                         {
                             HVBoxModels[i].DirectlySetHV((ushort)(_endBufferHv));
-
-
                         }
                         StopSetHvTimer();
                         InitTimer();
@@ -297,15 +309,21 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             }
             finally
             {
-                QueryHvMessage();
+                if (!_isTimeQuery)
+                {
+                    QueryHvMessage();
+                }
+                
 
             }
 
 
         }
+       
         // 定时触发的方法
         public void InitTimer()
         {
+            _isTimeQuery = true;
             // 1. 创建定时器，设置间隔时间（单位：毫秒，此处为 1000ms = 1秒）
             if (_timer == null)
             {
@@ -325,13 +343,22 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             _timer?.Stop();
             _timer?.Dispose();
             _timer = null;
+            _isTimeQuery = false;
         }
         private void OnTimerElapsed(object sender, ElapsedEventArgs e)
         {
             for (int i = 0; i < HVBoxModels.Count; i++)
             {
-                HVBoxModels[i].Entity?.GetHvReadCommand();
-                HVBoxModels[i].Entity?.GetHvInitCommand();
+                if (_isTimeQuery)
+                {
+                    HVBoxModels[i].Entity?.GetHvReadCommand();
+                    HVBoxModels[i].Entity?.GetHvInitCommand();
+                }
+                else
+                {
+                    return;
+                }
+               
             }
             _connectCount++;
             if (_connectCount >= 10)
@@ -433,17 +460,13 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         }
         public void ExportMultipleSeriesToCsv()
         {
-            // 1. 获取所有 LineSeries 并按 Title 排序（确保顺序一致）
-           
-          
-       
-            // 4. 打开保存文件对话框
+            //  打开保存文件对话框
             string savePath = GetSavePath();
             List<string> csvfile = new List<string>();
             if (string.IsNullOrEmpty(savePath)) return;
             try
             {
-                // 6. 构建数据行（按时间排序）
+                //  构建数据行（按时间排序）
                 for (int i = 0; i < HVBoxModels.Count; i++)
                 {
 
@@ -473,7 +496,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
                     }
                 }
                                       
-                // 7. 写入文件
+                //  写入文件
                 File.WriteAllLines(savePath, csvfile, System.Text.Encoding.UTF8);
                 ShowMessage($"成功导出到：{savePath}");
             }
@@ -481,7 +504,60 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             {
                 ShowMessage($"导出失败：{ex.Message}");
             }
-        }       
+        }
+        public void ExportToCsv()
+        {
+            string filePath = GetSavePath();
+            if (filePath == null)
+            {
+                return;
+            }
+            // 使用 StreamWriter 写入文件，并指定 UTF-8 编码以支持中文等特殊字符
+            int maxCount = 0;
+            using (var writer = new StreamWriter(filePath, false, Encoding.UTF8))
+            {
+                string hear = "";
+                // 写入表头
+                for (int i = 0; i < HVBoxModels.Count; i++)
+                {
+                    hear +=($"{HVBoxModels[i].Channel.ToString()}time,");
+                    hear += ($"{HVBoxModels[i].Channel.ToString()}SetHv,");
+                    hear += ($"{HVBoxModels[i].Channel.ToString()}Hv,");
+                    hear += ($"{HVBoxModels[i].Channel.ToString()}I,");
+                    if (i == 0)
+                    {
+                        maxCount = HVBoxModels[i].HvMessages.Count;
+                    }
+                    else
+                    {
+                        if (HVBoxModels[i].HvMessages.Count > maxCount)
+                        {
+                            maxCount = HVBoxModels[i].HvMessages.Count;
+                        }
+                    }
+                }
+                    writer.WriteLine(hear);
+                // 写入内容
+                string content = "";
+                for (int i = 0; i < maxCount;i++ )
+                {
+                    content = "";
+                   for (int j = 0; j < HVBoxModels.Count;j++)
+                    {
+                        if (HVBoxModels[j].HvMessages.Count >= i)
+                        {
+                            content += $"{HVBoxModels[j].HvMessages[i].DateTime.ToString("O")},";
+                            content += $"{HVBoxModels[j].HvMessages[i].setHv.ToString()},";
+                            content += $"{HVBoxModels[j].HvMessages[i].HV.ToString()},";
+                            content += $"{HVBoxModels[j].HvMessages[i].I.ToString()},";
+                        }
+                    }
+                    writer.WriteLine($"{content}");
+                }
+            
+            }
+            System.Windows.MessageBox.Show($"数据已成功导出到 {filePath}");
+        }
         private string GetSavePath()
         {
             var saveDialog = new Microsoft.Win32.SaveFileDialog
@@ -501,7 +577,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             System.Windows.MessageBox.Show(message);
             
         }
-        public DelegateCommand TestCommand { get; set; }
+       
         private void Test()
         {
             Stopwatch stopwatch = new Stopwatch();
@@ -513,6 +589,12 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             }
             var x = listTime;
             stopwatch.Stop();
+        }
+        public DelegateCommand SaveParameterCommand { get; set; }
+        private void SaveParameter()
+        {
+            var save = new  SaveParametersModel();
+            save.SaveParameter(this);
         }
 
     }
