@@ -107,10 +107,12 @@ namespace UtilityTools.Modules.FDC12CHVBox.Protocol
         /// </summary>
         /// <param name="hv">设置的高压值</param>
         /// <returns></returns>
-        public static byte[] SetHv(ushort hv)
+        public static byte[] SetHv(ushort hv,UInt32 inter, ushort step)
         {
             ByteWriter writer = new ByteWriter(36);
             writer.Write(hv);
+            writer.Write(inter);
+            writer.Write(step);
             return GetCmd(FDC12CHVBoxFunctionCode.SET_HV, writer.EndWrite());
         }
 

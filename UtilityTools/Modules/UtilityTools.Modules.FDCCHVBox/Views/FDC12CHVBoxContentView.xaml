@@ -5,13 +5,15 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:mm="clr-namespace:UtilityTools.Modules.FDC12CHVBox.Model"
              xmlns:convert="clr-namespace:UtilityTools.Modules.FDC12CHVBox.Converter"
+             xmlns:bc="clr-namespace:UtilityTools.Core.Converter;assembly=UtilityTools.Core"
              xmlns:rules="clr-namespace:UtilityTools.Modules.FDC12CHVBox.Rule"
              xmlns:oxy="http://oxyplot.org/wpf"
              xmlns:local="clr-namespace:UtilityTools.Modules.FDC12CHVBox.Views"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="500" d:DesignWidth="820">
     <UserControl.Resources>
         <convert:StatusToColorConverter x:Key="StatusToColorConverter"/>
+        <bc:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
     </UserControl.Resources>
     <TabControl>
         <TabItem Header="控制">
@@ -46,11 +48,11 @@
                                 </Binding>
                             </TextBox.Text>
                             <TextBox.InputBindings>
-                                <KeyBinding  Key="Return"  Command="{Binding SetHvCommand }"  />
+                                <KeyBinding  Key="Return"  Command="{Binding SetHvParameterCommand }"  />
                             </TextBox.InputBindings>
                         </TextBox>
                         <TextBlock Text="V" DockPanel.Dock="Left" Margin="1" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                        <Button Content="set" Command="{Binding SetHvCommand}" Margin="5" />
+                        <Button Content="设置电压参数" Command="{Binding SetHvParameterCommand}" Margin="5" />
                         <TextBlock  Text="速率"  DockPanel.Dock="Left" Margin="10,5,5,5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                         <TextBox  BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="60" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center" >
                             <TextBox.Text>
@@ -61,13 +63,13 @@
                                 </Binding>
                             </TextBox.Text>
                             <TextBox.InputBindings>
-                                <KeyBinding  Key="Return"  Command="{Binding SetHvStepCommand}" />
+                                <KeyBinding  Key="Return"  Command="{Binding SetHvStepParameterCommand}" />
                             </TextBox.InputBindings>
                         </TextBox>
-                       
                         <TextBlock Text="V/s" DockPanel.Dock="Left" Margin="1" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                        <Button Content="set" Command="{Binding SetHvStepCommand}" />
-                        <TextBlock  Text="{Binding SetStep}"   DockPanel.Dock="Left" Margin="1" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        <Button Content="设置速率参数" Command="{Binding SetHvStepParameterCommand}" Margin="5" />
+                        <Button Content="全部初始化" Margin="5" Command="{Binding SetAllHvInitCommand}"/>
+                        <Button Content="同步输出" Margin="5" Command="{Binding SetHvCommand}"/>
                         <Button Content="关闭输出" Command="{Binding CloseOutPutCommand}" Margin="5" DockPanel.Dock="Right"/>
                         <Button Content="保存参数" Command="{Binding SaveParameterCommand}" Margin="5" DockPanel.Dock="Right"/>
                     </DockPanel>
@@ -119,7 +121,7 @@
                                                    Margin="1" 
                                                    VerticalAlignment="Center" HorizontalAlignment="Center"/>
                                             <Button Content="set" Command="{Binding SetHvCommand}" Margin="5" IsEnabled="{Binding IsEnable}"/>
-                                            <TextBlock  Text="{Binding SetHV}"   
+                                            <TextBlock  Text="{Binding SetHV}" Visibility="{Binding IsSetHvShow,Converter= {StaticResource BoolToVisibilityConverter}}"
                                                     DockPanel.Dock="Left" Margin="5"
                                                     VerticalAlignment="Center" HorizontalAlignment="Center"/>
                                         </DockPanel>
@@ -129,7 +131,7 @@
                                                  Padding="5,2" MinWidth="60" Margin="5" 
                                                  VerticalAlignment="Center" HorizontalAlignment="Center" >
                                                 <TextBox.Text>
-                                                    <Binding   Path="WriteStep" UpdateSourceTrigger="PropertyChanged" Mode="TwoWay"   >
+                                                    <Binding   Path="WriteStep" UpdateSourceTrigger="PropertyChanged"  Mode="TwoWay"   >
                                                         <Binding.ValidationRules>
                                                             <rules:RangeValidationRule Min="5" Max="500"/>
                                                         </Binding.ValidationRules>

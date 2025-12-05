@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -34,18 +35,60 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             Init();
         }
         private ushort _maxHV = 30000;
-        private ushort _minStep = 5;
-        private ushort _maxStep = 500;
-        private ushort _setHvCount = 0;
-        private int _setHvTotalCount = 0;
-        private ushort _endBufferHv = 0;
-        private ushort _startBufferHv = 0;
-        private bool _direction = true;
         private System.Timers.Timer _setHvTimer;
         private System.Timers.Timer _timer;
         private int _connectCount;
         private List<string> listTime;
         private bool _isTimeQuery = true;
+        private bool _isNeedRefresh = false;
+        public bool IsNeedRefresh
+        {
+            get { return _isNeedRefresh; }
+            set { _isNeedRefresh = value; }
+        }
+        private int _endBufferHv = 0;
+       
+        public int EndBufferHv
+        {
+            get { return _endBufferHv; }
+            private set
+            {
+                if (value < 0)
+                {
+                    _endBufferHv = 0;
+                }
+                else if (value > _maxHV)
+                {
+                    _endBufferHv = _maxHV;
+                }
+                else 
+                {
+                    _endBufferHv = value;
+                }
+                
+            }
+        }
+        private int _startBufferHv = 0;
+        public int StartBufferHv
+        {
+            get { return _startBufferHv; }
+            private set
+            {
+                if (value < 0)
+                {
+                    _startBufferHv = 0;
+                }
+                else if (value > _maxHV)
+                {
+                    _startBufferHv = _maxHV;
+                }
+                else
+                {
+                    _startBufferHv = value;
+                }
+
+            }
+        }
         private bool _isAllCheck;
         public bool IsAllCheck
         {
@@ -79,13 +122,25 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             get { return _remotePort; }
             set { _remotePort = value; RaisePropertyChanged(); }
         }
-        private ushort _writeHv = 0;
-        public ushort WriteHv
+        private int _writeHv = 0;
+        public int WriteHv
         {
             get { return _writeHv; }
             set
             {
-                _writeHv = value; RaisePropertyChanged();
+                if (value < 0)
+                {
+                    _writeHv = 0;
+                }
+                else if (value > _maxHV)
+                {
+                    _writeHv = _maxHV;
+                }
+                else
+                {
+                    _writeHv = value;
+                }
+                RaisePropertyChanged();
             }
         }
         private ushort _setHV;
@@ -104,12 +159,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             set { _wirteAllStep = value; RaisePropertyChanged(); }
         }
 
-        private ushort _setStep = 5;
-        public ushort SetStep
-        {
-            get { return _setStep; }
-            set { _setStep = value; RaisePropertyChanged(); }
-        }
+     
         private PlotModel _plotModel;
         /// <summary>
         /// 电压电流信息表
@@ -138,7 +188,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         [JsonIgnore]
         public DelegateCommand ConnectCommand { get; set; }
         [JsonIgnore]
-        public DelegateCommand SetHvStepCommand { get; set; }
+        public DelegateCommand SetHvStepParameterCommand { get; set; }
         [JsonIgnore]
         public DelegateCommand AutoAdjustCommand { get; set; }
         public DelegateCommand ExportMultipleSeriesToCsvCommand { get; set; }
@@ -146,6 +196,8 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         public DelegateCommand CloseOutPutCommand { get; set; }
         public DelegateCommand IsAllCheckChangeCommand { get; set; }
         public DelegateCommand TestCommand { get; set; }
+        public DelegateCommand SetHvParameterCommand { get; set; }
+        public DelegateCommand SetAllHvInitCommand { get; set; }
 
         private void Init()
         {
@@ -160,20 +212,18 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             {
                 var HVBoxModel = new HVBoxModel((byte)(i + 1), _localIp, PortStart, _remoteIp, _remotePort + i, this);
                 HVBoxModels.Add(HVBoxModel);
-
             }
-
-          
             SetHvCommand = new DelegateCommand(SetHv);
-            SetHvStepCommand = new DelegateCommand(SetHvStep);
+            SetHvStepParameterCommand = new DelegateCommand(SetHvStepParameter);
             ConnectCommand = new DelegateCommand(Connect);
             AutoAdjustCommand = new DelegateCommand(AutoAdjust);
             ExportMultipleSeriesToCsvCommand = new DelegateCommand(ExportToCsv);
             ClearMonitorCommand = new DelegateCommand(ClearMonitor);
-            CloseOutPutCommand = new DelegateCommand(CloseOutPut);
-            TestCommand = new DelegateCommand(Test);
+            CloseOutPutCommand = new DelegateCommand(CloseOutPut);;
             IsAllCheckChangeCommand = new DelegateCommand(IsAllCheckChange);
             SaveParameterCommand = new DelegateCommand(SaveParameter);
+            SetHvParameterCommand = new DelegateCommand(SetHvParameter);
+            SetAllHvInitCommand = new DelegateCommand(SetAllHvInit);
             listTime = new List<string>();
             var SaveParametersModel = new SaveParametersModel();
             SaveParametersModel.LoadParameter(this);
@@ -210,97 +260,19 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         {
             try
             {
-                StopTimer();
-                if (_direction)
+                int count = 0;
+                for (int i=0;i<HVBoxModels.Count;i++)
                 {
-                    if (_startBufferHv >= _endBufferHv || _startBufferHv + SetStep >= _endBufferHv)
+                    if (HVBoxModels[i].IsEnable && !HVBoxModels[i].IsSetHvDone)
                     {
-                        _startBufferHv = _endBufferHv;
-                        for (int i = 0; i < HVBoxModels.Count; i++)
-                        {
-                            HVBoxModels[i].DirectlySetHV((ushort)(_endBufferHv));
-                        }
-                        StopSetHvTimer();
-                        InitTimer();
-                        return;
-                    }
-                    else
-                    {
-                        _startBufferHv = (ushort)(_startBufferHv + SetStep);
-                    }
-
-                    if (_startBufferHv > 41000)
-                    {
-                        for (int i = 0; i < HVBoxModels.Count; i++)
-                        {
-                            HVBoxModels[i].DirectlySetHV((ushort)(0));
-                        }
-                        StopSetHvTimer();
-                        InitTimer();
-                        return;
-
-                    }
-                    else if (_startBufferHv > 30000)
-                    {
-                        for (int i = 0; i < HVBoxModels.Count; i++)
-                        {
-                            HVBoxModels[i].DirectlySetHV((ushort)(30000));
-                        }
-                        StopSetHvTimer();
-                        InitTimer();
-                        return;
-                    }
-                    else
-                    {
-                        for (int i = 0; i < HVBoxModels.Count; i++)
-                        {
-                            HVBoxModels[i].DirectlySetHV(_startBufferHv);
-                        }
-                    }
+                        HVBoxModels[i].SetHvBySetp();
+                        count++;
+                    } 
                 }
-                else
+                if (count == 0)
                 {
-                    if (_endBufferHv >= _startBufferHv || _endBufferHv >= _startBufferHv - SetStep || _startBufferHv > 30000 || _startBufferHv - SetStep > 30000)
-                    {
-                        _startBufferHv = _endBufferHv;
-                        for (int i = 0; i < HVBoxModels.Count; i++)
-                        {
-                            HVBoxModels[i].DirectlySetHV(_endBufferHv);
-                        }
-                        StopSetHvTimer();
-                        InitTimer();
-                        return;
-                    }
-                    else
-                    {
-                        _startBufferHv = (ushort)(_startBufferHv - SetStep);
-                    }
-                    if (_startBufferHv > 41000)
-                    {
-                        for (int i = 0; i < HVBoxModels.Count; i++)
-                        {
-                            HVBoxModels[i].DirectlySetHV(0);
-                        }
-                        StopSetHvTimer();
-                        InitTimer();
-                    }
-                    else if (_startBufferHv > 30000)
-                    {
-                        for (int i = 0; i < HVBoxModels.Count; i++)
-                        {
-                            HVBoxModels[i].DirectlySetHV(30000);
-                        }
-                        StopSetHvTimer();
-                        InitTimer();
-                    }
-                    else
-                    {
-                        for (int i = 0; i < HVBoxModels.Count; i++)
-                        {
-                            HVBoxModels[i].DirectlySetHV(_startBufferHv);
-                        }
-                    }
-
+                    StopSetHvTimer();
+                    InitTimer();
                 }
             }
             catch (Exception ex)
@@ -313,11 +285,8 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
                 {
                     QueryHvMessage();
                 }
-                
-
+               
             }
-
-
         }
        
         // 定时触发的方法
@@ -347,6 +316,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         }
         private void OnTimerElapsed(object sender, ElapsedEventArgs e)
         {
+            IsNeedRefresh = true;
             for (int i = 0; i < HVBoxModels.Count; i++)
             {
                 if (_isTimeQuery)
@@ -357,8 +327,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
                 else
                 {
                     return;
-                }
-               
+                }  
             }
             _connectCount++;
             if (_connectCount >= 10)
@@ -373,42 +342,67 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         }
         private void QueryHvMessage()
         {
+            IsNeedRefresh = true;
             for (int i = 0; i < HVBoxModels.Count; i++)
             {
                 HVBoxModels[i].Entity?.GetHvReadCommand();
                 HVBoxModels[i].Entity?.GetHvInitCommand();
             }
         }
+        
+        private void SetHvParameter()
+        {
+            
+            for (int i = 0; i < HVBoxModels.Count; i++)
+            {
+                if (HVBoxModels[i].IsCheck)
+                {
+                    HVBoxModels[i].WriteHV = WriteHv;
+
+                } 
+            }
+        }
+        private void SetHvStepParameter()
+        {
+            
+            for (int i = 0; i < HVBoxModels.Count; i++)
+            {
+                if (HVBoxModels[i].IsCheck)
+                {
+                    HVBoxModels[i].SetStep = WriteAllStep;
+                    HVBoxModels[i].WriteStep = WriteAllStep;
+                }
+               
+            }
+        }
         private void SetHv()
         {
-            _setHvCount = 0;
-            _startBufferHv = (ushort)HVBoxModels[0].ReadHV;
-            _endBufferHv = _writeHv;
-            if (_endBufferHv > _startBufferHv)
+            for (int i = 0; i < HVBoxModels.Count; i++)
             {
-                _setHvTotalCount = (_endBufferHv - _startBufferHv) / SetStep + 1;
-                _direction = true;
-            }
-            else
-            {
-                _setHvTotalCount = (_startBufferHv - _endBufferHv) / SetStep + 1;
-                _direction = false;
+                HVBoxModels[i].InitSetHv();
             }
             StopSetHvTimer();
+            StopTimer();
             InitSetHVTimer();
         }
 
-        private void SetHvStep()
-        {
-
-            SetStep = WriteAllStep;
-        }
+       
         private void CloseOutPut()
         {
 
             for (int i = 0; i < HVBoxModels.Count; i++)
             {
                 HVBoxModels[i].CloseOutput();
+            }
+        }
+        /// <summary>
+        /// 全部初始化
+        /// </summary>
+        private void SetAllHvInit()
+        {
+            for (int i = 0; i < HVBoxModels.Count; i++)
+            {
+                HVBoxModels[i].Entity?.SetHvInitCommand();
             }
         }
 
@@ -578,18 +572,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             
         }
        
-        private void Test()
-        {
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-            for (int i = 0; i < HVBoxModels.Count; i++)
-            {
-                HVBoxModels[i].Entity.SetHvCommand(50);
-                listTime.Add($"通道{HVBoxModels[i].Channel}:{stopwatch.Elapsed.TotalMilliseconds.ToString()}ms");
-            }
-            var x = listTime;
-            stopwatch.Stop();
-        }
+      
         public DelegateCommand SaveParameterCommand { get; set; }
         private void SaveParameter()
         {

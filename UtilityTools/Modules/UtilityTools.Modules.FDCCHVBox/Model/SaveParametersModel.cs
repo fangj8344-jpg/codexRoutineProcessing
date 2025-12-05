@@ -21,7 +21,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
       
         private string _filePath = Path.Combine("data", "FDC12CHVBoxConfig.json");
         public UInt32 TimerInterval { get; set; }
-     
+        public bool IsSetHvShow { get; set; }
         public ObservableCollection<SaveHvParameters>   saveHvParameters { get; set; }
 
         /// <summary>
@@ -31,6 +31,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         {
             saveHvParameters = new ObservableCollection<SaveHvParameters>();
             TimerInterval = fDC12CHVBoxModel.TimerInterval;
+            IsSetHvShow = fDC12CHVBoxModel.HVBoxModels[0].IsSetHvShow;
             foreach (HVBoxModel model in fDC12CHVBoxModel.HVBoxModels)
             {
                 saveHvParameters.Add(new SaveHvParameters(model));
@@ -65,7 +66,8 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
                                 fDC12CHVBoxModel.HVBoxModels[j].IsCheck = obj.saveHvParameters[i].IsCheck;
                                 fDC12CHVBoxModel.HVBoxModels[j].WriteStep = obj.saveHvParameters[i].WriteStep;
                                 fDC12CHVBoxModel.HVBoxModels[j].SetStep = obj.saveHvParameters[i].SetStep;
-                                fDC12CHVBoxModel.HVBoxModels[j].TimerInterval = obj.saveHvParameters[i].TimerInterval;;
+                                fDC12CHVBoxModel.HVBoxModels[j].TimerInterval = obj.saveHvParameters[i].TimerInterval;
+                                fDC12CHVBoxModel.HVBoxModels[j].IsSetHvShow = obj.IsSetHvShow; 
                             }
                         }
                     }
@@ -96,7 +98,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             
         }
         public byte Channel { get; set; }
-        public ushort WriteHV { get; set; }
+        public int WriteHV { get; set; }
         public bool IsCheck { get; set; }
         public ushort WriteStep { get; set; }
         public ushort SetStep { get; set; }

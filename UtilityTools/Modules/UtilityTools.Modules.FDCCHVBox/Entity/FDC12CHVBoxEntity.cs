@@ -57,10 +57,10 @@ namespace UtilityTools.Modules.FDC12CHVBox.Entity
         /// </summary>
         /// <param name="hv">设置的高压值</param>
         /// <returns></returns>
-        public async void SetHvCommand(ushort hv)
+        public async void SetHvCommand(ushort hv, UInt32 inter, ushort step)
         {
-            NLog.LogManager.GetCurrentClassLogger().Debug($"{_channed}通道,设置高压值为{hv}");
-            var cmdData = FDC12CHVBoxProtocol.SetHv(hv);
+            NLog.LogManager.GetCurrentClassLogger().Debug($"{_channed}通道,设置高压值为{hv} ，查询间隔为{inter} ,速率为{step} ");
+            var cmdData = FDC12CHVBoxProtocol.SetHv(hv,inter,step);
             await SentData(cmdData);
         }
 
