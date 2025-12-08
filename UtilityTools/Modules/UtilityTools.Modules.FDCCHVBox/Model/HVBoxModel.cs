@@ -51,6 +51,8 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
 
         
         private IAsynRWService _netUdpService;
+      
+
         public bool IsSetHvDone = false;
         private bool _isSetHvShow = false;
         public bool IsSetHvShow
@@ -223,15 +225,15 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
                 }
                 if (value)
                 {
-                    if (!_fDC12CHVBoxModel.PlotModel.Series.Contains(SetHVSeries))
+                    if (_fDC12CHVBoxModel.IsSetHvLineShow &&!_fDC12CHVBoxModel.PlotModel.Series.Contains(SetHVSeries))
                     {
                         _fDC12CHVBoxModel.PlotModel.Series.Add(SetHVSeries);
                     }
-                    if (!_fDC12CHVBoxModel.PlotModel.Series.Contains(IlineSeries))
+                    if (_fDC12CHVBoxModel.IsILineShow && !_fDC12CHVBoxModel.PlotModel.Series.Contains(IlineSeries))
                     {
                         _fDC12CHVBoxModel.PlotModel.Series.Add(IlineSeries);
                     }
-                    if (!_fDC12CHVBoxModel.PlotModel.Series.Contains(HVlineSeries))
+                    if (_fDC12CHVBoxModel.IsSetHvLineShow && !_fDC12CHVBoxModel.PlotModel.Series.Contains(HVlineSeries))
                     {
                         _fDC12CHVBoxModel.PlotModel.Series.Add(HVlineSeries);
                     }
@@ -518,7 +520,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             HvMessages.Add(hvMessage);
             for (int j = _fDC12CHVBoxModel.HVBoxModels.Count - 1; j >= 0; j--)
             {
-                if (_fDC12CHVBoxModel.HVBoxModels[j].IsEnable == true && _fDC12CHVBoxModel.HVBoxModels[j].Channel == Channel)
+                if (_fDC12CHVBoxModel.IsRealtimeRefresh && _fDC12CHVBoxModel.HVBoxModels[j].Channel == Channel && _fDC12CHVBoxModel.HVBoxModels[j].IsEnable == true)
                 {
                     _fDC12CHVBoxModel.PlotModel.InvalidatePlot(true);
                 }
@@ -595,6 +597,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         }
         public void CloseOutput()
         {
+            StopSetHvTimer();
             Entity?.SetHvDeInitCommand();
         }
     }

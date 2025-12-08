@@ -7,6 +7,7 @@ using OxyPlot.Legends;
 using OxyPlot.Series;
 using Prism.Commands;
 using Prism.Mvvm;
+using ScottPlot;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -40,6 +41,115 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         private int _connectCount;
         private List<string> listTime;
         private bool _isTimeQuery = true;
+        private bool _isSetHvLineShow = true;
+        public bool IsSetHvLineShow
+        {
+            get { return _isSetHvLineShow; }
+            set 
+            {
+                _isSetHvLineShow = value;
+                if (value == true)
+                {
+                    for (int i = 0; i < HVBoxModels.Count; i++)
+                    {
+
+                        if (HVBoxModels[i].IsCheck && !PlotModel.Series.Contains(HVBoxModels[i].SetHVSeries))
+                        {
+                            PlotModel.Series.Add(HVBoxModels[i].SetHVSeries);
+                        }
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < HVBoxModels.Count; i++)
+                    {
+
+                        if (PlotModel.Series.Contains(HVBoxModels[i].SetHVSeries))
+                        {
+                            PlotModel.Series.Remove(HVBoxModels[i].SetHVSeries);
+                        }
+                    }
+
+                }
+                PlotModel.InvalidatePlot(true);
+                RaisePropertyChanged(); 
+            }
+        }
+
+        private bool _isHvLineShow = true;
+        public bool IsHvLineShow
+        {
+            get { return _isHvLineShow; }
+            set 
+            {
+                _isHvLineShow = value;
+                if (value == true)
+                {
+                    for (int i = 0; i < HVBoxModels.Count; i++)
+                    {
+
+                        if (HVBoxModels[i].IsCheck && !PlotModel.Series.Contains(HVBoxModels[i].HVlineSeries))
+                        {
+                            PlotModel.Series.Add(HVBoxModels[i].HVlineSeries);
+                        }
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < HVBoxModels.Count; i++)
+                    {
+
+                        if (PlotModel.Series.Contains(HVBoxModels[i].HVlineSeries))
+                        {
+                            PlotModel.Series.Remove(HVBoxModels[i].HVlineSeries);
+                        }
+                    }
+
+                }
+                PlotModel.InvalidatePlot(true);
+                RaisePropertyChanged();
+            }
+        }
+
+        private bool _isILineShow = true;
+        public bool IsILineShow
+        {
+            get { return _isILineShow; }
+            set 
+            {
+                _isILineShow = value;
+                if (value == true)
+                {
+                    for (int i = 0; i < HVBoxModels.Count; i++)
+                    {
+
+                        if (HVBoxModels[i].IsCheck && !PlotModel.Series.Contains(HVBoxModels[i].IlineSeries))
+                        {
+                            PlotModel.Series.Add(HVBoxModels[i].IlineSeries);
+                        }
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < HVBoxModels.Count; i++)
+                    {
+
+                        if (PlotModel.Series.Contains(HVBoxModels[i].IlineSeries))
+                        {
+                            PlotModel.Series.Remove(HVBoxModels[i].IlineSeries);
+                        }
+                    }
+                }
+                PlotModel.InvalidatePlot(true);
+                RaisePropertyChanged(); }
+        }
+        private bool _isRealtimeRefresh = true;
+        public bool IsRealtimeRefresh
+        {
+            get { return _isRealtimeRefresh; }
+            set { _isRealtimeRefresh = value; RaisePropertyChanged(); }
+        }
+
         private bool _isNeedRefresh = false;
         public bool IsNeedRefresh
         {
@@ -171,7 +281,6 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         }
         private ObservableCollection<HVBoxModel> _hVBoxModels;
 
-
         public ObservableCollection<HVBoxModel> HVBoxModels
         {
             get { return _hVBoxModels; }
@@ -198,6 +307,8 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         public DelegateCommand TestCommand { get; set; }
         public DelegateCommand SetHvParameterCommand { get; set; }
         public DelegateCommand SetAllHvInitCommand { get; set; }
+        public DelegateCommand SaveParameterCommand { get; set; }
+        public DelegateCommand RefreshPlotCommand { get; set; }
 
         private void Init()
         {
@@ -224,6 +335,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             SaveParameterCommand = new DelegateCommand(SaveParameter);
             SetHvParameterCommand = new DelegateCommand(SetHvParameter);
             SetAllHvInitCommand = new DelegateCommand(SetAllHvInit);
+            RefreshPlotCommand = new DelegateCommand(RefreshPlot);
             listTime = new List<string>();
             var SaveParametersModel = new SaveParametersModel();
             SaveParametersModel.LoadParameter(this);
@@ -389,7 +501,9 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
        
         private void CloseOutPut()
         {
-
+            StopSetHvTimer();
+            StopTimer();
+            InitTimer();
             for (int i = 0; i < HVBoxModels.Count; i++)
             {
                 HVBoxModels[i].CloseOutput();
@@ -573,11 +687,16 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         }
        
       
-        public DelegateCommand SaveParameterCommand { get; set; }
+      
         private void SaveParameter()
         {
             var save = new  SaveParametersModel();
             save.SaveParameter(this);
+        }
+       
+        private void RefreshPlot()
+        {
+            PlotModel.InvalidatePlot(true);
         }
 
     }
