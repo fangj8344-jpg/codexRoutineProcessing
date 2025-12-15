@@ -1,0 +1,187 @@
+﻿<UserControl x:Class="UtilityTools.Modules.ButterflyValveTest.Views.ButterflyValveTestContentView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:mm="clr-namespace:UtilityTools.Modules.ButterflyValveTest.Model"
+             xmlns:convert="clr-namespace:CoreTools.Converter;assembly=CoreTools"
+             xmlns:protocol ="clr-namespace:UtilityTools.Modules.ButterflyValveTest.Protocol"
+             xmlns:local="clr-namespace:UtilityTools.Modules.ButterflyValveTest.Views"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <convert:EnumDescriptionConverter x:Key="EnumDescriptionConverter"/>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <ItemsControl ItemsSource="{Binding ButterflyValveModels}" >
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type mm:ButterflyValveModel}">
+                    <Border BorderBrush="DarkGray" 
+                                    BorderThickness="2" 
+                                    CornerRadius="4"
+                                    Margin="5"
+                                    Padding="5">
+                        <Grid>
+                            <Grid.RowDefinitions >
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border BorderBrush="DarkGray" 
+                                        Grid.Column="0"
+                                        BorderThickness="2" 
+                                        CornerRadius="4"
+                                        Margin="5"
+                                        Padding="5">
+                                    <UniformGrid Columns="2" >
+                                        <Label/>
+                                        <Button Content="紧急停止" Command="{Binding StopMotorCommand}" Width="120" FontSize="12" HorizontalAlignment="Right"/>
+                                        <Label Content="自动测试:" HorizontalAlignment="Left"/>
+                                        <Label/>
+                                        <Button Content="蝶阀疲劳测试" Width="120" FontSize="12" HorizontalAlignment="Left"/>
+                                        <Button Content="关闭测试" Width="120" FontSize="12" HorizontalAlignment="Center"/>
+                                        <Label  Content="手动测试" />
+                                        <Label/>
+                                        <Label Content="设置开比度:" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                                        <TextBox Text="{Binding OpeningValue}" MinWidth="100" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <Button Content="蝶阀开" Command="{Binding OpenValveCommand}" Width="120" FontSize="12" HorizontalAlignment="Left"/>
+                                        <Button Content="蝶阀关" Command="{Binding CloseValveCommand}" Width="120" FontSize="12" HorizontalAlignment="Center"/>
+                                        <Label/>
+
+                                        <Label/>
+                                    </UniformGrid>
+                                </Border>
+                                <Border BorderBrush="DarkGray" 
+                                    Grid.Column="1"
+                                    BorderThickness="2" 
+                                    CornerRadius="4"
+                                    Margin="5"
+                                    Padding="5">
+                                    <UniformGrid Columns="2" >
+                                        <TextBlock Text="实时监控:" HorizontalAlignment="Left" Margin="1,0,0,0"/>
+                                        <Label/>
+                                        <TextBlock Text="电机异常状态:"/>
+                                        <Ellipse Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <Ellipse.Style>
+                                                <Style TargetType="Ellipse" >
+                                                    <!-- 默认颜色（false状态） -->
+                                                    <Setter Property="Fill" Value="Green"/>
+                                                    <Style.Triggers>
+                                                        <!-- 当绑定值为true时显示绿色 -->
+                                                        <DataTrigger Binding="{Binding MotorStatus}" Value="True">
+                                                            <Setter Property="Fill" Value="Red"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Ellipse.Style>
+                                        </Ellipse>
+                                        <TextBlock Text="阀门硬件限位异常:" />
+                                        <Ellipse Width="12" Height="12" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                            <Ellipse.Style>
+                                                <Style TargetType="Ellipse">
+                                                    <!-- 默认颜色（false状态） -->
+                                                    <Setter Property="Fill" Value="Green"/>
+                                                    <Style.Triggers>
+                                                        <!-- 当绑定值为true时显示绿色 -->
+                                                        <DataTrigger Binding="{Binding ValveHardwareLimitStatus}" Value="True">
+                                                            <Setter Property="Fill" Value="Red"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Ellipse.Style>
+                                        </Ellipse>
+                                        <TextBlock Text="运行停止指示:"/>
+                                        <Ellipse Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <Ellipse.Style>
+                                                <Style TargetType="Ellipse">
+                                                    <!-- 默认颜色（false状态） -->
+                                                    <Setter Property="Fill" Value="DarkGray"/>
+                                                    <Style.Triggers>
+                                                        <!-- 当绑定值为true时显示绿色 -->
+                                                        <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                                            <Setter Property="Fill" Value="Green"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Ellipse.Style>
+                                        </Ellipse>
+                                        <TextBlock Text="阀门硬件限位状态:"/>
+                                        <TextBlock Text="{Binding ButterflyValveHardwareLimit,Converter={StaticResource EnumDescriptionConverter}}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="电机运动方向:"/>
+                                        <TextBlock Text="{Binding ValveRunuingDirection,Converter={StaticResource EnumDescriptionConverter}}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="开度值:"/>
+                                        <TextBlock Text="{Binding ReadOpeningValue}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="编码器数值:"/>
+                                        <TextBlock Text="{Binding EncoderValue}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    </UniformGrid>
+                                </Border>
+                               
+                            </Grid>
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border BorderBrush="DarkGray" 
+                                        BorderThickness="2" 
+                                        CornerRadius="4"
+                                        Margin="5"
+                                        Padding="5">
+                                    <UniformGrid Columns="2" >
+                                        <Label Content="测试参数:" HorizontalAlignment="Left" Margin="-1,0,0,0"/>
+                                        <Label/>
+                                        <TextBlock Text="一个循环开合次数:"/>
+                                        <TextBox Text="{Binding CycleCount}" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="100"/>
+                                        <TextBlock Text="循环结束停止时间(单位s):"/>
+                                        <TextBox Text="{Binding StopTime}" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="100"/>
+                                        <TextBlock Text="一个回合开合次数:"/>
+                                        <TextBox Text="{Binding RoundCount}" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="100"/>
+                                        <TextBlock Text="测试回合数:"/>
+                                        <TextBox Text="{Binding TestCount}" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="100"/>
+                                    </UniformGrid>
+                                </Border>
+                                <Border BorderBrush="DarkGray" 
+                                        Grid.Column="1"
+                                        BorderThickness="2" 
+                                        CornerRadius="4"
+                                        Margin="5"
+                                        Padding="5">
+                                    <UniformGrid Columns="2"  >
+                                        <Label Content="测试数据:" Margin="-1,0,0,0" HorizontalAlignment="Left"/>
+                                        <Label/>
+                                        <TextBlock Text="开合数:" />
+                                        <TextBlock Text="{Binding RecordCount}" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="100"/>
+                                        <TextBlock Text="循环数:"/>
+                                        <TextBlock Text="{Binding RecordCycleCount}" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="100"/>
+                                        <TextBlock Text="回合数:"/>
+                                        <TextBlock Text="{Binding RecordRoundCount}" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="100"/>
+                                    </UniformGrid>
+                                </Border>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Columns="1"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+
+            <!-- 添加间距 -->
+            <ItemsControl.ItemContainerStyle>
+                <Style TargetType="ContentPresenter">
+                    <Setter Property="Margin" Value="5"/>
+                </Style>
+            </ItemsControl.ItemContainerStyle>
+        </ItemsControl>
+    </Grid>
+</UserControl>

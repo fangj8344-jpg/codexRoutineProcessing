@@ -22,6 +22,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         private string _filePath = Path.Combine("data", "FDC12CHVBoxConfig.json");
         public UInt32 TimerInterval { get; set; }
         public bool IsSetHvShow { get; set; }
+        public string RemoteIp { get; set; }
         public ObservableCollection<SaveHvParameters>   saveHvParameters { get; set; }
 
         /// <summary>
@@ -32,6 +33,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             saveHvParameters = new ObservableCollection<SaveHvParameters>();
             TimerInterval = fDC12CHVBoxModel.TimerInterval;
             IsSetHvShow = fDC12CHVBoxModel.HVBoxModels[0].IsSetHvShow;
+            RemoteIp = fDC12CHVBoxModel.RemoteIp;
             foreach (HVBoxModel model in fDC12CHVBoxModel.HVBoxModels)
             {
                 saveHvParameters.Add(new SaveHvParameters(model));
@@ -56,6 +58,8 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
                 {
                     string json = File.ReadAllText(_filePath);
                     SaveParametersModel obj = JsonConvert.DeserializeObject<SaveParametersModel>(json);
+                    fDC12CHVBoxModel.RemoteIp = obj.RemoteIp;
+                    fDC12CHVBoxModel.TimerInterval = obj.TimerInterval;
                     for (int i = 0; i < obj.saveHvParameters.Count; i++)
                     {
                         for (int j = 0; j < fDC12CHVBoxModel.HVBoxModels.Count; j++)

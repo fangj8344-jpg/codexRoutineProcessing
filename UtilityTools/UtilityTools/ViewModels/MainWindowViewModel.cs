@@ -11,6 +11,7 @@ using UtilityTools.Core;
 using UtilityTools.Core.Interface;
 using UtilityTools.Core.Model;
 using UtilityTools.Core.Mvvm;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace UtilityTools.ViewModels
 {
@@ -153,6 +154,14 @@ namespace UtilityTools.ViewModels
                 if(customModule != null)
                     Modules.Add(customModule);
             }
+            /*
+            _regionManager.Regions[RegionNames.MainWindowRegionName].RequestNavigate($"FDC12CHVBoxView", back =>
+            {
+                _journal = back.Context.NavigationService.Journal;
+            });
+            */
+
+
         }
 
         /// <summary>
