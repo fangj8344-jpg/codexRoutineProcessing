@@ -52,7 +52,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         
         private IAsynRWService _netUdpService;
       
-
+        
         public bool IsSetHvDone = false;
         private bool _isSetHvShow = false;
         public bool IsSetHvShow
@@ -187,6 +187,12 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         {
             get { return _setHV; }
             set { _setHV = value; RaisePropertyChanged(); }
+        }
+        private ushort _showSetHV ;
+        public ushort ShowSetHV
+        {
+            get { return _showSetHV; }
+            set { _showSetHV = value;RaisePropertyChanged(); }
         }
         private ushort _wirteStep = 5;
 
@@ -425,6 +431,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             {
                 _direction = false;
             }
+            ShowSetHV = (ushort)WriteHV;
             return true;
         }
         public void SetHvBySetp()
@@ -550,7 +557,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         {
             var result = data[0];
         }
-        private void GetHvinitReturnProcessing(byte[] data)
+        private void GetHvinitReturnProcessing(byte[] data) 
         {
             var initState = (FDC12CHVBoxInitState)data[0];
             HVBoxInitState = initState;

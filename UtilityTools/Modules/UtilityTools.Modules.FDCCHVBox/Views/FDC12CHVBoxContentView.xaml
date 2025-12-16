@@ -70,7 +70,7 @@
                         <Button Content="设置速率参数" Command="{Binding SetHvStepParameterCommand}" Margin="5" />
                         <Button Content="全部初始化" Margin="5" Command="{Binding SetAllHvInitCommand}"/>
                         <Button Content="同步输出" Margin="5" Command="{Binding SetHvCommand}"/>
-                        <Button Content="关闭输出" Command="{Binding CloseOutPutCommand}" Margin="5" DockPanel.Dock="Right"/>
+                        <Button Content="紧急关闭⚡" Background="Red" Command="{Binding CloseOutPutCommand}" Margin="5" DockPanel.Dock="Right"/>
                         <Button Content="保存参数" Command="{Binding SaveParameterCommand}" Margin="5" DockPanel.Dock="Right"/>
                     </DockPanel>
                 </StackPanel>
@@ -121,9 +121,9 @@
                                                    Margin="1" 
                                                    VerticalAlignment="Center" HorizontalAlignment="Center"/>
                                             <Button Content="set" Command="{Binding SetHvCommand}" Margin="5" IsEnabled="{Binding IsEnable}"/>
-                                            <TextBlock  Text="{Binding SetHV}" Visibility="{Binding IsSetHvShow,Converter= {StaticResource BoolToVisibilityConverter}}"
-                                                    DockPanel.Dock="Left" Margin="5"
-                                                    VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                            <TextBlock  Text="{Binding ShowSetHV}" 
+                                                        DockPanel.Dock="Left" Margin="5"
+                                                        VerticalAlignment="Center" HorizontalAlignment="Center"/>
                                         </DockPanel>
                                         <DockPanel LastChildFill="False" Grid.Column="1" Grid.Row="1">
                                             <TextBlock  Text="速率"  DockPanel.Dock="Left" Margin="1" VerticalAlignment="Center" HorizontalAlignment="Center"/>

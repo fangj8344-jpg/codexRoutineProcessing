@@ -268,7 +268,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             get { return _wirteAllStep; }
             set { _wirteAllStep = value; RaisePropertyChanged(); }
         }
-
+        
      
         private PlotModel _plotModel;
         /// <summary>
@@ -504,10 +504,14 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             StopSetHvTimer();
             StopTimer();
             InitTimer();
-            for (int i = 0; i < HVBoxModels.Count; i++)
+            for (int j = 0; j < 3; j++)
             {
-                HVBoxModels[i].CloseOutput();
+                for (int i = 0; i < HVBoxModels.Count; i++)
+                {
+                    HVBoxModels[i].CloseOutput();
+                }
             }
+           
         }
         /// <summary>
         /// 全部初始化
