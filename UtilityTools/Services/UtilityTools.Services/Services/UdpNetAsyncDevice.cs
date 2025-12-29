@@ -34,6 +34,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using UtilityTools.Core.Helper;
 using UtilityTools.Core.Model;
 using UtilityTools.Services.Interfaces.IServices;
@@ -50,14 +51,15 @@ namespace UtilityTools.Services.Services
             DeviceInstance = new UdpNetConfigModel();
             DeviceInstance.ReceiveDataEvent += DeviceInstance_ReceiveDataEvent;
             MinWriteInterval = 10;
-            WaitInterval = 1000;
-       
+            WaitInterval = 500;
+            _sendEvent = new AutoResetEvent(false);
         }
 
         #endregion
 
         #region ------------Field------------
         private Thread _sendThread;
+        private AutoResetEvent _sendEvent;
         private CancellationTokenSource _sendThreadToken;
 
         private object _syncObject;
@@ -139,10 +141,11 @@ namespace UtilityTools.Services.Services
                     _sendThread.Interrupt();
                     _sendThread = null;
                 }
+                _sendThreadToken = new CancellationTokenSource();
                 _sendThread = new Thread(SendThreadFunction);
                 _sendThread.IsBackground = true;
                 _sendThread.Start();
-                _sendThreadToken = new CancellationTokenSource();
+              
             }
 
             return DeviceInstance.IsOpen();
@@ -154,8 +157,9 @@ namespace UtilityTools.Services.Services
         /// <returns>关闭结果</returns>
         public void Close()
         {
-            DeviceInstance.Close();
             StopSendThread();
+            DeviceInstance.Close();
+            _sendQueue?.Clear();
         }
 
         /// <summary>
@@ -214,10 +218,7 @@ namespace UtilityTools.Services.Services
         private void Enqueue(byte[] data)
         {
             _sendQueue.Enqueue(data);
-            lock (_syncObject)
-            {
-                Monitor.Pulse(_syncObject);
-            }
+            _sendEvent?.Set();
         }
 
         /// <summary>
@@ -225,22 +226,38 @@ namespace UtilityTools.Services.Services
         /// </summary>
         private void StopSendThread()
         {
+           
             if (_sendThreadToken != null)
             {
-                _sendThreadToken.Cancel();
+                if (!_sendThreadToken.IsCancellationRequested)
+                {
+                    _sendThreadToken.Cancel();
+                }
+              
+               
+
+            }
+            if (_sendThread != null && _sendThread.IsAlive)
+            {
+                //设置3-5米嗷超时时间
+                bool isThreadExited = _sendThread.Join(5000);
+                if (isThreadExited)
+                {
+                    LogManager.GetCurrentClassLogger().Error($"发送线程正常退出  ");
+
+                }
+                else
+                {
+                    LogManager.GetCurrentClassLogger().Error($"发送线程退出超时");
+                }
+
+                _sendThread = null;
+
+            }
+            if (_sendThreadToken != null)
+            {
                 _sendThreadToken.Dispose();
                 _sendThreadToken = null;
-            }
-
-            lock (_syncObject)
-            {
-                Monitor.Pulse(_syncObject);
-            }
-
-            if (_sendThread != null)
-            {
-                _sendThread.Join();
-                _sendThread = null;
             }
 
         }
@@ -256,10 +273,7 @@ namespace UtilityTools.Services.Services
                 if (_sendQueue.TryDequeue(out var data))
                     return data;
 
-                lock (_syncObject)
-                {
-                    Monitor.Wait(_syncObject);
-                }
+                
             }
         }
 
@@ -269,42 +283,41 @@ namespace UtilityTools.Services.Services
         private async void SendThreadFunction()
         {
             LogManager.GetCurrentClassLogger().Debug($"{Name}开启发送线程");
-            var token = _sendThreadToken.Token;
-            try
+            if (_sendThreadToken == null)
             {
-                while (!token.IsCancellationRequested)
+                _sendThreadToken = new CancellationTokenSource();
+            }
+            var token = _sendThreadToken.Token;
+          
+            while (!token.IsCancellationRequested)
+            {
+                _waitingReply = new TaskCompletionSource<string>();
+                if (_sendQueue.Count == 0)
                 {
-                    _waitingReply = new TaskCompletionSource<string>();
-                    if (_sendQueue.TryDequeue(out var cmd))
+                    _sendEvent?.WaitOne();
+                }
+                if (_sendQueue.TryDequeue(out var cmd))
+                {
+                    try
                     {
                         // 发送业务
                         DeviceInstance.Send(cmd);
                         LogManager.GetCurrentClassLogger().Debug($"{Name} 发送 : {GetCmdString(cmd, cmd.Length)}");
                     }
-                    try
-                    {
-                        var result = await _waitingReply?.Task.WaitAsync(TimeSpan.FromMilliseconds(WaitInterval));
-                        await Task.Delay(20);
-                    }
                     catch (Exception ex)
                     {
-                        LogManager.GetCurrentClassLogger().Error($"{ex}");
-                    }
-                    while (_sendQueue.Count == 0)
-                    {
-                        await Task.Delay(MinWriteInterval);
+                        LogManager.GetCurrentClassLogger().Error($"发送数据失败 {ex} ");
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                LogManager.GetCurrentClassLogger().Error($"{Name}发送线程异常：{ex.Message}");
-            }
-            finally
-            {
-                LogManager.GetCurrentClassLogger().Debug($"{Name}结束发送线程");
-                DeviceInstance.Close();
-                _sendQueue.Clear();
+                try
+                {
+                    var result = await _waitingReply?.Task.WaitAsync(TimeSpan.FromMilliseconds(WaitInterval));
+                       
+                }
+                catch (Exception ex)
+                {
+                    LogManager.GetCurrentClassLogger().Trace($"{ex}");
+                }
             }
         }
 

@@ -110,7 +110,15 @@ namespace UtilityTools.Modules.ButterflyValveTest.ViewModels
         private async void ShowDevice()
         {
             DialogParameters parameter = new DialogParameters();
-            parameter.Add("Value", Model.ButterflyValveModels[0].SerialPortService);
+            if (Model.IsOldButterflyValve == true)
+            {
+                parameter.Add("Value", Model.OldButterflyValveModels[0].SerialPortService);
+            }
+            else
+            {
+                parameter.Add("Value", Model.ButterflyValveModels[0].SerialPortService);
+            }
+           
             var diaglogResult = await this._dialogHostService.ShowDialog("SerialPortView", parameter, CommonModel.ButterflyValveTestName);
             if (diaglogResult == null)
                 return;
@@ -119,16 +127,34 @@ namespace UtilityTools.Modules.ButterflyValveTest.ViewModels
                 var value = diaglogResult.Parameters.GetValue<IAsynRWService>("Value");
                 if (value != null)
                 {
-                    Model.ButterflyValveModels[0].SerialPortService = value;
-                    IsConnected = Model.ButterflyValveModels[0].SerialPortService.IsOpen;
-                    if (IsConnected == true)
+                    if (Model.IsOldButterflyValve == true)
                     {
-                      
+                        Model.OldButterflyValveModels[0].SerialPortService = value;
+                        IsConnected = Model.OldButterflyValveModels[0].SerialPortService.IsOpen;
+                        if (IsConnected == true)
+                        {
+                            Model.OldButterflyValveModels[0].InitTimer();
+                        }
+                        else
+                        {
+                            Model.OldButterflyValveModels[0].StopTimer();
+
+                        }
                     }
                     else
                     {
-                       
+                        Model.ButterflyValveModels[0].SerialPortService = value;
+                        IsConnected = Model.ButterflyValveModels[0].SerialPortService.IsOpen;
+                        if (IsConnected == true)
+                        {
+                            Model.ButterflyValveModels[0].InitTimer();
+                        }
+                        else
+                        {
+                            Model.ButterflyValveModels[0].StopTimer();
+                        }
                     }
+
                 }
             }
         }
@@ -139,7 +165,14 @@ namespace UtilityTools.Modules.ButterflyValveTest.ViewModels
         private async void ShowNetDevice()
         {
             DialogParameters parameter = new DialogParameters();
-            parameter.Add("Value", Model.ButterflyValveModels[0].NetUdpService);
+            if (Model.IsOldButterflyValve == true)
+            {
+                parameter.Add("Value", Model.OldButterflyValveModels[0].NetUdpService);
+            }
+            else
+            {
+                parameter.Add("Value", Model.ButterflyValveModels[0].NetUdpService);
+            }
             var diaglogResult = await this._dialogHostService.ShowDialog("NetConfigView", parameter, CommonModel.ButterflyValveTestName);
             if (diaglogResult == null)
                 return;
@@ -148,16 +181,35 @@ namespace UtilityTools.Modules.ButterflyValveTest.ViewModels
                 var value = diaglogResult.Parameters.GetValue<IAsynRWService>("Value");
                 if (value != null)
                 {
-                    Model.ButterflyValveModels[0].NetUdpService = value;
-                    NetIsConnected = Model.ButterflyValveModels[0].NetUdpService.IsOpen;
-                    if (NetIsConnected == true)
+                    if (Model.IsOldButterflyValve == true)
                     {
-                      
+                        Model.OldButterflyValveModels[0].NetUdpService = value;
+                        NetIsConnected = Model.OldButterflyValveModels[0].NetUdpService.IsOpen;
+                        if (NetIsConnected == true)
+                        {
+                            Model.OldButterflyValveModels[0].InitTimer();
+                        }
+                        else
+                        {
+                            Model.OldButterflyValveModels[0].StopTimer();
+
+                        }
                     }
                     else
                     {
-                     
+                        Model.ButterflyValveModels[0].NetUdpService = value;
+                        NetIsConnected = Model.ButterflyValveModels[0].NetUdpService.IsOpen;
+                        if (NetIsConnected == true)
+                        {
+                            Model.ButterflyValveModels[0].InitTimer();
+                        }
+                        else
+                        {
+                            Model.ButterflyValveModels[0].StopTimer();
+                        }
                     }
+                  
+                   
                 }
             }
         }

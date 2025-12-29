@@ -526,12 +526,30 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
 
         private void Connect()
         {
+            
             for (int i = 0; i < HVBoxModels.Count; i++)
             {
-
-                HVBoxModels[i].InitConnect(0, _localIp, _remotePort + i, _remoteIp);
+                try
+                {
+                    HVBoxModels[i].InitConnect(0, _localIp, _remotePort + i, _remoteIp);
+                }
+                catch (Exception ex) 
+                {
+                    NLog.LogManager.GetCurrentClassLogger().Error($"{i+1}通道连接出现错误 {ex}");
+                }
+                  
             }
-            InitTimer();
+            try
+            {
+                StopTimer();
+                InitTimer();
+            }
+            catch(Exception ex)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Error($"初始化定时器出现错误 {ex}");
+            }
+            
+            
         }
         private void AutoAdjust()
         {

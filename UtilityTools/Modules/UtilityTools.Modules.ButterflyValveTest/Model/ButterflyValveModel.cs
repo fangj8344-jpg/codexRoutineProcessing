@@ -1,22 +1,15 @@
-﻿using CsvHelper;
-using Newtonsoft.Json.Linq;
+﻿
 using Prism.Commands;
 using Prism.Mvvm;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Metadata.Ecma335;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
+using System.Timers;
 using System.Windows;
-using TouchSocket.Core;
+
 using UtilityTools.Modules.ButterflyValveTest.Entity;
 using UtilityTools.Modules.ButterflyValveTest.Protocol;
 using UtilityTools.Services.Interfaces.IServices;
 using UtilityTools.Services.Services;
-using static OpenCvSharp.Stitcher;
 using static UtilityTools.Modules.ButterflyValveTest.Protocol.ButterflyValveTestProtocol;
+using Timer = System.Timers.Timer;
 
 namespace UtilityTools.Modules.ButterflyValveTest.Model
 {
@@ -30,6 +23,7 @@ namespace UtilityTools.Modules.ButterflyValveTest.Model
             InitCommand();
         }
         private ButterflyValveTestModel _butterflyValveTestModel;
+        public Timer QueryStatusTimer { get; set; }
         private TaskCompletionSource<string> _startReply;
         private TaskCompletionSource<string> _endReply;
         private CancellationTokenSource _cts;
@@ -321,6 +315,26 @@ namespace UtilityTools.Modules.ButterflyValveTest.Model
             Entity.SetPosCommand(OpeningValue);
         }
         public DelegateCommand ButterflyValveTestCommand { get; set; }
+
+        public void InitTimer()
+        {
+            QueryStatusTimer = new System.Timers.Timer(1000);
+            QueryStatusTimer.Elapsed += QueryStatusTimer_Elapsed;
+            QueryStatusTimer.AutoReset = true;
+            QueryStatusTimer.Start();
+        }
+
+        private void QueryStatusTimer_Elapsed(object? sender, ElapsedEventArgs e)
+        {
+           Entity.GetStatusCommand();
+        }
+
+        public void StopTimer()
+        {
+            QueryStatusTimer?.Stop();
+            QueryStatusTimer?.Dispose();
+            QueryStatusTimer = null;
+        }
         /// <summary>
         /// 蝶阀测试
         /// </summary>
@@ -331,7 +345,7 @@ namespace UtilityTools.Modules.ButterflyValveTest.Model
             
             await Task.Run(async() => 
             {
-                for (int i = 0; i <= TestCount * RoundCount; i++)
+                for (int i = 1; i <= TestCount * RoundCount; i++)
                 {
                     if (_cts.IsCancellationRequested)
                     {
@@ -362,6 +376,7 @@ namespace UtilityTools.Modules.ButterflyValveTest.Model
                         ShowDialog();
                         RecordRoundCount++;
                     }
+                    
                 }
             }, _cts.Token);
                 

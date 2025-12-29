@@ -598,6 +598,8 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             }
             catch (Exception ex)
             {
+                HVBoxInitState = FDC12CHVBoxInitState.DISCONNECTED;
+                UdpNetAsyncDevice.Close();
                 NLog.LogManager.GetCurrentClassLogger().Error($"通道号:{_channel}连接测试失败，连接断开{ex}");
             }
            

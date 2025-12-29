@@ -5,18 +5,25 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:mm="clr-namespace:UtilityTools.Modules.ButterflyValveTest.Model"
              xmlns:convert="clr-namespace:CoreTools.Converter;assembly=CoreTools"
+             xmlns:cv="clr-namespace:UtilityTools.Modules.ButterflyValveTest.Convert"
              xmlns:protocol ="clr-namespace:UtilityTools.Modules.ButterflyValveTest.Protocol"
              xmlns:local="clr-namespace:UtilityTools.Modules.ButterflyValveTest.Views"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <UserControl.Resources>
         <convert:EnumDescriptionConverter x:Key="EnumDescriptionConverter"/>
+        <cv:BoolToInverseVisIbilityConverter x:Key="BoolToInverseVisIbilityConverter"/>
+        <cv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <ItemsControl ItemsSource="{Binding ButterflyValveModels}" >
+        <DockPanel LastChildFill="False">
+            <CheckBox Content="老协议" IsChecked="{Binding IsOldButterflyValve}"/>
+        </DockPanel>
+        <ItemsControl ItemsSource="{Binding ButterflyValveModels}" Visibility="{Binding IsOldButterflyValve,Converter={StaticResource BoolToInverseVisIbilityConverter}}" Grid.Row="1" >
             <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="{x:Type mm:ButterflyValveModel}">
                     <Border BorderBrush="DarkGray" 
@@ -161,6 +168,98 @@
                                         <TextBlock Text="循环数:"/>
                                         <TextBlock Text="{Binding RecordCycleCount}" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="100"/>
                                         <TextBlock Text="回合数:"/>
+                                        <TextBlock Text="{Binding RecordRoundCount}" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="100"/>
+                                    </UniformGrid>
+                                </Border>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Columns="1"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+
+            <!-- 添加间距 -->
+            <ItemsControl.ItemContainerStyle>
+                <Style TargetType="ContentPresenter">
+                    <Setter Property="Margin" Value="5"/>
+                </Style>
+            </ItemsControl.ItemContainerStyle>
+        </ItemsControl>
+        <ItemsControl ItemsSource="{Binding OldButterflyValveModels}" Visibility="{Binding IsOldButterflyValve, Converter={StaticResource BoolToVisibilityConverter}}" Grid.Row="1"  >
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type mm:OldButterflyValveModel}">
+                    <Border BorderBrush="DarkGray" 
+                             BorderThickness="2" 
+                             CornerRadius="4"
+                             Margin="5"
+                             Padding="5">
+                        <Grid>
+                            <Grid.RowDefinitions >
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="1">
+                                <Border  BorderBrush="DarkGray" 
+                                         Grid.Column="0"
+                                         BorderThickness="2" 
+                                         CornerRadius="4"
+                                         Margin="5"
+                                         Padding="5">
+                                    <DockPanel LastChildFill="False" >
+
+                                        <Button Content="蝶阀疲劳测试" Command="{Binding ButterflyValveTestCommand}" Width="120" FontSize="12" HorizontalAlignment="Left" Margin="10"/>
+                                        <Button Content="关闭蝶阀测试" Command="{Binding StopButterflyValveTestCommand }" Width="120" FontSize="12" HorizontalAlignment="Left" Margin="10" />
+                                        <Button Content="蝶阀开" Command="{Binding OpenValveCommand}" Width="120" FontSize="12" HorizontalAlignment="Left" Margin="10"/>
+                                        <Button Content="蝶阀关" Command="{Binding CloseValveCommand}" Width="120" FontSize="12" HorizontalAlignment="Center" Margin="10"/>
+                                    </DockPanel>
+                                </Border>
+                            </Grid>
+                            <Grid Grid.Row="0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border  BorderBrush="DarkGray" 
+                                         BorderThickness="2" 
+                                         CornerRadius="4"
+                                         Margin="5"
+                                         Padding="5">
+                                    <UniformGrid Columns="2" >
+                                        <Label Content="测试参数:" HorizontalAlignment="Left" Margin="-1,0,0,0"/>
+                                        <Label/>
+                                        <TextBlock Text="开启关闭时间(单位s):" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <TextBox Text="{Binding EachWaitingInterval}" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="100"/>
+                                        <TextBlock Text="一个循环开合次数:" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <TextBox Text="{Binding CycleCount}" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="100"/>
+                                        <TextBlock Text="循环结束停止时间(单位s):" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <TextBox Text="{Binding StopTime}" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="100"/>
+                                        <TextBlock Text="一个回合开合次数:" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <TextBox Text="{Binding RoundCount}" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="100"/>
+                                        <TextBlock Text="测试回合数:" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <TextBox Text="{Binding TestCount}" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="100"/>
+                                    </UniformGrid>
+                                </Border>
+                                <Border  BorderBrush="DarkGray" 
+                                         Grid.Column="1"
+                                         BorderThickness="2" 
+                                         CornerRadius="4"
+                                         Margin="5"
+                                         Padding="5">
+                                    <UniformGrid Columns="2"  >
+                                        <Label Content="测试数据:" Margin="-1,0,0,0" HorizontalAlignment="Left"/>
+                                        <Label/>
+                                        <TextBlock Text="目标电压:" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding Vol}" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="100"/>
+                                        <TextBlock Text="开合数:" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding RecordCount}" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="100"/>
+                                        <TextBlock Text="循环数:" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding RecordCycleCount}" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="100"/>
+                                        <TextBlock Text="回合数:" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                                         <TextBlock Text="{Binding RecordRoundCount}" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="100"/>
                                     </UniformGrid>
                                 </Border>

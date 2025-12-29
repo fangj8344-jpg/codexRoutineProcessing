@@ -27,6 +27,7 @@ namespace UtilityTools.Modules.ButterflyValveTest.Protocol
             [Description("获取电位器或者编码器的绝对数值")]
             GATEVALVE_GET_ABS_POS = 0X0316
         }
+    
         public enum ButterflyValveRunuingDirection
         {
             [Description("正向运动")]
