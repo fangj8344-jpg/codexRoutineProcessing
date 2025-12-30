@@ -583,7 +583,6 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         {
             try
             {
-              
                 _isConnectTest = true;
                 _waitingReply = new TaskCompletionSource<string>();
                 var result = await _waitingReply.Task.WaitAsync(TimeSpan.FromSeconds(10));
@@ -599,7 +598,11 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             catch (Exception ex)
             {
                 HVBoxInitState = FDC12CHVBoxInitState.DISCONNECTED;
-                UdpNetAsyncDevice.Close();
+                if (UdpNetAsyncDevice.IsOpen)
+                {
+                    UdpNetAsyncDevice.Close();
+                }
+                
                 NLog.LogManager.GetCurrentClassLogger().Error($"通道号:{_channel}连接测试失败，连接断开{ex}");
             }
            

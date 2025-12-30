@@ -307,9 +307,10 @@ namespace UtilityTools.Core.Model
                     ReceiveBuffer(buffer);
                 }
             }
-            catch (ObjectDisposedException)
+            catch (ObjectDisposedException ex)
             {
                 // Socket 已被释放，无需处理
+                LogManager.GetCurrentClassLogger().Error($"正常释放无需处理:{ex.Message}");
                 return;
             }
             catch (SocketException ex)
@@ -327,7 +328,15 @@ namespace UtilityTools.Core.Model
             {
                 if(Socket != null )
                 {
-                    Socket.BeginReceiveFrom(_dataBuff, 0, _dataBuff.Length, SocketFlags.None, ref _recvEndPoint, ReceiveCallback, null);
+                    try
+                    {
+                        Socket.BeginReceiveFrom(_dataBuff, 0, _dataBuff.Length, SocketFlags.None, ref _recvEndPoint, ReceiveCallback, null);
+                    }
+                    catch(Exception ex)
+                    {
+                        LogManager.GetCurrentClassLogger().Fatal($"Socket异常 回调函数绑定失败：{ex.Message}");
+                    }
+                   
                 }
             }
         }

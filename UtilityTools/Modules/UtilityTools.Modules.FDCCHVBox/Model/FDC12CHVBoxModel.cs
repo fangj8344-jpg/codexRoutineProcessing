@@ -433,8 +433,11 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             {
                 if (_isTimeQuery)
                 {
-                    HVBoxModels[i].Entity?.GetHvReadCommand();
-                    HVBoxModels[i].Entity?.GetHvInitCommand();
+                    if (HVBoxModels[i].UdpNetAsyncDevice.IsOpen)
+                    {
+                        HVBoxModels[i].Entity?.GetHvReadCommand();
+                        HVBoxModels[i].Entity?.GetHvInitCommand();
+                    }
                 }
                 else
                 {
@@ -447,7 +450,11 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
                 _connectCount = 0;
                 for (int i = 0; i < HVBoxModels.Count; i++)
                 {
-                    HVBoxModels[i].CheckConnect(); ;
+                    if (HVBoxModels[i].UdpNetAsyncDevice.IsOpen)
+                    {
+                        HVBoxModels[i].CheckConnect();
+                    }
+                         
                 }
 
             }
@@ -524,32 +531,32 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             }
         }
 
-        private void Connect()
+        private  void Connect()
         {
-            
             for (int i = 0; i < HVBoxModels.Count; i++)
             {
                 try
                 {
                     HVBoxModels[i].InitConnect(0, _localIp, _remotePort + i, _remoteIp);
+                 ;
                 }
-                catch (Exception ex) 
+                catch (Exception ex)
                 {
-                    NLog.LogManager.GetCurrentClassLogger().Error($"{i+1}通道连接出现错误 {ex}");
+                    NLog.LogManager.GetCurrentClassLogger().Error($"{i + 1}通道连接出现错误 {ex}");
                 }
-                  
+
             }
             try
             {
                 StopTimer();
                 InitTimer();
+              
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 NLog.LogManager.GetCurrentClassLogger().Error($"初始化定时器出现错误 {ex}");
             }
-            
-            
+              
         }
         private void AutoAdjust()
         {
@@ -632,7 +639,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             }
             catch (Exception ex)
             {
-                ShowMessage($"导出失败：{ex.Message}");
+                ShowMessage($"导出失败：{ex}");
             }
         }
         public void ExportToCsv()

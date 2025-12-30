@@ -60,11 +60,12 @@ namespace UtilityTools.Services.Services
         #region ------------Field------------
         private Thread _sendThread;
         private AutoResetEvent _sendEvent;
+        private AutoResetEvent _receiveEvent;
         private CancellationTokenSource _sendThreadToken;
 
         private object _syncObject;
         private ConcurrentQueue<byte[]> _sendQueue;
-        private TaskCompletionSource<string> _waitingReply;
+      
         #endregion
 
         #region ------------Property------------
@@ -282,43 +283,51 @@ namespace UtilityTools.Services.Services
         /// </summary>
         private async void SendThreadFunction()
         {
-            LogManager.GetCurrentClassLogger().Debug($"{Name}开启发送线程");
-            if (_sendThreadToken == null)
+            try
             {
-                _sendThreadToken = new CancellationTokenSource();
-            }
-            var token = _sendThreadToken.Token;
-          
-            while (!token.IsCancellationRequested)
-            {
-                _waitingReply = new TaskCompletionSource<string>();
-                if (_sendQueue.Count == 0)
+                LogManager.GetCurrentClassLogger().Debug($"{Name}开启发送线程");
+                if (_sendThreadToken == null)
                 {
-                    _sendEvent?.WaitOne();
+                    _sendThreadToken = new CancellationTokenSource();
                 }
-                if (_sendQueue.TryDequeue(out var cmd))
+                var token = _sendThreadToken.Token;
+
+                while (!token.IsCancellationRequested)
                 {
+
+                    if (_sendQueue.Count == 0)
+                    {
+                        _sendEvent?.WaitOne();
+                    }
+                    if (_sendQueue.TryDequeue(out var cmd))
+                    {
+                        try
+                        {
+                            // 发送业务
+                            DeviceInstance.Send(cmd);
+                            LogManager.GetCurrentClassLogger().Debug($"{Name}:IP:{DeviceInstance.TargetIp},Port:{DeviceInstance.TargetPort} 发送 : {BitConverter.ToString(cmd).Replace("-", " ")}");
+                        }
+                        catch (Exception ex)
+                        {
+                            LogManager.GetCurrentClassLogger().Error($"发送数据失败 {ex.Message} ");
+                        }
+                    }
                     try
                     {
-                        // 发送业务
-                        DeviceInstance.Send(cmd);
-                        LogManager.GetCurrentClassLogger().Debug($"{Name} 发送 : {GetCmdString(cmd, cmd.Length)}");
+                        _receiveEvent?.WaitOne((int)WaitInterval);
+
                     }
                     catch (Exception ex)
                     {
-                        LogManager.GetCurrentClassLogger().Error($"发送数据失败 {ex} ");
+                        LogManager.GetCurrentClassLogger().Error($"{ex}");
                     }
                 }
-                try
-                {
-                    var result = await _waitingReply?.Task.WaitAsync(TimeSpan.FromMilliseconds(WaitInterval));
-                       
-                }
-                catch (Exception ex)
-                {
-                    LogManager.GetCurrentClassLogger().Trace($"{ex}");
-                }
             }
+            catch (Exception ex)
+            {
+                LogManager.GetCurrentClassLogger().Error($"发送线程异常 {ex}");
+            }
+           
         }
 
 
@@ -326,13 +335,13 @@ namespace UtilityTools.Services.Services
         {
             try
             {
-                LogManager.GetCurrentClassLogger().Debug($"{Name} 接收 : {GetCmdString(response, response.Length)}");
+                LogManager.GetCurrentClassLogger().Debug($"{Name}:IP:{DeviceInstance.TargetIp},Port:{DeviceInstance.TargetPort}  接收 : {BitConverter.ToString(response).Replace("-"," ")}");
                 UpdateResponse?.Invoke(this, response);
-                _waitingReply?.TrySetResult("reply");
+                _receiveEvent?.Set();
             }
             catch (Exception ex)
             {
-                LogManager.GetCurrentClassLogger().Error(ex.Message);
+                LogManager.GetCurrentClassLogger().Error($" udp接收事件异常:{ex}");
                 return;
             }
         }
