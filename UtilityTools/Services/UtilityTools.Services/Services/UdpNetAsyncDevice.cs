@@ -53,6 +53,7 @@ namespace UtilityTools.Services.Services
             MinWriteInterval = 10;
             WaitInterval = 500;
             _sendEvent = new AutoResetEvent(false);
+            _receiveEvent = new AutoResetEvent(false);
         }
 
         #endregion
