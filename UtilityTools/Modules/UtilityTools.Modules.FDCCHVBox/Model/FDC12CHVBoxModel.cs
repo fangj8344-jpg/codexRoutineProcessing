@@ -1,4 +1,5 @@
-﻿using HarfBuzzSharp;
+﻿using CsvHelper;
+using HarfBuzzSharp;
 using Microsoft.Win32;
 using Newtonsoft.Json.Linq;
 using OxyPlot;
@@ -7,6 +8,7 @@ using OxyPlot.Legends;
 using OxyPlot.Series;
 using Prism.Commands;
 using Prism.Mvvm;
+using Prism.Services.Dialogs;
 using ScottPlot;
 using System;
 using System.Collections.Generic;
@@ -595,118 +597,60 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
                 PlotModel.InvalidatePlot(true);
             }
         }
-        public void ExportMultipleSeriesToCsv()
-        {
-            //  打开保存文件对话框
-            string savePath = GetSavePath();
-            List<string> csvfile = new List<string>();
-            if (string.IsNullOrEmpty(savePath)) return;
-            try
-            {
-                //  构建数据行（按时间排序）
-                for (int i = 0; i < HVBoxModels.Count; i++)
-                {
+        
 
-                    var timeCsvLines = new List<string>();
-                    var setCsvLines1 = new List<string>();
-                    var hvCsvLines1 = new List<string>();
-                    var iCsvLines1 = new List<string>();
-                  
-
-                    if (HVBoxModels[i].HvMessages!=null && HVBoxModels[i].HvMessages.Count>0)
-                    {
-
-                        timeCsvLines.Add(HVBoxModels[i].Channel.ToString() + "时间");
-                        hvCsvLines1.Add(HVBoxModels[i].Channel.ToString() + "高压");
-                        iCsvLines1.Add(HVBoxModels[i].Channel.ToString() + "电流");
-                        for (int j = 0; j < HVBoxModels[i].HvMessages.Count; j++)
-                        {
-                            timeCsvLines.Add(HVBoxModels[i].HvMessages[j].DateTime.ToString("yyyy年MM月dd日 HH:mm:ss"));
-                            setCsvLines1.Add(HVBoxModels[i].HvMessages[j].I.ToString());
-                            hvCsvLines1.Add(HVBoxModels[i].HvMessages[j].HV.ToString());
-                            iCsvLines1.Add(HVBoxModels[i].HvMessages[j].I.ToString());
-                           
-                        }
-                        csvfile.Add(string.Join(",", timeCsvLines));
-                        csvfile.Add(string.Join(",", hvCsvLines1));
-                        csvfile.Add(string.Join(",", iCsvLines1));
-                    }
-                }
-                                      
-                //  写入文件
-                File.WriteAllLines(savePath, csvfile, System.Text.Encoding.UTF8);
-                ShowMessage($"成功导出到：{savePath}");
-            }
-            catch (Exception ex)
-            {
-                ShowMessage($"导出失败：{ex}");
-            }
-        }
-        public void ExportToCsv()
+        public async void ExportToCsv()
         {
             string filePath = GetSavePath();
+
             if (filePath == null)
             {
                 return;
             }
-            // 使用 StreamWriter 写入文件，并指定 UTF-8 编码以支持中文等特殊字符
-            int maxCount = 0;
-            using (var writer = new StreamWriter(filePath, false, Encoding.UTF8))
+          
+            await Task.Run(() => 
             {
-                string hear = "";
-                // 写入表头
-                for (int i = 0; i < HVBoxModels.Count; i++)
+                try
                 {
-                    hear +=($"{HVBoxModels[i].Channel.ToString()}time,");
-                    hear += ($"{HVBoxModels[i].Channel.ToString()}SetHv,");
-                    hear += ($"{HVBoxModels[i].Channel.ToString()}Hv,");
-                    hear += ($"{HVBoxModels[i].Channel.ToString()}I,");
-                    if (i == 0)
+                    for (int i = 0; i < HVBoxModels.Count; i++)
                     {
-                        maxCount = HVBoxModels[i].HvMessages.Count;
-                    }
-                    else
-                    {
-                        if (HVBoxModels[i].HvMessages.Count > maxCount)
+                        if (HVBoxModels[i].IsEnable)
                         {
-                            maxCount = HVBoxModels[i].HvMessages.Count;
+                            using var write = new StreamWriter(Path.Combine( filePath, HVBoxModels[i].Channel.ToString() + "通道.csv"));
+                            using var csv = new CsvWriter(write, CultureInfo.InvariantCulture);
+                          
+                            csv.WriteRecords(HVBoxModels[i].HvMessages);
+                       
                         }
                     }
                 }
-                    writer.WriteLine(hear);
-                // 写入内容
-                string content = "";
-                for (int i = 0; i < maxCount;i++ )
+                catch (Exception ex)
                 {
-                    content = "";
-                   for (int j = 0; j < HVBoxModels.Count;j++)
-                    {
-                        if (HVBoxModels[j].HvMessages.Count >= i)
-                        {
-                            content += $"{HVBoxModels[j].HvMessages[i].DateTime.ToString("O")},";
-                            content += $"{HVBoxModels[j].HvMessages[i].setHv.ToString()},";
-                            content += $"{HVBoxModels[j].HvMessages[i].HV.ToString()},";
-                            content += $"{HVBoxModels[j].HvMessages[i].I.ToString()},";
-                        }
-                    }
-                    writer.WriteLine($"{content}");
+                    NLog.LogManager.GetCurrentClassLogger().Error($"导入数据失败：{ex}");
                 }
-            
-            }
+              
+            });
+
             System.Windows.MessageBox.Show($"数据已成功导出到 {filePath}");
         }
         private string GetSavePath()
         {
-            var saveDialog = new Microsoft.Win32.SaveFileDialog
-            {
-                Title = "导出多个系列数据",
-                Filter = "CSV 文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
-                DefaultExt = ".csv",
-                FileName = $"MultiSeriesData_{DateTime.Now:yyyyMMddHHmmss}"
-            };
-            return saveDialog.ShowDialog() == true ? saveDialog.FileName : null;
+            FolderBrowserDialog folderDialog = new FolderBrowserDialog();
 
-          
+            // 设置初始路径（可选）
+            folderDialog.SelectedPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+
+            // 设置对话框标题
+            folderDialog.Description = "请选择要保存的文件夹";
+
+            // 显示对话框
+            if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                return folderDialog.SelectedPath;
+            }
+
+            return null; // 用户取消选择
+
         }
 
         private void ShowMessage(string message)
@@ -727,6 +671,6 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         {
             PlotModel.InvalidatePlot(true);
         }
-
+        
     }
 }

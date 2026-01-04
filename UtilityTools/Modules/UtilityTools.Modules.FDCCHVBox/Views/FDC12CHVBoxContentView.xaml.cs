@@ -18,7 +18,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Views
     /// <summary>
     /// FDC12CHVBoxContentView.xaml 的交互逻辑
     /// </summary>
-    public partial class FDC12CHVBoxContentView : UserControl
+    public partial class FDC12CHVBoxContentView : System.Windows.Controls.UserControl
     {
         public FDC12CHVBoxContentView()
         {

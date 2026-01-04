@@ -619,6 +619,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         {
             StopSetHvTimer();
             Entity?.SetHvDeInitCommand();
+            ShowSetHV = 0;
         }
     }
     public class HvMessage 
