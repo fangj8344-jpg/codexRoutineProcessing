@@ -829,6 +829,9 @@ namespace UtilityTools.Modules.MotorTest.Model
             ZAxis.CloseSlimited();
         }
         public DelegateCommand SqliteLoadCommand { get; set; }
+        /// <summary>
+        /// 数据库加载
+        /// </summary>
         private async void SqliteLoad()
         {
             int pointNumber, speedNumber;

@@ -2757,13 +2757,18 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// </summary>
         private async void SqliteLoad()
         {
+            int pointNumber, speedNumber;
+            ObservableCollection<PlotViewPointMessage> point;
+            ObservableCollection<PlotViewSpeedMessage> speed;
             using (var db = new TwoAxisDbContextBase())
             {
                 TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
-                var pointNumber = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
-                var point = await SpliteOperate.GetPlotViewPointMessagesAsync(db,headIndex, LoadSize > pointNumber ? pointNumber : LoadSize);
-                var speedNumber = await SpliteOperate.GetPlotViewSpeedMessageCountAsync(db);
-                var speed = await SpliteOperate.GetPlotViewSpeedMessagesAsync(db, LoadSize > speedNumber ? speedNumber : LoadSize);
+                pointNumber = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
+                point = new ObservableCollection<PlotViewPointMessage>(await SpliteOperate.GetPlotViewPointMessagesAsync(db, HeadIndex, LoadSize > pointNumber ? pointNumber : LoadSize));
+                speedNumber = await SpliteOperate.GetPlotViewSpeedMessageCountAsync(db);
+                speed = new ObservableCollection<PlotViewSpeedMessage>(await SpliteOperate.GetPlotViewSpeedMessagesAsync(db, HeadIndex, LoadSize > speedNumber ? speedNumber : LoadSize));
+                
+              
                 ObservableCollection<PlotViewPointMessage> xPointList = new ObservableCollection<PlotViewPointMessage>(point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_x).ToList());
                 ObservableCollection<PlotViewPointMessage> yPointList = new ObservableCollection<PlotViewPointMessage>(point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_y).ToList());
 
