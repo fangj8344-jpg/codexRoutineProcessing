@@ -409,7 +409,15 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         }
         private void SetHvTimerElapsed(object sender, ElapsedEventArgs e)
         {
-            SetHvBySetp();
+            if (IsSetHvDone == false)
+            {
+                SetHvBySetp();
+            }
+            else
+            {
+                StopSetHvTimer();
+            }
+           
         }
        
         public bool InitSetHv()
@@ -577,7 +585,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             UdpNetAsyncDevice.DeviceInstance.TargetIp = targetIp;
             UdpNetAsyncDevice.Open();
             _entity = new FDC12CHVBoxEntity(_udpNetAsyncDevice, _channel);
-            SetHvInit();
+          
         }
         public async void CheckConnect()
         {

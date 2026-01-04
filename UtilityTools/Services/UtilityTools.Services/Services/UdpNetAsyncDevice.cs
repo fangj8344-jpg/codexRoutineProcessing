@@ -51,7 +51,7 @@ namespace UtilityTools.Services.Services
             DeviceInstance = new UdpNetConfigModel();
             DeviceInstance.ReceiveDataEvent += DeviceInstance_ReceiveDataEvent;
             MinWriteInterval = 10;
-            WaitInterval = 500;
+            WaitInterval = 200;
             _sendEvent = new AutoResetEvent(false);
             _receiveEvent = new AutoResetEvent(false);
         }
@@ -110,7 +110,7 @@ namespace UtilityTools.Services.Services
         /// 两次写入最小间隔 ms, 特别是串口通讯需要根据设备情况进行设置
         /// </summary>
         public int MinWriteInterval { get; set; }
-        public double WaitInterval { get;  set; }
+        public double WaitInterval { get; set; } = 200;
         #endregion
 
         #region ------------Event------------

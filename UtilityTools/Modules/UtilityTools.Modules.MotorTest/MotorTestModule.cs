@@ -1,4 +1,4 @@
-
+ï»¿
 using Prism.Ioc;
 using Prism.Modularity;
 using UtilityTools.Core.Mvvm;
@@ -8,7 +8,7 @@ using UtilityTools.Modules.MotorTest.Views;
 
 namespace UtilityTools.Modules.MotorTest
 {
-    [CustomModule(ModuleName = "MotorTest" , Title = "µç»ú²âÊÔ" , Tip = "´®¿ÚÍ¨Ñ¶" ,Icon = "AxisArrowInfo")]
+    [CustomModule(ModuleName = "MotorTest" , Title = "ç”µæœºæµ‹è¯•" , Tip = "ä¸²å£é€šè®¯" ,Icon = "AxisArrowInfo")]
     public class MotorTestModule : IModule
     {
         public void OnInitialized(IContainerProvider containerProvider)
