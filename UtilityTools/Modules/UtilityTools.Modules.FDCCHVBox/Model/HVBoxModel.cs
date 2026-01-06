@@ -627,7 +627,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         public DateTime  DateTime { get; set; }
         public float HV { get; set; }
         public float I { get; set; }
-        public ushort setHv { get; set; }
+        public int setHv { get; set; }
     }
   
 }

@@ -281,14 +281,15 @@
         </Grid>
         <!--<状态栏>-->
         <StatusBar Grid.Row="2">
-            <StatusBarItem>
-                <TextBlock Text="{Binding }"/>
-            </StatusBarItem>
+          
             <StatusBarItem>
                 <ProgressBar Value="{Binding ProgressValue}" Width="150"/>
             </StatusBarItem>
             <StatusBarItem>
-                <TextBlock Text="版本：3.2.2"/>
+                <DockPanel LastChildFill="False">
+                    <TextBlock Text="版本:"/>
+                    <TextBlock Text="{Binding Version}"/>
+                </DockPanel>
             </StatusBarItem>
             <StatusBarItem>
                 <DockPanel LastChildFill="False">

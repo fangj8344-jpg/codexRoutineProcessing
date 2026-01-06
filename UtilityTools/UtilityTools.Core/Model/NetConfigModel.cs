@@ -303,7 +303,7 @@ namespace UtilityTools.Core.Model
                 {
                     var buffer = new byte[buffSize];
                     Array.Copy(_dataBuff, buffer, buffSize);
-                    LogManager.GetCurrentClassLogger().Debug($"接收来自{_sendEndPoint.ToString()}：{ParseMsgToString(buffer)}");
+                    //LogManager.GetCurrentClassLogger().Debug($"接收来自{_sendEndPoint.ToString()}：{ParseMsgToString(buffer)}");
                     ReceiveBuffer(buffer);
                 }
             }

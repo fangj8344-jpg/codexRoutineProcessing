@@ -607,7 +607,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             {
                 return;
             }
-          
+            List<HvMessage> allRecords = new List<HvMessage>();
             await Task.Run(() => 
             {
                 try
@@ -618,8 +618,14 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
                         {
                             using var write = new StreamWriter(Path.Combine( filePath, HVBoxModels[i].Channel.ToString() + "通道.csv"));
                             using var csv = new CsvWriter(write, CultureInfo.InvariantCulture);
-                          
-                            csv.WriteRecords(HVBoxModels[i].HvMessages);
+                            List<HvMessage>  realHvMessages = HVBoxModels[i].HvMessages.Select(oldparameter => new HvMessage() 
+                            {
+                                DateTime = oldparameter.DateTime,
+                                HV = -oldparameter.HV,
+                                I = -oldparameter.I,
+                                setHv = -oldparameter.setHv,
+                            }).ToList();
+                            csv.WriteRecords(realHvMessages);
                        
                         }
                     }

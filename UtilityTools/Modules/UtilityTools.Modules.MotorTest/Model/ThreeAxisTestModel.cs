@@ -76,6 +76,15 @@ namespace UtilityTools.Modules.MotorTest.Model
         private FiveAxisDbContextBase _fiveAxisDbContextBase;
        
         private FiveAxisDbContextBase _twoAxisDbContextBase;
+        private string _version = "3.3.0";
+        /// <summary>
+        /// 版本号
+        /// </summary>
+        public string Version
+        {
+            get { return _version; }
+            set { _version = value; RaisePropertyChanged(); }
+        }
         private int _maxCount = 30000;
         public int MaxCount
         {
