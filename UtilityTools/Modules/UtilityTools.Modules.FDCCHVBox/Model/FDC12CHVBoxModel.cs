@@ -598,7 +598,8 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             }
         }
         
-
+        /*
+         ///每个通道单独导出的方法
         public async void ExportToCsv()
         {
             string filePath = GetSavePath();
@@ -658,7 +659,98 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             return null; // 用户取消选择
 
         }
+        */
+        public void ExportToCsv()
+        {
+            string filePath = GetSavePath();
+            if (filePath == null)
+            {
+                return;
+            }
+            // 使用 StreamWriter 写入文件，并指定 UTF-8 编码以支持中文等特殊字符
+            int maxCount = 0;
+            try
+            {
+                using (var writer = new StreamWriter(filePath, false, Encoding.UTF8))
+                {
+                    var hVBoxModels = HVBoxModels.ToList();
+                    string hear = "";
+                    // 写入表头
+                    for (int i = 0; i < hVBoxModels.Count; i++)
+                    {
+                        if (hVBoxModels[i].IsCheck == false)
+                        {
+                            continue;
+                        }
+                        hear += ($"{hVBoxModels[i].Channel.ToString()}time,");
+                        hear += ($"{hVBoxModels[i].Channel.ToString()}SetHv,");
+                        hear += ($"{hVBoxModels[i].Channel.ToString()}Hv,");
+                        hear += ($"{hVBoxModels[i].Channel.ToString()}I,");
+                        if (i == 0)
+                        {
+                            maxCount = hVBoxModels[i].HvMessages.Count;
+                        }
+                        else
+                        {
+                            if (hVBoxModels[i].HvMessages.Count > maxCount)
+                            {
+                                maxCount = hVBoxModels[i].HvMessages.Count;
+                            }
+                        }
+                    }
+                    writer.WriteLine(hear);
+                    // 写入内容
+                    string content = "";
+                    for (int i = 0; i < maxCount; i++)
+                    {
+                        content = "";
+                        for (int j = 0; j < hVBoxModels.Count; j++)
+                        {
+                            if (hVBoxModels[j].IsCheck)
+                            {
+                                if (hVBoxModels[j].HvMessages != null && hVBoxModels[j].HvMessages.Count >= i + 1)
+                                {
+                                    var sethv = -hVBoxModels[j].HvMessages[i].setHv;
+                                    var hv = -hVBoxModels[j].HvMessages[i].HV;
+                                    var hi = -hVBoxModels[j].HvMessages[i].I;
+                                    content += $"{hVBoxModels[j].HvMessages[i].DateTime.ToString("O")},";
+                                    content += $"{sethv.ToString()},";
+                                    content += $"{hv.ToString()},";
+                                    content += $"{hi.ToString()},";
+                                }
+                                else
+                                {
+                                    content += $",";
+                                    content += $",";
+                                    content += $",";
+                                    content += $",";
+                                }
+                            }
+                        }
+                        writer.WriteLine($"{content}");
+                    }
+                }
+                System.Windows.MessageBox.Show($"数据已成功导出到 {filePath}");
+            }
+            catch (Exception ex) 
+            {
+                NLog.LogManager.GetCurrentClassLogger().Error($"导出数据失败：{ex}");
+            }
+            
+        }
+        private string GetSavePath()
+        {
+            var saveDialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Title = "导出多个系列数据",
+                Filter = "CSV 文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
+                DefaultExt = ".csv",
+                FileName = $"高压数据_{DateTime.Now:yyyyMMddHHmmss}"
+            };
+            return saveDialog.ShowDialog() == true ? saveDialog.FileName : null;
 
+
+        }
         private void ShowMessage(string message)
         {
             System.Windows.MessageBox.Show(message);
