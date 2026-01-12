@@ -63,6 +63,7 @@ namespace UtilityTools.Services.Services
         private AutoResetEvent _sendEvent;
         private AutoResetEvent _receiveEvent;
         private CancellationTokenSource _sendThreadToken;
+        private int _timeOutCount = 0;
 
         private object _syncObject;
         private ConcurrentQueue<byte[]> _sendQueue;
@@ -105,6 +106,7 @@ namespace UtilityTools.Services.Services
         /// 连接测试
         /// </summary>
         public DelegateConnectTestCommand ConnectTest { get; set; }
+        public bool ConnectSatus { get; set; } = false;
 
         /// <summary>
         /// 两次写入最小间隔 ms, 特别是串口通讯需要根据设备情况进行设置
@@ -118,6 +120,9 @@ namespace UtilityTools.Services.Services
         /// 更新回包数据事件
         /// </summary>
         public event EventHandler<byte[]> UpdateResponse;
+
+        public event EventHandler<bool> ConnectStatusChanged;
+
         #endregion
 
         #region ------------PublicMethod------------
@@ -315,11 +320,25 @@ namespace UtilityTools.Services.Services
                     }
                     try
                     {
-                        _receiveEvent?.WaitOne((int)WaitInterval);
+                        bool? result= _receiveEvent?.WaitOne((int)WaitInterval);
+                        if (result == false)
+                        {
+                            _timeOutCount++;
+                            if (_timeOutCount >= 3)
+                            {
+                                if (ConnectSatus == true)
+                                {
+                                    ConnectSatus = false;
+                                    ConnectStatusChanged?.Invoke(this, ConnectSatus);
+                                }
+
+                            }
+                        }
 
                     }
                     catch (Exception ex)
                     {
+                       
                         LogManager.GetCurrentClassLogger().Error($"{ex}");
                     }
                 }
@@ -338,6 +357,13 @@ namespace UtilityTools.Services.Services
             {
                 LogManager.GetCurrentClassLogger().Debug($"{Name}:IP:{DeviceInstance.TargetIp},Port:{DeviceInstance.TargetPort}  接收 : {BitConverter.ToString(response).Replace("-"," ")}");
                 UpdateResponse?.Invoke(this, response);
+                _timeOutCount = 0;
+                if (ConnectSatus == false)
+                {
+                    ConnectSatus = true;
+                    ConnectStatusChanged?.Invoke(this, ConnectSatus);
+                }
+               
                 _receiveEvent?.Set();
             }
             catch (Exception ex)

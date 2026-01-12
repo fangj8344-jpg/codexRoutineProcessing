@@ -4,6 +4,8 @@ using NLog.Targets;
 using Prism.Ioc;
 using Prism.Modularity;
 using System;
+using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using UtilityTools.Core.Dialog;
@@ -23,6 +25,7 @@ namespace UtilityTools
     /// </summary>
     public partial class App
     {
+        private static Mutex mutex;
         protected override Window CreateShell()
         {
             //UI线程未捕获异常处理事件
@@ -40,6 +43,17 @@ namespace UtilityTools
             LogManager.GetCurrentClassLogger().Fatal($"{e.Exception.StackTrace},{e.Exception.Message}");
         }
 
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            mutex = new Mutex(true, Assembly.GetEntryAssembly().GetName().Name, out bool createdNew);
+            if (!createdNew)
+            {
+                MessageBox.Show("The App is RUNING!");
+                Shutdown();
+                return;
+            }
+            base.OnStartup(e);
+        }
         private void OnUnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
         {
             LogManager.GetCurrentClassLogger().Fatal($"{e.Exception.StackTrace},{e.Exception.Message}");

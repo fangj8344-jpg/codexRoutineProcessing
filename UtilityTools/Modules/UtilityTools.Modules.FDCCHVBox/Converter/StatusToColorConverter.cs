@@ -32,7 +32,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Converter
                 FDC12CHVBoxInitState.INITALIZING => System.Windows.Media.Brushes.Orange, // 初始化中：橙色（进行中，过渡状态）
                 FDC12CHVBoxInitState.RUNNUNG => System.Windows.Media.Brushes.Green,    // 运行中：绿色（正常，活跃状态）
                 FDC12CHVBoxInitState.DISCONNECTED => System.Windows.Media.Brushes.DarkRed, // 未连接：深红色（严重异常，连接中断）
-                _ => System.Windows.Media.Brushes.Transparent // 默认情况
+                _ => System.Windows.Media.Brushes.Transparent // 默认情况黑色
             };
         }
         

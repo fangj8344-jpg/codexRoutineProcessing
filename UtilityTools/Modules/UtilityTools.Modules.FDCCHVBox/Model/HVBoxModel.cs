@@ -43,7 +43,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         private string _remortIp;
         private int _remortPort;
 
-        private bool _isConnectTest = false;
+        
         private bool _direction = true;
         private ushort _maxHV = 30000;
         private System.Timers.Timer _timer;
@@ -378,16 +378,16 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         }
         private void SetHvInit()
         {
-            Entity.SetHvInitCommand();
+            Entity?.SetHvInitCommand();
         }
         //单路设置定时器
         public void InitSetHVTimer()
         {
             // 1. 创建定时器，设置间隔时间（单位：毫秒，此处为 1000ms = 1秒）
-            if (_setHvTimer == null)
-            {
-                _setHvTimer = new System.Timers.Timer(TimerInterval);
-            }
+            StopSetHvTimer();
+        
+            _setHvTimer = new System.Timers.Timer(TimerInterval);
+
             if (_setHvTimer.Enabled)
             {
                 _setHvTimer.Stop();
@@ -504,15 +504,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
                 //固件版本获取
                 case FDC12CHVBoxFunctionCode.FV:break;
             }
-            if (_isConnectTest)
-            {
-                if (_waitingReply != null)
-                {
-                    _isConnectTest = false;
-                    _waitingReply?.TrySetResult("reply");
-                }
-               
-            }
+           
            
         }
 
@@ -578,6 +570,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             _parser = new FDC12CHVBoxParser();
             UdpNetAsyncDevice = new UdpNetAsyncDevice();
             UdpNetAsyncDevice.UpdateResponse += NetUdpService_UpdateResponse;
+            UdpNetAsyncDevice.ConnectStatusChanged += NetUdpService_ConectChanged;
             _parser.PacketReceivedEvent += Parser_PacketReceivedEvent;
             UdpNetAsyncDevice.DeviceInstance.HostPort = port;
             UdpNetAsyncDevice.DeviceInstance.HostIp = hostIp;
@@ -587,34 +580,16 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             _entity = new FDC12CHVBoxEntity(_udpNetAsyncDevice, _channel);
           
         }
-        public async void CheckConnect()
-        {
-            try
-            {
-                _isConnectTest = true;
-                _waitingReply = new TaskCompletionSource<string>();
-                var result = await _waitingReply.Task.WaitAsync(TimeSpan.FromSeconds(10));
-                if (result == "reply")
-                {
 
-                }
-                else
-                {
-                    HVBoxInitState = FDC12CHVBoxInitState.DISCONNECTED;
-                }
-            }
-            catch (Exception ex)
+        private void NetUdpService_ConectChanged(object? sender, bool connectStatus)
+        {
+            if (connectStatus == false)
             {
                 HVBoxInitState = FDC12CHVBoxInitState.DISCONNECTED;
-                if (UdpNetAsyncDevice.IsOpen)
-                {
-                    UdpNetAsyncDevice.Close();
-                }
-                
-                NLog.LogManager.GetCurrentClassLogger().Error($"通道号:{_channel}连接测试失败，连接断开{ex}");
             }
-           
         }
+
+
         public void CloseOutput()
         {
             StopSetHvTimer();

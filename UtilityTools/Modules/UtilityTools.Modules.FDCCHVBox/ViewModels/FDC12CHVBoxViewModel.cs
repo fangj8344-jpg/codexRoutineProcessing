@@ -13,6 +13,13 @@ namespace UtilityTools.Modules.FDC12CHVBox.ViewModels
 {
     public class FDC12CHVBoxViewModel: RegionViewModelBase
     {
+
+        private string _version = "1.41";
+        public string Version
+        {
+            get { return _version; }
+            set { _version = value; RaisePropertyChanged(); }
+        }
         public FDC12CHVBoxViewModel(IContainerProvider containerProvider)
           : base(containerProvider)
         {

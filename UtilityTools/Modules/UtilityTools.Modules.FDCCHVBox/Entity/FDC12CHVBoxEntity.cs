@@ -20,7 +20,6 @@ namespace UtilityTools.Modules.FDC12CHVBox.Entity
         }
         private UdpNetAsyncDevice _netUdpService; 
         private byte _channed;
-        private TaskCompletionSource<string> _waitingReply;
         /// <summary>
         /// 读取高压信息
         /// </summary>
@@ -109,8 +108,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Entity
         }
         private  void SentData(byte[] bytes)
         {
-            if (_netUdpService.IsOpen)
-                _netUdpService.SendMsg(bytes);
+            _netUdpService.SendMsg(bytes);
         }
     }
 }

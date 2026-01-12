@@ -40,7 +40,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         private ushort _maxHV = 30000;
         private System.Timers.Timer _setHvTimer;
         private System.Timers.Timer _timer;
-        private int _connectCount;
+        
         private List<string> listTime;
         private bool _isTimeQuery = true;
         private bool _isSetHvLineShow = true;
@@ -332,7 +332,7 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             AutoAdjustCommand = new DelegateCommand(AutoAdjust);
             ExportMultipleSeriesToCsvCommand = new DelegateCommand(ExportToCsv);
             ClearMonitorCommand = new DelegateCommand(ClearMonitor);
-            CloseOutPutCommand = new DelegateCommand(CloseOutPut);;
+            CloseOutPutCommand = new DelegateCommand(CloseOutPut);
             IsAllCheckChangeCommand = new DelegateCommand(IsAllCheckChange);
             SaveParameterCommand = new DelegateCommand(SaveParameter);
             SetHvParameterCommand = new DelegateCommand(SetHvParameter);
@@ -435,31 +435,17 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
             {
                 if (_isTimeQuery)
                 {
-                    if (HVBoxModels[i].UdpNetAsyncDevice.IsOpen)
-                    {
-                        HVBoxModels[i].Entity?.GetHvReadCommand();
-                        HVBoxModels[i].Entity?.GetHvInitCommand();
-                    }
+
+                    HVBoxModels[i].Entity?.GetHvReadCommand();
+                    HVBoxModels[i].Entity?.GetHvInitCommand();
+
                 }
                 else
                 {
                     return;
                 }  
             }
-            _connectCount++;
-            if (_connectCount >= 10)
-            {
-                _connectCount = 0;
-                for (int i = 0; i < HVBoxModels.Count; i++)
-                {
-                    if (HVBoxModels[i].UdpNetAsyncDevice.IsOpen)
-                    {
-                        HVBoxModels[i].CheckConnect();
-                    }
-                         
-                }
-
-            }
+          
         }
         private void QueryHvMessage()
         {
@@ -510,8 +496,11 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
        
         private void CloseOutPut()
         {
+            //停止设置电压
             StopSetHvTimer();
+            //停止定时查询
             StopTimer();
+            //开启定时问询
             InitTimer();
             for (int j = 0; j < 3; j++)
             {
@@ -537,15 +526,16 @@ namespace UtilityTools.Modules.FDC12CHVBox.Model
         {
             for (int i = 0; i < HVBoxModels.Count; i++)
             {
+               
                 try
                 {
                     HVBoxModels[i].InitConnect(0, _localIp, _remotePort + i, _remoteIp);
-                 ;
                 }
                 catch (Exception ex)
                 {
                     NLog.LogManager.GetCurrentClassLogger().Error($"{i + 1}通道连接出现错误 {ex}");
                 }
+                
 
             }
             try
