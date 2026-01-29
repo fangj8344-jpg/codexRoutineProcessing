@@ -1136,7 +1136,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                         int fullStrokeOfMotor = posMessage.positiveLimitPosition - posMessage.negativeLimitPositionendPos;
                         if ((fullStrokeOfMotor < 170000 && fullStrokeOfMotor > 160000)
                         || (fullStrokeOfMotor < 130000 && fullStrokeOfMotor > 120000)
-                        || (fullStrokeOfMotor < 240000 && fullStrokeOfMotor > 210000))
+                        || (fullStrokeOfMotor < 245000 && fullStrokeOfMotor > 210000))
                         {
                             TestMessage.TestResult = "合格";
                             TestMessage.TestValue = "正常";
@@ -1287,7 +1287,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                         int fullStrokeOfMotor = posMessage.positiveLimitPosition - posMessage.negativeLimitPositionendPos;
                         if ((fullStrokeOfMotor < 170000 && fullStrokeOfMotor > 160000)
                         || (fullStrokeOfMotor < 130000 && fullStrokeOfMotor > 120000)
-                         || (fullStrokeOfMotor < 240000 && fullStrokeOfMotor > 210000))
+                         || (fullStrokeOfMotor < 245000 && fullStrokeOfMotor > 210000))
                         {
                             if (_limtedPos == null)
                             {
