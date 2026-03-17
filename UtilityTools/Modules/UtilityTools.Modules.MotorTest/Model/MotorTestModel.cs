@@ -1,4 +1,4 @@
-﻿using ImageMagick;
+using ImageMagick;
 using MaterialDesignThemes.Wpf;
 using MathNet.Numerics.Financial;
 using MathNet.Numerics.RootFinding;
@@ -67,6 +67,8 @@ namespace UtilityTools.Modules.MotorTest.Model
 
             _parser = new SelfMotorParser();
             _parser.PacketReceivedEvent += Parser_PacketReceivedEvent;
+            _waitingReply = new TaskCompletionSource<string>();
+            _limitedtcs1 = new TaskCompletionSource<string>();
 
             SerialPortService = new SerialPortService();
             SerialPortService.UpdateResponse += SerialPortService_UpdateResponse;
@@ -504,6 +506,8 @@ namespace UtilityTools.Modules.MotorTest.Model
         public DelegateCommand<string> TestSmoothnessDetectionCommand { get; set; }
         private async void TestSmoothnessDetection(string parameter)
         {
+            try
+            {
             if (parameter == "open")
             {
 
@@ -537,7 +541,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     }
                     _dialogHostService.Information("提示", "丝杆顺滑度测试完毕请选择保存路径");
                     Serilize();
-                    _work.CancelAsync();
+                    _work?.CancelAsync();
                     _testTime.Stop();
                     _testTime = null;
                 }
@@ -545,7 +549,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                 {
                     DispathcherInvoke($"丝杆测试退出");
                     StopAll();
-                    _work.CancelAsync();
+                    _work?.CancelAsync();
                     if (_testTime != null)
                     {
                         _testTime.Stop();
@@ -563,6 +567,12 @@ namespace UtilityTools.Modules.MotorTest.Model
                     _cts.Cancel();
                 }
             }
+            }
+            catch (Exception ex)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Error(ex, "丝杆顺滑度测试发生未处理异常");
+                _dialogHostService.Information("错误", "丝杆顺滑度测试发生异常，请查看日志");
+            }
 
 
         }
@@ -572,41 +582,50 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// </summary>
         private async void DurabilityTest()
         {
-            _isDurabilityTest = true;
-
-            _work = new BackgroundWorker();
-            _work.WorkerSupportsCancellation = true;
-            _work.DoWork += Worker_DoWork;
-            _work?.RunWorkerAsync();
-
-            _cts = new CancellationTokenSource();
-            while (_isDurabilityTest)
+            try
             {
-                try
+                _isDurabilityTest = true;
+
+                _work = new BackgroundWorker();
+                _work.WorkerSupportsCancellation = true;
+                _work.DoWork += Worker_DoWork;
+                _work?.RunWorkerAsync();
+
+                _cts = new CancellationTokenSource();
+                while (_isDurabilityTest)
                 {
-                    bool result1 = await SmoothnessDetection(EnumMotorId.MOTOR_1, _cts.Token);
-                    bool result2 = await SmoothnessDetection(EnumMotorId.MOTOR_2, _cts.Token);
-                    var time = MotorModelX.PointList.Last().Date - MotorModelX.PointList[0].Date;
-                    var min = time.TotalMinutes;
-                    if (min > 30)
+                    try
                     {
-                        MotorModelX.PointList.Clear();
-                        MotorModelY.PointList.Clear();
+                        bool result1 = await SmoothnessDetection(EnumMotorId.MOTOR_1, _cts.Token);
+                        bool result2 = await SmoothnessDetection(EnumMotorId.MOTOR_2, _cts.Token);
+
+                        // 防止在未采集到足够数据时访问 PointList 越界
+                        if (MotorModelX.PointList != null && MotorModelX.PointList.Count > 0)
+                        {
+                            var time = MotorModelX.PointList.Last().Date - MotorModelX.PointList[0].Date;
+                            var min = time.TotalMinutes;
+                            if (min > 30)
+                            {
+                                MotorModelX.PointList.Clear();
+                                MotorModelY.PointList.Clear();
+                            }
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        DispathcherInvoke($"耐久测试退出");
+                        StopAll();
+                        _work?.CancelAsync();
+                        return;
                     }
                 }
-                catch (OperationCanceledException)
-                {
-                    DispathcherInvoke($"耐久测试退出");
-                    StopAll();
-                    _work.CancelAsync();
-                    return;
-                }
-
-
-
+                _work?.CancelAsync();
             }
-            _work.CancelAsync();
-
+            catch (Exception ex)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Error(ex, "耐久测试发生未处理异常");
+                _dialogHostService.Information("错误", "耐久测试发生异常，请查看日志");
+            }
         }
         public DelegateCommand ShutDownDurabilityTestCommand { get; set; }
         private void ShutDownDurabilityTest()
@@ -620,70 +639,75 @@ namespace UtilityTools.Modules.MotorTest.Model
         public DelegateCommand TestAllCommand { get; set; }
         private async void TestAll()
         {
-            MotorTestMessages.Clear();
-            SetMotorInit(EnumMotorId.MOTOR_1);
-            SetMotorInit(EnumMotorId.MOTOR_2);
-
-            Goto(EnumMotorId.MOTOR_2, false);
-            Goto(EnumMotorId.MOTOR_1, false);
-            Thread.Sleep(4000);
-            StopAll();
-            var result = await TestMotorMove();
-            if (result != true)
+            try
             {
-                DispathcherInvoke($"电机移动测试失败，测试退出");
-                _dialogHostService.Information("提示", "请先修复电机移动问题");
+                MotorTestMessages.Clear();
+                SetMotorInit(EnumMotorId.MOTOR_1);
+                SetMotorInit(EnumMotorId.MOTOR_2);
 
-                return;
-            }
+                Goto(EnumMotorId.MOTOR_2, false);
+                Goto(EnumMotorId.MOTOR_1, false);
+                Thread.Sleep(4000);
+                StopAll();
+                var result = await TestMotorMove();
+                if (result != true)
+                {
+                    DispathcherInvoke($"电机移动测试失败，测试退出");
+                    _dialogHostService.Information("提示", "请先修复电机移动问题");
 
-            result = await EncoderDirectionTest();
-            if (result != true)
-            {
-                _dialogHostService.Information("提示", "请先修复编码器反向问题");
-                DispathcherInvoke($"电机编码器测试失败，测试退出");
+                    return;
+                }
 
-                return;
-            }
-            _work = new BackgroundWorker();
-            _work.WorkerSupportsCancellation = true;
-            _work.DoWork += Worker_DoWork;
-            _work?.RunWorkerAsync();
+                result = await EncoderDirectionTest();
+                if (result != true)
+                {
+                    _dialogHostService.Information("提示", "请先修复编码器反向问题");
+                    DispathcherInvoke($"电机编码器测试失败，测试退出");
 
-            result = await LimitSwitchTest(EnumMotorId.MOTOR_1);
-            if (result != true)
-            {
-                DispathcherInvoke($"x轴电机限位测试失败，测试退出");
-                _dialogHostService.Information("提示", "请先修复限位反向问题");
-                _work.CancelAsync();
+                    return;
+                }
+                _work = new BackgroundWorker();
+                _work.WorkerSupportsCancellation = true;
+                _work.DoWork += Worker_DoWork;
+                _work?.RunWorkerAsync();
+
+                result = await LimitSwitchTest(EnumMotorId.MOTOR_1);
+                if (result != true)
+                {
+                    DispathcherInvoke($"x轴电机限位测试失败，测试退出");
+                    _dialogHostService.Information("提示", "请先修复限位反向问题");
+                    _work?.CancelAsync();
+                    _work = null;
+                    return;
+                }
+                result = await LimitSwitchTest(EnumMotorId.MOTOR_2);
+                if (result != true)
+                {
+                    DispathcherInvoke($"y轴电机限位测试失败，测试退出");
+                    _dialogHostService.Information("提示", "请先修复限位反向问题");
+                    _work?.CancelAsync();
+                    _work = null;
+                    return;
+                }
+                result = await FullTravelTest(EnumMotorId.MOTOR_1);
+
+                result = await LimitPositioningAccuracyDetection(EnumMotorId.MOTOR_1);
+
+                result = await FullTravelTest(EnumMotorId.MOTOR_2);
+
+                result = await LimitPositioningAccuracyDetection(EnumMotorId.MOTOR_2);
+
+                //await SmoothnessDetection();
+
+                _work?.CancelAsync();
                 _work = null;
-                return;
+                Serilize();
             }
-            result = await LimitSwitchTest(EnumMotorId.MOTOR_2);
-            if (result != true)
+            catch (Exception ex)
             {
-                DispathcherInvoke($"y轴电机限位测试失败，测试退出");
-                _dialogHostService.Information("提示", "请先修复限位反向问题");
-                _work.CancelAsync();
-                _work = null;
-                return;
+                NLog.LogManager.GetCurrentClassLogger().Error(ex, "一键测试流程发生未处理异常");
+                _dialogHostService.Information("错误", "一键测试过程中发生异常，请查看日志");
             }
-            result = await FullTravelTest(EnumMotorId.MOTOR_1);
-
-            result = await LimitPositioningAccuracyDetection(EnumMotorId.MOTOR_1);
-
-            result = await FullTravelTest(EnumMotorId.MOTOR_2);
-
-            result = await LimitPositioningAccuracyDetection(EnumMotorId.MOTOR_2);
-
-
-
-            //await SmoothnessDetection();
-
-            _work.CancelAsync();
-            _work = null;
-            Serilize();
-
         }
         /// <summary>
         /// 电机位置移动检测
@@ -699,8 +723,8 @@ namespace UtilityTools.Modules.MotorTest.Model
 
             await Task.Run(() =>
             {
-
-                if (MotorModelX.PointList.Count <= 0 || MotorModelX.PointList.Count <= 0)
+                if (MotorModelX.PointList == null || MotorModelY.PointList == null ||
+                    MotorModelX.PointList.Count <= 0 || MotorModelY.PointList.Count <= 0)
                 {
                     DispathcherInvoke($"没有读取打电机位置，测试退出");
                     return;
@@ -810,6 +834,12 @@ namespace UtilityTools.Modules.MotorTest.Model
 
             await Task.Run(() =>
             {
+                if (MotorModelX.PointList == null || MotorModelY.PointList == null ||
+                    MotorModelX.PointList.Count <= 0 || MotorModelY.PointList.Count <= 0)
+                {
+                    DispathcherInvoke($"没有读取到电机位置，编码器测试退出");
+                    return;
+                }
                 var xposStart = MotorModelX.PointList[MotorModelX.PointList.Count - 1].Point;
                 var yposStart = MotorModelY.PointList[MotorModelY.PointList.Count - 1].Point;
                 Goto(EnumMotorId.MOTOR_1, true);
@@ -897,6 +927,11 @@ namespace UtilityTools.Modules.MotorTest.Model
             else
             {
                 pos = MotorModelY.PointList;
+            }
+            if (pos == null || pos.Count <= 0)
+            {
+                DispathcherInvoke($"没有读取到电机位置，限位测试退出");
+                return false;
             }
             var posStart = pos[pos.Count - 1].Point;
             var posEnd = pos[pos.Count - 1].Point;
@@ -1578,28 +1613,28 @@ namespace UtilityTools.Modules.MotorTest.Model
 
                 if (motorModel.MotorParams.LimitedState == EnumMotorLimitedState.PhyForwardLimited)
                 {
-                    _limitedtcs1.TrySetResult("PhyForwardLimited");
+                    _limitedtcs1?.TrySetResult("PhyForwardLimited");
                     DispathcherInvoke($" {countNumber}:{enumMotorId}到达硬件正向限位，停止");
                     NLog.LogManager.GetCurrentClassLogger().Debug($"{countNumber}:{enumMotorId}到达硬件正向限位，停止");
                     return;
                 }
                 if (motorModel.MotorParams.LimitedState == EnumMotorLimitedState.PhyBackwardLimited)
                 {
-                    _limitedtcs1.TrySetResult("PhyBackwardLimited");
+                    _limitedtcs1?.TrySetResult("PhyBackwardLimited");
                     DispathcherInvoke($"{countNumber}:{enumMotorId}到达硬件负向限位，停止");
                     NLog.LogManager.GetCurrentClassLogger().Trace($"{countNumber}:{enumMotorId}到达硬件负向限位，停止");
                     return;
                 }
                 if (motorModel.MotorParams.SPLimted == true)
                 {
-                    _limitedtcs1.TrySetResult("SPLimted");
+                    _limitedtcs1?.TrySetResult("SPLimted");
                     DispathcherInvoke($"{countNumber}:{enumMotorId}到达软件正限位，停止");
                     NLog.LogManager.GetCurrentClassLogger().Trace($"{countNumber}:{enumMotorId}到达软件正限位，停止");
                     return;
                 }
                 if (motorModel.MotorParams.SNLimted == true)
                 {
-                    _limitedtcs1.TrySetResult("SNLimted");
+                    _limitedtcs1?.TrySetResult("SNLimted");
                     DispathcherInvoke($"{countNumber}:{enumMotorId}到达软件负向限位，停止");
                     NLog.LogManager.GetCurrentClassLogger().Trace($"{countNumber}:{enumMotorId}到达软件负向限位，停止");
                     return;
@@ -2298,7 +2333,11 @@ namespace UtilityTools.Modules.MotorTest.Model
                         ParserMotorLimtedStatus(data);
                         break;
                 }
-                _waitingReply.TrySetResult("Ready");
+
+                if (_waitingReply != null && !_waitingReply.Task.IsCompleted)
+                {
+                    _waitingReply.TrySetResult("Ready");
+                }
             }
             else
             {
