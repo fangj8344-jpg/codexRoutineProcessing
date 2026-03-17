@@ -48,7 +48,7 @@
                   
                 </TextBox>
                 <TextBlock Text="V" DockPanel.Dock="Left" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                <Label Content="步进值(v/s):" DockPanel.Dock="Left" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                <Label Content="速率(v/s):" DockPanel.Dock="Left" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 <TextBox Text="{Binding HvStep,UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}" BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="100" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center" />
                 <TextBlock Text="{Binding ReadHV, StringFormat='当前电压:{0,10:#####0.000}V'}" DockPanel.Dock="Left" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 <TextBlock Text="{Binding ReadI, StringFormat='当前电流:{0,10:#####0.000}μA'}"  DockPanel.Dock="Left" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
@@ -59,17 +59,17 @@
                 <ItemsControl ItemsSource="{Binding HVMessageModels}" >
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type mm:HVMessageModel}">
-                            <DockPanel LastChildFill="False">
-                                <TextBlock Text="{Binding Channel, StringFormat='通道号:{0:00}'}"  Width="100" DockPanel.Dock="Left" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                                <TextBlock  Text="{Binding ReadHV, StringFormat='当前隔离电压:{0,10:#####0.000} V'}"  Width="200"  DockPanel.Dock="Left" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                                <Border BorderThickness="2" DockPanel.Dock="Left">
+                            <Border BorderThickness="2" BorderBrush="Gray">
+                                <Grid >
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
                                     <DockPanel LastChildFill="False">
-                                        <Button Command="{Binding SetIVCommand}" 
-                                                Content="设置隔离电压" 
-                                                DockPanel.Dock="Left" 
-                                                Margin="5" VerticalAlignment="Center"
-                                                HorizontalAlignment="Center"></Button>
+                                        <TextBlock Text="{Binding Channel, StringFormat='通道号:{0:00}'}"  Width="100" DockPanel.Dock="Left" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <TextBlock  Text="{Binding ReadHV, StringFormat='当前隔离电压:{0,10:#####0.000} V'}"  Width="200"  DockPanel.Dock="Left" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
 
+                                        <TextBlock Text="需求"  DockPanel.Dock="Left" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                                         <TextBox Text="{Binding WriteHV}"  BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="60" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center" >
                                             <TextBox.InputBindings>
                                                 <KeyBinding  Key="Return"  Command="{Binding SetIVCommand ,UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"  />
@@ -79,11 +79,34 @@
                                                  Visibility="{Binding DataContext.IsSetting,Converter={StaticResource BoolToVisibilityCollapsedConverter}, RelativeSource={RelativeSource AncestorType={x:Type  local:MultiChannelHVContentView}}}" >
                                         </TextBox>
                                         <TextBlock Text="V" DockPanel.Dock="Left" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="步进值(v/s)" DockPanel.Dock="Left" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                                        <TextBox Text="{Binding Step, UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}" BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="60" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                                        <DockPanel LastChildFill="False">
+                                            <Button Command="{Binding SetIVCommand}" 
+                                                    Content="set" 
+                                                    DockPanel.Dock="Left" 
+                                                    Margin="5" VerticalAlignment="Center"
+                                                    HorizontalAlignment="Center"></Button>
+
+                                            <TextBlock Text="{Binding SetHv}"    DockPanel.Dock="Left" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        </DockPanel>
+
                                     </DockPanel>
-                                </Border>
-                            </DockPanel>
+                                    <DockPanel Grid.Row="1" LastChildFill="False">
+                                        <TextBlock Visibility="Hidden"  Text="{Binding Channel, StringFormat='通道号:{0:00}'}"  Width="100" DockPanel.Dock="Left" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <TextBlock Visibility="Hidden" Text="{Binding SetHv, StringFormat='当前设置电压:{0,10:#####0.000} V'}"  Width="200"  DockPanel.Dock="Left" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="速率" DockPanel.Dock="Left" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <TextBox Text="{Binding Step, UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}" BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="60" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                                        <TextBlock Text="V/s" DockPanel.Dock="Left" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <DockPanel  LastChildFill="False">
+                                            <Button Visibility="Hidden"
+                                                    Command="{Binding SetIVCommand}" 
+                                                    Content="设置隔离电压" 
+                                                    DockPanel.Dock="Left" 
+                                                    Margin="5" VerticalAlignment="Center"
+                                                    HorizontalAlignment="Center"></Button>
+                                        </DockPanel>
+                                    </DockPanel>
+                                </Grid>
+                            </Border>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                     <ItemsControl.ItemsPanel>
@@ -92,6 +115,7 @@
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                 </ItemsControl>
+                
             </ScrollViewer>
         </StackPanel>
         <!--<状态栏>-->

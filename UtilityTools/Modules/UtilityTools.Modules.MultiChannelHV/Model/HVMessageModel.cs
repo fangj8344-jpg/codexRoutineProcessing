@@ -70,6 +70,15 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
                 RaisePropertyChanged();
             }
         }
+        private int _setHv = 0;
+        /// <summary>
+        /// 记录的设置值
+        /// </summary>
+        public int SetHv
+        {
+            get { return _setHv; }
+            set { _setHv = value; RaisePropertyChanged(); }
+        }
         private ushort _maxIV = 2000;
 
         public ushort MaxIV
@@ -81,7 +90,22 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
         public ushort Step
         {
             get { return _step; }
-            set { _step = value; RaisePropertyChanged(); }
+            set 
+            {
+                
+                if (value > 500)
+                {
+                    _step = 500;
+                }
+                else if (value < 5)
+                {
+                    _step = 5;
+                }
+                else 
+                {
+                    _step = value;
+                }
+                RaisePropertyChanged(); }
         }
         private int _bufferIv;
         private int BufferIv
@@ -116,10 +140,13 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
 
         private  void SetIv()
         {
-
+            if (_multiChannelHVEntity?.SerialPortService == null || _multiChannelHVEntity?.SerialPortService.IsOpen == false)
+            {
+                return;
+            }
             _endBufferIv = WriteHV;
-            _bufferIv = (ushort)ReadHV;
-            if (_endBufferIv > ReadHV)
+            _bufferIv = SetHv;
+            if (_endBufferIv > SetHv)
             {
                 _direction = true;
             }
@@ -158,6 +185,11 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
             _timer?.Dispose();
             _timer = null;
         }
+        private void SetEntityIV(ushort iv) 
+        { 
+            _multiChannelHVEntity?.SetIVCommand(_channel, iv);
+            SetHv = iv;
+        }
         private void OnTimerElapsed(object sender, ElapsedEventArgs e)
         {
             if (_direction)
@@ -167,8 +199,7 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
 
                 if (_endBufferIv < _bufferIv || _endBufferIv < _bufferIv + Step)
                 {
-
-                    _multiChannelHVEntity?.SetIVCommand(_channel,(ushort)(_endBufferIv));
+                    SetEntityIV(_endBufferIv);
                     StopTimer();
                 }
                 else
@@ -176,11 +207,11 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
                     _bufferIv = (ushort)(_bufferIv + Step);
                     if (_bufferIv > _endBufferIv)
                     {
-                        _multiChannelHVEntity?.SetIVCommand(_channel,(ushort)(_endBufferIv));
+                        SetEntityIV(_endBufferIv);
                         StopTimer();
                         return;
                     }
-                    _multiChannelHVEntity?.SetIVCommand(_channel,(ushort)_bufferIv);
+                    SetEntityIV((ushort)_bufferIv);
                 }
             }
             else
@@ -188,8 +219,7 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
                 var differ = _endBufferIv - _bufferIv;
                 if (_endBufferIv > _bufferIv || _endBufferIv > _bufferIv - Step || _bufferIv - Step > MaxIV || _bufferIv > MaxIV)
                 {
-
-                    _multiChannelHVEntity?.SetIVCommand(_channel,(ushort)(_endBufferIv));
+                    SetEntityIV(_endBufferIv);
                     StopTimer();
                 }
                 else
@@ -197,11 +227,11 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
                     _bufferIv = (_bufferIv - Step);
                     if (_bufferIv > MaxIV)
                     {
-                        _multiChannelHVEntity?.SetIVCommand(_channel,_endBufferIv);
+                        SetEntityIV(_endBufferIv);
                         StopTimer();
                         return;
                     }
-                    _multiChannelHVEntity?.SetIVCommand(_channel,(ushort)_bufferIv);
+                    SetEntityIV((ushort)_bufferIv);
 
                 }
             }

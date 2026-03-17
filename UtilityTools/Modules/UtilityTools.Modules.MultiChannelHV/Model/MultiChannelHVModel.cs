@@ -8,6 +8,7 @@ using System.Collections;
 using System.Collections.ObjectModel;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using TouchSocket.Core;
@@ -185,10 +186,10 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
             InitMultiChannelHVCommand = new DelegateCommand(InitMultiChannelHV);
             SetHVCommand = new DelegateCommand(SetHv);
             GetHVCommand = new DelegateCommand(() => MultiChannelHVEntity?.GetHVCommand());
-            SetInitCommand = new DelegateCommand(() => MultiChannelHVEntity?.SetInitCommand());
+            SetInitCommand = new DelegateCommand(SetInit);
             GetInitStateCommand = new DelegateCommand(() => MultiChannelHVEntity?.GetInitStateCommand());
             IErrorClearCommand = new DelegateCommand(() => MultiChannelHVEntity?.IErrorClearCommand());
-            DisableOutputCommand = new DelegateCommand(() => MultiChannelHVEntity?.DisableOutputCommand());
+            DisableOutputCommand = new DelegateCommand(DisableOutput);
             ShowPasswordDialogCommand = new DelegateCommand(ShowPasswordDialog);
             SettingCompleteCommand = new DelegateCommand(()=> IsSetting = false);
             SaveDaraCommand = new DelegateCommand(() => dataContainer.SaveData());
@@ -259,15 +260,27 @@ namespace UtilityTools.Modules.MultiChannelHV.Model
             MultiChannelHVEntity.Get7To13IVCommand();
             MultiChannelHVEntity.GetInitStateCommand();
         }
-       
-     
-        
+
+
+        private void DisableOutput() 
+        {
+            MultiChannelHVEntity.DisableOutputCommand();
+            for (int i=0; i<HVMessageModels.Count; i++)
+            {
+                HVMessageModels[i].SetHv = 0;
+            }
+        }
+        private void SetInit()
+        {
+            DisableOutput();
+            MultiChannelHVEntity?.SetInitCommand();
+        }
         /// <summary>
         /// 自动初始化
         /// </summary>
         private async void InitMultiChannelHV()
         {
-            MultiChannelHVEntity.DisableOutputCommand();
+            DisableOutput();
             for (int i = 0; i < 3; i++)
             {
                 try

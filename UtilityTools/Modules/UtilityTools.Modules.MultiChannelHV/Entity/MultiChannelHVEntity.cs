@@ -13,11 +13,11 @@ namespace UtilityTools.Modules.MultiChannelHV.Entity
     {
         public MultiChannelHVEntity(IAsynRWService serialPortService, IAsynRWService netUdpService)
         {
-            _serialPortService = serialPortService;
+            SerialPortService = serialPortService;
             _netUdpService = netUdpService;
         }
          
-        private IAsynRWService _serialPortService;
+        public IAsynRWService SerialPortService;
         private IAsynRWService _netUdpService;
 
         /// <summary>
@@ -136,8 +136,8 @@ namespace UtilityTools.Modules.MultiChannelHV.Entity
 
         private async Task SentData(byte[] bytes)
         {
-            if (_serialPortService.IsOpen)
-                _serialPortService.SendMsg(bytes);
+            if (SerialPortService.IsOpen)
+                SerialPortService.SendMsg(bytes);
             if (_netUdpService.IsOpen)
                 _netUdpService.SendMsg(bytes);
             await Task.Delay(20);

@@ -18,7 +18,7 @@
         WindowStartupLocation="CenterScreen"
         Style="{StaticResource MaterialDesignWindow}"
         Title="{Binding Title}"
-        Height="800"
+        Height="900"
         Width="1280">
 
     <i:Interaction.Triggers>

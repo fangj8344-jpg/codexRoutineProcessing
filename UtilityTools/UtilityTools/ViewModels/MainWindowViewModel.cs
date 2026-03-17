@@ -154,14 +154,11 @@ namespace UtilityTools.ViewModels
                 if(customModule != null)
                     Modules.Add(customModule);
             }
-            /*
-            _regionManager.Regions[RegionNames.MainWindowRegionName].RequestNavigate($"FDC12CHVBoxView", back =>
+            
+            _regionManager.Regions[RegionNames.MainWindowRegionName].RequestNavigate($"MultiChannelHVView", back =>
             {
                 _journal = back.Context.NavigationService.Journal;
             });
-            */
-
-
         }
 
         /// <summary>
