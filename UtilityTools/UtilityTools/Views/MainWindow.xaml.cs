@@ -2,9 +2,12 @@
 using Prism.Events;
 using System;
 using System.Diagnostics;
+using System.Text;
 using System.Windows;
 using System.Windows.Input;
+using UtilityTools.Core.Event;
 using UtilityTools.Core.Extension;
+
 
 namespace UtilityTools.Views
 {
@@ -13,9 +16,24 @@ namespace UtilityTools.Views
     /// </summary>
     public partial class MainWindow : Window
     {
+
+        private StringBuilder _barcodeBuffer = new StringBuilder();
+        private DateTime _lastInputTime = DateTime.Now;
+        private readonly TimeSpan _inputThreshold = TimeSpan.FromMilliseconds(200);
+
+        //声明 Prism 的事件聚合器013157/001252/ZP030506J08/260317001
+
+        private readonly IEventAggregator _eventAggregator;
+
+        //通过依赖注入获取IEventAggregator
         public MainWindow(IEventAggregator aggregator)
         {
             InitializeComponent();
+            _eventAggregator = aggregator;
+
+            this.PreviewTextInput += Window_PreviewTextInput;
+            this.PreviewKeyDown += Window_PreviewKeyDown;
+            
 
             this.btnMin.Click += BtnMin_Click;
             this.btnMax.Click += BtnMax_Click;
@@ -92,5 +110,45 @@ namespace UtilityTools.Views
         {
             this.WindowState = WindowState.Minimized;
         }
+
+
+        private void Window_PreviewTextInput(object sender,TextCompositionEventArgs e) 
+        {
+            DateTime now = DateTime.Now;
+            if ((now - _lastInputTime) > _inputThreshold)
+            {
+                _barcodeBuffer.Clear();
+            }
+
+            _barcodeBuffer.Append(e.Text);
+            _lastInputTime = now;
+                
+        }
+
+        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                DateTime now = DateTime.Now;
+                if ((now - _lastInputTime) <= _inputThreshold && _barcodeBuffer.Length > 0)
+                {
+                    string finalBarcode = _barcodeBuffer.ToString();
+                    
+                    _barcodeBuffer.Clear();
+                    e.Handled = true;
+
+                    string[] parts = finalBarcode.Split('/');
+                    if (parts.Length == 4)
+                    {
+                        _eventAggregator.GetEvent<BarcodeScannedEvent>().Publish(parts);
+                    }
+
+                }
+            }
+
+        }
+
+
+
     }
 }

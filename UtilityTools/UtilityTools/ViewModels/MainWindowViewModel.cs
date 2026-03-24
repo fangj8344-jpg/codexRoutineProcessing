@@ -155,10 +155,7 @@ namespace UtilityTools.ViewModels
                     Modules.Add(customModule);
             }
             
-            _regionManager.Regions[RegionNames.MainWindowRegionName].RequestNavigate($"MultiChannelHVView", back =>
-            {
-                _journal = back.Context.NavigationService.Journal;
-            });
+          
         }
 
         /// <summary>

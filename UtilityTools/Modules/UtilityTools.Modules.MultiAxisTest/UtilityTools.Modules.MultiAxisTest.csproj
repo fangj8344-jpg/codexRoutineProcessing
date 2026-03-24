@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- 让类库项目也把 NuGet 依赖复制到输出目录，便于 Prism 从 Modules 目录加载 -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\UtilityTools.Modules.MotorTest\UtilityTools.Modules.MotorTest.csproj" />
+    <ProjectReference Include="..\..\Services\UtilityTools.Services.Interfaces\UtilityTools.Services.Interfaces.csproj" />
+    <ProjectReference Include="..\..\Services\UtilityTools.Services\UtilityTools.Services.csproj" />
+    <ProjectReference Include="..\..\UtilityTools.Core\UtilityTools.Core.csproj" />
+    <ProjectReference Include="..\..\UtilityTools\UtilityTools.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="OpenCvSharp4" Version="4.10.0.20240616" />
+    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.10.0.20240616" />
+    <PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.10.0.20240616" />
+    <PackageReference Include="ZXing.Net" Version="0.16.11" />
+  </ItemGroup>
+  <Target Name="CopyTargetFiles" AfterTargets="Build">
+    <ItemGroup>
+      <!-- Prism 从 Modules 目录加载模块时，需要依赖 DLL 也在同目录 -->
+      <SomeFiles Include="$(OutDir)*.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(SomeFiles)"
+          DestinationFolder="$(MSBuildProjectDirectory)\..\..\UtilityTools\bin\$(Configuration)\$(TargetFramework)\Modules\"
+          SkipUnchangedFiles="true" />
+  </Target>
+</Project>

@@ -1,0 +1,67 @@
+<UserControl x:Class="UtilityTools.Modules.MultiAxisTest.Views.MultiAxisScanView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:prism="http://prismlibrary.com/"
+             prism:ViewModelLocator.AutoWireViewModel="True"
+             mc:Ignorable="d"
+             InputMethod.IsInputMethodEnabled="False"
+             d:DesignHeight="550" d:DesignWidth="1000">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Row="0" LastChildFill="False">
+            <StackPanel DockPanel.Dock="Left">
+                <TextBlock Text="扫码自动识别" FontSize="20" FontWeight="Bold"/>
+            </StackPanel>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+            </StackPanel>
+        </DockPanel>
+
+        <Grid Grid.Row="1" Margin="0,16,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" CornerRadius="8" Padding="8">
+                <StackPanel>
+                    <DockPanel LastChildFill="False">
+                        <Label Content="电机类型"/>
+                        <TextBlock Text="（绑定待补）"/>
+                        <Label Content="采购订单号"/>
+                        <TextBlock Text="（绑定待补）"/>
+                        <Label Content="操作人工号和检验人员号"/>
+                        <TextBlock Text="（绑定待补）"/>
+                        <Label Content="生产日期"/>
+                        <TextBlock Text="（绑定待补）"/>
+                        <Label Content="序列号"/>
+                        <TextBlock Text="（绑定待补）"/>
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+            <StackPanel Grid.Column="1" Margin="16,0,0,0">
+                <TextBlock Text="当前扫码结果" FontWeight="Bold"/>
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,12">
+                    <TextBox Text="{Binding CurrentScanText}" Width="220" IsReadOnly="True" Focusable="False" Margin="0,0,8,0"/>
+                </StackPanel>
+                <TextBlock Text="请输入认证Token"/>
+                <TextBox Text="{Binding AccessToken}"/>
+                <Button Command="{Binding UploadDataCommand}" Content="测试上传Thingboard"/>
+                <TextBlock Text="{Binding HttpTestResult}"/>
+            </StackPanel>
+        </Grid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
+            <Button Content="扫码确认"
+                    Width="180" Height="36"
+                    Style="{StaticResource MaterialDesignFlatMidBgButton}"
+                    Command="{Binding ConfirmCommand}"/>
+        </StackPanel>
+    </Grid>
+</UserControl>
