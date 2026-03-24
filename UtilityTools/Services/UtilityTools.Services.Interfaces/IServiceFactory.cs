@@ -40,5 +40,7 @@ namespace UtilityTools.Services.Interfaces
         /// <param name="type">设备类型</param>
         /// <returns></returns>
         public ISyncRWService GetSyncRWService(string type);
+
+        public IThingboardService GetThingboardService();
     }
 }

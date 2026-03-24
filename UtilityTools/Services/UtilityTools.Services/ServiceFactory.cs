@@ -46,6 +46,7 @@ namespace UtilityTools.Services
         private static Dictionary<string, IUsbService> CyUsbServices = new Dictionary<string, IUsbService>();
         private static Dictionary<string, IAsynRWService> AsynRWServices = new Dictionary<string, IAsynRWService>();
         private static Dictionary<string, ISyncRWService> SyncRWServices = new Dictionary<string, ISyncRWService>();
+        private static IThingboardService ThingboardService;
         #endregion
 
         #region ------------Property------------
@@ -192,6 +193,20 @@ namespace UtilityTools.Services
                         return null;
                 }
             }
+        }
+
+        /// <summary>
+        /// 获取Thingboard数据上传服务
+        /// </summary>
+        /// <returns></returns>
+        public IThingboardService GetThingboardService()
+        {
+            //单例模式:如果已经创建过，直接返回
+            if (ThingboardService == null)
+            {
+                ThingboardService = new ThingboardService();
+            }
+            return ThingboardService;
         }
 
         /// <summary>
