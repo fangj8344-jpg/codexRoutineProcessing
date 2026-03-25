@@ -321,7 +321,7 @@ namespace UtilityTools.Services.Services
                 {
                     if (_importantSendQueue.Count == 0 && _sendQueue.Count == 0)
                     {
-                        _sendEvent?.WaitOne(); 
+                        _sendEvent?.WaitOne(100); 
                     }
                     if (token.IsCancellationRequested)
                     {
