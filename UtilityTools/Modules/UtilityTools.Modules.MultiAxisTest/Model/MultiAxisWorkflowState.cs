@@ -28,9 +28,13 @@ namespace UtilityTools.Modules.MultiAxisTest.Model
         /// 操作者
         /// </summary>
         public string OperatorId { get; set; }
-        //生产日期
+        /// <summary>
+        /// 生产日期
+        /// </summary>
         public string ProductionDate { get; set; }
-        //序列号
+        /// <summary>
+        /// 序列号
+        /// </summary>
         public string SerialNumber { get; set; }
     }
 

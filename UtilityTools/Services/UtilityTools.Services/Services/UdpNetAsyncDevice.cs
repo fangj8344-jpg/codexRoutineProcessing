@@ -48,12 +48,14 @@ namespace UtilityTools.Services.Services
         {
             _syncObject = new object();
             _sendQueue = new ConcurrentQueue<byte[]>();
+            _importantSendQueue = new ConcurrentQueue<byte[]>();
             DeviceInstance = new UdpNetConfigModel();
             DeviceInstance.ReceiveDataEvent += DeviceInstance_ReceiveDataEvent;
             MinWriteInterval = 10;
             WaitInterval = 200;
             _sendEvent = new AutoResetEvent(false);
             _receiveEvent = new AutoResetEvent(false);
+
         }
 
         #endregion
@@ -67,6 +69,8 @@ namespace UtilityTools.Services.Services
 
         private object _syncObject;
         private ConcurrentQueue<byte[]> _sendQueue;
+        private ConcurrentQueue<byte[]> _importantSendQueue;
+
       
         #endregion
 
@@ -182,6 +186,8 @@ namespace UtilityTools.Services.Services
             }
         }
 
+       
+
         /// <summary>
         /// 获取设备句柄
         /// </summary>
@@ -227,6 +233,19 @@ namespace UtilityTools.Services.Services
             _sendQueue.Enqueue(data);
             _sendEvent?.Set();
         }
+        /// <summary>
+        /// 进入优先队列
+        /// </summary>
+        /// <param name="cmd"></param>
+        public void SendImportantMsg(byte[] cmd)
+        {
+            if (IsOpen)
+            {
+                _importantSendQueue.Enqueue(cmd);
+                _sendEvent?.Set();
+
+            }
+        }
 
         /// <summary>
         /// 终止发送线程
@@ -246,7 +265,7 @@ namespace UtilityTools.Services.Services
             }
             if (_sendThread != null && _sendThread.IsAlive)
             {
-                //设置3-5米嗷超时时间
+                //设置5s超时时间
                 bool isThreadExited = _sendThread.Join(5000);
                 if (isThreadExited)
                 {
@@ -300,27 +319,37 @@ namespace UtilityTools.Services.Services
 
                 while (!token.IsCancellationRequested)
                 {
-
-                    if (_sendQueue.Count == 0)
+                    if (_importantSendQueue.Count == 0 && _sendQueue.Count == 0)
                     {
-                        _sendEvent?.WaitOne();
+                        _sendEvent?.WaitOne(); 
                     }
-                    if (_sendQueue.TryDequeue(out var cmd))
+                    if (token.IsCancellationRequested)
+                    {
+                        LogManager.GetCurrentClassLogger().Debug($"发送线程被主动关闭 ");
+                        break;
+                    } 
+                    byte[] cmdToSend = null;
+                    if (_importantSendQueue.TryDequeue(out var cmd))
+                    {
+                        cmdToSend = cmd;
+                    }
+                    else if (_sendQueue.TryDequeue(out cmd))
+                    {
+                        cmdToSend = cmd;
+                    }
+                    if (cmdToSend != null)
                     {
                         try
                         {
                             // 发送业务
-                            DeviceInstance.Send(cmd);
-                            LogManager.GetCurrentClassLogger().Debug($"{Name}:IP:{DeviceInstance.TargetIp},Port:{DeviceInstance.TargetPort} 发送 : {BitConverter.ToString(cmd).Replace("-", " ")}");
+                            DeviceInstance.Send(cmdToSend);
+                            LogManager.GetCurrentClassLogger().Debug($"{Name}:IP:{DeviceInstance.TargetIp},Port:{DeviceInstance.TargetPort} 发送 : {BitConverter.ToString(cmdToSend).Replace("-", " ")}");
                         }
                         catch (Exception ex)
                         {
                             LogManager.GetCurrentClassLogger().Error($"发送数据失败 {ex.Message} ");
                         }
-                    }
-                    try
-                    {
-                        bool? result= _receiveEvent?.WaitOne((int)WaitInterval);
+                        bool? result = _receiveEvent?.WaitOne((int)WaitInterval);
                         if (result == false)
                         {
                             _timeOutCount++;
@@ -334,15 +363,18 @@ namespace UtilityTools.Services.Services
 
                             }
                         }
-
-                    }
-                    catch (Exception ex)
-                    {
-                       
-                        LogManager.GetCurrentClassLogger().Error($"{ex}");
+                        else 
+                        {
+                            _timeOutCount = 0;
+                            if (ConnectSatus == false)
+                            {
+                                ConnectSatus = true;
+                                ConnectStatusChanged?.Invoke(this, ConnectSatus);
+                            }
+                        }
                     }
                 }
-            }
+            } 
             catch (Exception ex)
             {
                 LogManager.GetCurrentClassLogger().Error($"发送线程异常 {ex}");
@@ -356,14 +388,7 @@ namespace UtilityTools.Services.Services
             try
             {
                 LogManager.GetCurrentClassLogger().Debug($"{Name}:IP:{DeviceInstance.TargetIp},Port:{DeviceInstance.TargetPort}  接收 : {BitConverter.ToString(response).Replace("-"," ")}");
-                UpdateResponse?.Invoke(this, response);
-                _timeOutCount = 0;
-                if (ConnectSatus == false)
-                {
-                    ConnectSatus = true;
-                    ConnectStatusChanged?.Invoke(this, ConnectSatus);
-                }
-               
+                UpdateResponse?.Invoke(this, response); 
                 _receiveEvent?.Set();
             }
             catch (Exception ex)

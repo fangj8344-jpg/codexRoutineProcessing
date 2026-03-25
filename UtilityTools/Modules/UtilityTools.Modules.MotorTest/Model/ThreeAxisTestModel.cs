@@ -767,26 +767,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         }
 
 
-        private void SaveSeriesToFile(DataPointSeries series, string filePath)
-        {
-            string gunReport = string.Empty;
-            foreach (var report in series.Points)
-            {
-                gunReport += $"{report.X}\t{report.Y}\n";
-            }
-            try
-            {
-                using (var gunStream = File.OpenWrite(filePath))
-                {
-                    var gunData = Encoding.UTF8.GetBytes(gunReport);
-                    gunStream.Write(gunData, 0, gunData.Length);
-                }
-            }
-            catch (Exception ex)
-            {
-                NLog.LogManager.GetCurrentClassLogger().Fatal($"保存图表数据异常：目标路径【{filePath}】，异常原因【{ex.Message}】");
-            }
-        }
+              
         public DelegateCommand SaveDataFileCommand { get; set; }
         private void SaveDataFile()
         {
