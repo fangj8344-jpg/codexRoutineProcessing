@@ -11,6 +11,7 @@ using UtilityTools.Core.Dialog;
 using UtilityTools.Modules.MotorTest.Model;
 using UtilityTools.Modules.MotorTest.Views;
 using UtilityTools.Services.Interfaces.IServices;
+using UtilityTools.Services.Services;
 
 namespace UtilityTools.Modules.MotorTest.ViewModels
 {
@@ -142,14 +143,15 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
             if (diaglogResult.Result == ButtonResult.OK && diaglogResult.Parameters.ContainsKey("Value"))
             {
                 var value = diaglogResult.Parameters.GetValue<IAsynRWService>("Value");
-                if (value != null)
+                if (value is UdpNetAsyncDevice udpValue)
                 {
-                    Model.NetUdpService = value;
+
+                    Model.NetUdpService = udpValue;
                     NetIsConnected = Model.NetUdpService.IsOpen;
                     if (NetIsConnected == true)
                     {
                         Model.QueryStatusTask();
-                        Model.SendingThread();
+                     
                     }
                     else
                     {

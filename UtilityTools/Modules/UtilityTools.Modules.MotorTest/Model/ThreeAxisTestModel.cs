@@ -65,7 +65,10 @@ namespace UtilityTools.Modules.MotorTest.Model
         private readonly IDialogHostService _dialogHostService;
         private SelfMotorParser _parser;
         private TaskCompletionSource<string> _waitingReply;
-    
+
+        // 这是一个异步陷阱，专门等 Parser 告诉它电机 Ready 了
+        private TaskCompletionSource<bool> _motorReadyTcs;
+
         private BackgroundWorker _work;
         private bool _isTest = false;
         private EnumMotorInquiry _testMotorId;
@@ -203,11 +206,11 @@ namespace UtilityTools.Modules.MotorTest.Model
             set { _serialPortService = value; RaisePropertyChanged(); }
         }
 
-        private IAsynRWService _netUdpService;
+        private UdpNetAsyncDevice _netUdpService;
         /// <summary>
         /// 网口异步通信服务
         /// </summary>
-        public IAsynRWService NetUdpService
+        public UdpNetAsyncDevice NetUdpService
         {
             get { return _netUdpService; }
             set { _netUdpService = value; RaisePropertyChanged(); }
@@ -889,9 +892,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     Motors[i].SpeedLine.DataFieldY = "Speed";
                 }
             }
-         
             MotorSpeedplotModel.InvalidatePlot(true);
         }
-       
     }
 }
