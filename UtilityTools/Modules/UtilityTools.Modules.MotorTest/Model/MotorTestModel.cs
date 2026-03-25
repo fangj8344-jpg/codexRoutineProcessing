@@ -1,4 +1,4 @@
-using ImageMagick;
+﻿using ImageMagick;
 using MaterialDesignThemes.Wpf;
 using MathNet.Numerics.Financial;
 using MathNet.Numerics.RootFinding;
@@ -2581,7 +2581,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         private void ShowThreeAzisTestModelViewModel()
         {
             var threeAxisTestView = _containerProvider.Resolve<ThreeAxisTestModelWindowsView>();
-            threeAxisTestView.Show();
+            //threeAxisTestView.Show();
         }
         public DelegateCommand DataPathSelectCommand { get; set; }
         /// <summary>

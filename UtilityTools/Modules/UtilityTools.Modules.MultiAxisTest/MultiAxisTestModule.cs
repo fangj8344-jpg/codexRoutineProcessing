@@ -1,4 +1,4 @@
-using Prism.Ioc;
+﻿using Prism.Ioc;
 using Prism.Modularity;
 using UtilityTools.Core.Mvvm;
 using UtilityTools.Modules.MultiAxisTest.Model;
@@ -22,9 +22,8 @@ namespace UtilityTools.Modules.MultiAxisTest
 
             // 入口壳：MultiAxisTestView（内部 region 控制配置/扫码/测试）
             containerRegistry.RegisterForNavigation<MultiAxisTestView, ViewModels.MultiAxisTestShellViewModel>();
-            containerRegistry.RegisterForNavigation<MultiAxisConfigView, ViewModels.MultiAxisConfigViewModel>();
             containerRegistry.RegisterForNavigation<MultiAxisScanView, ViewModels.MultiAxisScanViewModel>();
-            containerRegistry.RegisterForNavigation<MultiAxisRunView, ViewModels.MultiAxisTestViewModel>();
+            containerRegistry.RegisterForNavigation<MultiAxisRunView, ViewModels.MultiAxisRunViewModel>();
         }
     }
 }

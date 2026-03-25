@@ -7,7 +7,7 @@
              prism:ViewModelLocator.AutoWireViewModel="True"
              mc:Ignorable="d"
              d:DesignHeight="768" d:DesignWidth="1280">
-    <!-- 入口壳：进入模块后，先显示配置页，再进入扫码页、测试页 -->
+    <!-- 入口壳：进入模块后，进入扫码页、测试页 -->
     <ContentControl prism:RegionManager.RegionName="{x:Static core:RegionNames.ContentRegion}"
                     xmlns:core="clr-namespace:UtilityTools.Core;assembly=UtilityTools.Core" />
 </UserControl>

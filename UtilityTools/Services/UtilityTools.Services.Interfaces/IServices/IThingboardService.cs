@@ -27,7 +27,7 @@ namespace UtilityTools.Services.Interfaces.IServices
         /// <summary>
         /// 数据上传失败事件
         /// </summary>
-        event EventHandler UploadFailed;
+        event EventHandler<UploadFailedEventArgs> UploadFailed;
         #endregion
 
         #region Properties

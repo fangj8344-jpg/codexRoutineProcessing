@@ -17,7 +17,7 @@ namespace UtilityTools.Modules.MotorTest.Views
     /// <summary>
     /// ThreeAzisTestModelWindowsView.xaml 的交互逻辑
     /// </summary>
-    public partial class ThreeAxisTestModelWindowsView : Window
+    public partial class ThreeAxisTestModelWindowsView : System.Windows.Controls.UserControl
     {
         public ThreeAxisTestModelWindowsView()
         {

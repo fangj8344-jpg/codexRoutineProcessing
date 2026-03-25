@@ -1,4 +1,4 @@
-using UserControl = System.Windows.Controls.UserControl;
+﻿using UserControl = System.Windows.Controls.UserControl;
 using Prism.Regions;
 using UtilityTools.Core;
 
@@ -21,7 +21,7 @@ namespace UtilityTools.Modules.MultiAxisTest.Views
             var rm = RegionManager.GetRegionManager(this);
             if (rm?.Regions.ContainsRegionWithName(RegionNames.ContentRegion) == true)
             {
-                rm.Regions[RegionNames.ContentRegion].RequestNavigate(nameof(MultiAxisConfigView));
+                rm.Regions[RegionNames.ContentRegion].RequestNavigate(nameof(MultiAxisScanView));
             }
         }
     }

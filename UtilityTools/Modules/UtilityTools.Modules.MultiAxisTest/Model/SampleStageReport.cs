@@ -32,13 +32,13 @@ namespace UtilityTools.Modules.MultiAxisTest.Model
         public double BackwardSpeedStdDev { get; set; }
 
         [JsonPropertyName("最小量程")]
-        public string MinRange { get; set; }
+        public float MinRange { get; set; }
 
         [JsonPropertyName("最大量程")]
-        public string MaxRange { get; set; }
+        public float MaxRange { get; set; }
 
         [JsonPropertyName("负向限位]")]
-        public bool NegativeLimit { get; set; }
+        public bool NegativeLimit { get; set; } 
 
         [JsonPropertyName("正向限位")]
         public bool PositiveLimit { get; set; }
@@ -69,5 +69,19 @@ namespace UtilityTools.Modules.MultiAxisTest.Model
 
         [JsonPropertyName("电机列表")]
         public List<MotorData> Motors { get; set; }
+    }
+
+    public class UploadInformation
+    {
+        [JsonPropertyName("device_id")]
+        public string DeviceId { get; set; }
+        [JsonPropertyName("sample_stage_id")]
+        public string SampleStageId { get; set; }
+        [JsonPropertyName("content")]
+        public SampleStageReport Content { get; set; }
+       
+
+
+
     }
 }

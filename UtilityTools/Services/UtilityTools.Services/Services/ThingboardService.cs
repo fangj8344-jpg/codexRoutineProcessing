@@ -40,12 +40,15 @@ namespace UtilityTools.Services.Services
 
         public event EventHandler<bool> ConnectionStateChanged;
         public event EventHandler<string> DataUploaded;
-        public event EventHandler UploadFailed;
+        public event EventHandler<UploadFailedEventArgs> UploadFailed;
 
         public ThingboardService() 
         {
             InitializeHttpClient();
         }
+
+       
+
         /// <summary>
         /// 初始化HTTP客户端
         /// </summary>
@@ -256,6 +259,7 @@ namespace UtilityTools.Services.Services
                 DataUploaded?.Invoke(this, json);
                 _logger.Debug($"数据上传成功:{json}");
             }
+            
             return success;
         }
 
@@ -267,7 +271,7 @@ namespace UtilityTools.Services.Services
             try
             {
                 // 1.构建ThingBoard API URL
-                var url = $"{ServerUrl}/api/v1/{AccessToken}/telemetry";
+                var url = $"{ServerUrl}/api/calibration/";
 
                 //2. 组装
              
@@ -286,6 +290,12 @@ namespace UtilityTools.Services.Services
                 else
                 {
                     _logger.Warn($"HTTP 上传失败: {response.StatusCode}");
+                    UploadFailed?.Invoke(this, new UploadFailedEventArgs
+                    {
+                        FailedData = data,
+                        Exception = null,
+                        ErrorMessage = response.StatusCode.ToString()
+                    });
                     return false;
                 }
                 

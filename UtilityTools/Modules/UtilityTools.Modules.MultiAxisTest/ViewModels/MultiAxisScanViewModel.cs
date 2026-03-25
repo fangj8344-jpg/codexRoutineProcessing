@@ -5,8 +5,13 @@ using Prism.Mvvm;
 using Prism.Regions;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 using UtilityTools.Core;
 using UtilityTools.Core.Event;
 using UtilityTools.Core.Mvvm;
@@ -21,91 +26,16 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
         private SubscriptionToken _token;
 
         private readonly IRegionManager _regionManager;
-        private readonly MultiAxisWorkflowState _state;
+        
         private readonly IContainerProvider _containerProvider;
 
         private IEventAggregator _eventAggregator;
-        private IThingboardService _thingboardService;
-
-        private string _accessToken;
-        /// <summary>
-        /// 样品台Token
-        /// </summary>
-        public string AccessToken
+        private MultiAxisWorkflowState _state;
+        public MultiAxisWorkflowState State
         {
-            get { return _accessToken; }
-            set { _accessToken = value; RaisePropertyChanged(); }
+            get => _state;
+            set { SetProperty(ref _state, value); }   
         }
-
-        private bool _httpTestResult = false;
-        public bool HttpTestResult
-        {
-            get { return _httpTestResult; }
-            set { _httpTestResult = value; RaisePropertyChanged(); }
-        }
-
-        public DelegateCommand UploadDataCommand => new DelegateCommand(async () => await UploadData());
-
-        public MultiAxisScanViewModel(IRegionManager regionManager, IEventAggregator eventAggregator, MultiAxisWorkflowState state, IContainerProvider containerProvider)
-            : base(containerProvider)
-        {
-            _regionManager = regionManager;
-            _state = state;
-
-            _eventAggregator = eventAggregator;
-            _token = _eventAggregator.GetEvent<BarcodeScannedEvent>().Subscribe(OnBarcodeReceived);
-            _containerProvider = containerProvider;
-            _thingboardService = _containerProvider.Resolve<IServiceFactory>().GetThingboardService();
-        }
-
-        public async Task UploadData()
-        {
-            _thingboardService.ServerUrl = "https://iot.zeptools.cn";
-            _thingboardService.EnableMqtt = false;
-            _thingboardService.EnableHttp = true;
-
-            var data = GenerateData();
-
-            HttpTestResult = await _thingboardService.UploadTelemetryAsync(data);
-        }
-
-        private string GenerateData()
-        {
-            var report = new SampleStageReport
-            {
-                StageId = CurrentScanText,
-                StartTime = "2026年3月17日8:20:12",
-                EndTime = "2026年3月17日8:20:12",
-                Motors = new List<MotorData>
-                {
-                    new MotorData
-                    {
-                        AxisType = "X",
-                        ForwardSpeedStdDev = 0.26,
-                        BackwardSpeedStdDev = 0.56,
-                        MinRange = "-32000um",
-                        MaxRange = "41000um",
-                        NegativeLimit = true,
-                        PositiveLimit = true,
-                        PositioningStdDev = 0.68,
-                        PositionErrors = new List<PositionError>
-                        {
-                            new PositionError { TargetPosition = 2500, ActualPosition = 2631 },
-                            new PositionError { TargetPosition = 2500, ActualPosition = 2631 }
-                        }
-                    }
-                }
-            };
-
-            var options = new JsonSerializerOptions { WriteIndented = true };
-            return JsonSerializer.Serialize(report, options);
-        }
-
-        private void OnBarcodeReceived(string[] barcodeParts)
-        {
-            CurrentScanText = barcodeParts[3];
-        }
-
         public string CurrentScanText
         {
             get => _state.CurrentScanText;
@@ -117,19 +47,94 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
                     RaisePropertyChanged();
                 }
             }
+
         }
 
+
+
+
+        public MultiAxisScanViewModel(IRegionManager regionManager, IEventAggregator eventAggregator, MultiAxisWorkflowState state, IContainerProvider containerProvider)
+            : base(containerProvider)
+        {
+            _regionManager = regionManager;
+            _state = state;
+
+            _eventAggregator = eventAggregator;
+           
+            _containerProvider = containerProvider;
+            InputLanguageManager.Current.CurrentInputLanguage = new CultureInfo("en-US");
+
+        }
+
+      
         public DelegateCommand ConfirmCommand => new DelegateCommand(Confirm);
+        private void OnBarcodeReceived(string[] barcodeParts)
+        {
+
+            CurrentScanText = string.Join("/", barcodeParts);
+            _state.CurrentScanDisplay = new ScanDisplayModel
+            {
+
+                PurchaseOrder = barcodeParts.Length > 0 ? barcodeParts[0] : string.Empty,
+
+                ProductionOrder = barcodeParts.Length > 1 ? barcodeParts[1] : string.Empty,
+
+                OperatorId = barcodeParts.Length > 2 ? barcodeParts[2] : string.Empty,
+
+                ProductionDate = barcodeParts.Length > 3 ? barcodeParts[3].Substring(0, Math.Min(barcodeParts[3].Length, 6)) : string.Empty,
+
+                SerialNumber = (barcodeParts.Length > 3 && barcodeParts[3].Length > 6) ? barcodeParts[3].Substring(6) : string.Empty
+            };
+            if (_state.CurrentScanDisplay.ProductionDate.Length != 6 || _state.CurrentScanDisplay.SerialNumber.Length <  3)
+            {
+                ScanErrorNotice();
+            }
+
+            _state.UploadInformation.SampleStageId = CurrentScanText;
+        }
+        private void ScanErrorNotice() 
+        {
+            App.Current.Dispatcher.Invoke(async () =>
+            {
+                var errorContent = new StackPanel
+                {
+                    Margin = new System.Windows.Thickness(16)
+                };
+                errorContent.Children.Add(new TextBlock
+                {
+                    Text = "扫码解析失败",
+                    FontSize = 20,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = Brushes.Red
+                });
+                errorContent.Children.Add(new TextBlock
+                {
+                    Text = $"请检查输入是否是英文",
+                    Margin = new Thickness(0, 10, 0, 10),
+                    TextWrapping = TextWrapping.Wrap
+                });
+                errorContent.Children.Add(new Button
+                {
+                    Content = "确定",
+                    Command = MaterialDesignThemes.Wpf.DialogHost.CloseDialogCommand
+                });
+                await MaterialDesignThemes.Wpf.DialogHost.Show(errorContent, "MultiAxisScanViewHost");
+            });
+        }
 
         private void Confirm()
         {
             _regionManager.Regions[RegionNames.ContentRegion].RequestNavigate(nameof(Views.MultiAxisRunView));
         }
 
-        public bool KeepAlive => false;
+         
+        public bool KeepAlive => true;
 
         public void OnNavigatedTo(NavigationContext navigationContext)
         {
+            // 将当前输入法的语言强制切换为美式英文
+            InputLanguageManager.Current.CurrentInputLanguage = new CultureInfo("en-US");
+            _token = _eventAggregator.GetEvent<BarcodeScannedEvent>().Subscribe(OnBarcodeReceived);
         }
 
         public bool IsNavigationTarget(NavigationContext navigationContext) => true;
