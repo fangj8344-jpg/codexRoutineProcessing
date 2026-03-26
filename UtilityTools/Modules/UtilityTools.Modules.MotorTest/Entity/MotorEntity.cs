@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using UtilityTools.Modules.MotorTest.Interface;
 using UtilityTools.Modules.MotorTest.Protocol;
 using UtilityTools.Services.Interfaces.IServices;
 using UtilityTools.Services.Services;
@@ -12,14 +13,14 @@ using ZemModel.Entity;
 
 namespace UtilityTools.Modules.MotorTest.Entity
 {
-    public class MotorEntity
+    public class MotorEntity: IMotorEntity
     {
         public MotorEntity(ConcurrentQueue<byte[]> hPQueue, ConcurrentQueue<byte[]> oTSQueue) 
         {
             _hPQueue = hPQueue;
             _oTSQueue = oTSQueue;
         }
-        public MotorEntity(IAsynRWService serialPortService, UdpNetAsyncDevice udpService)
+        public MotorEntity(SerialPortService serialPortService, UdpNetAsyncDevice udpService)
         {
             _udpService = udpService;
             _serialPortService = serialPortService;
@@ -27,7 +28,7 @@ namespace UtilityTools.Modules.MotorTest.Entity
         private ConcurrentQueue<byte[]> _hPQueue;
         private ConcurrentQueue<byte[]> _oTSQueue;
         private UdpNetAsyncDevice _udpService;
-        private IAsynRWService _serialPortService;
+        private SerialPortService _serialPortService;
 
         /// <summary>
         /// 设置电机是否使能
@@ -217,7 +218,7 @@ namespace UtilityTools.Modules.MotorTest.Entity
             else
             {
                 _udpService?.SendImportantMsg(cmdData);
-                _serialPortService?.SendMsg(cmdData);
+                _serialPortService?.SendImportantMsg(cmdData);
             }
         }
       

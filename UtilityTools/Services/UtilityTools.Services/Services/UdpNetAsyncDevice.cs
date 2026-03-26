@@ -111,7 +111,7 @@ namespace UtilityTools.Services.Services
         /// </summary>
         public DelegateConnectTestCommand ConnectTest { get; set; }
         public bool ConnectSatus { get; set; } = false;
-
+        public int SendQueueCount { get => _sendQueue.Count; }
         /// <summary>
         /// 两次写入最小间隔 ms, 特别是串口通讯需要根据设备情况进行设置
         /// </summary>

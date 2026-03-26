@@ -24,8 +24,10 @@ using System.Timers;
 using System.Windows.Forms;
 using UtilityTools.Core.Dialog;
 using UtilityTools.Modules.MotorTest.Entity;
+using UtilityTools.Modules.MotorTest.Interface;
 using UtilityTools.Modules.MotorTest.Protocol;
 using UtilityTools.Modules.MotorTest.SQLite;
+using UtilityTools.Modules.MotorTest.TestItems;
 using UtilityTools.Services.Interfaces.IServices;
 using UtilityTools.Services.Services;
 
@@ -455,6 +457,28 @@ namespace UtilityTools.Modules.MotorTest.Model
             Goto(_enumMotorId, point);
             await Task.Delay(5000, cancellationToken);
         }
+
+
+        /// <summary>
+        /// 电机移动测试优化版本
+        /// </summary>
+        /// <returns></returns>
+        public async Task RunMoveTest(CancellationToken cancellationToken = default)
+        {
+            var moveTest = new MovementTestItem() { };
+
+            var result = await moveTest.ExecuteAsync(_enumMotorId, MotorModel, _testModel.MotorEntity, cancellationToken);
+            App.Current.Dispatcher.Invoke(() =>
+            {
+                MotorTestMessages.Add(new MotorTestMessage
+                {
+                    TestProject = moveTest.TestName,
+                    TestResult = result.IsPassed ? "合格" : "不合格",
+                    TestValue = result.MeasuredValue,
+                    Description = result.ErrorDescription
+                });
+            });
+        }
         /// <summary>
         /// 电机位置移动检测
         /// </summary>
@@ -499,6 +523,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                 return false;
             }
         }
+      
         /// <summary>
         /// 编码器测试
         /// </summary>
@@ -694,10 +719,18 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// </summary>
         public async Task<bool> SmoothnessGeneralMotorTestDetectionion(CancellationToken cancellationToken = default)
         {
-            MotorTestMessage motorTestMessage = new MotorTestMessage();
-            motorTestMessage.TestProject = "丝杆测试";
-            motorTestMessage.StandardValue = "合格";
+            MotorTestMessage motorTestMessage = new MotorTestMessage() 
+            {
+                TestProject = "丝杆测试",
+                StandardValue = "合格"
+            };
+    
             var dir = await GeneralMotorTestDetection(cancellationToken);
+            if (dir == null || dir.Count < 2)
+            {
+                motorTestMessage.TestResult = "数据获取失败";
+                return false;
+            }
             int fullStrokeOfMotor = dir[0].Value - dir[1].Value;
             motorTestMessage.TestValue = $"行程:{fullStrokeOfMotor}";
             using (var motorMessageDb = new MotorMessageDbContextBase())
@@ -707,27 +740,21 @@ namespace UtilityTools.Modules.MotorTest.Model
             }
             if (LimitPositioningAccuracyDetectionFunction(dir, motorTestMessage))
             {
-                if (fullStrokeOfMotor < FullStrokeRange.maxValue && fullStrokeOfMotor > FullStrokeRange.minValue)
-                {  
-                }
-                else
+                if (fullStrokeOfMotor >= FullStrokeRange.maxValue || fullStrokeOfMotor <= FullStrokeRange.minValue)
                 {
                     motorTestMessage.TestResult = "不合格";
                 }
+            }
+            else
+            {
+                motorTestMessage.TestResult = "不合格";
             }
             System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
             {
                 MotorTestMessages.Add(motorTestMessage);
 
             }));
-            if (motorTestMessage.TestResult == "不合格")
-            {
-                return false;
-            }
-            else
-            {
-                return true;
-            }
+            return motorTestMessage.TestResult != "不合格";
         }
         /// <summary>
         /// 定位精度通用测试
@@ -1601,6 +1628,38 @@ namespace UtilityTools.Modules.MotorTest.Model
                     case EnumMotorModel.MOTOR_r: FullStrokeRange = (0, 1000000); break;
                 }
             }
+        }
+        /// <summary>
+        /// 【临时测试通道】运行新架构的 98 点线性测试
+        /// </summary>
+        public async Task RunNewLinearTestAsync(CancellationToken cancellationToken = default)
+        {
+            // 1. 获取测试范围 (先用你自带的 FullStrokeRange，如果没定就给个安全硬编码值)
+            int minPos = FullStrokeRange.minValue == 0 ? 120000 : FullStrokeRange.minValue;
+            int maxPos = FullStrokeRange.maxValue == 0 ? 130000 : FullStrokeRange.maxValue;
+
+            DispathcherInvoke($"开始执行新架构测试，范围 [{minPos} - {maxPos}]...");
+
+            // 2. 实例化我们的新测试“积木”
+            var newTest = new MovementTestItem();
+
+            // 3. 执行测试！注意这里的参数全是你 FiveAxisModel 里现成的
+            var result = await newTest.ExecuteAsync(_enumMotorId, MotorModel, _testModel.MotorEntity, cancellationToken);
+
+            // 4. 将结果推送到你的 UI 上
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            {
+                MotorTestMessages.Add(new MotorTestMessage
+                {
+                    TestProject = newTest.TestName,
+                    StandardValue = "标准差<150",
+                    TestResult = result.IsPassed ? "合格" : "不合格",
+                    TestValue = result.MeasuredValue, // 比如 "StdDev: 45.2"
+                    Description = result.IsPassed ? result.Description : result.ErrorDescription
+                });
+
+                Log.Add($"新架构测试结束 -> 结果: {(result.IsPassed ? "成功" : "失败")} | {result.MeasuredValue}");
+            });
         }
     }
    

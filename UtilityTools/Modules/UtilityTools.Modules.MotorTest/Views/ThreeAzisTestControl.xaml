@@ -168,6 +168,7 @@
                                 <Button Content="关闭性能模式" Command="{Binding CloseTestPerformanceCommand}" Margin="10"/>
                                 <Button Content="数据库加载" Command="{Binding SqliteLoadCommand}" Margin="10"/>
                                 <Button Content="关闭测试" Command="{Binding ShotDownCommand}" Margin="10"/>
+                                <Button Content="新代码功能测试" Command="{Binding TempNewTestCommand}" Margin="10"/>
                             </UniformGrid>
                         </StackPanel>
                     </TabItem>

@@ -113,9 +113,9 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
             if (diaglogResult.Result == ButtonResult.OK && diaglogResult.Parameters.ContainsKey("Value"))
             {
                 var value = diaglogResult.Parameters.GetValue<IAsynRWService>("Value");
-                if (value != null)
+                if (value is SerialPortService serialPortValue)
                 {
-                    Model.SerialPortService = value;
+                    Model.SerialPortService = serialPortValue;
                     IsConnected = Model.SerialPortService.IsOpen;
                     if (IsConnected == true)
                     {

@@ -1,0 +1,98 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using UtilityTools.Modules.MotorTest.Interface;
+using UtilityTools.Modules.MotorTest.Model;
+using UtilityTools.Modules.MotorTest.Protocol;
+using UtilityTools.Modules.MotorTest.SQLite;
+
+namespace UtilityTools.Modules.MotorTest.TestItems
+{
+    public class SmoothnessTestItem: IMotorTestItem
+    {
+        private readonly (int min, int max) _fullStrokeRange;
+        public string TestName => "丝杆测试";
+
+        public SmoothnessTestItem((int min, int max) fullStrokeRange)
+        {
+            _fullStrokeRange = fullStrokeRange;
+        }
+
+        public async Task<MotorTestResult> ExecuteAsync(
+            EnumMotorId motorId, 
+            MotorModel motorModel,
+            IMotorEntity motorEntity,
+            CancellationToken ct)
+        {
+            // 1. 定义一个提取稳定段并算标准差的私有函数
+            double CalculateStableStdDev(int startIdx, int endIdx)
+            {
+                // 获取这一段的所有原始速度点（取绝对值）
+                var rawSpeeds = motorModel.SpeedList
+                    .Skip(startIdx)
+                    .Take(endIdx - startIdx)
+                    .Select(s => Math.Abs(s.Speed))
+                    .ToList();
+
+                if (rawSpeeds.Count < 10) return 0; // 点太少没意义
+
+                // --- 精妙之处：掐头去尾 (按 20% 比例剔除) ---
+                int skipCount = (int)(rawSpeeds.Count * 0.2);
+                var stableSpeeds = rawSpeeds
+                    .Skip(skipCount)             // 去掉开头加速段
+                    .Take(rawSpeeds.Count - 2 * skipCount) // 去掉末尾减速/碰撞段
+                    .ToList();
+
+                if (!stableSpeeds.Any()) return 0;
+
+                double avg = stableSpeeds.Average();
+                double sumOfSquares = stableSpeeds.Sum(v => Math.Pow(v - avg, 2));
+                return Math.Sqrt(sumOfSquares / stableSpeeds.Count);
+            }
+
+            // --- 开始正式测试 ---
+            // A 段：正向
+            int startF = motorModel.SpeedList.Count;
+            var fRes = await new StallAndLimitTestItem(true).ExecuteAsync(motorId, motorModel, motorEntity, ct);
+            int endF = motorModel.SpeedList.Count;
+            double stdDevF = CalculateStableStdDev(startF, endF);
+
+            // B 段：反向
+            int startB = motorModel.SpeedList.Count;
+            var bRes = await new StallAndLimitTestItem(false).ExecuteAsync(motorId, motorModel, motorEntity, ct);
+            int endB = motorModel.SpeedList.Count;
+            double stdDevB = CalculateStableStdDev(startB, endB);
+
+            // --- 综合评价 ---
+            var result = new MotorTestResult();
+            if (fRes.IsPassed && bRes.IsPassed)
+            {
+                result.IsPassed = true;
+                // 取两段中波动最大的那个作为最终标准差（最严标准）
+                double finalStdDev = Math.Max(stdDevF, stdDevB);
+
+                result.MeasuredValue = $"StdDev:{finalStdDev:F2}";
+                result.Description = $"正向波动:{stdDevF:F2}, 反向波动:{stdDevB:F2}";
+            }
+            return result;
+        }
+
+        private async Task SaveMotorData(EnumMotorModel axis, int dist, int left, int right)
+        {
+            using (var db = new MotorMessageDbContextBase())
+            {
+                var msg = new MotorMessage
+                {
+                    Name = "null",
+                    MotorModelAxis = axis,
+                    TotalDistance = dist,
+                    LeftLimitPosition = left,
+                    RightLimitPosition = right
+                };
+                await SpliteOperate.AddMotorMessageAsync(msg, db);
+            }
+        }
+    }
+}

@@ -116,6 +116,7 @@ namespace UtilityTools.Services.Services
         /// </summary>
         public int WaitInterval { get; set; }
         public int BusBufferTime { get; set; }
+        public int SendQueueCount { get => _sendQueue.Count; }
         #endregion
 
         #region ------------Event------------

@@ -1,6 +1,7 @@
 ﻿using CsvHelper;
 using MathNet.Numerics;
 using Newtonsoft.Json;
+using OpenCvSharp;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Legends;
@@ -27,10 +28,12 @@ using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Converters;
 using UtilityTools.Core.Dialog;
 using UtilityTools.Modules.MotorTest.Entity;
 using UtilityTools.Modules.MotorTest.Protocol;
 using UtilityTools.Modules.MotorTest.SQLite;
+using UtilityTools.Modules.MotorTest.TestItems;
 using UtilityTools.Services.Interfaces.IServices;
 using UtilityTools.Services.Services;
 
@@ -65,16 +68,15 @@ namespace UtilityTools.Modules.MotorTest.Model
         private readonly IDialogHostService _dialogHostService;
         private SelfMotorParser _parser;
         private TaskCompletionSource<string> _waitingReply;
+        private CancellationTokenSource _queryCts;
 
-        // 这是一个异步陷阱，专门等 Parser 告诉它电机 Ready 了
-        private TaskCompletionSource<bool> _motorReadyTcs;
 
         private BackgroundWorker _work;
         private bool _isTest = false;
         private EnumMotorInquiry _testMotorId;
         private bool _isSpeedMode = false;
         private int _queryInterval = 500;
-        private bool _isQueryInterval = true;
+  
         private Double _progressValue;
         private FiveAxisDbContextBase _fiveAxisDbContextBase;
        
@@ -196,11 +198,11 @@ namespace UtilityTools.Modules.MotorTest.Model
             get { return _importantByteQueue; }
             set { _importantByteQueue = value; RaisePropertyChanged(); }
         }
-        private IAsynRWService _serialPortService;
+        private SerialPortService _serialPortService;
         /// <summary>
         /// 串口异步通信服务
         /// </summary>
-        public IAsynRWService SerialPortService
+        public SerialPortService SerialPortService
         {
             get { return _serialPortService; }
             set { _serialPortService = value; RaisePropertyChanged(); }
@@ -289,7 +291,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             SaveToFileCommand = new DelegateCommand<string>(SaveToFile);
             IndependentMotorDurabilityTestCommand = new DelegateCommand(IndependentMotorDurabilityTest);
             ShotDownCommand = new DelegateCommand(ShotDown);
-
+            TempNewTestCommand = new DelegateCommand(RunTempTest);
             SQLiteTestCommand = new DelegateCommand(SQLiteTest);
             TestPerformanceCommand = new DelegateCommand(TestPerformance);
             CloseTestPerformanceCommand = new DelegateCommand(CloseTestPerformance);
@@ -299,7 +301,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             SqliteLoadCommand = new DelegateCommand(SqliteLoad);
             ByteQueue = new ConcurrentQueue<byte[]>();
             ImportantByteQueue = new ConcurrentQueue<byte[]>();
-            MotorEntity = new MotorEntity(ImportantByteQueue, ByteQueue);
+            MotorEntity = new MotorEntity(SerialPortService, NetUdpService);
             MotorplotModel = new PlotModel();
             MotorplotModel.Legends.Add(new Legend());
             MotorSpeedplotModel = new PlotModel();
@@ -313,7 +315,30 @@ namespace UtilityTools.Modules.MotorTest.Model
      
         }
 
-       
+        private async void RunTempTest()
+        {
+            if (XAxis != null)
+            {
+                CancellationToken = new CancellationTokenSource();
+                // 先把查询频率调快，确保 MoveState 反馈及时
+                TestPerformance();
+
+                try
+                {
+                    // 调用 X 轴的新测试逻辑
+                    await XAxis.RunNewLinearTestAsync(CancellationToken.Token);
+                }
+                catch (Exception ex)
+                {
+                    NLog.LogManager.GetCurrentClassLogger().Error($"新测试发生异常: {ex}");
+                }
+                finally
+                {
+                    CloseTestPerformance(); // 恢复正常查询频率
+                }
+            }
+        }
+
         public DelegateCommand SQLiteTestCommand { get; set; }
         int plontPoint = 0;
  
@@ -343,34 +368,53 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// <summary>
         /// 问询状态
         /// </summary>
-        public void QueryStatusTask()
+        public async Task QueryStatusTask() 
         {
-            _isQueryInterval = true;
+            _queryCts?.Cancel();
+            _queryCts = new CancellationTokenSource();
+            var token = _queryCts.Token;
             try
             {
-                Task.Run(() =>
+                while (!token.IsCancellationRequested)
                 {
-                    while (_isQueryInterval)
+                    if(GetTotalQueueCount() < 5)
+                    for (int i = 0; i < Motors.Count; i++)
                     {
-                        if (_byteQueue.IsEmpty)
-                        {
-                            for (int i = 0; i < Motors.Count; i++)
-                            {
-                                _motorEntity.GetMotorStatusCommand(Motors[i].EnumMotorId);
-                            }
-                        }
-                        Thread.Sleep(_queryInterval);
+                        _motorEntity.GetMotorStatusCommand(Motors[i].EnumMotorId);
                     }
-                });
+                     
+                   await Task.Delay (_queryInterval,token);
+                }
             }
             catch (Exception ex)
             {
                 NLog.LogManager.GetCurrentClassLogger().Error(ex);
             }
         }
+        private int GetTotalQueueCount()
+        {
+            int udpCount = 0;
+            int serialCount = 0;
+            if (NetUdpService != null && NetUdpService.IsOpen)
+            {
+                udpCount = NetUdpService.SendQueueCount;
+            }
+            if (SerialPortService != null && SerialPortService.IsOpen)
+            {
+                 serialCount = SerialPortService.SendQueueCount;
+
+            }
+            return Math.Max(udpCount, serialCount);
+        }
         public void CloseQueryStatusTask()
         {
-            _isQueryInterval = false;
+            if (_queryCts != null)
+            {
+                _queryCts.Cancel();
+                _queryCts.Dispose();
+                _queryCts = null;
+            }
+            
         }
         public DelegateCommand CloseTestPerformanceCommand { get; set; }
         private void CloseTestPerformance()
@@ -437,6 +481,8 @@ namespace UtilityTools.Modules.MotorTest.Model
             }
          
         }
+
+    
         public DelegateCommand<string> IndependentMotortestCommand { get; set; }
         /// <summary>
         /// 一个轴测试完后下一个轴测试
@@ -490,39 +536,59 @@ namespace UtilityTools.Modules.MotorTest.Model
         private async void IndependentMotorDurabilityTest()
         {
             CancellationToken = new CancellationTokenSource();
-            while (!CancellationToken.IsCancellationRequested)
+            try
             {
-                
-                if (Motors != null && Motors.Count > 0)
+                while (!CancellationToken.IsCancellationRequested)
                 {
-                    
-                    for (int i = 0; i < Motors.Count; i++)
+                    if (Motors != null && Motors.Count > 0)
                     {
-                        int index = i;
-                        try
+                        for (int i = 0; i < Motors.Count; i++)
                         {
-                            await Task.Run(async () =>
+                            if (CancellationToken.IsCancellationRequested) break;
+
+                            int index = i;
+                            try
                             {
                                 await Motors[index].SmoothnessGeneralMotorTestDetectionion(CancellationToken.Token);
-                            }, CancellationToken.Token);
-                            var time = Motors[index].MotorModel.PointList.Last().Date -  Motors[i].MotorModel.PointList[0].Date;
-                            var min = time.TotalMinutes;
-                            if (min > 30)
-                            {
-                                Motors[index].MotorModel.PointList.Clear();
-                                Motors[index].MotorModel.SpeedList.Clear();
+
+                                var pointList = Motors[index].MotorModel.PointList;
+                                if (pointList != null && pointList.Count > 0)
+                                {
+                                    var time = pointList.Last().Date - pointList[0].Date;
+                                    if (time.TotalMinutes > 30)
+                                    {
+                                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                                        {
+                                            Motors[index].MotorModel.PointList.Clear();
+                                            Motors[index].MotorModel.SpeedList.Clear();
+                                        });
+                                    }
+                                }
+
                             }
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            for (int j = 0; j < Motors.Count; j++)
+                            catch (OperationCanceledException)
                             {
-                                Motors[j].StopMotor();
+                                break;
+                            }
+                            catch (Exception ex)
+                            {
+                                NLog.LogManager.GetCurrentClassLogger().Error(ex, $"电机 {index} 耐久测试发生异常");
                             }
                         }
                     }
                 }
             }
+            finally 
+            {
+                if (Motors != null)
+                {
+                    foreach (var motor in Motors)
+                    {
+                        motor.StopMotor();
+                    }
+                }
+            }
+           
         }
 
 
@@ -814,5 +880,6 @@ namespace UtilityTools.Modules.MotorTest.Model
             }
             MotorSpeedplotModel.InvalidatePlot(true);
         }
+        public DelegateCommand TempNewTestCommand { get; set; }
     }
 }

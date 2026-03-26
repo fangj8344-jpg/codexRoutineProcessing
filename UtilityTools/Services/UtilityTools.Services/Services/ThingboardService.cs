@@ -38,6 +38,7 @@ namespace UtilityTools.Services.Services
         public int TimeoutSeconds { get; set; } = 30;
         public bool AutoReconnect { get; set; } = true;
 
+
         public event EventHandler<bool> ConnectionStateChanged;
         public event EventHandler<string> DataUploaded;
         public event EventHandler<UploadFailedEventArgs> UploadFailed;
@@ -274,8 +275,8 @@ namespace UtilityTools.Services.Services
                 var url = $"{ServerUrl}/api/calibration/";
 
                 //2. 组装
-             
-                var content = new StringContent(data,Encoding.UTF8,"application/json");
+                var content = new StringContent(data, Encoding.UTF8, "application/json");
+                _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AccessToken);
 
                 //3.发送 POST 请求
                 var response = await _httpClient.PostAsync(url,content);
@@ -290,11 +291,12 @@ namespace UtilityTools.Services.Services
                 else
                 {
                     _logger.Warn($"HTTP 上传失败: {response.StatusCode}");
+                    string errorDetail = await response.Content.ReadAsStringAsync();
                     UploadFailed?.Invoke(this, new UploadFailedEventArgs
                     {
                         FailedData = data,
                         Exception = null,
-                        ErrorMessage = response.StatusCode.ToString()
+                        ErrorMessage = $"[{response.StatusCode}] {errorDetail}"
                     });
                     return false;
                 }

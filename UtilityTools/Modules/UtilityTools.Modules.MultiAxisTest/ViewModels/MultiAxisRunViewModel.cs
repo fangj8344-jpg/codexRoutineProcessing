@@ -15,6 +15,7 @@ using TouchSocket.Core;
 using UtilityTools.Modules.MultiAxisTest.Model;
 using UtilityTools.Services.Interfaces;
 using UtilityTools.Services.Interfaces.IServices;
+using UtilityTools.Services.Services;
 using static UtilityTools.Services.Interfaces.IServices.IThingboardService;
 
 namespace UtilityTools.Modules.MultiAxisTest.ViewModels
@@ -119,10 +120,11 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
         }
         public async Task UploadData()
         {
-            _thingboardService.ServerUrl = "http://192.168.111.206:8000";  
+            _thingboardService.ServerUrl = "http://192.168.111.207:8989";  
             //_thingboardService.ServerUrl = "http://192.168.111.207:8989";
             _thingboardService.EnableMqtt = false;
             _thingboardService.EnableHttp = true;
+            _thingboardService.AccessToken = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0ZW5hbnRAdGhpbmdzYm9hcmQub3JnIiwidXNlcklkIjoiYTY0Zjg1NDAtZDRhZi0xMWYwLTgxNDMtZGQ4YTYxYTA4Y2EyIiwic2NvcGVzIjpbIlRFTkFOVF9BRE1JTiJdLCJzZXNzaW9uSWQiOiIwYWQxOGI4ZC00ZWIzLTRjYjItODBjNC04NzY0NDc5OGRlYjUiLCJleHAiOjE3NzQ0MzYwNjksImlzcyI6InRoaW5nc2JvYXJkLmlvIiwiaWF0IjoxNzc0NDI3MDY5LCJlbmFibGVkIjp0cnVlLCJpc1B1YmxpYyI6ZmFsc2UsInRlbmFudElkIjoiYTYxYmNiMTAtZDRhZi0xMWYwLTgxNDMtZGQ4YTYxYTA4Y2EyIiwiY3VzdG9tZXJJZCI6IjEzODE0MDAwLTFkZDItMTFiMi04MDgwLTgwODA4MDgwODA4MCJ9.gOzhq6RXL0loAcQwrY8kUxZFetLDhG0jhwaJkK0of6ts32vXwqEIVuFwstEtcwVgEjFBIjvpFfwBbd5854kE4A";
 
             var data = GenerateData();
 
@@ -132,7 +134,7 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
         private string GenerateData()
         {
             var options = new JsonSerializerOptions { WriteIndented = true };
-            _state.UploadInformation.DeviceId = "905e2760-d4a4-11f0-802d-47c72d04dc3f";
+            _state.UploadInformation.DeviceId = "e9607260-d4d5-11f0-938d-6d520bbaa0bf";
             _state.UploadInformation.SampleStageId = "1234";
             _state.UploadInformation.Content = new SampleStageReport
             {
