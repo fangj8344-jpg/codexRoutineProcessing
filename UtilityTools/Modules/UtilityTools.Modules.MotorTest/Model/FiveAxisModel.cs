@@ -422,6 +422,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             }
         }
         public DelegateCommand BaseTestCommand { get; set; }
+        /*
         public async Task BaseTest(CancellationToken cancellationToken)
         {
 
@@ -457,7 +458,99 @@ namespace UtilityTools.Modules.MotorTest.Model
             Goto(_enumMotorId, point);
             await Task.Delay(5000, cancellationToken);
         }
+        */
 
+        /// <summary>
+        /// 基础测试 (全自动化积木组装版 - 包含所有测试项)
+        /// </summary>
+        public async Task BaseTest(CancellationToken cancellationToken)
+        {
+            // 1. 清空界面上的旧测试记录
+            await System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                MotorTestMessages.Clear();
+            }));
+
+            DispathcherInvoke($"--- 开始执行 [{Name}] 全套基础测试 ---");
+
+            // ==========================================
+            // 积木 1：电机基础移动测试
+            // ==========================================
+            var moveTest = new MovementTestItem();
+            var moveResult = await moveTest.ExecuteAsync(_enumMotorId, MotorModel, _testModel.MotorEntity, cancellationToken);
+            UpdateTestResultToUI(moveTest.TestName, "到达指定位置", moveResult);
+            if (!moveResult.IsPassed) { DispathcherInvoke($"[{Name}] 移动测试失败，终止。"); return; }
+
+            // ==========================================
+            // 积木 2：编码器方向及响应测试
+            // ==========================================
+            var encoderTest = new EncoderTestItem();
+            var encoderResult = await encoderTest.ExecuteAsync(_enumMotorId, MotorModel, _testModel.MotorEntity, cancellationToken);
+            UpdateTestResultToUI(encoderTest.TestName, "变化>=100", encoderResult);
+            if (!encoderResult.IsPassed) { DispathcherInvoke($"[{Name}] 编码器测试失败，终止。"); return; }
+
+            // ==========================================
+            // 积木 3：满行程及限位测试 
+            // ==========================================
+            DispathcherInvoke($"[{Name}] 正在执行满行程及限位扫描...");
+            // 传入当前轴的标准行程范围
+            var fullTravelTest = new FullTravelTestItem(FullStrokeRange);
+            var fullTravelResult = await fullTravelTest.ExecuteAsync(_enumMotorId, MotorModel, _testModel.MotorEntity, cancellationToken);
+            UpdateTestResultToUI(fullTravelTest.TestName, $"[{FullStrokeRange.minValue}-{FullStrokeRange.maxValue}]", fullTravelResult);
+            if (!fullTravelResult.IsPassed) { DispathcherInvoke($"[{Name}] 满行程测试失败，终止。"); return; }
+
+            // ==========================================
+            // 积木 4：定位精度(重复性)测试
+            // ==========================================
+            DispathcherInvoke($"[{Name}] 正在执行定位精度(重复性)测试...");
+            var accuracyTest = new PositioningAccuracyTestItem();
+            var accuracyResult = await accuracyTest.ExecuteAsync(_enumMotorId, MotorModel, _testModel.MotorEntity, cancellationToken);
+            UpdateTestResultToUI(accuracyTest.TestName, "偏差<200", accuracyResult);
+            if (!accuracyResult.IsPassed) { DispathcherInvoke($"[{Name}] 定位精度测试失败，终止。"); return; }
+
+            // ==========================================
+            // 积木 5：分段定位线性测试 (98点测试)
+            // ==========================================
+            DispathcherInvoke($"[{Name}] 正在执行 98 点线性测试...");
+            // 利用底层跑完满行程后，自动记录在 MotorParams 里的真实物理限位作为测试区间
+            int minPos = MotorModel.MotorParams.NegativeLimitPosition;
+            int maxPos = MotorModel.MotorParams.PositiveLimitPosition;
+
+            // 安全保护：如果限位记录异常，给个默认区间兜底
+            if (maxPos <= minPos) { minPos = 0; maxPos = 100000; }
+
+            var linearTest = new LinearStepPrecisionTestItem(minPos, maxPos);
+            var linearResult = await linearTest.ExecuteAsync(_enumMotorId, MotorModel, _testModel.MotorEntity, cancellationToken);
+            UpdateTestResultToUI(linearTest.TestName, "StdDev<150", linearResult);
+
+            // ==========================================
+            // 收尾：回到物理行程中点
+            // ==========================================
+            int midPoint = minPos + (maxPos - minPos) / 2;
+            DispathcherInvoke($"[{Name}] 测试全部完毕，正在回到中点位置: {midPoint}");
+            Goto(_enumMotorId, midPoint);
+            await Task.Delay(5000, cancellationToken);
+
+            DispathcherInvoke($"--- [{Name}] 所有基础测试已完美通过！ ---");
+        }
+
+        /// <summary>
+        /// 【UI小助手】负责把底层的 MotorTestResult 安全地刷新到界面的列表中
+        /// </summary>
+        private void UpdateTestResultToUI(string testProject, string standardValue, MotorTestResult result)
+        {
+            System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                MotorTestMessages.Add(new MotorTestMessage
+                {
+                    TestProject = testProject,
+                    StandardValue = standardValue,
+                    TestResult = result.IsPassed ? "合格" : "不合格",
+                    TestValue = result.MeasuredValue ?? "",
+                    Description = result.IsPassed ? result.Description : result.ErrorDescription
+                });
+            }));
+        }
 
         /// <summary>
         /// 电机移动测试优化版本
@@ -479,93 +572,9 @@ namespace UtilityTools.Modules.MotorTest.Model
                 });
             });
         }
-        /// <summary>
-        /// 电机位置移动检测
-        /// </summary>
-        private async Task<bool> TestMotorMove(CancellationToken cancellationToken = default)
-        {
-            MotorTestMessage TestMessage = new MotorTestMessage();
-            TestMessage.TestProject = "电机控制测试";
-            TestMessage.StandardValue = "正常";
-            if (MotorModel.PointList.Count <= 0)
-            {
-                DispathcherInvoke($"没有读取到电机位置，测试退出");
-                return false;
-            }
-            var posStart = MotorModel.MotorParams.Pos;
-            Goto(_enumMotorId, true);
-            await Task.Delay(3000, cancellationToken);
-            StopMotor();
-            await Task.Delay(3000, cancellationToken);
-            var posEnd = MotorModel.PointList[MotorModel.PointList.Count - 1].Point;
-            TestMessage.TestValue = $"移动距离{posEnd - posStart},不正常"; 
-            if (Math.Abs(posEnd - posStart) <= 50)
-            {
-                TestMessage.TestResult = "不合格";
-                TestMessage.Description = "电机响应不正常,请查询电机手册排查故障";
-            }
-            else
-            {
-                TestMessage.TestResult = "合格";
-            }
-            DispathcherInvoke($"电机移动测试测试End:{posEnd},Start:{posStart} 行程:{posEnd - posStart}");
-            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
-            {
-                MotorTestMessages.Add(TestMessage);
-            }));
-
-            if (TestMessage.TestResult == "合格")
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
+ 
       
-        /// <summary>
-        /// 编码器测试
-        /// </summary>
-        private async Task<bool> EncoderDirectionTest(CancellationToken cancellationToken = default)
-        {
 
-            MotorTestMessage TestMessage = new MotorTestMessage();
-            TestMessage.TestProject = "编码器测试";
-            TestMessage.StandardValue = "正常";
-            SetMotorInit();
-
-            var posStart = MotorModel.MotorParams.Pos;
-            Goto(_enumMotorId, true);
-            await Task.Delay(3000, cancellationToken);
-            StopMotor();
-            await Task.Delay(3000, cancellationToken);
-            var posEnd = MotorModel.MotorParams.Pos;
-            TestMessage.TestValue = $"编码器变化：{posEnd - posStart}";
-            if (posEnd - posStart < 100)
-            {
-                TestMessage.TestResult = "不合格";
-                TestMessage.Description = "编码器异常";
-            }
-            else
-            {
-                TestMessage.TestResult = "合格";
-            }
-            DispathcherInvoke($"电机测试End:{posEnd},Start:{posStart} 行程:{posEnd - posStart}");
-            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
-            {
-                MotorTestMessages.Add(TestMessage);
-            }));
-            if (TestMessage.TestResult == "合格")
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-      
         /// <summary>
         /// 通用检测
         /// </summary>
@@ -1411,7 +1420,7 @@ namespace UtilityTools.Modules.MotorTest.Model
    
         private void DispathcherInvoke(string log)
         {
-            System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
+            System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
                 Log.Add(log);
             }));
@@ -1427,29 +1436,39 @@ namespace UtilityTools.Modules.MotorTest.Model
                 var speed = (MotorModel.MotorParams.Pos - MotorModel.PointList[MotorModel.PointList.Count - 2].Point) / (timeDifference * 1.0) * 1000;
                 PlotViewPointMessage pointView = new PlotViewPointMessage() { Date = data, Point = MotorModel.MotorParams.Pos, MotorMoveState = MotorModel.MotorParams.MoveState , MotorModelAxis  = MotorModel.MotorModelAxis};
                 PlotViewSpeedMessage speedView = new PlotViewSpeedMessage() { SpeedDate = MotorModel.PointList[MotorModel.PointList.Count - 1].Date, Speed = speed , MotorModelAxis = MotorModel.MotorModelAxis };
-               
 
-                if (_testModel.MotorSpeedplotModel != null && _testModel.MotorplotModel != null)
+                // 【终极防弹衣】：在把数据塞进集合的那一瞬间，锁死图表！
+                // 这句话的意思是：我在塞数据的时候，OxyPlot 你给我闭嘴不许画图；
+                // 等我塞完了，你再画！
+                lock (_testModel.MotorplotModel.SyncRoot)
                 {
-                    while (MotorModel.PointList.Count>= _testModel .MaxCount)
+                    lock (_testModel.MotorSpeedplotModel.SyncRoot)
                     {
-                        MotorModel.PointList.RemoveAt(0);
-                    }
-                    while (MotorModel.SpeedList.Count >= _testModel.MaxCount)
-                    {
-                        MotorModel.SpeedList.RemoveAt(0);
-                    }
-                    MotorModel.PointList.Add(pointView);
-                    MotorModel.SpeedList.Add(speedView);
-                    MotorModel.PointListBuffer.Add(pointView);
-                    MotorModel.SpeedListBuffer.Add(speedView);
-                    MotorModel.MotorParams.Speed = speed;
-                    
-                    _testModel.MotorplotModel.InvalidatePlot(true);
-                    _testModel.MotorSpeedplotModel.InvalidatePlot(true);
-                   
-                   
 
+                        if (_testModel.MotorSpeedplotModel != null && _testModel.MotorplotModel != null)
+                        {
+                            while (MotorModel.PointList.Count >= _testModel.MaxCount)
+                            {
+                                MotorModel.PointList.RemoveAt(0);
+                            }
+                            while (MotorModel.SpeedList.Count >= _testModel.MaxCount)
+                            {
+                                MotorModel.SpeedList.RemoveAt(0);
+                            }
+
+                            MotorModel.PointList.Add(pointView);
+                            MotorModel.SpeedList.Add(speedView);
+                            MotorModel.PointListBuffer.Add(pointView);
+                            MotorModel.SpeedListBuffer.Add(speedView);
+                            MotorModel.MotorParams.Speed = speed;
+
+                            //                 _testModel.MotorplotModel.InvalidatePlot(true);
+                            //                 _testModel.MotorSpeedplotModel.InvalidatePlot(true);
+
+
+
+                        }
+                    }
                 }
                 if (MotorModel.PointListBuffer.Count == _testModel.SavePointNumber)
                 {
@@ -1464,7 +1483,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                 
                 if (_testModel.MotorplotModel != null)
                 {
-                    _testModel.MotorplotModel.InvalidatePlot(true);
+ //                   _testModel.MotorplotModel.InvalidatePlot(true);
                 }
                 
             }
@@ -1634,20 +1653,16 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// </summary>
         public async Task RunNewLinearTestAsync(CancellationToken cancellationToken = default)
         {
-            // 1. 获取测试范围 (先用你自带的 FullStrokeRange，如果没定就给个安全硬编码值)
-            int minPos = FullStrokeRange.minValue == 0 ? 120000 : FullStrokeRange.minValue;
-            int maxPos = FullStrokeRange.maxValue == 0 ? 130000 : FullStrokeRange.maxValue;
-
-            DispathcherInvoke($"开始执行新架构测试，范围 [{minPos} - {maxPos}]...");
+          
 
             // 2. 实例化我们的新测试“积木”
-            var newTest = new MovementTestItem();
+            var newTest = new EncoderTestItem();
 
             // 3. 执行测试！注意这里的参数全是你 FiveAxisModel 里现成的
             var result = await newTest.ExecuteAsync(_enumMotorId, MotorModel, _testModel.MotorEntity, cancellationToken);
 
             // 4. 将结果推送到你的 UI 上
-            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            await System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
             {
                 MotorTestMessages.Add(new MotorTestMessage
                 {

@@ -9,7 +9,7 @@ using UtilityTools.Modules.MotorTest.Protocol;
 
 namespace UtilityTools.Modules.MotorTest.TestItems
 {
-    internal class EncoderTestItem : IMotorTestItem
+    public class EncoderTestItem : IMotorTestItem
     {
         public string TestName => "编码器测试";
 
@@ -21,28 +21,44 @@ namespace UtilityTools.Modules.MotorTest.TestItems
         {
             var result = new MotorTestResult { IsPassed = false };
 
-            // 1. 初始化电机状态 (替代原有的 SetMotorInit)
-            // 这里根据原代码逻辑：设置闭环位置模式并使能
+            // 1. 初始化电机状态 (闭环位置模式并使能)
             motorEntity.SetMotorControlModeCommand(motorId, EnumMotorCtrType.CloseLoopPosCtr);
             motorEntity.SetMotorEnableCommand(motorId, EnumMotorEnable.Enable);
-
-            // 给硬件一点响应时间
             await Task.Delay(500, ct);
 
-            // 2. 记录起始位置
+            // ==========================================
+            // 2. 【防撞避让逻辑】先向反向（左）移动，腾出测试空间
+            // ==========================================
+            motorEntity.SetMotorGoToCommand(motorId, EnumMotorUnit.Pulse, motorModel.MotorParams.Pos - 1000000);
+
+            // 向左跑 4 秒
+            await Task.Delay(4000, ct);
+
+            // 停止并等待稳定
+            motorEntity.SetMotorOperatingStatusCommand(motorId, EnumMotorOperatingState.Stop);
+            await Task.Delay(1000, ct);
+
+            // ==========================================
+            // 3. 【正式编码器测试逻辑】
+            // ==========================================
+            // 记录安全的起始位置
             var posStart = motorModel.MotorParams.Pos;
 
-            // 3. 执行移动动作 (Goto)
-            // 这里逻辑同原代码：正向移动一个较大的脉冲量
+            // 正向移动一个较大的脉冲量
             motorEntity.SetMotorGoToCommand(motorId, EnumMotorUnit.Pulse, posStart + 1000000);
+
+            // 向右跑 3 秒
             await Task.Delay(3000, ct);
 
-            // 4. 停止并等待稳定
+            // 停止并等待稳定
             motorEntity.SetMotorOperatingStatusCommand(motorId, EnumMotorOperatingState.Stop);
             await Task.Delay(3000, ct);
 
-            // 5. 获取最终位置并判定
+            // 4. 获取最终位置并判定
             var posEnd = motorModel.MotorParams.Pos;
+
+            // 注意：这里没有加 Math.Abs，因为编码器不仅要变，还要“变对方向”
+            // 向正向发指令，posEnd 必须大于 posStart
             var diff = posEnd - posStart;
 
             result.MeasuredValue = $"编码器变化：{diff}";
@@ -51,11 +67,12 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             if (diff >= 100)
             {
                 result.IsPassed = true;
+                result.Description = $"起始:{posStart} 结束:{posEnd}";
             }
             else
             {
                 result.IsPassed = false;
-                result.ErrorDescription = "编码器异常";
+                result.ErrorDescription = $"编码器异常或方向错误 (预期>=100, 实际:{diff})";
             }
 
             return result;

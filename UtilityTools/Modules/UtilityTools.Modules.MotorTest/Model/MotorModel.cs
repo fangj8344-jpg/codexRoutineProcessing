@@ -7,6 +7,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Data;
 using System.Windows.Media.Media3D;
 using UtilityTools.Modules.MotorTest.Protocol;
 using UtilityTools.Modules.MotorTest.SQLite;
@@ -23,10 +24,16 @@ namespace UtilityTools.Modules.MotorTest.Model
             PointList = new ObservableCollection<PlotViewPointMessage>();
             SpeedList = new ObservableCollection<PlotViewSpeedMessage>();
             MotorParams = new MotorParams();
-          
-           
+
+            // ==========================================
+            // 【核心修复】：告诉 WPF，我要在后台线程高频修改这个集合，请你帮我自动在 UI 线程批量同步！
+            // ==========================================
+            BindingOperations.EnableCollectionSynchronization(PointList, _pointListLock);
+            BindingOperations.EnableCollectionSynchronization(SpeedList, _speedListLock);
         }
-       
+        // 专门给跨线程更新准备的锁对象
+        private readonly object _pointListLock = new object();
+        private readonly object _speedListLock = new object();
         private MotorParams _motorParams;
         public MotorParams MotorParams 
         {

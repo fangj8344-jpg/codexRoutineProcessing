@@ -312,7 +312,20 @@ namespace UtilityTools.Modules.MotorTest.Model
             MotorSpeedplotModel.Axes.Add(new LinearAxis() { Title = "速度(脉冲/秒)", Position = AxisPosition.Left });
             
             MotorTypeModel = new MotorTypeModel(this, _containerProvider);
-     
+
+            var uiRenderTimer = new System.Windows.Threading.DispatcherTimer();
+            uiRenderTimer.Interval = TimeSpan.FromMilliseconds(50); // 50ms 刷新一次，即 20 FPS，极其丝滑且不占 CPU
+            uiRenderTimer.Tick += (s, e) =>
+            {
+                // 统一在这里触发图表重绘
+                if (MotorplotModel != null)
+                    MotorplotModel.InvalidatePlot(true);
+
+                if (MotorSpeedplotModel != null)
+                    MotorSpeedplotModel.InvalidatePlot(true);
+            };
+            uiRenderTimer.Start(); // 启动定时器
+
         }
 
         private async void RunTempTest()
@@ -363,7 +376,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         public DelegateCommand TestPerformanceCommand { get; set; }
         private void TestPerformance()
         {
-            _queryInterval = 10;
+            _queryInterval = 50;
         }
         /// <summary>
         /// 问询状态
