@@ -4,6 +4,7 @@ using MathNet.Numerics.Financial;
 using MathNet.Numerics.RootFinding;
 using MathNet.Numerics.Statistics;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.VisualBasic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -375,7 +376,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             MotorplotModel = new PlotModel();
             MotorSpeedplotModel = new PlotModel();
            
-            using (var AxisDbContext = new TwoAxisDbContextBase())
+            using (var AxisDbContext = new MotorDbContext("TwoMotorTetsMessages.db"))
             {
                 TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync(AxisDbContext);
             }
@@ -2508,7 +2509,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     await Task.Run(async () =>
                     {
                         var x = channelId;
-                        using (var db = new TwoAxisDbContextBase ())
+                        using (var db = new MotorDbContext("TwoMotorTetsMessages.db"))
                         {
                             await SpliteOperate.AddPlotViewPointListMessagesSimpleAsync(pt, db);
                             await SpliteOperate.AddPlotViewSpeedListMessagesSimpleAsync(sp, db);
@@ -2730,11 +2731,13 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// </summary>
         private async void SelectPrevious()
         {
-            using (var db =new TwoAxisDbContextBase())
+            // 这样不需要担心依赖注入的范围冲突
+            // 这才是你现在代码里该写的“普通方法”
+            using (var db = new MotorDbContext("TwoMotorTetsMessages.db"))
             {
                 TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
             }
-               
+
             if (headIndex == 0)
             {
                 if (TotalSize <= LoadSize)
@@ -2767,7 +2770,8 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// </summary>
         private async void SelectNext()
         {
-            using (var db = new TwoAxisDbContextBase())
+            // 这才是你现在代码里该写的“普通方法”
+            using (var db = new MotorDbContext("TwoMotorTetsMessages.db"))
             {
                 TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
             }
@@ -2796,47 +2800,51 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// </summary>
         private async void SqliteLoad()
         {
+            // 1. 准备中间变量，先把数据从库里“捞”出来
             int pointNumber, speedNumber;
-            ObservableCollection<PlotViewPointMessage> point;
-            ObservableCollection<PlotViewSpeedMessage> speed;
-            using (var db = new TwoAxisDbContextBase())
+            List<PlotViewPointMessage> allPoints;
+            List<PlotViewSpeedMessage> allSpeeds;
+
+            // 2. 建立数据库连接（使用新的 MotorDbContext）
+            using (var db = new MotorDbContext("TwoMotorTetsMessages.db"))
             {
+                // 获取总点数
                 TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
-                pointNumber = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
-                point = new ObservableCollection<PlotViewPointMessage>(await SpliteOperate.GetPlotViewPointMessagesAsync(db, HeadIndex, LoadSize > pointNumber ? pointNumber : LoadSize));
+                pointNumber = TotalSize;
                 speedNumber = await SpliteOperate.GetPlotViewSpeedMessageCountAsync(db);
-                speed = new ObservableCollection<PlotViewSpeedMessage>(await SpliteOperate.GetPlotViewSpeedMessagesAsync(db, HeadIndex, LoadSize > speedNumber ? speedNumber : LoadSize));
-                
-              
-                ObservableCollection<PlotViewPointMessage> xPointList = new ObservableCollection<PlotViewPointMessage>(point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_x).ToList());
-                ObservableCollection<PlotViewPointMessage> yPointList = new ObservableCollection<PlotViewPointMessage>(point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_y).ToList());
 
-                ObservableCollection<PlotViewSpeedMessage> xSpeedList = new ObservableCollection<PlotViewSpeedMessage>(speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_x).ToList());
-                ObservableCollection<PlotViewSpeedMessage> ySpeedList = new ObservableCollection<PlotViewSpeedMessage>(speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_y).ToList());
+                // 分页查询：计算这次该取多少条（取 LoadSize 和 数据库余量 中较小的那个）
+                int takePoints = Math.Min(LoadSize, pointNumber);
+                int takeSpeeds = Math.Min(LoadSize, speedNumber);
 
-                MotorModelX.PointList = xPointList;
-                _xPosLine.ItemsSource = MotorModelX.PointList;
-                _xPosLine.DataFieldX = "Date";
-                _xPosLine.DataFieldY = "Point";
+                // 执行查询（这里捞出来的是 X 和 Y 混合的数据）
+                allPoints = await SpliteOperate.GetPlotViewPointMessagesAsync(db, HeadIndex, takePoints);
+                allSpeeds = await SpliteOperate.GetPlotViewSpeedMessagesAsync(db, HeadIndex, takeSpeeds);
+            } // 执行到这里，数据库连接就自动关闭释放了，非常安全
 
-                MotorModelX.SpeedList = xSpeedList;
-                _xSpeedPosLine.ItemsSource = MotorModelX.SpeedList;
-                _xSpeedPosLine.DataFieldX = "SpeedDate";
-                _xSpeedPosLine.DataFieldY = "Speed";
-                ;
-                MotorModelY.PointList = yPointList;
-                _yPosLine.ItemsSource = MotorModelY.PointList;
-                _yPosLine.DataFieldX = "Date";
-                _yPosLine.DataFieldY = "Point";
+            // 3. 将捞出来的数据按“轴”拆分开
+            var xPoints = allPoints.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_x).ToList();
+            var yPoints = allPoints.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_y).ToList();
 
-                MotorModelY.SpeedList = ySpeedList;
-                _ySpeedPosLine.ItemsSource = MotorModelY.SpeedList;
-                _ySpeedPosLine.DataFieldX = "SpeedDate";
-                _ySpeedPosLine.DataFieldY = "Speed";
+            var xSpeeds = allSpeeds.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_x).ToList();
+            var ySpeeds = allSpeeds.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_y).ToList();
 
-                MotorSpeedplotModel.InvalidatePlot(true);
-                MotorplotModel.InvalidatePlot(true);
-            }   
+            // 4. 更新 ViewModel 里的 ObservableCollection（触发 UI 绑定）
+            MotorModelX.PointList = new ObservableCollection<PlotViewPointMessage>(xPoints);
+            MotorModelY.PointList = new ObservableCollection<PlotViewPointMessage>(yPoints);
+
+            MotorModelX.SpeedList = new ObservableCollection<PlotViewSpeedMessage>(xSpeeds);
+            MotorModelY.SpeedList = new ObservableCollection<PlotViewSpeedMessage>(ySpeeds);
+
+            // 5. 重新同步图表的 ItemsSource（防止 UI 没反应）
+            _xPosLine.ItemsSource = MotorModelX.PointList;
+            _yPosLine.ItemsSource = MotorModelY.PointList;
+            _xSpeedPosLine.ItemsSource = MotorModelX.SpeedList;
+            _ySpeedPosLine.ItemsSource = MotorModelY.SpeedList;
+
+            // 6. 通知图表组件重绘
+            MotorSpeedplotModel.InvalidatePlot(true);
+            MotorplotModel.InvalidatePlot(true);
         }
     }
 }

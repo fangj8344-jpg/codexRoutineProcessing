@@ -1,107 +1,39 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UtilityTools.Modules.MotorTest.Model;
 
 namespace UtilityTools.Modules.MotorTest.SQLite
 {
-
-
-    public  class DbContextBase:DbContext
+    public class MotorDbContext : DbContext
     {
+        private readonly string _dbFileName;
 
-        public DbContextBase()
+        // 核心妙招：通过构造函数传入数据库文件名！想要几轴传几轴！
+        public MotorDbContext(string dbFileName)
         {
-            
+            _dbFileName = dbFileName;
+
+            // 保证只要实例化，就检查并创建（生命周期内只执行一次建表检查）
+            Database.EnsureCreated();
         }
-        /// <summary>
-        /// 代表数据库中的PlotViewPointMessages元素
-        /// </summary>
-        public DbSet<PlotViewPointMessage>  PlotViewPointMessages { get; set; }
-        public DbSet<PlotViewSpeedMessage>  PlotViewSpeedMessages { get; set; }
-        /// <summary>
-        /// 代表数据库中的PlotViewPointMessages元素
-        /// </summary>
+
+        public DbSet<PlotViewPointMessage> PlotViewPointMessages { get; set; }
+        public DbSet<PlotViewSpeedMessage> PlotViewSpeedMessages { get; set; }
         public DbSet<MotorMessage> MotorMessages { get; set; }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            if (!optionsBuilder.IsConfigured)
+            {
+                // 动态使用传入的文件名
+                optionsBuilder.UseSqlite($"Data Source={_dbFileName}");
+            }
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            //根据轴名设置表名
-            modelBuilder.Entity<PlotViewPointMessage>().ToTable($"PlotViewPointMessages");
-            modelBuilder.Entity<PlotViewSpeedMessage>().ToTable($"PlotViewSpeedMessages");
-            modelBuilder.Entity<MotorMessage>().ToTable($"MotorMessage");
-
-        }
-
-
-
-
-    }
-
-    public class FiveAxisDbContextBase : DbContextBase
-    {
-
-        public FiveAxisDbContextBase()
-        {
-        }
-        /// <summary>
-        /// 配置数据库连接
-        /// </summary>
-        /// <param name="optionsBuilder"></param>
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            if (!optionsBuilder.IsConfigured)
-            {
-                //使用SQLite，并指定数据库文件路径
-                optionsBuilder.UseSqlite("Data Source=FiveMotorTetsMessages.db");
-            }
-
+            modelBuilder.Entity<PlotViewPointMessage>().ToTable("PlotViewPointMessages");
+            modelBuilder.Entity<PlotViewSpeedMessage>().ToTable("PlotViewSpeedMessages");
+            modelBuilder.Entity<MotorMessage>().ToTable("MotorMessage");
         }
     }
-    public class TwoAxisDbContextBase : DbContextBase
-    {
-
-        public TwoAxisDbContextBase()
-        {
-
-        }
-        /// <summary>
-        /// 配置数据库连接
-        /// </summary>
-        /// <param name="optionsBuilder"></param>
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            if (!optionsBuilder.IsConfigured)
-            {
-                //使用SQLite，并指定数据库文件路径
-                optionsBuilder.UseSqlite("Data Source=TwoMotorTetsMessages.db");
-            }
-
-        }
-
-       
-    }
-    public class MotorMessageDbContextBase : DbContextBase
-    {
-
-        public MotorMessageDbContextBase()
-        {
-        }
-        /// <summary>
-        /// 配置数据库连接
-        /// </summary>
-        /// <param name="optionsBuilder"></param>
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            if (!optionsBuilder.IsConfigured)
-            {
-                //使用SQLite，并指定数据库文件路径
-                optionsBuilder.UseSqlite("Data Source=TwoMotorTetsMessages.db");
-            }
-        }
-    }
-
 }

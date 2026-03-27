@@ -73,20 +73,6 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             return result;
         }
 
-        private async Task SaveToDatabase(EnumMotorModel axis, int total, int left, int right)
-        {
-            using (var db = new MotorMessageDbContextBase())
-            {
-                var msg = new MotorMessage
-                {
-                    Name = "null",
-                    MotorModelAxis = axis,
-                    TotalDistance = total,
-                    LeftLimitPosition = left,
-                    RightLimitPosition = right
-                };
-                await SpliteOperate.AddMotorMessageAsync(msg, db);
-            }
-        }
+       
     }
 }

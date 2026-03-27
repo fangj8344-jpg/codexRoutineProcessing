@@ -1,404 +1,183 @@
-﻿
-using Prism.Ioc;
+﻿using Prism.Ioc;
 using Prism.Mvvm;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Ink;
-using System.Windows.Media;
-
 using UtilityTools.Modules.MotorTest.Protocol;
-using UtilityTools.Modules.MotorTest.SQLite;
 
 namespace UtilityTools.Modules.MotorTest.Model
 {
+    // 定义一个专门用来存“单轴硬件配置”的小结构体
+    public class AxisHardwareConfig
+    {
+        public EnumMotorId ChannelId { get; set; }        // 插在哪个物理孔
+        public (int Min, int Max) StrokeRange { get; set; } // 丝杆有效行程
+    }
+
+    // 定义咱们的四个标准机型
+    public enum MachineProfile
+    {
+        CompactTwoAxis,     // 紧凑型双轴
+        StandardTwoAxis,    // 标准型双轴
+        HeavyDutyThreeAxis, // 重载型三轴
+        UniversalFiveAxis   // 全动型五轴
+    }
+
     public class MotorTypeModel : BindableBase
     {
+        private readonly IContainerProvider _containerProvider;
+        private readonly ThreeAxisTestModel _motorModel;
+        // 在 MotorTypeModel.cs 中增加
+        // 1. 给这个“翻译官”换个更有辨识度的名字，避免跟类型名掐架
+        public Protocol.EnumMotorAxisType SelectedAxisType
+        {
+            get
+            {
+                return _currentProfile switch
+                {
+                    MachineProfile.CompactTwoAxis => Protocol.EnumMotorAxisType.TwoAxisMotor,
+                    MachineProfile.StandardTwoAxis => Protocol.EnumMotorAxisType.TwoAxisMotor,
+                    MachineProfile.HeavyDutyThreeAxis => Protocol.EnumMotorAxisType.ThreeAxisMotor,
+                    MachineProfile.UniversalFiveAxis => Protocol.EnumMotorAxisType.FiveAxisMotor,
+                    _ => Protocol.EnumMotorAxisType.TwoAxisMotor
+                };
+            }
+        }
+
+        // 2. 这里引用上面的 SelectedAxisType 属性名，编译器就不会懵圈了
+        public string CurrentDbName => SelectedAxisType switch
+        {
+            Protocol.EnumMotorAxisType.TwoAxisMotor => "TwoMotorTetsMessages.db",
+            Protocol.EnumMotorAxisType.ThreeAxisMotor => "ThreeMotorTetsMessages.db",
+            Protocol.EnumMotorAxisType.FiveAxisMotor => "FiveMotorTetsMessages.db",
+            _ => "DefaultMotorTetsMessages.db"
+        };
+        // 当前选中的机型（核心状态，全剧唯一的真理）
+        private MachineProfile _currentProfile;
+
+        // ==========================================
+        // 🌟 终极核心：机型配置矩阵表 (The Truth Matrix)
+        // ==========================================
+        private static readonly Dictionary<MachineProfile, Dictionary<EnumMotorModel, AxisHardwareConfig>> _machineConfigTable = new()
+        {
+            // 1. 紧凑型双轴（原小仓 Zem18：X短，Y稍长）
+            [MachineProfile.CompactTwoAxis] = new Dictionary<EnumMotorModel, AxisHardwareConfig>
+            {
+                [EnumMotorModel.MOTOR_x] = new() { ChannelId = EnumMotorId.MOTOR_1, StrokeRange = (120000, 130000) },
+                [EnumMotorModel.MOTOR_y] = new() { ChannelId = EnumMotorId.MOTOR_2, StrokeRange = (160000, 170000) }
+            },
+
+            // 2. 标准型双轴（原大仓 Zem20：X极长，Y极长）
+            [MachineProfile.StandardTwoAxis] = new Dictionary<EnumMotorModel, AxisHardwareConfig>
+            {
+                [EnumMotorModel.MOTOR_x] = new() { ChannelId = EnumMotorId.MOTOR_1, StrokeRange = (235000, 255000) },
+                [EnumMotorModel.MOTOR_y] = new() { ChannelId = EnumMotorId.MOTOR_2, StrokeRange = (215000, 225000) }
+            },
+
+            // 3. 重载型三轴（统一 0-100万 量程）
+            [MachineProfile.HeavyDutyThreeAxis] = new Dictionary<EnumMotorModel, AxisHardwareConfig>
+            {
+                // 注意：硬件上，除了双轴机型，其余机型 X 插 2 孔，Y 插 1 孔（保持你原有的硬件路由逻辑）
+                [EnumMotorModel.MOTOR_x] = new() { ChannelId = EnumMotorId.MOTOR_2, StrokeRange = (0, 1000000) },
+                [EnumMotorModel.MOTOR_y] = new() { ChannelId = EnumMotorId.MOTOR_1, StrokeRange = (0, 1000000) },
+                [EnumMotorModel.MOTOR_z] = new() { ChannelId = EnumMotorId.MOTOR_4, StrokeRange = (0, 1000000) }
+            },
+
+            // 4. 全动型五轴（统一 0-100万 量程）
+            [MachineProfile.UniversalFiveAxis] = new Dictionary<EnumMotorModel, AxisHardwareConfig>
+            {
+                [EnumMotorModel.MOTOR_x] = new() { ChannelId = EnumMotorId.MOTOR_2, StrokeRange = (0, 1000000) },
+                [EnumMotorModel.MOTOR_y] = new() { ChannelId = EnumMotorId.MOTOR_1, StrokeRange = (0, 1000000) },
+                [EnumMotorModel.MOTOR_z] = new() { ChannelId = EnumMotorId.MOTOR_4, StrokeRange = (0, 1000000) },
+                [EnumMotorModel.MOTOR_t] = new() { ChannelId = EnumMotorId.MOTOR_3, StrokeRange = (0, 1000000) },
+                [EnumMotorModel.MOTOR_r] = new() { ChannelId = EnumMotorId.MOTOR_5, StrokeRange = (0, 1000000) }
+            }
+        };
+
         public MotorTypeModel(ThreeAxisTestModel motorModel, IContainerProvider containerProvider)
         {
             _motorModel = motorModel;
             _containerProvider = containerProvider;
-            _motorModel.Motors = new ObservableCollection<FiveAxisModel> { };
-            motorTypeUpdate(); 
-            
-        }
-        private IContainerProvider _containerProvider;
-        private ThreeAxisTestModel _motorModel;
-        private EnumMotorAxisType? _enumMotorAxisType = Protocol.EnumMotorAxisType.TwoAxisMotor;
-        
-        /// <summary>
-        /// 电机类型
-        /// </summary>
-        public EnumMotorAxisType? EnumMotorAxisType
-        {
-            get { return _enumMotorAxisType; }
-            set 
-            {
-                if (_enumMotorAxisType != value)
-                {
-                    _enumMotorAxisType = value;
-                    motorAxisUpdate();
-                }
-               
-                RaisePropertyChanged(); 
-                
-            }
-        }
-        private bool _isZem18 = true;
-        /// <summary>
-        /// 是否是zem18系列
-        /// </summary>
-        public bool IsZem18
-        {
-            get { return _isZem18; }
-            set { _isZem18 = value; RaisePropertyChanged(); }
+            _motorModel.Motors = new ObservableCollection<FiveAxisModel>();
+
+            IsCompactTwoAxis = true; // 默认选中紧凑型
         }
 
-        private bool _isFiveAxisMotor = false;
-        /// <summary>
-        /// 是否是五轴电机
-        /// </summary>
-        public bool IsFiveAxisMotor
+        // ==========================================
+        // UI 绑定属性 (纯粹的触发器)
+        // ==========================================
+        public bool IsCompactTwoAxis
         {
-            get { return _isFiveAxisMotor; }
-            set
-            {
-                _isFiveAxisMotor = value;
-                if (value)
-                {
-                    EnumMotorAxisType = Protocol.EnumMotorAxisType.FiveAxisMotor;
-                    motorTypeUpdate();
-                }
-               
-                RaisePropertyChanged();
-            }
+            get => _currentProfile == MachineProfile.CompactTwoAxis;
+            set { if (value) ChangeProfile(MachineProfile.CompactTwoAxis); }
         }
 
-        private bool _isThreeAxisMotor;
-        /// <summary>
-        /// 是否是三轴电机
-        /// </summary>
-        public bool IsThreeAxisMotor
+        public bool IsStandardTwoAxis
         {
-            get { return _isThreeAxisMotor; }
-            set
-            {
-                _isThreeAxisMotor = value;
-                if (value)
-                {
-                    EnumMotorAxisType = Protocol.EnumMotorAxisType.ThreeAxisMotor;
-                    motorTypeUpdate();
-                }
-                RaisePropertyChanged();
-            }
-
-
-        }
-        private bool _isTwoAxisMotor = true;
-        /// <summary>
-        /// 是否是两轴电机
-        /// </summary>
-        public bool IsTwoAxisMotor
-        {
-            get { return _isTwoAxisMotor; }
-            set
-            {
-                _isTwoAxisMotor = value;
-                if (value)
-                {
-                    EnumMotorAxisType = Protocol.EnumMotorAxisType.TwoAxisMotor;
-                    motorTypeUpdate();
-                }
-                RaisePropertyChanged();
-            }
-        }
-        private bool _isXMotor;
-        /// <summary>
-        /// 是否是X轴电机
-        /// </summary>
-        public bool IsXMotor
-        {
-            get { return _isXMotor; }
-            set 
-            {
-                if (value != _isXMotor)
-                {
-                    _isXMotor = value;
-                    motorAxisUpdate();
-                   
-                }
-                RaisePropertyChanged();
-
-
-            }
-        }
-        private bool _isYMotor;
-        /// <summary>
-        /// 是否是Y轴电机
-        /// </summary>
-        public bool IsYMotor
-        {
-            get { return _isYMotor; }
-            set 
-            {
-                if (value != _isYMotor)
-                {
-                    _isYMotor = value;
-                    motorAxisUpdate();
-                  
-                }
-                RaisePropertyChanged();
-            }
-        }
-        private bool _isZMotor;
-        /// <summary>
-        /// 是否是Z轴电机
-        /// </summary>
-        public bool IsZMotor
-        {
-            get { return _isZMotor; }
-            set 
-            {
-                if (value != _isZMotor)
-                {
-                    _isZMotor = value;
-                    motorAxisUpdate();
-                }
-                 RaisePropertyChanged(); 
-            }
-        }
-        private bool _isTMotor;
-        /// <summary>
-        /// 是否是T轴电机
-        /// </summary>
-        public bool IsTMotor
-        {
-            get { return _isTMotor; }
-            set 
-            {
-                if (value != _isTMotor)
-                {
-                    _isTMotor = value;
-                    motorAxisUpdate();
-                }
-                RaisePropertyChanged();
-            }
-        }
-        private bool _isRMotor;
-        /// <summary>
-        /// 是否是R轴电机
-        /// </summary>
-        public bool IsRMotor
-        {
-            get { return _isRMotor; }
-            set 
-            {
-                if (value != _isRMotor)
-                {
-                    _isRMotor = value;
-                    motorAxisUpdate();
-                }
-                    RaisePropertyChanged(); 
-            }
-        }
-        private void motorTypeUpdate()
-        {
-            switch (EnumMotorAxisType)
-            {
-                case Protocol.EnumMotorAxisType.TwoAxisMotor:
-                    IsXMotor = true;
-                    IsYMotor = true;
-                    IsZMotor = false;
-                    IsTMotor = false;
-                    IsRMotor = false;
-                    break;
-                case Protocol.EnumMotorAxisType.ThreeAxisMotor:
-                    IsXMotor = true;
-                    IsYMotor = true;
-                    IsZMotor = false;
-                    IsTMotor = false;
-                    IsRMotor = false;
-                    break;
-                case Protocol.EnumMotorAxisType.FiveAxisMotor:
-                    IsXMotor = true;
-                    IsYMotor = true;
-                    IsZMotor = true;
-                    IsTMotor = true;
-                    IsRMotor = true;
-                    break;
-            }
-        }
-        private void motorAxisUpdate()
-        {
-
-            if (EnumMotorAxisType == Protocol.EnumMotorAxisType.TwoAxisMotor)
-            {
-                _motorModel.Motors.Clear();
-                _motorModel.MotorplotModel.Series.Clear();
-                _motorModel.MotorSpeedplotModel.Series.Clear();
-                if (IsXMotor == true)
-                {
-                    if (_motorModel.XAxis == null)
-                    {
-                        _motorModel.XAxis = new FiveAxisModel(_containerProvider, Protocol.EnumMotorId.MOTOR_1, EnumMotorModel.MOTOR_x, _motorModel, "X轴") { };
-                    }
-                    else
-                    {
-                        _motorModel.XAxis.EnumMotorId = EnumMotorId.MOTOR_1;
-                    }
-                    _motorModel.Motors.Add(_motorModel.XAxis);
-            
-                }
-                if (IsYMotor == true)
-                {
-                    if (_motorModel.YAxis == null)
-                    {
-                        _motorModel.YAxis = new FiveAxisModel(_containerProvider, Protocol.EnumMotorId.MOTOR_2, EnumMotorModel.MOTOR_y, _motorModel, "Y轴") { };
-                    }
-                    else
-                    {
-                        _motorModel.YAxis.EnumMotorId = EnumMotorId.MOTOR_2;
-                    }
-                    _motorModel.Motors.Add(_motorModel.YAxis);
-                }
-             
-            }
-            else
-            {
-                _motorModel.Motors.Clear();
-                _motorModel.MotorplotModel.Series.Clear();
-                _motorModel.MotorSpeedplotModel.Series.Clear();
-                if (IsXMotor == true)
-                {
-                    if (_motorModel.XAxis == null)
-                    {
-                        _motorModel.XAxis = new FiveAxisModel(_containerProvider, Protocol.EnumMotorId.MOTOR_2, EnumMotorModel.MOTOR_x, _motorModel, "X轴") { };
-                    }
-                    else
-                    {
-                        _motorModel.XAxis.EnumMotorId = EnumMotorId.MOTOR_2;
-                    }
-                    _motorModel.Motors.Add(_motorModel.XAxis);
-                }
-                
-                if (IsYMotor == true)
-                {
-                    if (_motorModel.YAxis == null)
-                    {
-                        _motorModel.YAxis = new FiveAxisModel(_containerProvider, Protocol.EnumMotorId.MOTOR_1, EnumMotorModel.MOTOR_y, _motorModel, "Y轴") { };
-                    }
-                    else
-                    {
-                        _motorModel.YAxis.EnumMotorId = EnumMotorId.MOTOR_1;
-                    }
-                    _motorModel.Motors.Add(_motorModel.YAxis);
-                }
-            }
-            if (IsZMotor == true)
-            {
-                if (_motorModel.ZAxis == null)
-                {
-                    _motorModel.ZAxis = new FiveAxisModel(_containerProvider, Protocol.EnumMotorId.MOTOR_4, EnumMotorModel.MOTOR_z, _motorModel, "Z轴") { };
-                }
-                
-                _motorModel.Motors.Add(_motorModel.ZAxis);
-            }
-            if (IsTMotor == true)
-            {
-                if (_motorModel.TAxis == null)
-                {
-                    _motorModel.TAxis = new FiveAxisModel(_containerProvider, Protocol.EnumMotorId.MOTOR_3, EnumMotorModel.MOTOR_t, _motorModel, "T轴") { };
-                }
-               
-                _motorModel.Motors.Add(_motorModel.TAxis);
-            }
-            
-            if (IsRMotor == true)
-            {
-                if (_motorModel.RAxis == null)
-                {
-                    _motorModel.RAxis = new FiveAxisModel(_containerProvider, Protocol.EnumMotorId.MOTOR_5, EnumMotorModel.MOTOR_r, _motorModel, "R轴") { };
-                }
-                
-                _motorModel.Motors.Add(_motorModel.RAxis);
-            }
-            AxisUpdate();
-        }
-        
-
-        private void AxisUpdate()
-        {
-            RemoveLine();
-            if (_motorModel.Motors != null && _motorModel.Motors.Count > 0)
-            {
-                for (int i = 0; i < _motorModel.Motors.Count; i++)
-                {
-                    _motorModel.Motors[i].SpeedLine.ItemsSource = _motorModel.Motors[i].MotorModel.SpeedList;
-                    _motorModel.Motors[i].SpeedLine.DataFieldX = "SpeedDate";
-                    _motorModel.Motors[i].SpeedLine.DataFieldY = "Speed";
-                    _motorModel.Motors[i].PosLine.ItemsSource = _motorModel.Motors[i].MotorModel.PointList;
-                    _motorModel.Motors[i].PosLine.DataFieldX = "Date";
-                    _motorModel.Motors[i].PosLine.DataFieldY = "Point";
-                    _motorModel.MotorplotModel.Series.Add(_motorModel.Motors[i].PosLine);
-                    _motorModel.MotorSpeedplotModel.Series.Add(_motorModel.Motors[i].SpeedLine);
-                   var x =  _motorModel.Motors[i].MotorModel.MotorModelAxis;
-
-                    _motorModel.Motors[i].ConfirmTheStandardStroke();
-                }
-                
-            }
+            get => _currentProfile == MachineProfile.StandardTwoAxis;
+            set { if (value) ChangeProfile(MachineProfile.StandardTwoAxis); }
         }
 
-        private void RemoveLine()
+        public bool IsHeavyDutyThreeAxis
         {
-            if (_motorModel.XAxis!= null&&_motorModel.MotorplotModel.Series.Contains(_motorModel.XAxis.PosLine))
-            {
-                _motorModel.MotorplotModel.Series.Remove(_motorModel.XAxis.PosLine);
-            }
-            if (_motorModel.XAxis != null && _motorModel.MotorSpeedplotModel.Series.Contains(_motorModel.XAxis.SpeedLine))
-            {
-                _motorModel.MotorSpeedplotModel.Series.Remove(_motorModel.XAxis.SpeedLine);
-            }
-
-            if (_motorModel.YAxis != null && _motorModel.MotorplotModel.Series.Contains(_motorModel.YAxis.PosLine))
-            {
-                _motorModel.MotorplotModel.Series.Remove(_motorModel.YAxis.PosLine);
-            }
-            if (_motorModel.YAxis != null && _motorModel.MotorSpeedplotModel.Series.Contains(_motorModel.YAxis.SpeedLine))
-            {
-                _motorModel.MotorSpeedplotModel.Series.Remove(_motorModel.YAxis.SpeedLine);
-            }
-
-            if (_motorModel.ZAxis != null && _motorModel.MotorplotModel.Series.Contains(_motorModel.ZAxis.PosLine))
-            {
-                _motorModel.MotorplotModel.Series.Remove(_motorModel.ZAxis.PosLine);
-            }
-            if (_motorModel.ZAxis != null && _motorModel.MotorSpeedplotModel.Series.Contains(_motorModel.ZAxis.SpeedLine))
-            {
-                _motorModel.MotorSpeedplotModel.Series.Remove(_motorModel.ZAxis.SpeedLine);
-            }
-
-            if (_motorModel.TAxis != null && _motorModel.MotorplotModel.Series.Contains(_motorModel.TAxis.PosLine))
-            {
-                _motorModel.MotorplotModel.Series.Remove(_motorModel.TAxis.PosLine);
-            }
-            if (_motorModel.TAxis != null && _motorModel.MotorSpeedplotModel.Series.Contains(_motorModel.TAxis.SpeedLine))
-            {
-                _motorModel.MotorSpeedplotModel.Series.Remove(_motorModel.TAxis.SpeedLine);
-            }
-
-            if (_motorModel.RAxis != null && _motorModel.MotorplotModel.Series.Contains(_motorModel.RAxis.PosLine))
-            {
-                _motorModel.MotorplotModel.Series.Remove(_motorModel.RAxis.PosLine);
-            }
-            if (_motorModel.RAxis != null && _motorModel.MotorSpeedplotModel.Series.Contains(_motorModel.RAxis.SpeedLine))
-            {
-                _motorModel.MotorSpeedplotModel.Series.Remove(_motorModel.RAxis.SpeedLine);
-            }
+            get => _currentProfile == MachineProfile.HeavyDutyThreeAxis;
+            set { if (value) ChangeProfile(MachineProfile.HeavyDutyThreeAxis); }
         }
-       
+
+        public bool IsUniversalFiveAxis
+        {
+            get => _currentProfile == MachineProfile.UniversalFiveAxis;
+            set { if (value) ChangeProfile(MachineProfile.UniversalFiveAxis); }
+        }
+
+        // ==========================================
+        // 核心执行方法：查表 + 组装 (0个 if-else 分支！)
+        // ==========================================
+        private void ChangeProfile(MachineProfile newProfile)
+        {
+            if (_currentProfile == newProfile && _motorModel.Motors.Count > 0) return;
+
+            _currentProfile = newProfile;
+            RaisePropertyChanged(nameof(IsCompactTwoAxis));
+            RaisePropertyChanged(nameof(IsStandardTwoAxis));
+            RaisePropertyChanged(nameof(IsHeavyDutyThreeAxis));
+            RaisePropertyChanged(nameof(IsUniversalFiveAxis));
+
+            // 1. 暴力清空图表和集合
+            _motorModel.Motors.Clear();
+            _motorModel.MotorplotModel.Series.Clear();
+            _motorModel.MotorSpeedplotModel.Series.Clear();
+
+            // 2. 去矩阵表里，拿出当前机型的专属配置单
+            if (_machineConfigTable.TryGetValue(_currentProfile, out var axisConfigs))
+            {
+                // 3. 遍历配置单里的每一个轴，直接无脑生成！
+                foreach (var kvp in axisConfigs)
+                {
+                    EnumMotorModel logicalAxis = kvp.Key;        // 逻辑轴名(X/Y/Z)
+                    AxisHardwareConfig config = kvp.Value;       // 插孔与行程参数
+
+                    // 实例化轴
+                    var axis = new FiveAxisModel(_containerProvider, config.ChannelId, logicalAxis, _motorModel, $"{logicalAxis.ToString().Replace("MOTOR_", "").ToUpper()}轴");
+
+                    // 注入行程参数
+                    axis.FullStrokeRange = config.StrokeRange;
+
+                    // 挂载到集合和图表
+                    _motorModel.Motors.Add(axis);
+                    axis.SpeedLine.ItemsSource = axis.MotorModel.SpeedList;
+                    axis.PosLine.ItemsSource = axis.MotorModel.PointList;
+                    _motorModel.MotorplotModel.Series.Add(axis.PosLine);
+                    _motorModel.MotorSpeedplotModel.Series.Add(axis.SpeedLine);
+
+                    // 通知单轴自己去画红线（单轴类里直接用 FullStrokeRange 即可，不需要任何判断）
+                    axis.ConfirmTheStandardStroke();
+                }
+            }
+
+            // 4. 刷新UI
+            _motorModel.MotorplotModel.InvalidatePlot(true);
+            _motorModel.MotorSpeedplotModel.InvalidatePlot(true);
+        }
     }
+
 }

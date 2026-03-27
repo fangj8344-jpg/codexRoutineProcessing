@@ -12,12 +12,12 @@ namespace UtilityTools.Modules.MotorTest.TestItems
 {
     public class SmoothnessTestItem: IMotorTestItem
     {
-        private readonly (int min, int max) _fullStrokeRange;
+        //private readonly (int min, int max) _fullStrokeRange;
         public string TestName => "丝杆测试";
 
-        public SmoothnessTestItem((int min, int max) fullStrokeRange)
+        public SmoothnessTestItem()
         {
-            _fullStrokeRange = fullStrokeRange;
+           
         }
 
         public async Task<MotorTestResult> ExecuteAsync(
@@ -79,20 +79,6 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             return result;
         }
 
-        private async Task SaveMotorData(EnumMotorModel axis, int dist, int left, int right)
-        {
-            using (var db = new MotorMessageDbContextBase())
-            {
-                var msg = new MotorMessage
-                {
-                    Name = "null",
-                    MotorModelAxis = axis,
-                    TotalDistance = dist,
-                    LeftLimitPosition = left,
-                    RightLimitPosition = right
-                };
-                await SpliteOperate.AddMotorMessageAsync(msg, db);
-            }
-        }
+       
     }
 }

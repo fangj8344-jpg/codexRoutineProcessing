@@ -1,6 +1,7 @@
 ﻿using CsvHelper;
 using MathNet.Numerics;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using OpenCvSharp;
 using OxyPlot;
 using OxyPlot.Axes;
@@ -32,6 +33,7 @@ using System.Windows.Media.Converters;
 using UtilityTools.Core.Dialog;
 using UtilityTools.Modules.MotorTest.Entity;
 using UtilityTools.Modules.MotorTest.Protocol;
+using UtilityTools.Modules.MotorTest.Service;
 using UtilityTools.Modules.MotorTest.SQLite;
 using UtilityTools.Modules.MotorTest.TestItems;
 using UtilityTools.Services.Interfaces.IServices;
@@ -78,9 +80,8 @@ namespace UtilityTools.Modules.MotorTest.Model
         private int _queryInterval = 500;
   
         private Double _progressValue;
-        private FiveAxisDbContextBase _fiveAxisDbContextBase;
-       
-        private FiveAxisDbContextBase _twoAxisDbContextBase;
+        // 统一类型为 MotorDbContext
+
         private string _version = "3.3.0";
         /// <summary>
         /// 版本号
@@ -282,6 +283,21 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// 速度模式移动的速度大小
         /// </summary>
         public int MagnitudeOfSpeed = 10000;
+        public DelegateCommand<string> IndependentMotortestCommand { get; set; }
+        public DelegateCommand ShotDownCommand { get; set; }
+        public DelegateCommand IndependentMotorDurabilityTestCommand { get; set; }
+        public DelegateCommand CloseTestPerformanceCommand { get; set; }
+        public DelegateCommand TestPerformanceCommand { get; set; }
+        public DelegateCommand SQLiteTestCommand { get; set; }
+        public DelegateCommand SaveDataFileCommand { get; set; }
+        public DelegateCommand ReadDataFileCommand { get; set; }
+        public DelegateCommand SqliteLoadCommand { get; set; }
+        public DelegateCommand CloseSlimitedCommand { get; set; }
+        public DelegateCommand<string> SaveToFileCommand { get; set; }
+        public DelegateCommand<string> AutoAdjustCommand { get; set; }
+        public DelegateCommand<string> ClearMonitorCommand { get; set; }
+
+        public DelegateCommand<string> TestMotorTogetherCommand { get; set; }
         private void Init()
         {
             ClearMonitorCommand = new DelegateCommand<string>(ClearMonitor);
@@ -291,8 +307,6 @@ namespace UtilityTools.Modules.MotorTest.Model
             SaveToFileCommand = new DelegateCommand<string>(SaveToFile);
             IndependentMotorDurabilityTestCommand = new DelegateCommand(IndependentMotorDurabilityTest);
             ShotDownCommand = new DelegateCommand(ShotDown);
-            TempNewTestCommand = new DelegateCommand(RunTempTest);
-            SQLiteTestCommand = new DelegateCommand(SQLiteTest);
             TestPerformanceCommand = new DelegateCommand(TestPerformance);
             CloseTestPerformanceCommand = new DelegateCommand(CloseTestPerformance);
             SaveDataFileCommand = new DelegateCommand(SaveDataFile);
@@ -328,52 +342,8 @@ namespace UtilityTools.Modules.MotorTest.Model
 
         }
 
-        private async void RunTempTest()
-        {
-            if (XAxis != null)
-            {
-                CancellationToken = new CancellationTokenSource();
-                // 先把查询频率调快，确保 MoveState 反馈及时
-                TestPerformance();
 
-                try
-                {
-                    // 调用 X 轴的新测试逻辑
-                    await XAxis.RunNewLinearTestAsync(CancellationToken.Token);
-                }
-                catch (Exception ex)
-                {
-                    NLog.LogManager.GetCurrentClassLogger().Error($"新测试发生异常: {ex}");
-                }
-                finally
-                {
-                    CloseTestPerformance(); // 恢复正常查询频率
-                }
-            }
-        }
-
-        public DelegateCommand SQLiteTestCommand { get; set; }
-        int plontPoint = 0;
- 
-
-        private void SQLiteTest()
-        {
-            //using var context = new AppDbContext();
-            ////确保数据库已经建立(如果不存在会自动创建)
-            //context.Database.EnsureCreated();
-            ////新增数据
-            //context.XPlotViewPointMessages.Add(new PlotViewPointMessage()  { Date = new DateTime(), Point = plontPoint++ } );
-
-            //context.SaveChanges();
-            //var List = context.XPlotViewPointMessages.ToList();
-            //foreach (var message in List) 
-            //{
-            //    Console.WriteLine(message.Date);
-            //}
-
-
-        }
-        public DelegateCommand TestPerformanceCommand { get; set; }
+       
         private void TestPerformance()
         {
             _queryInterval = 50;
@@ -429,183 +399,220 @@ namespace UtilityTools.Modules.MotorTest.Model
             }
             
         }
-        public DelegateCommand CloseTestPerformanceCommand { get; set; }
+   
         private void CloseTestPerformance()
         {
             _queryInterval = 500;
         }
 
-        public DelegateCommand<string> TestMotorTogetherCommand { get; set; }
-        /// <summary>
-        /// 每个轴基础测试一起测试(并行测试)
-        /// </summary>
-        private  void TestMotorTogether(string testModel)
+        private async void TestMotorTogether(string testModel)
         {
             try
             {
-                CancellationToken = new CancellationTokenSource(); 
-                   TestPerformance();
-                   if (Motors != null && Motors.Count > 0)
-                   {
-                       for (int i = 0; i < Motors.Count; i++)
-                       {
-                           int index = i;
-                           switch (testModel)
-                           {
-                               case "BaseTest":
-                                   Task.Run(() =>
-                                {
-                                    Motors[index].BaseTest(CancellationToken.Token);
-                                }, CancellationToken.Token);
-                                   break;
-                               case "TestSmoothnessDetection":
-                                   Task.Run(() =>
-                                   {
-                                       Motors[index].TestSmoothnessDetection(CancellationToken.Token);
-                                   }, CancellationToken.Token); break;
-                               case "DurabilityTest":
-                                   Task.Run(() =>
-                                   {
-                                       Motors[index].DurabilityTest(CancellationToken.Token);
-                                   }, CancellationToken.Token); break;
-                            case "TotalJourneyGeneralMotorTestDetectionion":
-                                Task.Run(() =>
-                                {
-                                    Motors[index].TotalJourneyGeneralMotorTestDetectionion(CancellationToken.Token);
-                                }, CancellationToken.Token); break;
-                            case "PositioningAccuracyGeneralMotorTestDetectionion":
-                                Task.Run(() =>
-                                {
-                                    Motors[index].PositioningAccuracyGeneralMotorTestDetectionion(CancellationToken.Token);
-                                }, CancellationToken.Token); break;
-
-                        }
-                       }
-                   } 
-            }
-            catch (Exception OperationCanceledException) 
-            {
-
-                NLog.LogManager.GetCurrentClassLogger().Error($"并行测试异常{OperationCanceledException}");
-                for (int j = 0; j < Motors.Count; j++)
-                {
-                    Motors[j].StopMotor();
-                }
-            }
-         
-        }
-
-    
-        public DelegateCommand<string> IndependentMotortestCommand { get; set; }
-        /// <summary>
-        /// 一个轴测试完后下一个轴测试
-        /// </summary>
-        private async void IndependentMotortest(string testModel)
-        {
-            TestPerformance();
-            try
-            {
+                // 1. 初始化取消令牌
                 CancellationToken = new CancellationTokenSource();
+                TestPerformance(); // 开启高频问询
+
                 if (Motors != null && Motors.Count > 0)
                 {
+                    // 【核心修复】：在这里显式声明这个“任务篮子”变量
+                    List<Task> testTasks = new List<Task>();
+
                     for (int i = 0; i < Motors.Count; i++)
                     {
-                        await Task.Run(async () =>
+                        // 获取当前轴的引用，避免变量不存在报错
+                        var currentMotor = Motors[i];
+                        var token = CancellationToken.Token;
+
+                        // 2. 将每个轴的任务添加到篮子里
+                        switch (testModel)
                         {
-                            
-                                switch (testModel)
-                                {
-                                    case "BaseTest": await Motors[i].BaseTest(CancellationToken.Token); break;
-                                    case "TestSmoothnessDetection": await Motors[i].TestSmoothnessDetection(CancellationToken.Token); break;
-                                    case "TotalJourneyGeneralMotorTestDetectionion": await Motors[i].TotalJourneyGeneralMotorTestDetectionion(CancellationToken.Token); break;
-                                case "PositioningAccuracyGeneralMotorTestDetectionion": await Motors[i].PositioningAccuracyGeneralMotorTestDetectionion(CancellationToken.Token); break;
-                            }
-                        }, CancellationToken.Token);
+                            case "BaseTest":
+                                testTasks.Add(currentMotor.BaseTest(token));
+                                break;
+                            case "TestSmoothnessDetection":
+                                testTasks.Add(currentMotor.SmoothnessTest(token));
+                                break;
+                            case "DurabilityTest":
+                                testTasks.Add(currentMotor.DurabilityTest(token));
+                                break;
+                        }
+                    }
+
+                    // 3. 同时等待篮子里所有的任务完成
+                    if (testTasks.Count > 0)
+                    {
+                        await Task.WhenAll(testTasks);
                     }
                 }
             }
             catch (OperationCanceledException)
             {
-                for (int j = 0; j < Motors.Count; j++)
-                {
-                    int index = j;
-                    Motors[index].StopMotor();
-                }
+                // 用户点了停止，正常退出
             }
-            CloseTestPerformance();
+            catch (Exception ex)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Error($"并行测试异常: {ex}");
+            }
+            finally
+            {
+                CloseTestPerformance(); // 恢复正常频率
+            }
         }
-        public DelegateCommand ShotDownCommand { get; set; }
+
+
+        private async void IndependentMotortest(string testModel)
+        {
+            // 1. 准备工作（还在 UI 线程，为了重置界面状态）
+            TestPerformance();
+            ProgressValue = 0;
+            CancellationToken = new CancellationTokenSource();
+            var token = CancellationToken.Token;
+
+            try
+            {
+                // 这样整个 for 循环和 switch 判断，都在后台跑，绝对不占 UI 资源
+                await Task.Run(async () =>
+                {
+                    if (Motors != null && Motors.Count > 0)
+                    {
+                        for (int i = 0; i < Motors.Count; i++)
+                        {
+                            token.ThrowIfCancellationRequested(); // 随时检查强行中止
+
+                            var currentMotor = Motors[i];
+
+                            // 3. 执行具体的测试逻辑
+                            // 这里的 await 会在后台线程异步等待，不会跳回 UI 线程
+                            switch (testModel)
+                            {
+                                case "BaseTest": await currentMotor.BaseTest(token); break;
+                                case "TestSmoothnessDetection": await currentMotor.SmoothnessTest(token); break;
+                                case "DurabilityTest": await currentMotor.DurabilityTest(token); break;
+                            }
+
+                            // 4. 【关键点】：更新进度条这种 UI 操作，必须手动切回 UI 线程
+                            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                ProgressValue = ((i + 1.0) / Motors.Count) * 100;
+                            });
+                        }
+                    }
+                }, token);
+
+                // 全部测完，拉满进度
+                ProgressValue = 100;
+            }
+            catch (OperationCanceledException)
+            {
+                // 捕获到取消，进度清零
+                ProgressValue = 0;
+            }
+            catch (Exception ex)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Error($"串行测试（后台模式）异常: {ex}");
+            }
+            finally
+            {
+                CloseTestPerformance();
+            }
+        }
+
         private void ShotDown()
         {
             if (CancellationToken != null)
             {
                 CancellationToken.Cancel();
             }
+
+            if (Motors != null)
+            {
+                foreach (var motor in Motors)
+                {
+                    motor.StopMotor();
+                }
+            }
         }
-        public DelegateCommand IndependentMotorDurabilityTestCommand { get; set; }
+
         /// <summary>
         /// 异步耐久测试
         /// </summary> 
+        /// 
         private async void IndependentMotorDurabilityTest()
         {
+            // 1. 取消之前的任务并重新创建令牌
+            CancellationToken?.Cancel();
             CancellationToken = new CancellationTokenSource();
+            var token = CancellationToken.Token;
+
             try
             {
-                while (!CancellationToken.IsCancellationRequested)
+                // 开启狂暴模式（高频问询状态）
+                TestPerformance();
+
+                // 2. 准备所有电机的测试任务（并行起跑）
+                var testTasks = new List<Task>();
+                foreach (var motor in Motors)
                 {
-                    if (Motors != null && Motors.Count > 0)
+                    // 注意：这里不加 await，直接把任务丢进列表
+                    testTasks.Add(RunSingleMotorDurabilityWithCleanup(motor, token));
+                }
+
+                // 3. 同时等待所有电机测试结束（或被取消）
+                await Task.WhenAll(testTasks);
+            }
+            catch (OperationCanceledException)
+            {
+                // 正常取消，不需要处理
+            }
+            catch (Exception ex)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Error(ex, "多轴耐久测试发生整体异常");
+            }
+            finally
+            {
+                // 4. 收尾：停止所有电机，恢复正常问询频率
+                if (Motors != null)
+                {
+                    foreach (var motor in Motors) motor.StopMotor();
+                }
+                CloseTestPerformance();
+            }
+        }
+
+        /// <summary>
+        /// 辅助方法：包装单轴的耐久测试，并带有自动清理曲线功能
+        /// </summary>
+        private async Task RunSingleMotorDurabilityWithCleanup(FiveAxisModel motor, CancellationToken ct)
+        {
+            // 启动一个后台定时检查，每隔 1 分钟检查一次是否需要清理 30 分钟前的曲线数据
+            _ = Task.Run(async () =>
+            {
+                while (!ct.IsCancellationRequested)
+                {
+                    await Task.Delay(TimeSpan.FromMinutes(1), ct); // 每分钟查一次
+
+                    var pointList = motor.MotorModel.PointList;
+                    if (pointList != null && pointList.Count > 0)
                     {
-                        for (int i = 0; i < Motors.Count; i++)
+                        var timeSpan = pointList.Last().Date - pointList[0].Date;
+                        if (timeSpan.TotalMinutes > 30)
                         {
-                            if (CancellationToken.IsCancellationRequested) break;
-
-                            int index = i;
-                            try
+                            // 使用 UI 线程安全清理
+                            System.Windows.Application.Current.Dispatcher.Invoke(() =>
                             {
-                                await Motors[index].SmoothnessGeneralMotorTestDetectionion(CancellationToken.Token);
-
-                                var pointList = Motors[index].MotorModel.PointList;
-                                if (pointList != null && pointList.Count > 0)
-                                {
-                                    var time = pointList.Last().Date - pointList[0].Date;
-                                    if (time.TotalMinutes > 30)
-                                    {
-                                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
-                                        {
-                                            Motors[index].MotorModel.PointList.Clear();
-                                            Motors[index].MotorModel.SpeedList.Clear();
-                                        });
-                                    }
-                                }
-
-                            }
-                            catch (OperationCanceledException)
-                            {
-                                break;
-                            }
-                            catch (Exception ex)
-                            {
-                                NLog.LogManager.GetCurrentClassLogger().Error(ex, $"电机 {index} 耐久测试发生异常");
-                            }
+                                motor.MotorModel.PointList.Clear();
+                                motor.MotorModel.SpeedList.Clear();
+                            });
                         }
                     }
                 }
-            }
-            finally 
-            {
-                if (Motors != null)
-                {
-                    foreach (var motor in Motors)
-                    {
-                        motor.StopMotor();
-                    }
-                }
-            }
-           
+            }, ct);
+
+            // 调用咱们重构后的轴耐久测试（内部由 Runner 执行）
+            await motor.DurabilityTest(ct);
         }
 
-
-        public DelegateCommand<string> ClearMonitorCommand { get; set; }
         /// <summary>
         /// 清除监控数据
         /// </summary>
@@ -636,10 +643,7 @@ namespace UtilityTools.Modules.MotorTest.Model
 
                         }
                     }
-
                 }
-
-               
             }
             else if (parameter == "speed")
             {
@@ -664,7 +668,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             }
 
         }
-        public DelegateCommand<string> AutoAdjustCommand { get; set; }
+
         /// <summary>
         /// 自动调节监控数据
         /// </summary>
@@ -722,10 +726,6 @@ namespace UtilityTools.Modules.MotorTest.Model
                  
             }
         }
-
-
-       
-        public DelegateCommand<string> SaveToFileCommand { get; set; }
         /// <summary>
         /// 保存到数据
         /// </summary>
@@ -767,50 +767,6 @@ namespace UtilityTools.Modules.MotorTest.Model
             }
 
         }
-
-
-              
-        public DelegateCommand SaveDataFileCommand { get; set; }
-        private void SaveDataFile()
-        {
-            FolderBrowserDialog dialog = new FolderBrowserDialog();
-            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.Cancel)
-            {
-                return;
-            }
-            var path = dialog.SelectedPath;
-            Task.Run(() => 
-            {
-                XAxis.Serilize(path);
-                YAxis.Serilize(path);
-                ZAxis.Serilize(path);
-                TAxis.Serilize(path);
-                RAxis.Serilize(path);
-            });
-            
-        }
-
-        public DelegateCommand ReadDataFileCommand { get; set; }
-        private void ReadDataFile()
-        {
-            FolderBrowserDialog dialog = new FolderBrowserDialog();
-            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.Cancel)
-            {
-                return;
-            }
-            var path = dialog.SelectedPath;
-            Task.Run(() =>
-            {
-                XAxis.Deserilize(path);
-                YAxis.Deserilize(path);
-                ZAxis.Deserilize(path);
-                TAxis.Deserilize(path);
-                RAxis.Deserilize(path);
-            });
-        }
-
-
-        public DelegateCommand CloseSlimitedCommand { get; set; }
         /// <summary>
         /// 关闭x，y，z的软限位
         /// </summary>
@@ -820,79 +776,59 @@ namespace UtilityTools.Modules.MotorTest.Model
             YAxis.CloseSlimited();
             ZAxis.CloseSlimited();
         }
-        public DelegateCommand SqliteLoadCommand { get; set; }
+
         /// <summary>
         /// 数据库加载
         /// </summary>
         private async void SqliteLoad()
         {
-            int pointNumber, speedNumber;
-            ObservableCollection<PlotViewPointMessage> point;
-            ObservableCollection<PlotViewSpeedMessage> speed;
-            if (MotorTypeModel.EnumMotorAxisType == EnumMotorAxisType.TwoAxisMotor)
-            {
-                using (var db = new TwoAxisDbContextBase())
-                {
-                    TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
-                    pointNumber = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
-                    point = new ObservableCollection<PlotViewPointMessage>(await SpliteOperate.GetPlotViewPointMessagesAsync(db, HeadIndex, LoadSize > pointNumber ? pointNumber : LoadSize));
-                    speedNumber = await SpliteOperate.GetPlotViewSpeedMessageCountAsync(db);
-                    speed = new ObservableCollection<PlotViewSpeedMessage>(await SpliteOperate.GetPlotViewSpeedMessagesAsync(db, HeadIndex, LoadSize > speedNumber ? speedNumber : LoadSize)) ;
-                } 
-            }
-            else
-            {
-                using (var db = new FiveAxisDbContextBase())
-                {
-                    TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
-                    pointNumber = await SpliteOperate.GetPlotViewPointMessageCountAsync(db);
-                    point = new ObservableCollection<PlotViewPointMessage>(await SpliteOperate.GetPlotViewPointMessagesAsync(db, HeadIndex, LoadSize > pointNumber ? pointNumber : LoadSize)); 
-                    speedNumber = await SpliteOperate.GetPlotViewSpeedMessageCountAsync(db);
-                    speed = new ObservableCollection<PlotViewSpeedMessage>(await SpliteOperate.GetPlotViewSpeedMessagesAsync(db, HeadIndex, LoadSize > speedNumber ? speedNumber : LoadSize)); 
-                }  
-            }
-            ObservableCollection<PlotViewPointMessage> xPointList = new ObservableCollection<PlotViewPointMessage>(point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_x).ToList());
-            ObservableCollection<PlotViewPointMessage> yPointList = new ObservableCollection<PlotViewPointMessage>(point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_y).ToList());
-            ObservableCollection<PlotViewPointMessage> zPointList = new ObservableCollection<PlotViewPointMessage>(point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_z).ToList());
-            ObservableCollection<PlotViewPointMessage> tPointList = new ObservableCollection<PlotViewPointMessage>(point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_t).ToList());
-            ObservableCollection<PlotViewPointMessage> rPointList = new ObservableCollection<PlotViewPointMessage>(point.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_r).ToList());
+            // 1. 确保 MotorTypeModel 不为空，然后使用改名后的 SelectedAxisType
+            // 这里的 ?. 和 ?? 是为了防止初始化顺序导致的空引用
+            var axisType = MotorTypeModel?.SelectedAxisType ?? Protocol.EnumMotorAxisType.TwoAxisMotor;
 
-            ObservableCollection<PlotViewSpeedMessage> xSpeedList = new ObservableCollection<PlotViewSpeedMessage>(speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_x).ToList());
-            ObservableCollection<PlotViewSpeedMessage> ySpeedList = new ObservableCollection<PlotViewSpeedMessage>(speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_y).ToList());
-            ObservableCollection<PlotViewSpeedMessage> zSpeedList = new ObservableCollection<PlotViewSpeedMessage>(speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_z).ToList());
-            ObservableCollection<PlotViewSpeedMessage> tSpeedList = new ObservableCollection<PlotViewSpeedMessage>(speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_t).ToList());
-            ObservableCollection<PlotViewSpeedMessage> rSpeedList = new ObservableCollection<PlotViewSpeedMessage>(speed.Where(m => m.MotorModelAxis == EnumMotorModel.MOTOR_r).ToList()); 
-            List<ObservableCollection<PlotViewPointMessage>> pointList = new List<ObservableCollection<PlotViewPointMessage>>();
-            pointList.Add(xPointList);
-            pointList.Add(yPointList);
-            pointList.Add(zPointList);
-            pointList.Add(tPointList);
-            pointList.Add(rPointList);
-            List<ObservableCollection<PlotViewSpeedMessage>> speedList = new List<ObservableCollection<PlotViewSpeedMessage>>();
-            speedList.Add(xSpeedList);
-            speedList.Add(ySpeedList);
-            speedList.Add(zSpeedList);
-            speedList.Add(tSpeedList);
-            speedList.Add(rSpeedList);
-            if (Motors != null && Motors.Count > 0)
-            {
-                  
-                for (int i = 0; i < Motors.Count; i++)  
-                {
-                
-                    Motors[i].MotorModel.PointList = pointList[i];
-                    Motors[i].PosLine.ItemsSource = Motors[i].MotorModel.PointList;
-                    Motors[i].PosLine.DataFieldX = "Date";
-                    Motors[i].PosLine.DataFieldY = "Point";
+            // 2. 调用服务加载数据
+            await MotorDataService.LoadFromSqliteAsync(
+                Motors,
+                axisType,
+                HeadIndex,
+                LoadSize);
 
-                    Motors[i].MotorModel.SpeedList = speedList[i];
-                    Motors[i].SpeedLine.ItemsSource = Motors[i].MotorModel.SpeedList;
-                    Motors[i].SpeedLine.DataFieldX = "SpeedDate";
-                    Motors[i].SpeedLine.DataFieldY = "Speed";
-                }
-            }
-            MotorSpeedplotModel.InvalidatePlot(true);
+            // 3. 读完通知图表刷新
+            MotorplotModel?.InvalidatePlot(true);
+            MotorSpeedplotModel?.InvalidatePlot(true);
         }
-        public DelegateCommand TempNewTestCommand { get; set; }
+        // 2. 保存历史数据文件命令
+        private void SaveDataFile()
+        {
+            FolderBrowserDialog dialog = new FolderBrowserDialog();
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.Cancel) return;
+
+            var path = dialog.SelectedPath;
+            Task.Run(() =>
+            {
+                foreach (var motor in Motors)
+                    MotorDataService.SaveToJson(path, motor);
+            });
+        }
+        // 3. 读取历史数据文件命令
+        private void ReadDataFile()
+        {
+            FolderBrowserDialog dialog = new FolderBrowserDialog();
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.Cancel) return;
+
+            var path = dialog.SelectedPath;
+            Task.Run(() =>
+            {
+                foreach (var motor in Motors)
+                    MotorDataService.LoadFromJson(path, motor);
+
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MotorplotModel?.InvalidatePlot(true);
+                    MotorSpeedplotModel?.InvalidatePlot(true);
+                });
+            });
+        }
     }
+
 }

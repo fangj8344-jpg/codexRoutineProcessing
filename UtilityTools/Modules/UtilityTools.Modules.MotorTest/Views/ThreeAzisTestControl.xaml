@@ -35,8 +35,9 @@
             <MenuItem Header="设置">
                 <MenuItem Header="电机选择">
                     <MenuItem Header="电机型号" >
-                        <RadioButton  Content="Zem20系列" />
-                        <RadioButton  Content="Zem18系列" IsChecked="{Binding MotorTypeModel.IsZem18}"/>
+                        <RadioButton Content="Zem15C" IsChecked="{Binding IsZem15C, Mode=OneWay}" />
+                        <RadioButton Content="Zem18"  IsChecked="{Binding IsCheckedZem18, Mode=OneWay}" />
+                        <RadioButton Content="Zem20"  IsChecked="{Binding IsZem20, Mode=OneWay}" />
                     </MenuItem>
                     <MenuItem Header="电机轴" >
                         <StackPanel Orientation="Horizontal">
@@ -47,11 +48,12 @@
                             <CheckBox Content="R" IsChecked="{Binding MotorTypeModel.IsRMotor}" Margin="10,0,0,0"/>
                         </StackPanel>
                     </MenuItem>
-                    <MenuItem Header="电机类型">
-                        <StackPanel  Orientation="Horizontal">
-                            <RadioButton  Content="两轴电机" IsChecked="{Binding MotorTypeModel.IsTwoAxisMotor}"/>
-                            <RadioButton  Content="三轴电机" IsChecked="{Binding MotorTypeModel.IsThreeAxisMotor}"/>
-                            <RadioButton  Content="五轴电机" IsChecked="{Binding MotorTypeModel.IsFiveAxisMotor}"/>
+                    <MenuItem Header="机型选择">
+                        <StackPanel Orientation="Vertical" Margin="5">
+                            <RadioButton Content="紧凑型双轴" IsChecked="{Binding MotorTypeModel.IsCompactTwoAxis}" GroupName="MachineType" Margin="5,5,15,5"/>
+                            <RadioButton Content="标准型双轴" IsChecked="{Binding MotorTypeModel.IsStandardTwoAxis}" GroupName="MachineType" Margin="5,5,15,5"/>
+                            <RadioButton Content="重载型三轴" IsChecked="{Binding MotorTypeModel.IsHeavyDutyThreeAxis}" GroupName="MachineType" Margin="5,5,15,5"/>
+                            <RadioButton Content="全动型五轴" IsChecked="{Binding MotorTypeModel.IsUniversalFiveAxis}" GroupName="MachineType" Margin="5,5,15,5"/>
                         </StackPanel>
                     </MenuItem>
                 </MenuItem>
@@ -157,18 +159,13 @@
                                 <Button Content="并行基础测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="BaseTest" Margin="5"/>
                                 <Button Content="并行丝杆测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="TestSmoothnessDetection" Margin="5"/>
                                 <Button Content="并行耐久测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="DurabilityTest" Margin="5"/>
-                                <Button Content="并行行程测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="TotalJourneyGeneralMotorTestDetectionion" Margin="5"/>
-                                <Button Content="并行定位测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="PositioningAccuracyGeneralMotorTestDetectionion" Margin="5"/>
                                 <Button Content="串行基础测试" Command="{Binding IndependentMotortestCommand}" CommandParameter="BaseTest" Margin="5"/>
                                 <Button Content="串行丝杆测试" Command="{Binding IndependentMotortestCommand}" CommandParameter="TestSmoothnessDetection" Margin="5"/>
                                 <Button Content="串行耐久测试" Command="{Binding IndependentMotorDurabilityTestCommand}" Margin="5"/>
-                                <Button Content="串行行程测试" Command="{Binding IndependentMotortestCommand}" CommandParameter="TotalJourneyGeneralMotorTestDetectionion" Margin="5"/>
-                                <Button Content="串行定位测试" Command="{Binding IndependentMotortestCommand}" CommandParameter="PositioningAccuracyGeneralMotorTestDetectionion" Margin="5"/>
                                 <Button Content="开启性能模式" Command="{Binding TestPerformanceCommand}" Margin="10"/>
                                 <Button Content="关闭性能模式" Command="{Binding CloseTestPerformanceCommand}" Margin="10"/>
                                 <Button Content="数据库加载" Command="{Binding SqliteLoadCommand}" Margin="10"/>
                                 <Button Content="关闭测试" Command="{Binding ShotDownCommand}" Margin="10"/>
-                                <Button Content="新代码功能测试" Command="{Binding TempNewTestCommand}" Margin="10"/>
                             </UniformGrid>
                         </StackPanel>
                     </TabItem>
@@ -296,7 +293,6 @@
                 <DockPanel LastChildFill="False">
                     <Label Content="保存数据点数量:" Foreground="Black"/>
                     <Label Content="{Binding TotalSize}" Foreground="Black"/>
-               
                 </DockPanel>
             </StatusBarItem>
         </StatusBar>

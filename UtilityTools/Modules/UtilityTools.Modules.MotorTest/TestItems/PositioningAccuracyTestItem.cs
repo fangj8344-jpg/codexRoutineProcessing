@@ -61,7 +61,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                 result.Description = "定位精度合格";
 
                 // --- 数据库保存逻辑 ---
-                await SaveAccuracyData(motorModel.MotorModelAxis, pos1F, pos1B, pos2F, pos2B);
+                //await SaveAccuracyData(motorModel.MotorModelAxis, pos1F, pos1B, pos2F, pos2B);
             }
             else
             {
@@ -72,29 +72,6 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             return result;
         }
 
-        private async Task SaveAccuracyData(EnumMotorModel axis, int f1, int b1, int f2, int b2)
-        {
-            // 使用信号量保护，防止并发写入冲突
-            await SpliteOperate.MotorMessageSemaphore.WaitAsync();
-            try
-            {
-                using (var db = new MotorMessageDbContextBase())
-                {
-                    var m1 = new MotorMessage { MotorModelAxis = axis, TotalDistance = f1 - b1, LeftLimitPosition = f1, RightLimitPosition = b1 };
-                    var m2 = new MotorMessage { MotorModelAxis = axis, TotalDistance = f2 - b2, LeftLimitPosition = f2, RightLimitPosition = b2 };
-
-                    await SpliteOperate.AddMotorMessageAsync(m1, db);
-                    await SpliteOperate.AddMotorMessageAsync(m2, db);
-                }
-            }
-            catch (Exception ex)
-            {
-                NLog.LogManager.GetCurrentClassLogger().Error($"定位精度数据保存失败：{ex}");
-            }
-            finally
-            {
-                SpliteOperate.MotorMessageSemaphore.Release();
-            }
-        }
+       
     }
 }
