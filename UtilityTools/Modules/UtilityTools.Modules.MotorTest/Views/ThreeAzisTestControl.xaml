@@ -10,7 +10,7 @@
              xmlns:mm="clr-namespace:UtilityTools.Modules.MotorTest.Model"
              mc:Ignorable="d" 
              d:DesignHeight="500" d:DesignWidth="800">
- 
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
@@ -25,7 +25,7 @@
                         <TextBox Text="{Binding HeadIndex}" MinWidth="30"/>
                         <Label Content="加载点数"/>
                         <TextBox Text="{Binding LoadSize}" MinWidth="30"/>
-                      
+
                     </DockPanel>
                     <MenuItem Header="最大显示点数">
                         <TextBox  Text="{Binding MaxCount}" BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="60" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
@@ -33,36 +33,18 @@
                 </MenuItem>
             </MenuItem>
             <MenuItem Header="设置">
-                <MenuItem Header="电机选择">
-                    <MenuItem Header="电机型号" >
-                        <RadioButton Content="Zem15C" IsChecked="{Binding IsZem15C, Mode=OneWay}" />
-                        <RadioButton Content="Zem18"  IsChecked="{Binding IsCheckedZem18, Mode=OneWay}" />
-                        <RadioButton Content="Zem20"  IsChecked="{Binding IsZem20, Mode=OneWay}" />
-                    </MenuItem>
-                    <MenuItem Header="电机轴" >
-                        <StackPanel Orientation="Horizontal">
-                            <CheckBox Content="X" IsChecked="{Binding MotorTypeModel.IsXMotor}" Margin="10,0,0,0" />
-                            <CheckBox Content="Y" IsChecked="{Binding MotorTypeModel.IsYMotor}" Margin="10,0,0,0"/>
-                            <CheckBox Content="Z" IsChecked="{Binding MotorTypeModel.IsZMotor}" Margin="10,0,0,0"/>
-                            <CheckBox Content="T" IsChecked="{Binding MotorTypeModel.IsTMotor}" Margin="10,0,0,0"/>
-                            <CheckBox Content="R" IsChecked="{Binding MotorTypeModel.IsRMotor}" Margin="10,0,0,0"/>
-                        </StackPanel>
-                    </MenuItem>
-                    <MenuItem Header="机型选择">
-                        <StackPanel Orientation="Vertical" Margin="5">
-                            <RadioButton Content="紧凑型双轴" IsChecked="{Binding MotorTypeModel.IsCompactTwoAxis}" GroupName="MachineType" Margin="5,5,15,5"/>
-                            <RadioButton Content="标准型双轴" IsChecked="{Binding MotorTypeModel.IsStandardTwoAxis}" GroupName="MachineType" Margin="5,5,15,5"/>
-                            <RadioButton Content="重载型三轴" IsChecked="{Binding MotorTypeModel.IsHeavyDutyThreeAxis}" GroupName="MachineType" Margin="5,5,15,5"/>
-                            <RadioButton Content="全动型五轴" IsChecked="{Binding MotorTypeModel.IsUniversalFiveAxis}" GroupName="MachineType" Margin="5,5,15,5"/>
-                        </StackPanel>
-                    </MenuItem>
+                <MenuItem Header="机型选择">
+                    <MenuItem Header="紧凑型双轴" IsCheckable="True" IsChecked="{Binding MotorTypeModel.IsCompactTwoAxis, Mode=TwoWay}" />
+                    <MenuItem Header="标准型双轴" IsCheckable="True" IsChecked="{Binding MotorTypeModel.IsStandardTwoAxis, Mode=TwoWay}" />
+                    <MenuItem Header="重载型三轴" IsCheckable="True" IsChecked="{Binding MotorTypeModel.IsHeavyDutyThreeAxis, Mode=TwoWay}" />
+                    <MenuItem Header="全动型五轴" IsCheckable="True" IsChecked="{Binding MotorTypeModel.IsUniversalFiveAxis, Mode=TwoWay}" />
                 </MenuItem>
                 <MenuItem Header="位移设置" >
                     <MenuItem Header="速度模式下速度大小" >
                         <TextBox  Text="{Binding MagnitudeOfSpeed}" BorderThickness="0,0,0,2"  DockPanel.Dock="Left" BorderBrush="#CCCCCC" Padding="5,2" MinWidth="60" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                     </MenuItem>
                 </MenuItem>
-           
+
             </MenuItem>
         </Menu>
         <Grid Grid.Row="1">
@@ -72,12 +54,13 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="66*"/>
+                <ColumnDefinition Width="331*"/>
                 <ColumnDefinition Width="5"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="398*"/>
             </Grid.ColumnDefinitions>
 
-            <TabControl Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3">
+            <TabControl Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4">
                 <TabItem Header="位置曲线图">
                     <oxy:PlotView Model="{Binding MotorplotModel}"    Foreground="Black" >
                         <oxy:PlotView.ContextMenu>
@@ -86,7 +69,7 @@
                       Command="{Binding AutoAdjustCommand}"  CommandParameter="point" />
                                 <MenuItem Header="清除"
                       Command="{Binding ClearMonitorCommand}"  CommandParameter="point"/>
-                      
+
                             </ContextMenu>
                         </oxy:PlotView.ContextMenu>
                     </oxy:PlotView>
@@ -99,30 +82,30 @@
                                   Command="{Binding AutoAdjustCommand}"  CommandParameter="speed"/>
                                 <MenuItem Header="清除"
                                   Command="{Binding ClearMonitorCommand}"  CommandParameter="speed"/>
-                              
+
                             </ContextMenu>
                         </oxy:PlotView.ContextMenu>
                     </oxy:PlotView>
                 </TabItem>
 
             </TabControl>
-            <TabControl  Grid.Row="0" Grid.Column="2"  >
-              
+            <TabControl  Grid.Row="0" Grid.Column="2" Grid.ColumnSpan="2" Margin="4,0,0,0"  >
+
             </TabControl >
 
-            <Grid  Grid.Row="2" Cursor="">
+            <Grid  Grid.Row="1" Cursor="" Grid.ColumnSpan="3" Margin="0,5,4,0" Grid.RowSpan="2">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="auto"/>
                 </Grid.ColumnDefinitions>
-                
+
                 <StackPanel>
                     <RadioButton  x:Name="IsSpeedMode" Content="使用速度模式" IsChecked="{Binding IsSpeedMode}"/>
                     <RadioButton  Content="使用位置模式" IsChecked="True"/>
-                   
-                        <ItemsControl ItemsSource="{Binding Motors}" >
+
+                    <ItemsControl ItemsSource="{Binding Motors}" >
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type mm:FiveAxisModel}"> 
+                            <DataTemplate DataType="{x:Type mm:FiveAxisModel}">
                                 <DockPanel LastChildFill="False">
                                     <TextBlock Text="{Binding Name}" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="10"/>
                                     <Button Content="←" Command="{Binding ReverseMoveCommand}" CommandParameter="{Binding IsChecked, ElementName=IsSpeedMode}" Margin="10"/>
@@ -147,10 +130,10 @@
                     <StackPanel Width="auto" DockPanel.Dock="Right">
                     </StackPanel>
                 </DockPanel>
-                
+
 
             </Grid>
-            <Grid Grid.Row="2" Grid.Column="2">
+            <Grid Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2" Margin="4,5,0,0" Grid.RowSpan="2">
 
                 <TabControl>
                     <TabItem Header="功能测试">
@@ -263,23 +246,21 @@
                 </TabControl>
             </Grid>
             <!-- 垂直分割线（用于调整左右区域大小） -->
-            <GridSplitter  Grid.Row="1" Grid.RowSpan="2" Grid.Column="1"
+            <GridSplitter Grid.RowSpan="3" Grid.Column="2"
                  Width="5" 
-                 HorizontalAlignment="Stretch" 
-                 VerticalAlignment="Stretch"
-                 Background="#CCCCCC"/>
+                 HorizontalAlignment="Stretch"
+                 Background="#CCCCCC" Margin="0,223,0,0"/>
 
             <!-- 水平分割线（用于调整上下区域大小） -->
-            <GridSplitter Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+            <GridSplitter Grid.Column="0" Grid.ColumnSpan="4"
                 Height="5" 
-                HorizontalAlignment="Stretch" 
-                VerticalAlignment="Stretch"
-                Background="#CCCCCC"/>
+                HorizontalAlignment="Stretch"
+                Background="#CCCCCC" Margin="0,223,0,0" Grid.RowSpan="2"/>
 
         </Grid>
         <!--<状态栏>-->
         <StatusBar Grid.Row="2">
-          
+
             <StatusBarItem>
                 <ProgressBar Value="{Binding ProgressValue}" Width="150"/>
             </StatusBarItem>
