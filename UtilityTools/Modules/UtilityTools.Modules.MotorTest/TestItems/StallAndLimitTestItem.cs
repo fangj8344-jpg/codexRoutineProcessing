@@ -37,7 +37,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             if (_useSpeedMode)
             {
                 // 【速度挡】
-                motorEntity.SetMotorControlModeCommand(motorId, EnumMotorCtrType.CloseLoopSpeedCtr); // 切换为速度模式
+                motorEntity.SetMotorControlModeCommand(motorId, EnumMotorCtrType.OpenLoopSpeedCtr); // 切换为速度模式
                 motorEntity.SetMotorEnableCommand(motorId, EnumMotorEnable.Enable);
                 await Task.Delay(100, ct);
 
