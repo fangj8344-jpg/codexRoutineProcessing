@@ -416,10 +416,8 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// </summary>
         public EnumMotorMoveState MotorMoveState { get; set; }
 
-        /// <summary>
-        /// 硬件时间
-        /// </summary>
-        public uint HardwareTime { get; set; }
+      
+
 
     }
     public class PlotViewSpeedMessage

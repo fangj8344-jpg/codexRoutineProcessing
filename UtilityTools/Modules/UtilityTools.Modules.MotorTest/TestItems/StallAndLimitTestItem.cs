@@ -55,7 +55,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                 DateTime escapeStartTime = DateTime.Now;
                 while (motorModel.MotorParams.LimitedState != EnumMotorLimitedState.None)
                 {
-                    if ((DateTime.Now - escapeStartTime).TotalSeconds > 5) break; // 
+                    if ((DateTime.Now - escapeStartTime).TotalSeconds > 20) break; // 
                     await Task.Delay(200, ct);
                 }
             }
@@ -68,7 +68,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
 
                 // 发送连续运动指令 (这里用你代码里实际的速度/Jog指令，我暂写一个示例)
                 // 假设正向是正速度，负向是负速度
-                int testSpeed = _direction ? 5000 : -5000;
+                int testSpeed = _direction ? 10000 : -10000;
                 motorEntity.SetMotorGoToCommand(motorId, EnumMotorUnit.Pulse, testSpeed); // 👈 替换成你底层的速度驱动方法
             }
             else
@@ -78,7 +78,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                 motorEntity.SetMotorEnableCommand(motorId, EnumMotorEnable.Enable);
                 await Task.Delay(100, ct);
 
-                motorEntity.SetMotorGoToCommand(motorId, EnumMotorUnit.Pulse, _direction ? 1000000 : -1000000);
+                motorEntity.SetMotorGoToCommand(motorId, EnumMotorUnit.Pulse, _direction ? motorModel.MotorParams.Pos  +  1000000 : motorModel.MotorParams.Pos - 1000000);
             }
 
             // 2. 核心监控循环：每隔一段时间检查一次电机状态

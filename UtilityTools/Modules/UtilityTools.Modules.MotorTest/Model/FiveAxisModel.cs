@@ -63,6 +63,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         ThreeAxisTestModel _testModel;
         private readonly IEventAggregator _eventAggregator;
         private ITestReportService testReportService;
+        private static readonly Stopwatch _globalTimer = Stopwatch.StartNew();
 
         private IContainerProvider _containerProvider;
         private readonly IDialogHostService _dialogHostService;
@@ -70,7 +71,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         private bool _isPerformance;
         private DateTime? _baseSystemTime = null;
         private uint _baseHardwareTimestamp = 0;
-
+       // private Queue<double> _speedFilter = new Queue<double>();
 
         //public PlotModel SpeedPlotModel;
         //public PlotModel PiontPlotModel;
@@ -690,145 +691,86 @@ namespace UtilityTools.Modules.MotorTest.Model
             }));
 
         }
-        /*
-        private  void AddPoint(SelfMotorPacket e )
-        {
-             e.Timestamp  
-            if (MotorModel.PointList.Count >= 2)
-            {
-                var data = DateTime.Now;
-                var timeDifference = (data - MotorModel.PointList[MotorModel.PointList.Count - 2].Date).TotalMilliseconds;
-                var speed = (MotorModel.MotorParams.Pos - MotorModel.PointList[MotorModel.PointList.Count - 2].Point) / (timeDifference * 1.0) * 1000;
-                PlotViewPointMessage pointView = new PlotViewPointMessage() { Date = data, Point = MotorModel.MotorParams.Pos, MotorMoveState = MotorModel.MotorParams.MoveState , MotorModelAxis  = MotorModel.MotorModelAxis};
-                PlotViewSpeedMessage speedView = new PlotViewSpeedMessage() { SpeedDate = MotorModel.PointList[MotorModel.PointList.Count - 1].Date, Speed = speed , MotorModelAxis = MotorModel.MotorModelAxis };
-                MotorModel.MotorParams.Speed = speed;
-                // 🚨🚨🚨 【终极修复】：将敏感的集合操作强行丢回给 UI 主线程去排队执行！
-                // 用 BeginInvoke，后台通讯线程丢完就跑，绝不卡顿！
-                System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
-                {
-                    // 在这里面，绝对安全，连 lock 都不需要了！
-                    while (MotorModel.PointList.Count >= _testModel.MaxCount)
-                    {
-                        MotorModel.PointList.RemoveAt(0);
-                    }
-                    while (MotorModel.SpeedList.Count >= _testModel.MaxCount)
-                    {
-                        MotorModel.SpeedList.RemoveAt(0);
-                    }
-
-                    MotorModel.PointList.Add(pointView);
-                    MotorModel.SpeedList.Add(speedView);
-                }));
-                // 缓冲存数据库用的（因为不绑 UI，所以后台直接加，加锁保护就行）
-                lock (_lockobj)
-                {
-                    MotorModel.PointListBuffer.Add(pointView);
-                    MotorModel.SpeedListBuffer.Add(speedView);
-                }
-
-                if (MotorModel.PointListBuffer.Count == _testModel.SavePointNumber)
-                {
-                    SqliteSaveDate();
-                }
-               
-               
-            }
-            else
-            {
-                var data = DateTime.Now;
-                PlotViewPointMessage pointView = new PlotViewPointMessage() { Date = data, Point = MotorModel.MotorParams.Pos, MotorMoveState = MotorModel.MotorParams.MoveState , MotorModelAxis = MotorModel.MotorModelAxis };
-                MotorModel.PointList.Add(pointView);
-                
-                if (_testModel.MotorplotModel != null)
-                {
- //                   _testModel.MotorplotModel.InvalidatePlot(true);
-                }
-                
-            }
-        }
-            */
-        // 1. 在 PlotViewPointMessage 类里增加一个属性：uint HardwareTime
-        // 2. 修改 AddPoint 逻辑
+        // 🚨 请在类开头声明一个私有队列，用来存最近的 3 个原始点
+        private Queue<PlotViewPointMessage> _calcQueue = new Queue<PlotViewPointMessage>();
 
         private void AddPoint(SelfMotorPacket e)
         {
-            if (e.Timestamp == null || e.Timestamp.Length < 4) return;
-
-            // 1. 解析硬件时间戳 (byte[] -> uint)
-            uint currentHardwareTs = BitConverter.ToUInt32(e.Timestamp, 0);
-
-            var data = e.DataSource;
-            int currentPos = BitConverter.ToInt32(data, 12);
+            // 1. 解析当前包的原始数据
             DateTime nowTime = DateTime.Now;
+            var data = e.DataSource;
+            if (data == null || data.Length < 16) return;
+            int currentPos = BitConverter.ToInt32(data, 12);
 
-            // 2. 锚定时间：将硬件相对时间转换成北京时间
-            if (_baseSystemTime == null)
+            // 2. 封装成临时的点对象（此时速度还不知道，设为 0）
+            var currentPoint = new PlotViewPointMessage()
             {
-                _baseSystemTime = nowTime;
-                _baseHardwareTimestamp = currentHardwareTs;
-            }
-            long diffMs = (long)currentHardwareTs - _baseHardwareTimestamp;
-            if (diffMs < 0) diffMs += uint.MaxValue; // 处理 uint 翻转溢出
-            DateTime exactTime = _baseSystemTime.Value.AddMilliseconds(diffMs);
-
-            // 3. 计算速度 (基于硬件时间戳差值)
-            double speed = 0;
-            if (MotorModel.PointList.Count >= 1)
-            {
-                var lastPoint = MotorModel.PointList.Last();
-                // 算出两个硬件包之间的真实毫秒差
-                uint deltaMs = currentHardwareTs - lastPoint.HardwareTime;
-
-                if (deltaMs > 0)
-                {
-                    // 速度 = 脉冲差 / 秒
-                    speed = (currentPos - lastPoint.Point) / (deltaMs / 1000.0);
-                }
-            }
-
-            // 更新当前瞬时速度属性
-            MotorModel.MotorParams.Speed = speed;
-
-            // 4. 封装消息对象
-            var pointView = new PlotViewPointMessage()
-            {
-                Date = exactTime,
+                Date = nowTime,
                 Point = currentPos,
-                HardwareTime = currentHardwareTs, // 🚨 存入硬件时间用于下次计算
                 MotorMoveState = MotorModel.MotorParams.MoveState,
                 MotorModelAxis = MotorModel.MotorModelAxis
             };
-            var speedView = new PlotViewSpeedMessage()
-            {
-                SpeedDate = exactTime,
-                Speed = speed,
-                MotorModelAxis = MotorModel.MotorModelAxis
-            };
 
-            // 5. 【UI 隔离层】：所有绑定了界面的集合操作，全部丢进 Dispatcher 队列
-            System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
-            {
-                // 这里绝对安全，由 UI 线程统一调度，绝不撞车
-                while (MotorModel.PointList.Count >= _testModel.MaxCount)
-                    MotorModel.PointList.RemoveAt(0);
-                while (MotorModel.SpeedList.Count >= _testModel.MaxCount)
-                    MotorModel.SpeedList.RemoveAt(0);
+            // 3. 塞进计算队列
+            _calcQueue.Enqueue(currentPoint);
 
-                MotorModel.PointList.Add(pointView);
-                MotorModel.SpeedList.Add(speedView);
-            }));
-
-            // 6. 【数据库缓冲层】：使用专属锁保护后台 Buffer
-            lock (_lockobj)
+            // 🚨 核心：只有当队列攒够 3 个点时，才计算中间那个点（第 2 包）的速度
+            if (_calcQueue.Count == 3)
             {
-                MotorModel.PointListBuffer.Add(pointView);
-                MotorModel.SpeedListBuffer.Add(speedView);
-            }
+                // 拿出这三个点
+                var p1 = _calcQueue.ElementAt(0); // 第一包
+                var p2 = _calcQueue.ElementAt(1); // 第二包 (我们要补齐速度的对象)
+                var p3 = _calcQueue.ElementAt(2); // 第三包
 
-            // 7. 满额存库
-            if (MotorModel.PointListBuffer.Count >= _testModel.SavePointNumber)
-            {
-                SqliteSaveDate();
+                // 4. ：用 1 包和 3 包算 2 包的速度
+                double deltaMs = (p3.Date - p1.Date).TotalMilliseconds;
+                double speedForP2 = 0;
+
+                if (deltaMs > 0)
+                {
+                    // 速度 = (第三包位置 - 第一包位置) / (第三包时间 - 第一包时间)
+                    speedForP2 = (p3.Point - p1.Point) / (deltaMs / 1000.0);
+                }
+
+                // 更新界面显示的瞬时速度
+                MotorModel.MotorParams.Speed = speedForP2;
+
+                // 5. 封装最终的 SpeedView (关联的是第二包的时间)
+                var speedView = new PlotViewSpeedMessage()
+                {
+                    SpeedDate = p2.Date, // 对应中间那一包的时间
+                    Speed = speedForP2,
+                    MotorModelAxis = MotorModel.MotorModelAxis
+                };
+
+                // 6. 【UI 安全层】：更新界面
+                System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    while (MotorModel.PointList.Count >= _testModel.MaxCount)
+                        MotorModel.PointList.RemoveAt(0);
+                    while (MotorModel.SpeedList.Count >= _testModel.MaxCount)
+                        MotorModel.SpeedList.RemoveAt(0);
+
+                    // 注意：这里 Add 的是 p2，因为 p2 现在的速度才算出来
+                    MotorModel.PointList.Add(p2);
+                    MotorModel.SpeedList.Add(speedView);
+                }));
+
+                // 7. 【数据缓冲层】：加锁存库
+                lock (_lockobj)
+                {
+                    MotorModel.PointListBuffer.Add(p2);
+                    MotorModel.SpeedListBuffer.Add(speedView);
+                }
+
+                // 8. 弹出最老的一包，为下一轮计算做准备
+                _calcQueue.Dequeue();
+
+                // 9. 存库检查
+                if (MotorModel.PointListBuffer.Count >= _testModel.SavePointNumber)
+                {
+                    SqliteSaveDate();
+                }
             }
         }
 
