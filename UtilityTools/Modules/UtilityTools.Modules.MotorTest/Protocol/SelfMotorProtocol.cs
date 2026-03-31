@@ -536,7 +536,7 @@ namespace UtilityTools.Modules.MotorTest.Protocol
             public EnumSelfMotorCmdType CmdType { get { return (EnumSelfMotorCmdType)BitConverter.ToUInt16(this.packet.command); } }
             public EnumMotorId MotorId { get { return (EnumMotorId)BitConverter.ToUInt16(this.packet.id); } }
             public byte[] DataSource { get => packet.data; }
-
+            public byte[] Timestamp { get => packet.timestamp; }
             private DataPacket packet;
         }
 

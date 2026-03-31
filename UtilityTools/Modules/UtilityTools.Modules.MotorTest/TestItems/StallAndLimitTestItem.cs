@@ -34,6 +34,31 @@ namespace UtilityTools.Modules.MotorTest.TestItems
         {
             var result = new MotorTestResult { IsPassed = false };
             var posHistory = new List<int>();
+            // ==========================================
+            // 🚨 1. 【新增：限位预检查与脱离】
+            // ==========================================
+            var initialLimit = motorModel.MotorParams.LimitedState;
+            // 如果我们要往正向跑，但现在已经在正向限位上了
+            if ((_direction && initialLimit == EnumMotorLimitedState.PhyForwardLimited) ||
+                (!_direction && initialLimit == EnumMotorLimitedState.PhyBackwardLimited))
+            {
+                // 往反方向挪一点点（比如挪 50000 脉冲），把限位开关释放掉
+                int escapeTarget = _direction ? motorModel.MotorParams.Pos - 50000 : motorModel.MotorParams.Pos + 50000;
+
+                motorEntity.SetMotorControlModeCommand(motorId, EnumMotorCtrType.CloseLoopPosCtr);
+                motorEntity.SetMotorEnableCommand(motorId, EnumMotorEnable.Enable);
+                await Task.Delay(100, ct);
+
+                motorEntity.SetMotorGoToCommand(motorId, EnumMotorUnit.Pulse, escapeTarget);
+
+                // 等待脱离限位（最多等 5 秒）
+                DateTime escapeStartTime = DateTime.Now;
+                while (motorModel.MotorParams.LimitedState != EnumMotorLimitedState.None)
+                {
+                    if ((DateTime.Now - escapeStartTime).TotalSeconds > 5) break; // 
+                    await Task.Delay(200, ct);
+                }
+            }
             if (_useSpeedMode)
             {
                 // 【速度挡】
@@ -55,13 +80,11 @@ namespace UtilityTools.Modules.MotorTest.TestItems
 
                 motorEntity.SetMotorGoToCommand(motorId, EnumMotorUnit.Pulse, _direction ? 1000000 : -1000000);
             }
-            // 1. 发起移动
-            motorEntity.SetMotorGoToCommand(motorId, EnumMotorUnit.Pulse, _direction ? 1000000 : -1000000);
 
             // 2. 核心监控循环：每隔一段时间检查一次电机状态
             // 这里的逻辑对应你原代码里的 for (int i = 0; i < 60; i++)
             DateTime startTime = DateTime.Now;
-            while ((DateTime.Now - startTime).TotalSeconds < 60) // 60秒超时
+            while ((DateTime.Now - startTime).TotalSeconds < 120) // 60秒超时
             {
                 if (ct.IsCancellationRequested) return new MotorTestResult { ErrorDescription = "测试被用户取消" };
 

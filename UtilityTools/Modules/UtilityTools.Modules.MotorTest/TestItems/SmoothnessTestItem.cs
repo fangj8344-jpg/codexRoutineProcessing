@@ -53,20 +53,33 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             }
 
             // --- 开始正式测试 ---
+            var result = new SmoothnessTestResult();
             // A 段：正向
             int startF = motorModel.SpeedList.Count;
             var fRes = await new StallAndLimitTestItem(true,true).ExecuteAsync(motorId, motorModel, motorEntity, ct);
+            if (!fRes.IsPassed)
+            {
+                result.IsPassed = false;
+                result.ErrorDescription = $"正向运行异常: {fRes.ErrorDescription}";
+                return result;
+            }
             int endF = motorModel.SpeedList.Count;
             double stdDevF = CalculateStableStdDev(startF, endF);
 
             // B 段：反向
             int startB = motorModel.SpeedList.Count;
             var bRes = await new StallAndLimitTestItem(false,true).ExecuteAsync(motorId, motorModel, motorEntity, ct);
+            if (!bRes.IsPassed)
+            {
+                result.IsPassed = false;
+                result.ErrorDescription = $"反向运行异常: {bRes.ErrorDescription}";
+                return result;
+            }
             int endB = motorModel.SpeedList.Count;
             double stdDevB = CalculateStableStdDev(startB, endB);
 
             // --- 综合评价 ---
-            var result = new SmoothnessTestResult();
+         
 
             if (fRes.IsPassed && bRes.IsPassed)
             {

@@ -230,15 +230,13 @@
                             </TabControl.ItemTemplate>
                             <TabControl.ContentTemplate>
                                 <DataTemplate DataType="{x:Type mm:FiveAxisModel}">
-                                    <ScrollViewer VerticalScrollBarVisibility="Hidden">
-                                        <ListView ItemsSource="{Binding Log}">
-                                            <ListView.ContextMenu>
-                                                <ContextMenu>
-                                                    <MenuItem Header="清除" Command="{Binding ClearLogCommand}"/>
-                                                </ContextMenu>
-                                            </ListView.ContextMenu>
-                                        </ListView>
-                                    </ScrollViewer>
+                                    <ListView ItemsSource="{Binding Log}" BorderThickness="0" Margin="5">
+                                        <ListView.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Header="清除" Command="{Binding ClearLogCommand}"/>
+                                            </ContextMenu>
+                                        </ListView.ContextMenu>
+                                    </ListView>
                                 </DataTemplate>
                             </TabControl.ContentTemplate>
                         </TabControl>

@@ -25,6 +25,7 @@ namespace UtilityTools.Modules.MotorTest.Runners
         private readonly EnumMotorId _motorId;
         private readonly MotorModel _motorModel;
         private readonly (int min, int max) _strokeRange;
+        private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
 
         // 构造函数：把工具全领进来
         public MotorWorkflowRunner(
@@ -370,18 +371,14 @@ namespace UtilityTools.Modules.MotorTest.Runners
                     }
                     else
                     {
-                        PublishLog($"[{_motorName}] ❌ 第 {lapCount} 圈测试异常中止！");
+                        string reason = result?.ErrorDescription ?? "未知异常";
+                        PublishLog($"[{_motorName}] ❌ 第 {lapCount} 圈测试失败！原因: {reason}");
                         return;
                     }
 
                     lapCount++;
 
-                    // ⚠️ 防卡死终极杀招：每跑完一圈，强制清空底层的速度记录集合！
-                    // 把几十万个点清零，让 OxyPlot 永远只画最新的一圈，界面丝滑得飞起！
-                    App.Current.Dispatcher.Invoke(() =>
-                    {
-                        _motorModel.SpeedList?.Clear();
-                    });
+                    
                 }
                 sw.Stop();
 

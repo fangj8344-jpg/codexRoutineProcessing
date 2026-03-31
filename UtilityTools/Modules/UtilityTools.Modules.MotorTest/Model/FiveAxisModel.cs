@@ -66,8 +66,10 @@ namespace UtilityTools.Modules.MotorTest.Model
 
         private IContainerProvider _containerProvider;
         private readonly IDialogHostService _dialogHostService;
+        private readonly object _lockobj = new object();
         private bool _isPerformance;
-
+        private DateTime? _baseSystemTime = null;
+        private uint _baseHardwareTimestamp = 0;
 
 
         //public PlotModel SpeedPlotModel;
@@ -245,6 +247,7 @@ namespace UtilityTools.Modules.MotorTest.Model
 
 
         }
+        
         public void ClearLog()
         {
             if (Log != null)
@@ -561,7 +564,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                         var ransformationCoefficient = BitConverter.ToSingle(data, 6);
                         break;
                     case EnumSelfMotorCmdType.CMD_GET_STATUS:
-                        ParserMotorStatus(data);
+                        ParserMotorStatus(data,e);
 
                         break;
                     case EnumSelfMotorCmdType.CMD_GET_SLIM:
@@ -577,7 +580,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             }
         }
 
-        private void ParserMotorStatus( byte[] data)
+        private void ParserMotorStatus( byte[] data, SelfMotorPacket e)
         {
             byte channel = data[0];//电机通道
             byte motorType = data[1];//电机类型
@@ -626,7 +629,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             MotorModel.MotorParams.MoveDirection = (EmumMotorMoveDirection)MotorRunningDirection;
             MotorModel.MotorParams.SubRatio = unitConversionFactor;
             MotorModel.MotorParams.Pos = pulseCoordinate;
-            AddPoint();
+            AddPoint(e);
             //增加限位位置
             if (MotorModel.MotorParams.LimitedState == EnumMotorLimitedState.PhyForwardLimited)
             {
@@ -687,9 +690,10 @@ namespace UtilityTools.Modules.MotorTest.Model
             }));
 
         }
-        private  void AddPoint( )
+        /*
+        private  void AddPoint(SelfMotorPacket e )
         {
-             
+             e.Timestamp  
             if (MotorModel.PointList.Count >= 2)
             {
                 var data = DateTime.Now;
@@ -697,42 +701,37 @@ namespace UtilityTools.Modules.MotorTest.Model
                 var speed = (MotorModel.MotorParams.Pos - MotorModel.PointList[MotorModel.PointList.Count - 2].Point) / (timeDifference * 1.0) * 1000;
                 PlotViewPointMessage pointView = new PlotViewPointMessage() { Date = data, Point = MotorModel.MotorParams.Pos, MotorMoveState = MotorModel.MotorParams.MoveState , MotorModelAxis  = MotorModel.MotorModelAxis};
                 PlotViewSpeedMessage speedView = new PlotViewSpeedMessage() { SpeedDate = MotorModel.PointList[MotorModel.PointList.Count - 1].Date, Speed = speed , MotorModelAxis = MotorModel.MotorModelAxis };
-
-                // 锁死图表！
-                lock (_testModel.MotorplotModel.SyncRoot)
+                MotorModel.MotorParams.Speed = speed;
+                // 🚨🚨🚨 【终极修复】：将敏感的集合操作强行丢回给 UI 主线程去排队执行！
+                // 用 BeginInvoke，后台通讯线程丢完就跑，绝不卡顿！
+                System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    lock (_testModel.MotorSpeedplotModel.SyncRoot)
+                    // 在这里面，绝对安全，连 lock 都不需要了！
+                    while (MotorModel.PointList.Count >= _testModel.MaxCount)
                     {
-
-                        if (_testModel.MotorSpeedplotModel != null && _testModel.MotorplotModel != null)
-                        {
-                            while (MotorModel.PointList.Count >= _testModel.MaxCount)
-                            {
-                                MotorModel.PointList.RemoveAt(0);
-                            }
-                            while (MotorModel.SpeedList.Count >= _testModel.MaxCount)
-                            {
-                                MotorModel.SpeedList.RemoveAt(0);
-                            }
-
-                            MotorModel.PointList.Add(pointView);
-                            MotorModel.SpeedList.Add(speedView);
-                            MotorModel.PointListBuffer.Add(pointView);
-                            MotorModel.SpeedListBuffer.Add(speedView);
-                            MotorModel.MotorParams.Speed = speed;
-
-                            //                 _testModel.MotorplotModel.InvalidatePlot(true);
-                            //                 _testModel.MotorSpeedplotModel.InvalidatePlot(true);
-
-
-
-                        }
+                        MotorModel.PointList.RemoveAt(0);
                     }
+                    while (MotorModel.SpeedList.Count >= _testModel.MaxCount)
+                    {
+                        MotorModel.SpeedList.RemoveAt(0);
+                    }
+
+                    MotorModel.PointList.Add(pointView);
+                    MotorModel.SpeedList.Add(speedView);
+                }));
+                // 缓冲存数据库用的（因为不绑 UI，所以后台直接加，加锁保护就行）
+                lock (_lockobj)
+                {
+                    MotorModel.PointListBuffer.Add(pointView);
+                    MotorModel.SpeedListBuffer.Add(speedView);
                 }
+
                 if (MotorModel.PointListBuffer.Count == _testModel.SavePointNumber)
                 {
                     SqliteSaveDate();
                 }
+               
+               
             }
             else
             {
@@ -747,50 +746,153 @@ namespace UtilityTools.Modules.MotorTest.Model
                 
             }
         }
+            */
+        // 1. 在 PlotViewPointMessage 类里增加一个属性：uint HardwareTime
+        // 2. 修改 AddPoint 逻辑
+
+        private void AddPoint(SelfMotorPacket e)
+        {
+            if (e.Timestamp == null || e.Timestamp.Length < 4) return;
+
+            // 1. 解析硬件时间戳 (byte[] -> uint)
+            uint currentHardwareTs = BitConverter.ToUInt32(e.Timestamp, 0);
+
+            var data = e.DataSource;
+            int currentPos = BitConverter.ToInt32(data, 12);
+            DateTime nowTime = DateTime.Now;
+
+            // 2. 锚定时间：将硬件相对时间转换成北京时间
+            if (_baseSystemTime == null)
+            {
+                _baseSystemTime = nowTime;
+                _baseHardwareTimestamp = currentHardwareTs;
+            }
+            long diffMs = (long)currentHardwareTs - _baseHardwareTimestamp;
+            if (diffMs < 0) diffMs += uint.MaxValue; // 处理 uint 翻转溢出
+            DateTime exactTime = _baseSystemTime.Value.AddMilliseconds(diffMs);
+
+            // 3. 计算速度 (基于硬件时间戳差值)
+            double speed = 0;
+            if (MotorModel.PointList.Count >= 1)
+            {
+                var lastPoint = MotorModel.PointList.Last();
+                // 算出两个硬件包之间的真实毫秒差
+                uint deltaMs = currentHardwareTs - lastPoint.HardwareTime;
+
+                if (deltaMs > 0)
+                {
+                    // 速度 = 脉冲差 / 秒
+                    speed = (currentPos - lastPoint.Point) / (deltaMs / 1000.0);
+                }
+            }
+
+            // 更新当前瞬时速度属性
+            MotorModel.MotorParams.Speed = speed;
+
+            // 4. 封装消息对象
+            var pointView = new PlotViewPointMessage()
+            {
+                Date = exactTime,
+                Point = currentPos,
+                HardwareTime = currentHardwareTs, // 🚨 存入硬件时间用于下次计算
+                MotorMoveState = MotorModel.MotorParams.MoveState,
+                MotorModelAxis = MotorModel.MotorModelAxis
+            };
+            var speedView = new PlotViewSpeedMessage()
+            {
+                SpeedDate = exactTime,
+                Speed = speed,
+                MotorModelAxis = MotorModel.MotorModelAxis
+            };
+
+            // 5. 【UI 隔离层】：所有绑定了界面的集合操作，全部丢进 Dispatcher 队列
+            System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                // 这里绝对安全，由 UI 线程统一调度，绝不撞车
+                while (MotorModel.PointList.Count >= _testModel.MaxCount)
+                    MotorModel.PointList.RemoveAt(0);
+                while (MotorModel.SpeedList.Count >= _testModel.MaxCount)
+                    MotorModel.SpeedList.RemoveAt(0);
+
+                MotorModel.PointList.Add(pointView);
+                MotorModel.SpeedList.Add(speedView);
+            }));
+
+            // 6. 【数据库缓冲层】：使用专属锁保护后台 Buffer
+            lock (_lockobj)
+            {
+                MotorModel.PointListBuffer.Add(pointView);
+                MotorModel.SpeedListBuffer.Add(speedView);
+            }
+
+            // 7. 满额存库
+            if (MotorModel.PointListBuffer.Count >= _testModel.SavePointNumber)
+            {
+                SqliteSaveDate();
+            }
+        }
+
+        private DateTime GetRealTime(uint currentHardwareTimestamp)
+        {
+            if (_baseSystemTime == null)
+            {
+                // 第一包：把当前的系统时间作为“零点”锚定
+                _baseSystemTime = DateTime.Now;
+                _baseHardwareTimestamp = currentHardwareTimestamp;
+                return _baseSystemTime.Value;
+            }
+
+            // 计算当前硬件时间相对于第一包过了多久
+            long diffMs = currentHardwareTimestamp - _baseHardwareTimestamp;
+
+            // 如果硬件时间戳会溢出归零（比如 uint 跑满了），这里要处理负数情况
+            if (diffMs < 0) diffMs += uint.MaxValue;
+
+            // 在系统零点的基础上，加上精确的偏移量
+            return _baseSystemTime.Value.AddMilliseconds(diffMs);
+        }
 
         private async void SqliteSaveDate()
         {
-            // 1. 抓取缓冲区快照（ToList 是为了防止多线程冲突）
-            var speedBuffer = MotorModel.SpeedListBuffer.ToList();
-            var pointBuffer = MotorModel.PointListBuffer.ToList();
-            var speedCount = speedBuffer.Count;
-            var pointCount = pointBuffer.Count;
+            List<PlotViewSpeedMessage> speedSnapshot;
+            List<PlotViewPointMessage> pointSnapshot;
 
-            if (speedCount == 0 && pointCount == 0) return; // 没数据就直接打道回府
+            // 🚨 核心逻辑：在锁里面，一次性把“快照”拿出来，并立刻把“母体”清空！
+            // 这样，不管存库花多久，母体怎么加新数据，都跟这次存库的数据没关系了。
+            lock (_lockobj)
+            {
+                if (MotorModel.SpeedListBuffer.Count == 0 && MotorModel.PointListBuffer.Count == 0) return;
 
+                // 1. 拍照存副本
+                speedSnapshot = MotorModel.SpeedListBuffer.ToList();
+                pointSnapshot = MotorModel.PointListBuffer.ToList();
 
+                // 2. 🚨 立刻清空母体！不要用 RemoveRange，直接 Clear！
+                // 这样就绝对不存在“数量对不上”的问题了
+                MotorModel.SpeedListBuffer.Clear();
+                MotorModel.PointListBuffer.Clear();
+            }
+
+            // 3. 此时锁已经释放了，UDP 线程可以继续往空的 Buffer 里塞新数据
+            // 我们拿着刚才拿出来的 snapshot 慢慢存库，互不干扰
             string dbFileName = _testModel.MotorTypeModel.CurrentDbName;
 
-            // 3. 使用统一的上下文入库
             try
             {
                 using (var dbContext = new MotorDbContext(dbFileName))
                 {
-                    await SpliteOperate.AddPlotViewSpeedListMessagesSimpleAsync(speedBuffer, dbContext);
-                    await SpliteOperate.AddPlotViewPointListMessagesSimpleAsync(pointBuffer, dbContext);
+                    // 存的是刚才锁内抓取的 snapshot
+                    await SpliteOperate.AddPlotViewSpeedListMessagesSimpleAsync(speedSnapshot, dbContext);
+                    await SpliteOperate.AddPlotViewPointListMessagesSimpleAsync(pointSnapshot, dbContext);
 
-                    // 更新 UI 上的数据总条数
                     _testModel.TotalSize = await SpliteOperate.GetPlotViewPointMessageCountAsync(dbContext);
                 }
             }
             catch (Exception ex)
             {
-                // 这里建议加个日志，防止静默失败
                 NLog.LogManager.GetCurrentClassLogger().Error(ex, "后台存库失败");
             }
-
-            // 4. 清理逻辑（加了 Math.Min 保护，防止清理时越界）
-            if (MotorModel.SpeedListBuffer != null && MotorModel.SpeedListBuffer.Count > 0)
-            {
-                MotorModel.SpeedListBuffer.RemoveRange(0, Math.Min(speedCount, MotorModel.SpeedListBuffer.Count));
-            }
-
-            if (MotorModel.PointListBuffer != null && MotorModel.PointListBuffer.Count > 0)
-            {
-                MotorModel.PointListBuffer.RemoveRange(0, Math.Min(pointCount, MotorModel.PointListBuffer.Count));
-            }
         }
-
         public void Serilize(string path)
         {
             string Pointjson = JsonConvert.SerializeObject(MotorModel.PointList);
