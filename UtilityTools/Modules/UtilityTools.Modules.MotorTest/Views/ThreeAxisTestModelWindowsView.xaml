@@ -10,8 +10,7 @@
         xmlns:local="clr-namespace:UtilityTools.Modules.MotorTest.Views"
         xmlns:prism ="http://prismlibrary.com/"
         prism:ViewModelLocator.AutoWireViewModel="True"
-        mc:Ignorable="d"
-        Height="768" Width="1280">
+        mc:Ignorable="d">
     <UserControl.Resources>
         <cv:BoolToColorConverter x:Key="BoolToColorConverter" />
     </UserControl.Resources>

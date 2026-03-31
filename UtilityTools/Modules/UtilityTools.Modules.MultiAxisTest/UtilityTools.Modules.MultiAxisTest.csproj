@@ -26,8 +26,6 @@
       <!-- Prism 从 Modules 目录加载模块时，需要依赖 DLL 也在同目录 -->
       <SomeFiles Include="$(OutDir)*.dll" />
     </ItemGroup>
-    <Copy SourceFiles="@(SomeFiles)"
-          DestinationFolder="$(MSBuildProjectDirectory)\..\..\UtilityTools\bin\$(Configuration)\$(TargetFramework)\Modules\"
-          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(SomeFiles)" DestinationFolder="$(MSBuildProjectDirectory)\..\..\UtilityTools\bin\$(Configuration)\$(TargetFramework)\Modules\" SkipUnchangedFiles="true" />
   </Target>
 </Project>

@@ -5,8 +5,9 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace UtilityTools.Modules.MultiAxisTest.Model
+namespace UtilityTools.Core.Model
 {
+
     /// <summary>
     /// 第一层:最底层的定位误差表
     /// </summary>
@@ -14,13 +15,13 @@ namespace UtilityTools.Modules.MultiAxisTest.Model
     {
         [JsonPropertyName("目标位置")]
         public double TargetPosition { get; set; }
-        
+
         [JsonPropertyName("实际位置")]
         public double ActualPosition { get; set; }
 
     }
 
-    public class MotorData 
+    public class MotorData
     {
         [JsonPropertyName("轴类型")]
         public string AxisType { get; set; }
@@ -38,7 +39,7 @@ namespace UtilityTools.Modules.MultiAxisTest.Model
         public float MaxRange { get; set; }
 
         [JsonPropertyName("负向限位]")]
-        public bool NegativeLimit { get; set; } 
+        public bool NegativeLimit { get; set; }
 
         [JsonPropertyName("正向限位")]
         public bool PositiveLimit { get; set; }
@@ -79,9 +80,7 @@ namespace UtilityTools.Modules.MultiAxisTest.Model
         public string SampleStageId { get; set; }
         [JsonPropertyName("content")]
         public SampleStageReport Content { get; set; }
-       
-
-
 
     }
+    
 }

@@ -24,6 +24,7 @@ using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
 using UtilityTools.Core.Dialog;
+using UtilityTools.Core.Interface;
 using UtilityTools.Modules.MotorTest.Entity;
 using UtilityTools.Modules.MotorTest.Event;
 using UtilityTools.Modules.MotorTest.Interface;
@@ -46,6 +47,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             _containerProvider = containerProvider;
             _dialogHostService = containerProvider.Resolve<IDialogHostService>();
             _eventAggregator = _containerProvider.Resolve<IEventAggregator>();
+            testReportService = _containerProvider.Resolve<ITestReportService>();
             _enumMotorId = Id;
             _testModel = testModel;
             _name = name;
@@ -60,6 +62,7 @@ namespace UtilityTools.Modules.MotorTest.Model
 
         ThreeAxisTestModel _testModel;
         private readonly IEventAggregator _eventAggregator;
+        private ITestReportService testReportService;
 
         private IContainerProvider _containerProvider;
         private readonly IDialogHostService _dialogHostService;
@@ -341,7 +344,7 @@ namespace UtilityTools.Modules.MotorTest.Model
 
         public async Task DurabilityTest(CancellationToken cancellationToken)
         {
-            var runner = new MotorWorkflowRunner(_eventAggregator, _testModel.MotorEntity, _enumMotorId, MotorModel, FullStrokeRange, Name);
+            var runner = new MotorWorkflowRunner(testReportService,_eventAggregator, _testModel.MotorEntity, _enumMotorId, MotorModel, FullStrokeRange, Name);
             await runner.RunDurabilityTestAsync(cancellationToken);
         }
        
@@ -352,7 +355,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         public async Task BaseTest(CancellationToken cancellationToken)
         {
             MotorTestMessages.Clear(); // 清理旧成绩单
-            var runner = new MotorWorkflowRunner(_eventAggregator, _testModel.MotorEntity, _enumMotorId, MotorModel, FullStrokeRange, Name);
+            var runner = new MotorWorkflowRunner(testReportService,_eventAggregator, _testModel.MotorEntity, _enumMotorId, MotorModel, FullStrokeRange, Name);
             await runner.RunBaseTestAsync(cancellationToken);
         }
         // --- 下面是新补齐的“招数” ---
@@ -362,7 +365,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// </summary>
         public async Task SmoothnessTest(CancellationToken ct)
         {
-            var runner = new MotorWorkflowRunner(_eventAggregator, _testModel.MotorEntity, _enumMotorId, MotorModel, FullStrokeRange, Name);
+            var runner = new MotorWorkflowRunner(testReportService,_eventAggregator, _testModel.MotorEntity, _enumMotorId, MotorModel, FullStrokeRange, Name);
             // 这里调用 Runner 里对应的图纸（如果你还没写，咱们下一步在 Runner 里补）
             await runner.RunLeadScrewTestAsync(ct);
         }
@@ -385,7 +388,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         public async void AutomaticZeroInitialization()
         {
             // 1.调度器
-            var runner = new MotorWorkflowRunner(_eventAggregator, _testModel.MotorEntity, _enumMotorId, MotorModel, FullStrokeRange, Name);
+            var runner = new MotorWorkflowRunner(testReportService,_eventAggregator, _testModel.MotorEntity, _enumMotorId, MotorModel, FullStrokeRange, Name);
 
             // 2. 执行图纸 D：自动回零
             // (注意：这里如果你的按钮不带取消功能，可以传 CancellationToken.None)

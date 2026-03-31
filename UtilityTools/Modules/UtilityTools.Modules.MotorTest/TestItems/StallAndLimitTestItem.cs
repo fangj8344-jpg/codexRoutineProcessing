@@ -12,8 +12,15 @@ namespace UtilityTools.Modules.MotorTest.TestItems
     public class StallAndLimitTestItem: IMotorTestItem
     {
         private readonly bool _direction; // true 为正向，false 为负向
+        private readonly bool _useSpeedMode;
         public string TestName => _direction ? "正向限位与堵转检测" : "负向限位与堵转检测";
 
+        //加了一个默认参数，默认用位置模式
+        public StallAndLimitTestItem(bool direction, bool useSpeedMode = false)
+        {
+            _direction = direction;
+            _useSpeedMode = useSpeedMode;
+        }
         public StallAndLimitTestItem(bool direction)
         {
             _direction = direction;
@@ -27,7 +34,27 @@ namespace UtilityTools.Modules.MotorTest.TestItems
         {
             var result = new MotorTestResult { IsPassed = false };
             var posHistory = new List<int>();
+            if (_useSpeedMode)
+            {
+                // 【速度挡】
+                motorEntity.SetMotorControlModeCommand(motorId, EnumMotorCtrType.CloseLoopSpeedCtr); // 切换为速度模式
+                motorEntity.SetMotorEnableCommand(motorId, EnumMotorEnable.Enable);
+                await Task.Delay(100, ct);
 
+                // 发送连续运动指令 (这里用你代码里实际的速度/Jog指令，我暂写一个示例)
+                // 假设正向是正速度，负向是负速度
+                int testSpeed = _direction ? 5000 : -5000;
+                motorEntity.SetMotorGoToCommand(motorId, EnumMotorUnit.Pulse, testSpeed); // 👈 替换成你底层的速度驱动方法
+            }
+            else
+            {
+                // 【位置挡】
+                motorEntity.SetMotorControlModeCommand(motorId, EnumMotorCtrType.CloseLoopPosCtr); // 切换为位置模式
+                motorEntity.SetMotorEnableCommand(motorId, EnumMotorEnable.Enable);
+                await Task.Delay(100, ct);
+
+                motorEntity.SetMotorGoToCommand(motorId, EnumMotorUnit.Pulse, _direction ? 1000000 : -1000000);
+            }
             // 1. 发起移动
             motorEntity.SetMotorGoToCommand(motorId, EnumMotorUnit.Pulse, _direction ? 1000000 : -1000000);
 

@@ -51,7 +51,7 @@
                         </DockPanel>
                         <DockPanel>
                             <Label Content="序列号"/>
-                            <TextBlock Text="{Binding State.CurrentScanDisplay.SerialNumber}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{Binding CurrentScanDisplay.SerialNumber}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
                         </DockPanel>
                     </StackPanel>
                 </Border>

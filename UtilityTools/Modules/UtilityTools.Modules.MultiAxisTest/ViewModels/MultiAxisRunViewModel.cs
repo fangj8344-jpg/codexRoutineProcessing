@@ -120,67 +120,40 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
         }
         public async Task UploadData()
         {
-            _thingboardService.ServerUrl = "http://192.168.111.207:8989";  
-            //_thingboardService.ServerUrl = "http://192.168.111.207:8989";
-            _thingboardService.EnableMqtt = false;
-            _thingboardService.EnableHttp = true;
-            _thingboardService.AccessToken = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0ZW5hbnRAdGhpbmdzYm9hcmQub3JnIiwidXNlcklkIjoiYTY0Zjg1NDAtZDRhZi0xMWYwLTgxNDMtZGQ4YTYxYTA4Y2EyIiwic2NvcGVzIjpbIlRFTkFOVF9BRE1JTiJdLCJzZXNzaW9uSWQiOiIwYWQxOGI4ZC00ZWIzLTRjYjItODBjNC04NzY0NDc5OGRlYjUiLCJleHAiOjE3NzQ0MzYwNjksImlzcyI6InRoaW5nc2JvYXJkLmlvIiwiaWF0IjoxNzc0NDI3MDY5LCJlbmFibGVkIjp0cnVlLCJpc1B1YmxpYyI6ZmFsc2UsInRlbmFudElkIjoiYTYxYmNiMTAtZDRhZi0xMWYwLTgxNDMtZGQ4YTYxYTA4Y2EyIiwiY3VzdG9tZXJJZCI6IjEzODE0MDAwLTFkZDItMTFiMi04MDgwLTgwODA4MDgwODA4MCJ9.gOzhq6RXL0loAcQwrY8kUxZFetLDhG0jhwaJkK0of6ts32vXwqEIVuFwstEtcwVgEjFBIjvpFfwBbd5854kE4A";
-
-            var data = GenerateData();
-
-            HttpTestResult = await _thingboardService.UploadTelemetryAsync(data);
-        }
-
-        private string GenerateData()
-        {
-            var options = new JsonSerializerOptions { WriteIndented = true };
-            _state.UploadInformation.DeviceId = "e9607260-d4d5-11f0-938d-6d520bbaa0bf";
-            _state.UploadInformation.SampleStageId = "1234";
-            _state.UploadInformation.Content = new SampleStageReport
+            try
             {
-                StageId = "1234",
-                StartTime = DateTime.Now.AddMinutes(-5).ToString("o"),
-                EndTime = DateTime.Now.ToString("o"),
-                Motors = new List<MotorData>
+                // 1. 打上测试结束时间
+                // 因为你的 _state 就是档案柜，直接调它！
+                _state.CompleteReport();
+                //取出最终要上传的数据原件
+                var finalData = _state.GetFinalReport();
+
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                string jsonPayload = JsonSerializer.Serialize(finalData, options);
+
+
+                _thingboardService.ServerUrl = "http://192.168.111.207:8989";
+                _thingboardService.EnableMqtt = false;
+                _thingboardService.EnableHttp = true;
+                _thingboardService.AccessToken = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0ZW5hbnRAdGhpbmdzYm9hcmQub3JnIiwidXNlcklkIjoiYTY0Zjg1NDAtZDRhZi0xMWYwLTgxNDMtZGQ4YTYxYTA4Y2EyIiwic2NvcGVzIjpbIlRFTkFOVF9BRE1JTiJdLCJzZXNzaW9uSWQiOiIwYWQxOGI4ZC00ZWIzLTRjYjItODBjNC04NzY0NDc5OGRlYjUiLCJleHAiOjE3NzQ0MzYwNjksImlzcyI6InRoaW5nc2JvYXJkLmlvIiwiaWF0IjoxNzc0NDI3MDY5LCJlbmFibGVkIjp0cnVlLCJpc1B1YmxpYyI6ZmFsc2UsInRlbmFudElkIjoiYTYxYmNiMTAtZDRhZi0xMWYwLTgxNDMtZGQ4YTYxYTA4Y2EyIiwiY3VzdG9tZXJJZCI6IjEzODE0MDAwLTFkZDItMTFiMi04MDgwLTgwODA4MDgwODA4MCJ9.gOzhq6RXL0loAcQwrY8kUxZFetLDhG0jhwaJkK0of6ts32vXwqEIVuFwstEtcwVgEjFBIjvpFfwBbd5854kE4A";
+
+
+                HttpTestResult = await _thingboardService.UploadTelemetryAsync(jsonPayload);
+                // 发送完毕后，如果成功，系统会自动清理测试循环，准备测下一台设备
+                if (HttpTestResult)
                 {
-                    new MotorData
-                    {
-                        AxisType = "X",
-                        ForwardSpeedStdDev = 0.01,
-                        BackwardSpeedStdDev = 0.02,
-                        MinRange = -10,
-                        MaxRange = 10,
-                        NegativeLimit = true,
-                        PositiveLimit = true,
-                        PositioningStdDev = 0.005,
-                        PositionErrors = new List<PositionError>
-                        {
-                            new PositionError { TargetPosition = 0, ActualPosition = 0.01 },
-                            new PositionError { TargetPosition = 5, ActualPosition = 5.02 },
-                            new PositionError { TargetPosition = -5, ActualPosition = -4.98 }
-                        }
-                    },
-                    new MotorData
-                    {
-                        AxisType = "Y",
-                        ForwardSpeedStdDev = 0.015,
-                        BackwardSpeedStdDev = 0.025,
-                        MinRange = -20,
-                        MaxRange = 20,
-                        NegativeLimit = true,
-                        PositiveLimit = true,
-                        PositioningStdDev = 0.007,
-                        PositionErrors = new List<PositionError>
-                        {
-                            new PositionError { TargetPosition = 0, ActualPosition = -0.02 },
-                            new PositionError { TargetPosition = 10, ActualPosition = 9.95 },
-                            new PositionError { TargetPosition = -10, ActualPosition = -10.05 }
-                        }
-                    }
+                    NLog.LogManager.GetCurrentClassLogger().Debug($"上传成功:{jsonPayload}");
+                    _state.ResetNewTestCycle();
                 }
-            };
-            return JsonSerializer.Serialize(_state.UploadInformation, options);
+
+            }
+            catch (Exception ex) 
+            {
+                NLog.LogManager.GetCurrentClassLogger().Debug($"上传失败:{ex}");
+            }
         }
+
+      
 
     }
 }

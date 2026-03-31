@@ -1,4 +1,4 @@
-using Prism.Mvvm;
+﻿using Prism.Mvvm;
 
 namespace UtilityTools.Modules.MultiAxisTest.ViewModels
 {

@@ -10,6 +10,9 @@ using UtilityTools.Modules.MotorTest.SQLite;
 
 namespace UtilityTools.Modules.MotorTest.TestItems
 {
+    /// <summary>
+    /// 满行程测试
+    /// </summary>
     public class FullTravelTestItem: IMotorTestItem
     {
         private readonly (int min, int max) _standardRange;
@@ -26,7 +29,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             IMotorEntity motorEntity, 
             CancellationToken ct)
         {
-            var result = new MotorTestResult { IsPassed = false };
+            var result = new TravelTestResult { IsPassed = false };
 
             // 1. 执行正向测试
             var forwardTest = new StallAndLimitTestItem(true);
@@ -37,6 +40,8 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                 return result;
             }
             int posForward = motorModel.MotorParams.Pos;
+            result.RealMaxPos = posForward; // 塞进口袋
+            result.IsPositiveLimitFound = true;
 
             // 2. 执行反向测试
             var backwardTest = new StallAndLimitTestItem(false);
@@ -47,6 +52,8 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                 return result;
             }
             int posBackward = motorModel.MotorParams.Pos;
+            result.RealMinPos = posBackward; // 塞进口袋
+            result.IsNegativeLimitFound = true;
 
             // 3. 计算行程
             int fullStroke = posForward - posBackward;
@@ -61,8 +68,6 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                 int centerPoint = posBackward + (fullStroke / 2);
                 result.ErrorDescription = $"行程合格。建议中心点位置: {centerPoint}";
 
-                // 5. 保存到数据库 (稍后我们可以把这段也抽离)
-                //await SaveToDatabase(motorModel.MotorModelAxis, fullStroke, posForward, posBackward);
             }
             else
             {

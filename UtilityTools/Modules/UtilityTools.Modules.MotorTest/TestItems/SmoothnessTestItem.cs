@@ -55,25 +55,27 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             // --- 开始正式测试 ---
             // A 段：正向
             int startF = motorModel.SpeedList.Count;
-            var fRes = await new StallAndLimitTestItem(true).ExecuteAsync(motorId, motorModel, motorEntity, ct);
+            var fRes = await new StallAndLimitTestItem(true,true).ExecuteAsync(motorId, motorModel, motorEntity, ct);
             int endF = motorModel.SpeedList.Count;
             double stdDevF = CalculateStableStdDev(startF, endF);
 
             // B 段：反向
             int startB = motorModel.SpeedList.Count;
-            var bRes = await new StallAndLimitTestItem(false).ExecuteAsync(motorId, motorModel, motorEntity, ct);
+            var bRes = await new StallAndLimitTestItem(false,true).ExecuteAsync(motorId, motorModel, motorEntity, ct);
             int endB = motorModel.SpeedList.Count;
             double stdDevB = CalculateStableStdDev(startB, endB);
 
             // --- 综合评价 ---
-            var result = new MotorTestResult();
+            var result = new SmoothnessTestResult();
+
             if (fRes.IsPassed && bRes.IsPassed)
             {
                 result.IsPassed = true;
-                // 取两段中波动最大的那个作为最终标准差（最严标准）
-                double finalStdDev = Math.Max(stdDevF, stdDevB);
+                result.ForwardStdDev = stdDevF;
+                result.BackwardStdDev = stdDevB;
 
-                result.MeasuredValue = $"StdDev:{finalStdDev:F2}";
+
+                result.MeasuredValue = $"stdDevF：{stdDevF}:stdDevB：{stdDevB}";
                 result.Description = $"正向波动:{stdDevF:F2}, 反向波动:{stdDevB:F2}";
             }
             return result;

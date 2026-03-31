@@ -25,9 +25,6 @@ namespace UtilityTools.Modules.MotorTest.Model
             SpeedList = new ObservableCollection<PlotViewSpeedMessage>();
             MotorParams = new MotorParams();
 
-            // ==========================================
-            // 【核心修复】：告诉 WPF，我要在后台线程高频修改这个集合，请你帮我自动在 UI 线程批量同步！
-            // ==========================================
             BindingOperations.EnableCollectionSynchronization(PointList, _pointListLock);
             BindingOperations.EnableCollectionSynchronization(SpeedList, _speedListLock);
         }

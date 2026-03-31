@@ -30,38 +30,14 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
         private readonly IContainerProvider _containerProvider;
 
         private IEventAggregator _eventAggregator;
-        private MultiAxisWorkflowState _state;
-        public MultiAxisWorkflowState State
-        {
-            get => _state;
-            set { SetProperty(ref _state, value); }   
-        }
-        public string CurrentScanText
-        {
-            get => _state.CurrentScanText;
-            set
-            {
-                if (_state.CurrentScanText != value)
-                {
-                    _state.CurrentScanText = value;
-                    RaisePropertyChanged();
-                }
-            }
-
-        }
-
-
-
-
-        public MultiAxisScanViewModel(IRegionManager regionManager, IEventAggregator eventAggregator, MultiAxisWorkflowState state, IContainerProvider containerProvider)
+        public MultiAxisWorkflowState State { get; }
+       
+        public MultiAxisScanViewModel(IRegionManager regionManager, IEventAggregator eventAggregator, MultiAxisWorkflowState state, IContainerProvider containerProvider )
             : base(containerProvider)
         {
             _regionManager = regionManager;
-            _state = state;
-
+            State = state;
             _eventAggregator = eventAggregator;
-           
-            _containerProvider = containerProvider;
             InputLanguageManager.Current.CurrentInputLanguage = new CultureInfo("en-US");
 
         }
@@ -71,8 +47,8 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
         private void OnBarcodeReceived(string[] barcodeParts)
         {
 
-            CurrentScanText = string.Join("/", barcodeParts);
-            _state.CurrentScanDisplay = new ScanDisplayModel
+            State.CurrentScanText = string.Join("/", barcodeParts);
+            State.CurrentScanDisplay = new ScanDisplayModel
             {
 
                 PurchaseOrder = barcodeParts.Length > 0 ? barcodeParts[0] : string.Empty,
@@ -85,12 +61,12 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
 
                 SerialNumber = (barcodeParts.Length > 3 && barcodeParts[3].Length > 6) ? barcodeParts[3].Substring(6) : string.Empty
             };
-            if (_state.CurrentScanDisplay.ProductionDate.Length != 6 || _state.CurrentScanDisplay.SerialNumber.Length <  3)
+            if (State.CurrentScanDisplay.ProductionDate.Length != 6 || State.CurrentScanDisplay.SerialNumber.Length <  3)
             {
                 ScanErrorNotice();
             }
 
-            _state.UploadInformation.SampleStageId = CurrentScanText;
+            State.UploadInformation.SampleStageId = State.CurrentScanText;
         }
         private void ScanErrorNotice() 
         {

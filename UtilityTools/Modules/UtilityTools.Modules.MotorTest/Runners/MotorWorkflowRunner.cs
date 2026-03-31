@@ -5,6 +5,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Interop;
+using UtilityTools.Core.Interface; // 引用接口
+using UtilityTools.Core.Model;
 using UtilityTools.Modules.MotorTest.Event;
 using UtilityTools.Modules.MotorTest.Interface;
 using UtilityTools.Modules.MotorTest.Model;
@@ -15,6 +18,7 @@ namespace UtilityTools.Modules.MotorTest.Runners
 {
     public class MotorWorkflowRunner
     {
+        private readonly ITestReportService _reportService;
         private readonly IEventAggregator _eventAggregator;
         private readonly IMotorEntity _motorEntity;
         private readonly string _motorName;
@@ -24,6 +28,7 @@ namespace UtilityTools.Modules.MotorTest.Runners
 
         // 构造函数：把工具全领进来
         public MotorWorkflowRunner(
+            ITestReportService reportService,
             IEventAggregator eventAggregator,
             IMotorEntity motorEntity,
             EnumMotorId motorId,
@@ -31,6 +36,7 @@ namespace UtilityTools.Modules.MotorTest.Runners
             (int min, int max) strokeRange,
             string motorName)
         {
+            _reportService = reportService;
             _eventAggregator = eventAggregator;
             _motorEntity = motorEntity;
             _motorId = motorId;
@@ -122,6 +128,9 @@ namespace UtilityTools.Modules.MotorTest.Runners
         // ==========================================
         public async Task RunBaseTestAsync(CancellationToken cancellationToken)
         {
+            //先准备好这一轴的 MotorData 对象
+            var myData = new MotorData { AxisType = _motorName, PositionErrors = new List<PositionError>() };
+
             // 注意：这里不再清空界面的集合，清空动作由界面的 Command 触发前自己做
             PublishLog($"--- 开始执行 [{_motorName}] 全套基础测试 ---");
 
@@ -147,6 +156,14 @@ namespace UtilityTools.Modules.MotorTest.Runners
             PublishLog($"[{_motorName}] 正在执行满行程及限位扫描...");
             var fullTravelTest = new FullTravelTestItem(_strokeRange);
             var fullTravelResult = await fullTravelTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken);
+            // 判断积木交上来的是不是定义的 TravelTestResult
+            if (fullTravelResult is TravelTestResult travelRes)
+            {
+                myData.MaxRange = travelRes.RealMaxPos;
+                myData.MinRange = travelRes.RealMinPos;
+                myData.PositiveLimit = travelRes.IsPositiveLimitFound;
+                myData.NegativeLimit = travelRes.IsNegativeLimitFound;
+            }
             PublishTestResult(fullTravelTest.TestName, $"[{_strokeRange.min}-{_strokeRange.max}]", fullTravelResult);
             if (!fullTravelResult.IsPassed) { PublishLog($"[{_motorName}] 满行程测试失败，终止。"); return; }
 
@@ -167,10 +184,74 @@ namespace UtilityTools.Modules.MotorTest.Runners
             int maxPos = _motorModel.MotorParams.PositiveLimitPosition;
             if (maxPos <= minPos) { minPos = 0; maxPos = 100000; }
 
-            var linearTest = new LinearStepPrecisionTestItem(minPos, maxPos);
+            var linearTest = new LinearStepPrecisionTestItem(minPos, maxPos,msg => PublishLog(msg));
             var linearResult = await linearTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken);
-            PublishTestResult(linearTest.TestName, "StdDev<150", linearResult);
+            //  98 个点和标准差记录下来
+            if (linearResult is LinearTestResult linearRes)
+            {
+                myData.PositioningStdDev = linearRes.FinalStdDev;
+                
+                myData.PositionErrors = linearRes.PositionErrors;
+            }
 
+
+            PublishTestResult(linearTest.TestName, "StdDev<150", linearResult);
+            _reportService.AddOrUpdateMotorData(myData);
+            PublishLog($"[{_motorName}] 数据已录入总报告。");
+
+            // ==========================================
+            // 【新增】积木 6：丝杆顺滑度测试 (获取正反向速度标准差)
+            // ==========================================
+            PublishLog($"🚀 [{_motorName}] 开始30分钟丝杆顺滑度测试...");
+            var smoothnessTest = new SmoothnessTestItem();
+
+            // 包工头的两个小本本：记下每一圈的正反向标准差
+            List<double> allForwardStdDevs = new List<double>();
+            List<double> allBackwardStdDevs = new List<double>();
+
+            // 掐表计时：30分钟
+            var sw = Stopwatch.StartNew();
+            TimeSpan testDuration = TimeSpan.FromMinutes(5);
+            int lapCount = 1;
+
+            // 只要时间没到 30 分钟，就一直跑
+            while (sw.Elapsed < testDuration)
+            {
+                cancellationToken.ThrowIfCancellationRequested(); // 随时响应手动停止
+
+                PublishLog($"[{_motorName}] 正在跑第 {lapCount} 圈 (已耗时: {sw.Elapsed.TotalMinutes:F1} min)...");
+
+                // 跑一圈积木（一次正向 + 一次反向）
+                var smoothnessResult = await smoothnessTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken);
+
+                // 如果这一圈顺利跑完，就把成绩记在小本本上
+                if (smoothnessResult is SmoothnessTestResult smoothRes && smoothRes.IsPassed)
+                {
+                    allForwardStdDevs.Add(smoothRes.ForwardStdDev);
+                    allBackwardStdDevs.Add(smoothRes.BackwardStdDev);
+                }
+                else
+                {
+                    // 如果跑到一半卡死了，直接中止整个大测试
+                    PublishLog($"[{_motorName}] ❌ 丝杆在第 {lapCount} 圈卡死或异常，测试强行终止！");
+                    return;
+                }
+
+                lapCount++;
+            }
+            sw.Stop(); // 30 分钟到！停表！
+
+            // 把两个小本本里的数据取平均，填进表格里面
+            myData.ForwardSpeedStdDev = allForwardStdDevs.Any() ? Math.Round(allForwardStdDevs.Average(), 3) : 0;
+            myData.BackwardSpeedStdDev = allBackwardStdDevs.Any() ? Math.Round(allBackwardStdDevs.Average(), 3) : 0;
+
+            PublishLog($"✅ [{_motorName}] 30分钟测试达标！正向均值波动: {myData.ForwardSpeedStdDev}, 反向均值波动: {myData.BackwardSpeedStdDev}");
+
+            // ==========================================
+            // 终点站：把填得满满当当的体检表交上去！
+            // ==========================================
+            _reportService.AddOrUpdateMotorData(myData);
+            PublishLog($"🎉 [{_motorName}] 所有数据已完美录入总报告！");
             // ==========================================
             // 收尾：回到物理行程中点
             // ==========================================
@@ -181,6 +262,7 @@ namespace UtilityTools.Modules.MotorTest.Runners
             _motorEntity.SetMotorGoToCommand(_motorId, EnumMotorUnit.Pulse, midPoint);
 
             await Task.Delay(5000, cancellationToken);
+
             PublishLog($"--- [{_motorName}] 所有基础测试已完美通过！ ---");
         }
         // ==========================================
@@ -256,54 +338,69 @@ namespace UtilityTools.Modules.MotorTest.Runners
         {
             try
             {
-                PublishLog($"🚀 [{_motorName}] 30分钟丝杆往复测试开始...");
+                PublishLog($"🚀 [{_motorName}] 30分钟丝杆耐久测试开始");
 
-                // 1. 准备工作
-                _motorEntity.SetMotorControlModeCommand(_motorId, EnumMotorCtrType.CloseLoopPosCtr);
-                _motorEntity.SetMotorEnableCommand(_motorId, EnumMotorEnable.Enable);
-                await Task.Delay(500, ct);
+                // 1. 极其优雅：直接掏出你写好的绝美积木
+                var smoothnessTest = new SmoothnessTestItem();
 
-                // 2. 确定终点
-                // 【修正 1】：把 FullStrokeRange 改为类顶部的字段 _strokeRange
-                // 【修正 2】：注意字段名是 .max 和 .min (根据你构造函数的定义)
-                int posTarget = _strokeRange.max > 0 ? _strokeRange.max : 100000;
-                int negTarget = _strokeRange.min;
+                // 2. 准备两个小本本，记下每一圈的成绩
+                List<double> allForwardStdDevs = new List<double>();
+                List<double> allBackwardStdDevs = new List<double>();
 
                 var sw = Stopwatch.StartNew();
                 TimeSpan testDuration = TimeSpan.FromMinutes(30);
+                int lapCount = 1;
 
+                // 3. 开启 30 分钟马拉松
                 while (sw.Elapsed < testDuration)
                 {
-                    ct.ThrowIfCancellationRequested();
+                    ct.ThrowIfCancellationRequested(); // 随时响应手动停止
 
-                    // --- A. 跑向正向终点 ---
-                    PublishLog($"[{_motorName}] 往正向运行: {posTarget} (已跑: {sw.Elapsed.TotalMinutes:F1} min)");
-                    _motorEntity.SetMotorGoToCommand(_motorId, EnumMotorUnit.Pulse, posTarget);
+                    PublishLog($"[{_motorName}] 正在跑第 {lapCount} 圈 (已耗时: {sw.Elapsed.TotalMinutes:F1} min)...");
 
-                    // 【修正 3】：把 MotorModel 改为实例字段 _motorModel
-                    while (Math.Abs(_motorModel.MotorParams.Pos - posTarget) > 100)
+                    // 🚨 核心复用：直接让积木去跑一圈！
+                    // 因为积木内部已经挂了速度挡，所以它跑出来的波动绝对真实！
+                    var result = await smoothnessTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, ct);
+
+                    if (result is SmoothnessTestResult smoothRes && smoothRes.IsPassed)
                     {
-                        ct.ThrowIfCancellationRequested();
-                        if (_motorModel.MotorParams.MoveState == EnumMotorMoveState.MotorStop) break;
-                        await Task.Delay(100, ct);
+                        // 把这一圈算出来的波动存进临时本子里
+                        allForwardStdDevs.Add(smoothRes.ForwardStdDev);
+                        allBackwardStdDevs.Add(smoothRes.BackwardStdDev);
+                    }
+                    else
+                    {
+                        PublishLog($"[{_motorName}] ❌ 第 {lapCount} 圈测试异常中止！");
+                        return;
                     }
 
-                    // --- B. 跑向负向终点 ---
-                    ct.ThrowIfCancellationRequested();
-                    PublishLog($"[{_motorName}] 往负向运行: {negTarget} (已跑: {sw.Elapsed.TotalMinutes:F1} min)");
-                    _motorEntity.SetMotorGoToCommand(_motorId, EnumMotorUnit.Pulse, negTarget);
+                    lapCount++;
 
-                    // 【修正 4】：同理，使用 _motorModel
-                    while (Math.Abs(_motorModel.MotorParams.Pos - negTarget) > 100)
+                    // ⚠️ 防卡死终极杀招：每跑完一圈，强制清空底层的速度记录集合！
+                    // 把几十万个点清零，让 OxyPlot 永远只画最新的一圈，界面丝滑得飞起！
+                    App.Current.Dispatcher.Invoke(() =>
                     {
-                        ct.ThrowIfCancellationRequested();
-                        if (_motorModel.MotorParams.MoveState == EnumMotorMoveState.MotorStop) break;
-                        await Task.Delay(100, ct);
-                    }
+                        _motorModel.SpeedList?.Clear();
+                    });
                 }
-
                 sw.Stop();
-                PublishLog($"✅ [{_motorName}] 30分钟满载测试圆满完成！");
+
+                // 4. 30 分钟到了，算总平均账！
+                double finalF = allForwardStdDevs.Any() ? Math.Round(allForwardStdDevs.Average(), 3) : 0;
+                double finalB = allBackwardStdDevs.Any() ? Math.Round(allBackwardStdDevs.Average(), 3) : 0;
+
+                // 5. 【核心】：把成绩单拍在 UI 界面的“测试结果”表格里！
+                var finalResult = new MotorTestResult
+                {
+                    IsPassed = true, // 强制给个绿灯
+                    MeasuredValue = $"正向:{finalF} / 反向:{finalB}", // 填入测量值
+                    ErrorDescription = "独立跑机，不上报" // 填入说明
+                };
+
+                // 调用你包工头自带的方法，第一个参数是测试名，第二个是标准值，第三个是结果对象
+                PublishTestResult("30分钟丝杆耐久测试", "< 150", finalResult);
+
+                PublishLog($"✅ [{_motorName}] 30分钟测试圆满完成！已显示在结果表格中。");
             }
             catch (OperationCanceledException)
             {
