@@ -371,6 +371,7 @@ namespace UtilityTools.Services.Services
                     else
                     {
                         string errorStr = await response.Content.ReadAsStringAsync();
+                        _logger.Error($"登录失败{response.Content}");
                         return (false, "", 0, $"登录失败 (HTTP {(int)response.StatusCode}): {errorStr}");
                     }
                 }
@@ -441,12 +442,14 @@ namespace UtilityTools.Services.Services
                     {
                         // 文档说 200 是覆盖更新，201 是新建成功，都算成功
                         DataUploaded?.Invoke(this, "数据已成功送达服务器");
+                        _logger.Debug($"数据上传成功{jsonPayload}");
                         return true;
                     }
                     else
                     {
                         string errorStr = await response.Content.ReadAsStringAsync();
                         UploadFailed?.Invoke(this, new UploadFailedEventArgs { ErrorMessage = $"上传失败 (HTTP {(int)response.StatusCode}): {errorStr}" });
+                        _logger.Debug($"数据上传失败{(int)response.StatusCode}): {errorStr}");
                         return false;
                     }
                 }

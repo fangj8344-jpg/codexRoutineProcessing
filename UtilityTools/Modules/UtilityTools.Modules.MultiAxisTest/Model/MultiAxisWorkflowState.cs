@@ -133,7 +133,16 @@ namespace UtilityTools.Modules.MultiAxisTest.Model
 
         public void AddOrUpdateMotorData(MotorData data)
         {
-            
+            // 加上 lock 防止多线程跑电机时把列表挤崩溃
+            lock (UploadInformation.Content.Motors)
+            {
+                var existing = UploadInformation.Content.Motors.FirstOrDefault(m => m.AxisType == data.AxisType);
+                if (existing != null)
+                {
+                    UploadInformation.Content.Motors.Remove(existing);
+                }
+                UploadInformation.Content.Motors.Add(data);
+            }
         }
 
         public void InitReport(string deviceId, string stageId)

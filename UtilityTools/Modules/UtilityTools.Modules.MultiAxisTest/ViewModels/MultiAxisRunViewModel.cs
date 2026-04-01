@@ -144,6 +144,7 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
                 // 因为你的 _state 就是档案柜，直接调它！
                 //取出最终要上传的数据原件
                 _state.CompleteReport();
+
                 var motorTestData = _state.GetFinalReport();
               
                 // 2. 拿到管家，准备拼装数据
@@ -151,26 +152,24 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
                 ThingsBoardAuthManager.LoadConfig();
                 var config = ThingsBoardAuthManager.Current;
                 // 🚨 3. 严格按照 API 文档的要求，拼装匿名外壳对象
-                var finalPayload = new
-                {
-                    device_id = string.IsNullOrWhiteSpace(config.DeviceId) ? "未配置设备ID" : config.DeviceId,
-                    content = motorTestData
-                };
+                _state.UploadInformation.DeviceId = config.DeviceId;
+
 
                 // 4. 序列化成 JSON 字符串
                 var options = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
-                string jsonPayload = System.Text.Json.JsonSerializer.Serialize(finalPayload, options);
+                string jsonPayload = System.Text.Json.JsonSerializer.Serialize(_state.UploadInformation, options);
 
                 // 5. 🚀 一键发射！底层保镖会负责查票、买票、带票过安检
                 HttpTestResult = await _thingboardService.UploadTelemetryAsync(jsonPayload);
 
-                // 6. 后续处理：如果成功（盾牌变绿弹窗），准备下一台设备的测试
+                // 6. 后续处理：如果成功（盾牌变绿弹窗），准备下一台设备的测试 
                 if (HttpTestResult)
                 {
                     NLog.LogManager.GetCurrentClassLogger().Debug($"标定数据上传成功:\n{jsonPayload}");
                     _state.ResetNewTestCycle();
                     // 注意：你现有的代码里通过 _thingboardService_DataUploaded 事件已经处理了成功弹窗，这里就不需要再弹了
                 }
+
 
             }
             catch (Exception ex) 

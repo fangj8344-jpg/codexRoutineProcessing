@@ -93,6 +93,7 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
             // 5. 赋值上传信息
             State.UploadInformation.SampleStageId = State.CurrentScanText;
             State.UploadInformation.Content.StageId = State.CurrentScanText;
+
             ConfirmCommand.RaiseCanExecuteChanged();
         }
         private void ScanErrorNotice() 
