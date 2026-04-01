@@ -1,4 +1,5 @@
-﻿using Prism.Commands;
+﻿using MaterialDesignThemes.Wpf;
+using Prism.Commands;
 using Prism.Ioc;
 using Prism.Mvvm;
 using Prism.Regions;
@@ -12,7 +13,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using TouchSocket.Core;
+using UtilityTools.Core.Helper;
 using UtilityTools.Modules.MultiAxisTest.Model;
+using UtilityTools.Modules.MultiAxisTest.Views;
 using UtilityTools.Services.Interfaces;
 using UtilityTools.Services.Interfaces.IServices;
 using UtilityTools.Services.Services;
@@ -37,6 +40,7 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
         }
         public DelegateCommand ExecuteGoBackCommand { get; set; }
         public DelegateCommand UploadDataCommand { get; set; }
+        public DelegateCommand OpenEngineerConfigCommand { get; set; }
 
         //构造函数注入
         public MultiAxisRunViewModel(IRegionManager region, MultiAxisWorkflowState workflowState, Prism.Ioc.IContainerProvider containerProvider)
@@ -45,10 +49,24 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
             _state = workflowState;
             ExecuteGoBackCommand = new DelegateCommand(ExecuteGoBack);
             UploadDataCommand = new DelegateCommand(async () => await UploadData());
+            OpenEngineerConfigCommand = new DelegateCommand(ExecuteOpenEngineerConfig);
             _thingboardService = containerProvider.Resolve<IServiceFactory>().GetThingboardService();
             _thingboardService.DataUploaded += _thingboardService_DataUploaded;
             _thingboardService.UploadFailed += _thingboardService_UploadFailed;
 
+        }
+
+        private async void ExecuteOpenEngineerConfig()
+        {
+            // 防止重复弹窗
+            if (DialogHost.IsDialogOpen("MultiAxisRunViewHost")) return;
+
+            // 实例化咱们刚才写的漂亮页面
+            var view = new EngineerConfigView();
+
+            // 🚨 直接用你的 DialogHost 弹出来，自带黑色半透明遮罩，高级感拉满！
+            // 注意这里的 Identifier 要和 XAML 里定义的一致："MultiAxisRunViewHost"
+            await DialogHost.Show(view, "MultiAxisRunViewHost");
         }
 
         private void _thingboardService_UploadFailed(object? sender, UploadFailedEventArgs e)
@@ -124,26 +142,34 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
             {
                 // 1. 打上测试结束时间
                 // 因为你的 _state 就是档案柜，直接调它！
-                _state.CompleteReport();
                 //取出最终要上传的数据原件
-                var finalData = _state.GetFinalReport();
+                _state.CompleteReport();
+                var motorTestData = _state.GetFinalReport();
+              
+                // 2. 拿到管家，准备拼装数据
+                // 因为确保配置存在这件事交给了底层 Service，我们这里只要拿 DeviceId 就行
+                ThingsBoardAuthManager.LoadConfig();
+                var config = ThingsBoardAuthManager.Current;
+                // 🚨 3. 严格按照 API 文档的要求，拼装匿名外壳对象
+                var finalPayload = new
+                {
+                    device_id = string.IsNullOrWhiteSpace(config.DeviceId) ? "未配置设备ID" : config.DeviceId,
+                    content = motorTestData
+                };
 
-                var options = new JsonSerializerOptions { WriteIndented = true };
-                string jsonPayload = JsonSerializer.Serialize(finalData, options);
+                // 4. 序列化成 JSON 字符串
+                var options = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
+                string jsonPayload = System.Text.Json.JsonSerializer.Serialize(finalPayload, options);
 
-
-                _thingboardService.ServerUrl = "http://192.168.111.207:8989";
-                _thingboardService.EnableMqtt = false;
-                _thingboardService.EnableHttp = true;
-                _thingboardService.AccessToken = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0ZW5hbnRAdGhpbmdzYm9hcmQub3JnIiwidXNlcklkIjoiYTY0Zjg1NDAtZDRhZi0xMWYwLTgxNDMtZGQ4YTYxYTA4Y2EyIiwic2NvcGVzIjpbIlRFTkFOVF9BRE1JTiJdLCJzZXNzaW9uSWQiOiIwYWQxOGI4ZC00ZWIzLTRjYjItODBjNC04NzY0NDc5OGRlYjUiLCJleHAiOjE3NzQ0MzYwNjksImlzcyI6InRoaW5nc2JvYXJkLmlvIiwiaWF0IjoxNzc0NDI3MDY5LCJlbmFibGVkIjp0cnVlLCJpc1B1YmxpYyI6ZmFsc2UsInRlbmFudElkIjoiYTYxYmNiMTAtZDRhZi0xMWYwLTgxNDMtZGQ4YTYxYTA4Y2EyIiwiY3VzdG9tZXJJZCI6IjEzODE0MDAwLTFkZDItMTFiMi04MDgwLTgwODA4MDgwODA4MCJ9.gOzhq6RXL0loAcQwrY8kUxZFetLDhG0jhwaJkK0of6ts32vXwqEIVuFwstEtcwVgEjFBIjvpFfwBbd5854kE4A";
-
-
+                // 5. 🚀 一键发射！底层保镖会负责查票、买票、带票过安检
                 HttpTestResult = await _thingboardService.UploadTelemetryAsync(jsonPayload);
-                // 发送完毕后，如果成功，系统会自动清理测试循环，准备测下一台设备
+
+                // 6. 后续处理：如果成功（盾牌变绿弹窗），准备下一台设备的测试
                 if (HttpTestResult)
                 {
-                    NLog.LogManager.GetCurrentClassLogger().Debug($"上传成功:{jsonPayload}");
+                    NLog.LogManager.GetCurrentClassLogger().Debug($"标定数据上传成功:\n{jsonPayload}");
                     _state.ResetNewTestCycle();
+                    // 注意：你现有的代码里通过 _thingboardService_DataUploaded 事件已经处理了成功弹窗，这里就不需要再弹了
                 }
 
             }

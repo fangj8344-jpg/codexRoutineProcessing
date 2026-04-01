@@ -103,7 +103,25 @@ namespace UtilityTools.Services.Interfaces.IServices
         /// <returns>是否成功</returns>
         Task<bool> UploadTelemetryAsync(string data);
 
-        
+
+        /// <summary>
+        /// 使用账号密码登录获取 Token (JWT)
+        /// </summary>
+        /// <param name="username">租户/工程师账号</param>
+        /// <param name="password">明文密码</param>
+        /// <returns>
+        /// IsSuccess: 是否登录成功
+        /// Token: 拿到的 JWT 字符串
+        /// ExpiresIn: Token 有效期（秒）
+        /// ErrorMsg: 失败时的错误信息
+        /// </returns>
+        /// <remarks>
+        /// 使用场景：
+        /// 1. 配置界面手动点击"请求授权令牌"时调用
+        /// 2. 后台发现 Token 过期时，静默拦截并自动调用
+        /// </remarks>
+        Task<(bool IsSuccess, string Token, int ExpiresIn, string ErrorMsg)> LoginAsync(string username, string password);
+
 
         /// <summary>
         /// 上传设备属性
@@ -125,6 +143,9 @@ namespace UtilityTools.Services.Interfaces.IServices
 
       
 
+
+
+
         /// <summary>
         /// 测试连接(用于配置界面)
         /// </summary>
@@ -134,7 +155,7 @@ namespace UtilityTools.Services.Interfaces.IServices
         /// 用户在配置界面输入服务器地址和 AccessToken 后，
         /// 点击"测试连接"按钮调用此方法
         /// </remarks>
-        Task<bool> TestConnectionAsync();
+        Task<bool> TestConnectionAsync(); 
         #endregion
 
         /// <summary>

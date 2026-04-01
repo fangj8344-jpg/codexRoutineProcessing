@@ -204,6 +204,12 @@ namespace UtilityTools.Modules.MotorTest.Runners
             // 【新增】积木 6：丝杆顺滑度测试 (获取正反向速度标准差)
             // ==========================================
             PublishLog($"🚀 [{_motorName}] 开始30分钟丝杆顺滑度测试...");
+            int midPoint = minPos + (maxPos - minPos) / 2;
+
+            // 使用底层接口发指令，不再依赖外面的 Goto 方法
+            _motorEntity.SetMotorGoToCommand(_motorId, EnumMotorUnit.Pulse, midPoint);
+
+            await Task.Delay(5000, cancellationToken);
             var smoothnessTest = new SmoothnessTestItem();
 
             // 包工头的两个小本本：记下每一圈的正反向标准差
@@ -256,7 +262,7 @@ namespace UtilityTools.Modules.MotorTest.Runners
             // ==========================================
             // 收尾：回到物理行程中点
             // ==========================================
-            int midPoint = minPos + (maxPos - minPos) / 2;
+            midPoint = minPos + (maxPos - minPos) / 2;
             PublishLog($"[{_motorName}] 测试全部完毕，正在回到中点位置: {midPoint}");
 
             // 使用底层接口发指令，不再依赖外面的 Goto 方法

@@ -8,9 +8,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using UtilityTools.Core.Helper;
 using UtilityTools.Services.Interfaces.IServices;
 using static UtilityTools.Services.Interfaces.IServices.IThingboardService;
 
@@ -231,38 +234,6 @@ namespace UtilityTools.Services.Services
         }
 
         
-        /// <summary>
-        /// 上传遥测数据
-        /// </summary>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        public async Task<bool> UploadTelemetryAsync(string data)
-        {
-
-            bool success = false;
-
-            //1.如果启用HTTP， 使用HTTP上传
-            if (EnableHttp)
-            {
-                success = await UploadViaHttpAsync(data);
-            }
-            //2.如果启用MQTT且已连接，使用MQTT连接
-            if (EnableMqtt && _mqttClient.IsConnected)
-            {
-                var mqttSuccess = await UploadviaMqttAsync(data);
-                success = mqttSuccess || success;
-            }
-
-            //3.根据结果触发事件
-            if (success)
-            {
-                var json = JsonConvert.SerializeObject(data);
-                DataUploaded?.Invoke(this, json);
-                _logger.Debug($"数据上传成功:{json}");
-            }
-            
-            return success;
-        }
 
        
 
@@ -359,6 +330,130 @@ namespace UtilityTools.Services.Services
                     Exception = ex,
                     ErrorMessage = ex.Message
                 });
+                return false;
+            }
+        }
+
+
+        // ==========================================
+        // 🔑 1. 登录换票接口 (/api/auth/login/)
+        // ==========================================
+        public async Task<(bool IsSuccess, string Token, int ExpiresIn, string ErrorMsg)> LoginAsync(string username, string password)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(ServerUrl)) return (false, "", 0, "服务器地址未配置");
+
+                // 🚨 完全按文档拼接路由
+                string requestUrl = $"{ServerUrl.TrimEnd('/')}/api/auth/login/";
+
+                var loginPayload = new { username = username, password = password };
+                string jsonString = System.Text.Json.JsonSerializer.Serialize(loginPayload);
+                var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
+
+                using (var client = new HttpClient())
+                {
+                    client.Timeout = TimeSpan.FromSeconds(TimeoutSeconds > 0 ? TimeoutSeconds : 10);
+                    HttpResponseMessage response = await client.PostAsync(requestUrl, content);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string responseBody = await response.Content.ReadAsStringAsync();
+                        using (JsonDocument doc = JsonDocument.Parse(responseBody))
+                        {
+                            string token = doc.RootElement.GetProperty("token").GetString();
+                            this.AccessToken = token;
+
+                            // 🚨 文档规定有效期为 1 天 = 86400 秒
+                            return (true, token, 86400, string.Empty);
+                        }
+                    }
+                    else
+                    {
+                        string errorStr = await response.Content.ReadAsStringAsync();
+                        return (false, "", 0, $"登录失败 (HTTP {(int)response.StatusCode}): {errorStr}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return (false, "", 0, $"网络通讯异常: {ex.Message}");
+            }
+        }
+        // ==========================================
+        // 🛡️ 2. 起飞前检查保镖 (静默换票)
+        // ==========================================
+        private async Task<bool> EnsureAuthReadyAsync()
+        {
+            ThingsBoardAuthManager.LoadConfig();
+            var config = ThingsBoardAuthManager.Current;
+
+            // 预留 5 分钟缓冲期
+            if (!string.IsNullOrEmpty(config.JwtToken) && config.TokenExpireTime > DateTime.Now.AddMinutes(5))
+            {
+                return true;
+            }
+
+            string pwd = ThingsBoardAuthManager.DecryptPassword(config.EncryptedPassword);
+            if (string.IsNullOrWhiteSpace(config.Username) || string.IsNullOrWhiteSpace(pwd)) return false;
+
+            // 登录
+            var result = await LoginAsync(config.Username, pwd);
+            if (result.IsSuccess)
+            {
+                config.JwtToken = result.Token;
+                config.TokenExpireTime = DateTime.Now.AddSeconds(result.ExpiresIn);
+                ThingsBoardAuthManager.SaveConfig(); // 保存新票
+                return true;
+            }
+
+            return false;
+        }
+
+        // ==========================================
+        // 🚀 3. 标定数据上传接口 (/api/calibration/)
+        // ==========================================
+        public async Task<bool> UploadTelemetryAsync(string jsonPayload)
+        {
+            // 没票直接拦截
+            if (!await EnsureAuthReadyAsync())
+            {
+                UploadFailed?.Invoke(this, new UploadFailedEventArgs { ErrorMessage = "授权令牌无效或已过期，自动补票失败！" });
+                return false;
+            }
+
+            var config = ThingsBoardAuthManager.Current;
+            string requestUrl = $"{config.ServerUrl.TrimEnd('/')}/api/calibration/";
+
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    client.Timeout = TimeSpan.FromSeconds(TimeoutSeconds > 0 ? TimeoutSeconds : 10);
+
+                    // 🚨 极其关键的一步：加上 Authorization: Bearer <token>
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", config.JwtToken);
+
+                    var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+                    HttpResponseMessage response = await client.PostAsync(requestUrl, content);
+
+                    if (response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.Created)
+                    {
+                        // 文档说 200 是覆盖更新，201 是新建成功，都算成功
+                        DataUploaded?.Invoke(this, "数据已成功送达服务器");
+                        return true;
+                    }
+                    else
+                    {
+                        string errorStr = await response.Content.ReadAsStringAsync();
+                        UploadFailed?.Invoke(this, new UploadFailedEventArgs { ErrorMessage = $"上传失败 (HTTP {(int)response.StatusCode}): {errorStr}" });
+                        return false;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                UploadFailed?.Invoke(this, new UploadFailedEventArgs { ErrorMessage = $"网络通讯异常: {ex.Message}" });
                 return false;
             }
         }

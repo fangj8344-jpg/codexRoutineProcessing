@@ -51,9 +51,8 @@ namespace UtilityTools.Modules.MotorTest.TestItems
 
                 motorEntity.SetMotorGoToCommand(motorId, EnumMotorUnit.Pulse, escapeTarget);
 
-                // 等待脱离限位（最多等 5 秒）
                 DateTime escapeStartTime = DateTime.Now;
-                while (motorModel.MotorParams.LimitedState != EnumMotorLimitedState.None)
+                while (motorModel.MotorParams.LimitedState != EnumMotorLimitedState.None || motorModel.MotorParams.MoveState != EnumMotorMoveState.MotorStop)
                 {
                     if ((DateTime.Now - escapeStartTime).TotalSeconds > 20) break; // 
                     await Task.Delay(200, ct);

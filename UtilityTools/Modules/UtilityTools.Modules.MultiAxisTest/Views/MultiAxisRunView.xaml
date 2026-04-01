@@ -10,10 +10,13 @@
              xmlns:prism="http://prismlibrary.com/"
              prism:ViewModelLocator.AutoWireViewModel="True"
              mc:Ignorable="d"
-             d:DesignHeight="768" d:DesignWidth="1280">
+             Focusable="True" d:DesignHeight="768" d:DesignWidth="1280">
     <UserControl.Resources>
         <cv:BoolToColorConverter x:Key="BoolToColorConverter" />
     </UserControl.Resources>
+    <UserControl.InputBindings>
+        <KeyBinding Modifiers="Ctrl" Key="L" Command="{Binding OpenEngineerConfigCommand}" />
+    </UserControl.InputBindings>
     <md:DialogHost Identifier="MultiAxisRunViewHost" 
                DialogTheme="Inherit">
         <Grid>

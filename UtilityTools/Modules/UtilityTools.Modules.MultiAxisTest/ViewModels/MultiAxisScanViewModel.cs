@@ -38,35 +38,62 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
             _regionManager = regionManager;
             State = state;
             _eventAggregator = eventAggregator;
+            ConfirmCommand = new DelegateCommand(Confirm, CanConfirm);
             InputLanguageManager.Current.CurrentInputLanguage = new CultureInfo("en-US");
 
         }
 
       
-        public DelegateCommand ConfirmCommand => new DelegateCommand(Confirm);
+        public DelegateCommand ConfirmCommand { get; private set; }
+
+        private bool CanConfirm()
+        {
+            // 必须有扫码文本，且生产日期和序号都没问题
+            return !string.IsNullOrWhiteSpace(State.CurrentScanText)
+                   && State.CurrentScanDisplay != null
+                   && !string.IsNullOrWhiteSpace(State.CurrentScanDisplay.SerialNumber);
+        }
+
         private void OnBarcodeReceived(string[] barcodeParts)
         {
 
+           
+            for (int i = 0; i < barcodeParts.Length; i++)
+            {
+                barcodeParts[i] = barcodeParts[i]?.Trim() ?? string.Empty;
+            }
             State.CurrentScanText = string.Join("/", barcodeParts);
+            // 3. 拿到最后一段最关键的“日期序列号”
+            string lastPart = barcodeParts[3];
+
             State.CurrentScanDisplay = new ScanDisplayModel
             {
+                PurchaseOrder = barcodeParts[0],
+                ProductionOrder = barcodeParts[1],
+                OperatorId = barcodeParts[2],
 
-                PurchaseOrder = barcodeParts.Length > 0 ? barcodeParts[0] : string.Empty,
+                // 日期固定取前 6 位，取不到 6 位有多少取多少
+                ProductionDate = lastPart.Length >= 6 ? lastPart.Substring(0, 6) : lastPart,
 
-                ProductionOrder = barcodeParts.Length > 1 ? barcodeParts[1] : string.Empty,
-
-                OperatorId = barcodeParts.Length > 2 ? barcodeParts[2] : string.Empty,
-
-                ProductionDate = barcodeParts.Length > 3 ? barcodeParts[3].Substring(0, Math.Min(barcodeParts[3].Length, 6)) : string.Empty,
-
-                SerialNumber = (barcodeParts.Length > 3 && barcodeParts[3].Length > 6) ? barcodeParts[3].Substring(6) : string.Empty
+                // 序列号取 6 位之后的所有内容
+                SerialNumber = lastPart.Length > 6 ? lastPart.Substring(6) : string.Empty
             };
-            if (State.CurrentScanDisplay.ProductionDate.Length != 6 || State.CurrentScanDisplay.SerialNumber.Length <  3)
+
+            // 4. 严谨校验
+            bool isDateOk = State.CurrentScanDisplay.ProductionDate.Length == 6;
+            bool isSnOk = State.CurrentScanDisplay.SerialNumber.Length >= 3;
+
+            if (!isDateOk || !isSnOk)
             {
                 ScanErrorNotice();
+                // 建议在这里打个日志，看看扫出来到底是什么鬼
+                // _logger.Warn($"扫码格式不对：日期长度{isDateOk}, 序号长度{isSnOk}, 原始文本: {State.CurrentScanText}");
             }
 
+            // 5. 赋值上传信息
             State.UploadInformation.SampleStageId = State.CurrentScanText;
+            State.UploadInformation.Content.StageId = State.CurrentScanText;
+            ConfirmCommand.RaiseCanExecuteChanged();
         }
         private void ScanErrorNotice() 
         {

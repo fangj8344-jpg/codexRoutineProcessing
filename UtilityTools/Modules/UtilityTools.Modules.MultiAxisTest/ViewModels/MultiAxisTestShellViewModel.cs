@@ -7,6 +7,7 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
     /// </summary>
     public class MultiAxisTestShellViewModel : BindableBase
     {
+
     }
 }
 
