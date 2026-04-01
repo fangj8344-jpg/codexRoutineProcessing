@@ -11,33 +11,52 @@
              prism:ViewModelLocator.AutoWireViewModel="True"
              mc:Ignorable="d"
              Focusable="True" d:DesignHeight="768" d:DesignWidth="1280">
+
     <UserControl.Resources>
         <cv:BoolToColorConverter x:Key="BoolToColorConverter" />
     </UserControl.Resources>
+
     <UserControl.InputBindings>
         <KeyBinding Modifiers="Ctrl" Key="L" Command="{Binding OpenEngineerConfigCommand}" />
     </UserControl.InputBindings>
-    <md:DialogHost Identifier="MultiAxisRunViewHost" 
-               DialogTheme="Inherit">
-        <Grid>
+
+    <md:DialogHost Identifier="MultiAxisRunViewHost" DialogTheme="Inherit">
+        <Grid Background="{DynamicResource MaterialDesignPaper}">
             <Grid.RowDefinitions>
-                <RowDefinition Height="auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <DockPanel LastChildFill="False" Margin="8">
-                <Button Command="{Binding ExecuteGoBackCommand}"
-                    Style="{StaticResource MaterialDesignToolButton}"
-                    ToolTip="返回扫码页"
-                    Content="{md:PackIcon Kind=ArrowLeft,Size=24}"/>
+
+            <DockPanel Grid.Row="0" LastChildFill="False" Margin="10,10,10,0">
+
+                <Button DockPanel.Dock="Left" 
+                        Command="{Binding ExecuteGoBackCommand}"
+                        Style="{StaticResource MaterialDesignToolForegroundButton}"
+                        ToolTip="返回扫码识别页"
+                        Width="36" Height="36" Padding="0" Foreground="Gray">
+                    <md:PackIcon Kind="ArrowLeft" Width="24" Height="24"/>
+                </Button>
+
                 <Button DockPanel.Dock="Right" 
-                    Command="{Binding UploadDataCommand}"
-                    Content="提交数据" 
-                    Background="Green" Foreground="White"
-                    Style="{StaticResource MaterialDesignFlatMidBgButton}"/>
+                        Command="{Binding UploadDataCommand}"
+                        Style="{StaticResource MaterialDesignRaisedButton}"
+                        Background="#4CAF50" BorderBrush="#4CAF50" Foreground="White"
+                        md:ButtonAssist.CornerRadius="4"
+                        ToolTip="测试完成后，将所有数据打包上传至平台"
+                        Height="32" Padding="12,0" Margin="0,0,5,0">
+                    <StackPanel Orientation="Horizontal">
+                        <md:PackIcon Kind="CloudUpload" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBlock Text="提交测试数据" FontWeight="Bold" VerticalAlignment="Center" FontSize="13"/>
+                    </StackPanel>
+                </Button>
+
+
             </DockPanel>
-            <!-- 先继续复用 MotorTest 模块中的多轴测试控件（后续再逐步迁移独立） -->
-            <mtViews:ThreeAxisTestModelWindowsView Grid.Row="1" />
+
+            <Grid Grid.Row="1" Margin="0,5,0,0">
+                <mtViews:ThreeAxisTestModelWindowsView Margin="0"/>
+            </Grid>
+
         </Grid>
     </md:DialogHost>
 </UserControl>
-
