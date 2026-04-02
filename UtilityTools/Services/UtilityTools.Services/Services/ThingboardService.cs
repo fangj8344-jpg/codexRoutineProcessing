@@ -342,6 +342,7 @@ namespace UtilityTools.Services.Services
         {
             try
             {
+                ServerUrl = ThingsBoardAuthManager.Current.ServerUrl;
                 if (string.IsNullOrWhiteSpace(ServerUrl)) return (false, "", 0, "服务器地址未配置");
 
                 // 🚨 完全按文档拼接路由
@@ -386,7 +387,7 @@ namespace UtilityTools.Services.Services
         // ==========================================
         private async Task<bool> EnsureAuthReadyAsync()
         {
-            ThingsBoardAuthManager.LoadConfig();
+            
             var config = ThingsBoardAuthManager.Current;
 
             // 预留 5 分钟缓冲期
@@ -437,6 +438,7 @@ namespace UtilityTools.Services.Services
 
                     var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
                     HttpResponseMessage response = await client.PostAsync(requestUrl, content);
+
 
                     if (response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.Created)
                     {

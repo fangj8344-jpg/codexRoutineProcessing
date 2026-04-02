@@ -59,6 +59,7 @@ namespace UtilityTools.Modules.MotorTest.Model
     }
     public class  MotorTestMessage:BindableBase
     {
+        public string AxisName { get; set; }
         private string _testProject;
         /// <summary>
         /// 项目名称

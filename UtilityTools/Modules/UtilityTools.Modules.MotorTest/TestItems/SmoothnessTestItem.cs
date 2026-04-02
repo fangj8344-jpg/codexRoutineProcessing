@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ScottPlot.Drawing.Colormaps;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -86,10 +87,12 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                 result.IsPassed = true;
                 result.ForwardStdDev = stdDevF;
                 result.BackwardStdDev = stdDevB;
+                result.ForwardStdDevUm = Math.Round(stdDevF / motorModel.MotorParams.SubRatio, 3);
+                result.BackwardStdDevUm = Math.Round(stdDevB / motorModel.MotorParams.SubRatio, 3);
 
 
-                result.MeasuredValue = $"stdDevF：{stdDevF}:stdDevB：{stdDevB}";
-                result.Description = $"正向波动:{stdDevF:F2}, 反向波动:{stdDevB:F2}";
+                result.MeasuredValue = $"ForwardStdDevUm：{result.ForwardStdDevUm}:BackwardStdDevUm：{result.BackwardStdDevUm}";
+                result.Description = $"正向波动:{result.ForwardStdDevUm:F2}, 反向波动:{result.BackwardStdDevUm:F2}";
             }
             return result;
         }

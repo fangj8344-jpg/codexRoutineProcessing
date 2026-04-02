@@ -14,6 +14,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using UtilityTools.Core;
 using UtilityTools.Core.Event;
+using UtilityTools.Core.Helper;
 using UtilityTools.Core.Mvvm;
 using UtilityTools.Modules.MultiAxisTest.Model;
 using UtilityTools.Services.Interfaces;
@@ -40,6 +41,7 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
             _eventAggregator = eventAggregator;
             ConfirmCommand = new DelegateCommand(Confirm, CanConfirm);
             InputLanguageManager.Current.CurrentInputLanguage = new CultureInfo("en-US");
+            
 
         }
 
@@ -128,7 +130,9 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
 
         private void Confirm()
         {
+            State.InitReport();
             _regionManager.Regions[RegionNames.ContentRegion].RequestNavigate(nameof(Views.MultiAxisRunView));
+
         }
 
          
@@ -148,8 +152,10 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
             if (_token != null)
             {
                 _eventAggregator.GetEvent<BarcodeScannedEvent>().Unsubscribe(_token);
+
                 _token = null;
             }
+           
         }
     }
 }

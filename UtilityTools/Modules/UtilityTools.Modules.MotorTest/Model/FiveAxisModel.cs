@@ -218,13 +218,13 @@ namespace UtilityTools.Modules.MotorTest.Model
                 CanTrackerInterpolatePoints = false,
                 MarkerType = MarkerType.None,
                 MarkerSize = 0,
-                // 【黑魔法 1】
+         
                 MinimumSegmentLength = 2,
-                // 【黑魔法 2】直连数据，拒绝反射！
+                // 直连数据，拒绝反射！
                 Mapping = item =>
                 {
                     var msg = (PlotViewSpeedMessage)item;
-                    return new DataPoint(DateTimeAxis.ToDouble(msg.SpeedDate), msg.Speed);
+                    return new DataPoint(DateTimeAxis.ToDouble(msg.SpeedDate), msg.SpeedUm);
                 }
             };
             PosLine = new LineSeries()
@@ -236,13 +236,13 @@ namespace UtilityTools.Modules.MotorTest.Model
                 CanTrackerInterpolatePoints = false,
                 MarkerType = MarkerType.None,
                 MarkerSize = 0,
-                // 【黑魔法 1】
+                // 
                 MinimumSegmentLength = 2,
-                // 【黑魔法 2】直连数据，拒绝反射！
+                // 直连数据，拒绝反射！
                 Mapping = item =>
                 {
                     var msg = (PlotViewPointMessage)item;
-                    return new DataPoint(DateTimeAxis.ToDouble(msg.Date), msg.Point);
+                    return new DataPoint(DateTimeAxis.ToDouble(msg.Date), msg.PointUm);
                 }
             };
 
@@ -258,16 +258,26 @@ namespace UtilityTools.Modules.MotorTest.Model
         }
         private void SubscribeToEvents()
         {
+
             // 订阅文本日志
             _eventAggregator.GetEvent<MotorLogEvent>().Subscribe(log =>
             {
-                Log.Add(log);
+                // 🚨 过滤逻辑：按 '|' 拆分，如果前半部分是我的名字，我才收下
+                var parts = log.Split(new[] { '|' }, 2);
+                if (parts.Length == 2 && parts[0] == Name)
+                {
+                    Log.Add(parts[1]); // 只存入真正的内容部分
+                }
             }, ThreadOption.UIThread);
 
             // 订阅测试成绩单
             _eventAggregator.GetEvent<MotorTestResultEvent>().Subscribe(msg =>
             {
-                MotorTestMessages.Add(msg);
+                // 🚨 过滤逻辑：如果成绩单上的名字是我的，我才签收
+                if (msg.AxisName == Name)
+                {
+                    MotorTestMessages.Add(msg);
+                }
             }, ThreadOption.UIThread);
         }
         public DelegateCommand<bool?> ReverseMoveCommand { get; set; }
@@ -707,6 +717,8 @@ namespace UtilityTools.Modules.MotorTest.Model
             {
                 Date = nowTime,
                 Point = currentPos,
+                PointUm = MotorModel.MotorParams.PosUm,
+
                 MotorMoveState = MotorModel.MotorParams.MoveState,
                 MotorModelAxis = MotorModel.MotorModelAxis
             };
@@ -740,6 +752,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                 {
                     SpeedDate = p2.Date, // 对应中间那一包的时间
                     Speed = speedForP2,
+                    SpeedUm = MotorModel.MotorParams.SpeedUm,
                     MotorModelAxis = MotorModel.MotorModelAxis
                 };
 
@@ -774,26 +787,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             }
         }
 
-        private DateTime GetRealTime(uint currentHardwareTimestamp)
-        {
-            if (_baseSystemTime == null)
-            {
-                // 第一包：把当前的系统时间作为“零点”锚定
-                _baseSystemTime = DateTime.Now;
-                _baseHardwareTimestamp = currentHardwareTimestamp;
-                return _baseSystemTime.Value;
-            }
-
-            // 计算当前硬件时间相对于第一包过了多久
-            long diffMs = currentHardwareTimestamp - _baseHardwareTimestamp;
-
-            // 如果硬件时间戳会溢出归零（比如 uint 跑满了），这里要处理负数情况
-            if (diffMs < 0) diffMs += uint.MaxValue;
-
-            // 在系统零点的基础上，加上精确的偏移量
-            return _baseSystemTime.Value.AddMilliseconds(diffMs);
-        }
-
+ 
         private async void SqliteSaveDate()
         {
             List<PlotViewSpeedMessage> speedSnapshot;

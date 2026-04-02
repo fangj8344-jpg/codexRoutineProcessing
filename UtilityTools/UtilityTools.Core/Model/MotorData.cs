@@ -13,11 +13,20 @@ namespace UtilityTools.Core.Model
     /// </summary>
     public class PositionError
     {
-        [JsonPropertyName("目标位置")]
+        //[JsonPropertyName("目标位置(脉冲)")]
+        [JsonIgnore]
         public double TargetPosition { get; set; }
 
-        [JsonPropertyName("实际位置")]
+        //[JsonPropertyName("实际位置(脉冲)")]
+        [JsonIgnore]
         public double ActualPosition { get; set; }
+
+        [JsonPropertyName("目标位置(um)")]
+        public double TargetPositionUm { get; set; }
+
+        [JsonPropertyName("实际位置(um)")]
+        public double ActualPositionUm { get; set; }
+
 
     }
 
@@ -32,13 +41,13 @@ namespace UtilityTools.Core.Model
         [JsonPropertyName("反向速度标准差")]
         public double BackwardSpeedStdDev { get; set; }
 
-        [JsonPropertyName("最小量程")]
+        [JsonPropertyName("最小量程(um)")]
         public float MinRange { get; set; }
 
-        [JsonPropertyName("最大量程")]
+        [JsonPropertyName("最大量程(um)")]
         public float MaxRange { get; set; }
 
-        [JsonPropertyName("负向限位]")]
+        [JsonPropertyName("负向限位")]
         public bool NegativeLimit { get; set; }
 
         [JsonPropertyName("正向限位")]

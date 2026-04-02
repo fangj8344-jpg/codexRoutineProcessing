@@ -8,6 +8,7 @@ using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Windows.Controls.Primitives;
 using UtilityTools.Core;
+using UtilityTools.Core.Helper;
 using UtilityTools.Core.Interface;
 using UtilityTools.Core.Model;
 using UtilityTools.Core.Mvvm;
@@ -55,6 +56,7 @@ namespace UtilityTools.ViewModels
         {
             this._regionManager = regionManager;
             this._moduleCatalog = moduleCatalog;
+            ThingsBoardAuthManager.LoadConfig();
             InitCommand();
         }
         #endregion

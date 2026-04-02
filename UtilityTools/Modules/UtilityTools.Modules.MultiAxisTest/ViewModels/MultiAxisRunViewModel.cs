@@ -143,7 +143,6 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
                 // 1. 打上测试结束时间
                 // 因为你的 _state 就是档案柜，直接调它！
                 //取出最终要上传的数据原件
-                _state.CompleteReport();
 
                 var motorTestData = _state.GetFinalReport();
               
@@ -166,8 +165,6 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
                 if (HttpTestResult)
                 {
                     NLog.LogManager.GetCurrentClassLogger().Debug($"标定数据上传成功:\n{jsonPayload}");
-                    _state.ResetNewTestCycle();
-                    // 注意：你现有的代码里通过 _thingboardService_DataUploaded 事件已经处理了成功弹窗，这里就不需要再弹了
                 }
 
 

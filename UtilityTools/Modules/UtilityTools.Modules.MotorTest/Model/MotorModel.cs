@@ -89,6 +89,12 @@ namespace UtilityTools.Modules.MotorTest.Model
     } 
     public class MotorParams : BindableBase
     {
+
+
+        public double PosUm => _pos / _subRatio;
+        public double SpeedUm => _speed / _subRatio;
+
+
         private bool _enable;
         /// <summary>
         /// 电机使能
@@ -157,7 +163,12 @@ namespace UtilityTools.Modules.MotorTest.Model
         public Int32 Pos
         {
             get { return _pos; }
-            set { _pos = value; RaisePropertyChanged(); }
+            set 
+            {
+                _pos = value; 
+                RaisePropertyChanged();
+                RaisePropertyChanged(nameof(PosUm));
+            }
         }
         private double _speed;
         /// <summary>
@@ -166,7 +177,12 @@ namespace UtilityTools.Modules.MotorTest.Model
         public double Speed
         {
             get { return _speed; }
-            set { _speed = value; RaisePropertyChanged(); }
+            set 
+            {
+                _speed = value;
+                RaisePropertyChanged();
+                RaisePropertyChanged(nameof(SpeedUm));
+            }
         }
         private float _subRatio;
         /// <summary>
@@ -415,8 +431,11 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// 电机此时的状态
         /// </summary>
         public EnumMotorMoveState MotorMoveState { get; set; }
+        /// <summary>
+        /// 转换后的值单位是 um
+        /// </summary>
+        public double PointUm { get; set; }
 
-      
 
 
     }
@@ -435,7 +454,9 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// 速度
         /// </summary>
         public double Speed { get; set; }
-      
+        // 新增微米速度
+        public double SpeedUm { get; set; }
+
     }
     public class MotorMessage
     {

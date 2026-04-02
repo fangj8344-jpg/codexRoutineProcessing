@@ -31,6 +31,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Converters;
 using UtilityTools.Core.Dialog;
+using UtilityTools.Core.Interface;
 using UtilityTools.Modules.MotorTest.Entity;
 using UtilityTools.Modules.MotorTest.Protocol;
 using UtilityTools.Modules.MotorTest.Service;
@@ -63,6 +64,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             netUdp.IsBinary = true;
             NetUdpService = netUdp;
             NetUdpService.UpdateResponse += NetUdpService_UpdateResponse;
+            _reportService = containerProvider.Resolve<ITestReportService>();
             Init();
         }
         private object _lockobj = new object();
@@ -71,7 +73,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         private SelfMotorParser _parser;
         private TaskCompletionSource<string> _waitingReply;
         private CancellationTokenSource _queryCts;
-
+        private readonly ITestReportService _reportService;
 
         private BackgroundWorker _work;
         private bool _isTest = false;
@@ -321,10 +323,10 @@ namespace UtilityTools.Modules.MotorTest.Model
             MotorSpeedplotModel = new PlotModel();
             MotorSpeedplotModel.Legends.Add(new Legend());
             MotorplotModel.Axes.Add(new DateTimeAxis() { Title = "时间", Position = AxisPosition.Bottom });
-            MotorplotModel.Axes.Add(new LinearAxis() { Title = "位置(脉冲)", Position = AxisPosition.Left });
+            MotorplotModel.Axes.Add(new LinearAxis() { Title = "位置(μm)", Position = AxisPosition.Left });
             MotorSpeedplotModel.Axes.Add(new DateTimeAxis() { Title = "时间", Position = AxisPosition.Bottom });
-            MotorSpeedplotModel.Axes.Add(new LinearAxis() { Title = "速度(脉冲/秒)", Position = AxisPosition.Left });
-            
+            MotorSpeedplotModel.Axes.Add(new LinearAxis() { Title = "速度(μm/s)", Position = AxisPosition.Left });
+
             MotorTypeModel = new MotorTypeModel(this, _containerProvider);
 
             var uiRenderTimer = new System.Windows.Threading.DispatcherTimer();
@@ -412,7 +414,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                 // 1. 初始化取消令牌
                 CancellationToken = new CancellationTokenSource();
                 TestPerformance(); // 开启高频问询
-
+                _reportService.StartReport();
                 if (Motors != null && Motors.Count > 0)
                 {
                     // 【核心修复】：在这里显式声明这个“任务篮子”变量
@@ -443,6 +445,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     if (testTasks.Count > 0)
                     {
                         await Task.WhenAll(testTasks);
+                        _reportService.CompleteReport();
                     }
                 }
             }

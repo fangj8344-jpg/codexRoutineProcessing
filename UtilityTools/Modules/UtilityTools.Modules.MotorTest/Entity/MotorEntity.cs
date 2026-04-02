@@ -118,6 +118,26 @@ namespace UtilityTools.Modules.MotorTest.Entity
         }
 
         /// <summary>
+        /// 获取固件信息
+        /// </summary>
+        public void GetFirmwareInformationCommand()
+        {
+            NLog.LogManager.GetCurrentClassLogger().Info($"获取固件信息");
+            var cmdData = SelfMotorProtocol.GetFirmwareInformation();
+            sendCmd(cmdData);
+        }
+
+        /// <summary>
+        /// 获取硬件信息
+        /// </summary>
+        public void GetHardwareInformationCommand()
+        {
+            NLog.LogManager.GetCurrentClassLogger().Info($"获取固件信息");
+            var cmdData = SelfMotorProtocol.GetHardwareInformation();
+            sendCmd(cmdData);
+        }
+
+        /// <summary>
         /// 设置电机的闭环控制模式
         /// </summary>
         /// <param name="motorId"></param>

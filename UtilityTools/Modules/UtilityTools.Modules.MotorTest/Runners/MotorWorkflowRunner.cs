@@ -49,7 +49,7 @@ namespace UtilityTools.Modules.MotorTest.Runners
         // 大喇叭广播方法
         private void PublishLog(string message)
         {
-            _eventAggregator.GetEvent<MotorLogEvent>().Publish(message);
+            _eventAggregator.GetEvent<MotorLogEvent>().Publish($"{_motorName}|{message}");
         }
 
         // ==========================================
@@ -115,6 +115,7 @@ namespace UtilityTools.Modules.MotorTest.Runners
         {
             var msg = new MotorTestMessage
             {
+                AxisName = _motorName, // 🚨 给成绩单写上名字
                 TestProject = testProject,
                 StandardValue = standardValue,
                 TestResult = result.IsPassed ? "合格" : "不合格",
@@ -157,11 +158,12 @@ namespace UtilityTools.Modules.MotorTest.Runners
             PublishLog($"[{_motorName}] 正在执行满行程及限位扫描...");
             var fullTravelTest = new FullTravelTestItem(_strokeRange);
             var fullTravelResult = await fullTravelTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken);
+            float ratio = _motorModel.MotorParams.SubRatio;
             // 判断积木交上来的是不是定义的 TravelTestResult
             if (fullTravelResult is TravelTestResult travelRes)
             {
-                myData.MaxRange = travelRes.RealMaxPos;
-                myData.MinRange = travelRes.RealMinPos;
+                myData.MaxRange = (float)travelRes.RealMaxPosUm;
+                myData.MinRange = (float)travelRes.RealMinPosUm;
                 myData.PositiveLimit = travelRes.IsPositiveLimitFound;
                 myData.NegativeLimit = travelRes.IsNegativeLimitFound;
             }
@@ -190,7 +192,7 @@ namespace UtilityTools.Modules.MotorTest.Runners
             //  98 个点和标准差记录下来
             if (linearResult is LinearTestResult linearRes)
             {
-                myData.PositioningStdDev = linearRes.FinalStdDev;
+                myData.PositioningStdDev = linearRes.FinalStdDevUm;
                 
                 myData.PositionErrors = linearRes.PositionErrors;
             }
@@ -234,8 +236,8 @@ namespace UtilityTools.Modules.MotorTest.Runners
                 // 如果这一圈顺利跑完，就把成绩记在小本本上
                 if (smoothnessResult is SmoothnessTestResult smoothRes && smoothRes.IsPassed)
                 {
-                    allForwardStdDevs.Add(smoothRes.ForwardStdDev);
-                    allBackwardStdDevs.Add(smoothRes.BackwardStdDev);
+                    allForwardStdDevs.Add(smoothRes.ForwardStdDevUm);
+                    allBackwardStdDevs.Add(smoothRes.BackwardStdDevUm);
                 }
                 else
                 {

@@ -11,7 +11,7 @@ using UtilityTools.Modules.MotorTest.SQLite;
 namespace UtilityTools.Modules.MotorTest.TestItems
 {
     /// <summary>
-    /// 满行程测试
+    /// 满行程测试(保存了脉冲 和UM)
     /// </summary>
     public class FullTravelTestItem: IMotorTestItem
     {
@@ -29,7 +29,14 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             IMotorEntity motorEntity, 
             CancellationToken ct)
         {
+
             var result = new TravelTestResult { IsPassed = false };
+            // 🚨 提前获取转换系数（除法，防0）
+            if (motorModel.MotorParams.SubRatio == 0)
+            {
+                result.ErrorDescription = $"严重异常：[{TestName}] 检测到电机转换系数(SubRatio)为 0！硬件配置丢失，测试强制终止！";
+                return result;
+            }
 
             // 1. 执行正向测试
             var forwardTest = new StallAndLimitTestItem(true);
@@ -39,8 +46,11 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                 result.ErrorDescription = "正向限位寻找失败：" + forwardRes.ErrorDescription;
                 return result;
             }
+            result.RealMaxPos = motorModel.MotorParams.Pos;
+            result.RealMaxPosUm = Math.Round(motorModel.MotorParams.PosUm, 3); // 直接拿！
             int posForward = motorModel.MotorParams.Pos;
             result.RealMaxPos = posForward; // 塞进口袋
+            result.RealMaxPosUm = motorModel.MotorParams.PosUm;
             result.IsPositiveLimitFound = true;
 
             // 2. 执行反向测试
@@ -53,12 +63,12 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             }
             int posBackward = motorModel.MotorParams.Pos;
             result.RealMinPos = posBackward; // 塞进口袋
+            result.RealMinPosUm = motorModel.MotorParams.PosUm;
             result.IsNegativeLimitFound = true;
 
             // 3. 计算行程
             int fullStroke = posForward - posBackward;
             result.MeasuredValue = fullStroke.ToString();
-
             // 4. 判定标准
             if (fullStroke < _standardRange.max && fullStroke > _standardRange.min)
             {

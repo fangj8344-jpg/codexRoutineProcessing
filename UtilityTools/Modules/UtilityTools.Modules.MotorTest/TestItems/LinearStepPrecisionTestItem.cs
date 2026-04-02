@@ -32,6 +32,12 @@ namespace UtilityTools.Modules.MotorTest.TestItems
         {
          
             var result = new LinearTestResult { IsPassed = false };
+            if (motorModel.MotorParams.SubRatio == 0)
+            {
+                result.ErrorDescription = $"严重异常：[{TestName}] 检测到电机转换系数(SubRatio)为 0！配置丢失，测试强制终止！";
+                return result;
+            }
+            double ratio = motorModel.MotorParams.SubRatio;
             // 用于记录：目标位置、实际位置、偏差
 
             // 1. 切换到位置模式并使能
@@ -61,11 +67,15 @@ namespace UtilityTools.Modules.MotorTest.TestItems
 
                 // 5. 记录数据
                 int actualPos = motorModel.MotorParams.Pos;
+                double actualUm = motorModel.MotorParams.PosUm;
+                double targetUm = targetPos / ratio;
                 // 【核心动作】直接存进咱们 JSON 报表需要的 PositionError 格式
                 result.PositionErrors.Add(new PositionError
                 {
                     TargetPosition = targetPos,
-                    ActualPosition = actualPos
+                    ActualPosition = actualPos,
+                    TargetPositionUm = Math.Round(targetUm, 3),
+                    ActualPositionUm = Math.Round(actualUm, 3),
                 });
 
 
@@ -80,10 +90,11 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                 // 这里计算 stdDev 的逻辑只需稍微改下数据源
                 var errors = result.PositionErrors.Select(p => p.ActualPosition - p.TargetPosition).ToList();
                 double stdDev = CalculateStdDev(errors); // 你原有的计算逻辑
-
-                result.FinalStdDev = stdDev;
-                result.IsPassed = stdDev < 150;
-                result.MeasuredValue = $"StdDev:{stdDev:F2}";
+                double stdDevUm = Math.Round(stdDev / ratio, 3);
+                result.FinalStdDev = stdDevUm;
+                result.IsPassed = stdDevUm < 20;
+                
+                result.MeasuredValue = $"StdDev: {stdDevUm} μm ({stdDev:F1} pls)";
             }
 
             return result;

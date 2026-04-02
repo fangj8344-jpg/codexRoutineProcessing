@@ -117,12 +117,12 @@
                                                 <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="Bold" VerticalAlignment="Center" FontSize="14"/>
 
                                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                    <TextBlock Text="位置 (脉冲)" FontSize="10" Foreground="Gray"/>
-                                                    <TextBlock Text="{Binding MotorModel.MotorParams.Pos, StringFormat={}{0:N0}}" FontWeight="SemiBold"/>
+                                                    <TextBlock Text="位置 (μm)" FontSize="10" Foreground="Gray"/>
+                                                    <TextBlock Text="{Binding MotorModel.MotorParams.PosUm, StringFormat={}{0:F3}}" FontWeight="SemiBold"/>
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                                                    <TextBlock Text="速度 (脉冲/秒)" FontSize="10" Foreground="Gray"/>
-                                                    <TextBlock Text="{Binding MotorModel.MotorParams.Speed, StringFormat={}{0:N0}}" FontWeight="SemiBold"/>
+                                                    <TextBlock Text="速度 (μm/s)" FontSize="10" Foreground="Gray"/>
+                                                    <TextBlock Text="{Binding MotorModel.MotorParams.SpeedUm, StringFormat={}{0:F3}}" FontWeight="SemiBold"/>
                                                 </StackPanel>
 
                                                 <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
@@ -177,14 +177,14 @@
                                     <DataTemplate DataType="{x:Type mm:FiveAxisModel}">
                                         <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="15,0,0,0">
                                             <UniformGrid Columns="4" Margin="10">
-                                                <TextBlock Text="当前位置:" Foreground="Gray" VerticalAlignment="Center" Margin="5"/>
-                                                <TextBlock Text="{Binding MotorModel.MotorParams.Pos}" FontWeight="Bold" VerticalAlignment="Center"/>
+                                                <TextBlock Text="当前位置 (μm):" Foreground="Gray" VerticalAlignment="Center" Margin="5"/>
+                                                <TextBlock Text="{Binding MotorModel.MotorParams.PosUm, StringFormat={}{0:F3}}" FontWeight="Bold" VerticalAlignment="Center"/>
 
-                                                <TextBlock Text="当前速度:" Foreground="Gray" VerticalAlignment="Center" Margin="5"/>
-                                                <TextBlock Text="{Binding MotorModel.MotorParams.Speed}" FontWeight="Bold" VerticalAlignment="Center"/>
+                                                <TextBlock Text="当前速度 (μm/s):" Foreground="Gray" VerticalAlignment="Center" Margin="5"/>
+                                                <TextBlock Text="{Binding MotorModel.MotorParams.SpeedUm, StringFormat={}{0:F3}}" FontWeight="Bold" VerticalAlignment="Center"/>
 
                                                 <TextBlock Text="控制模式:" Foreground="Gray" VerticalAlignment="Center" Margin="5"/>
-                                                <TextBlock Text="{Binding MotorModel.MotorParams.CtrType}" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding MotorModel.MotorParams.CtrType}" VerticalAlignment="Center"/> 
 
                                                 <TextBlock Text="使能状态:" Foreground="Gray" VerticalAlignment="Center" Margin="5"/>
                                                 <TextBlock Text="{Binding MotorModel.MotorParams.Enable}" VerticalAlignment="Center"/>
@@ -197,6 +197,9 @@
 
                                                 <TextBlock Text="轴类型:" Foreground="Gray" VerticalAlignment="Center" Margin="5"/>
                                                 <TextBlock Text="{Binding MotorModel.MotorParams.MoveType}" VerticalAlignment="Center"/>
+
+                                                <TextBlock Text="转换系数:" Foreground="Gray" VerticalAlignment="Center" Margin="5"/>
+                                                <TextBlock Text="{Binding MotorModel.MotorParams.SubRatio}" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{DynamicResource PrimaryHueMidBrush}"/>
                                             </UniformGrid>
                                         </ScrollViewer>
                                     </DataTemplate>

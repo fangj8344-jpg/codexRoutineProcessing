@@ -17,6 +17,10 @@ namespace UtilityTools.Modules.MotorTest.Protocol
     /// </summary>
     public enum EnumSelfMotorCmdType
     {
+        [Description("获取固件信息")]
+        Get_Firmware_Information = 0x0004,
+        [Description("获取硬件信息")]
+        Get_Hardware_Information = 0x0005,
         [Description("设置电机使能状态")]
         CMD_SET_HR = 0x0100,
 
@@ -341,6 +345,30 @@ namespace UtilityTools.Modules.MotorTest.Protocol
             var cmd = BitConverter.GetBytes((ushort)command);
             var id = DeviceID;
             return ZepGenericProtocol.GetCmd(id, cmd, data);
+        }
+
+
+        /// <summary>
+        /// 获取固件信息
+        /// </summary>
+        /// <param name="motorId"></param>
+        /// <returns></returns>
+        public static byte[] GetFirmwareInformation()
+        {
+            ByteWriter writer = new ByteWriter(36);
+            writer.Write(0x00);
+            return GetCmd(EnumSelfMotorCmdType.Get_Firmware_Information, writer.EndWrite());
+        }
+        /// <summary>
+        /// 获取硬件信息
+        /// </summary>
+        /// <param name="motorId"></param>
+        /// <returns></returns>
+        public static byte[] GetHardwareInformation()
+        {
+            ByteWriter writer = new ByteWriter(36);
+            writer.Write(0x00);
+            return GetCmd(EnumSelfMotorCmdType.Get_Hardware_Information, writer.EndWrite());
         }
         /// <summary>
         /// 设置电机是否使能

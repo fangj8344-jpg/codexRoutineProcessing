@@ -145,14 +145,14 @@ namespace UtilityTools.Modules.MultiAxisTest.Model
             }
         }
 
-        public void InitReport(string deviceId, string stageId)
+        public void InitReport()
         {
-            ResetNewTestCycle(); // 先清空旧数据
 
-            UploadInformation.DeviceId = deviceId;
-            UploadInformation.SampleStageId = stageId;
-            UploadInformation.Content.StageId = stageId;
-            UploadInformation.Content.StartTime = DateTime.Now.ToString("o"); // ISO 8601格式
+            UploadInformation.Content = new SampleStageReport()
+            {
+                Motors = new List<MotorData>(),
+            };
+            UploadInformation.Content.StageId = UploadInformation.SampleStageId;
         }
 
         public void CompleteReport()
@@ -187,6 +187,11 @@ namespace UtilityTools.Modules.MultiAxisTest.Model
         public UploadInformation GetFinalReport()
         {
             return UploadInformation;
+        }
+
+        public void StartReport()
+        {
+            UploadInformation.Content.StartTime = DateTime.Now.ToString("o"); // ISO 8601格式
         }
     }
 }
