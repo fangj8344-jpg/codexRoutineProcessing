@@ -93,13 +93,36 @@ namespace UtilityTools.Modules.MotorTest.Model
             }
         };
 
-        public MotorTypeModel(ThreeAxisTestModel motorModel, IContainerProvider containerProvider)
+        public MotorTypeModel(ThreeAxisTestModel motorModel, IContainerProvider containerProvider, MachineProfile sampleModel = MachineProfile.StandardTwoAxis)
         {
             _motorModel = motorModel;
             _containerProvider = containerProvider;
             _motorModel.Motors = new ObservableCollection<FiveAxisModel>();
 
-            IsCompactTwoAxis = true; // 默认选中紧凑型
+          
+            switch (sampleModel)
+            {
+                case MachineProfile.CompactTwoAxis:
+                    IsCompactTwoAxis = true;
+                    break;
+
+                case MachineProfile.StandardTwoAxis:
+                    IsStandardTwoAxis = true;
+                    break;
+
+                case MachineProfile.HeavyDutyThreeAxis:
+                    IsHeavyDutyThreeAxis = true;
+                    break;
+
+                case MachineProfile.UniversalFiveAxis:
+                    IsUniversalFiveAxis = true;
+                    break;
+
+                default:
+                    IsStandardTwoAxis = true; // 兜底保护，万一传了个未知的进来，默认切到紧凑型
+                    break;
+            }
+            ChangeProfile(sampleModel);
         }
 
         // ==========================================

@@ -138,7 +138,7 @@ namespace UtilityTools.Views
                     e.Handled = true;
 
                     string[] parts = finalBarcode.Split('/');
-                    if (parts.Length == 4)
+                    if (parts.Length >= 4)
                     {
                         _eventAggregator.GetEvent<BarcodeScannedEvent>().Publish(parts);
                     }

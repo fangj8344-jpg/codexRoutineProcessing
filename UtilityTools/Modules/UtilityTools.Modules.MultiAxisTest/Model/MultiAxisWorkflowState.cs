@@ -69,6 +69,16 @@ namespace UtilityTools.Modules.MultiAxisTest.Model
             get => _serialNumber;
             set => SetProperty(ref _serialNumber, value);
         }
+
+        private string _electronMicroscopeModel;
+        /// <summary>
+        /// 
+        /// </summary>
+        public string ElectronMicroscopeModel
+        {
+            get => _electronMicroscopeModel;
+            set => SetProperty(ref _electronMicroscopeModel, value);
+        }
     }
 
 
@@ -109,7 +119,11 @@ namespace UtilityTools.Modules.MultiAxisTest.Model
             get => _uploadInformation;
             set => SetProperty(ref _uploadInformation, value);
         }
-
+        private object _motorKindObj;
+        public object MotorKindObj 
+        { 
+            get => _motorKindObj; 
+            set =>  _motorKindObj = value; }
 
         public MultiAxisWorkflowState()
         {

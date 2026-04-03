@@ -326,8 +326,13 @@ namespace UtilityTools.Modules.MotorTest.Model
             MotorplotModel.Axes.Add(new LinearAxis() { Title = "位置(μm)", Position = AxisPosition.Left });
             MotorSpeedplotModel.Axes.Add(new DateTimeAxis() { Title = "时间", Position = AxisPosition.Bottom });
             MotorSpeedplotModel.Axes.Add(new LinearAxis() { Title = "速度(μm/s)", Position = AxisPosition.Left });
-
-            MotorTypeModel = new MotorTypeModel(this, _containerProvider);
+            MachineProfile targetProfile = MachineProfile.StandardTwoAxis;
+            if (_reportService.MotorKindObj is MachineProfile parsedProfile)
+            {
+                targetProfile = parsedProfile;
+            }
+           
+            MotorTypeModel = new MotorTypeModel(this, _containerProvider, targetProfile);
 
             var uiRenderTimer = new System.Windows.Threading.DispatcherTimer();
             uiRenderTimer.Interval = TimeSpan.FromMilliseconds(50); // 50ms 刷新一次，即 20 FPS，极其丝滑且不占 CPU
