@@ -149,16 +149,16 @@
                         <TabItem Header="功能测试面板">
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <UniformGrid Columns="3" Margin="10">
-                                    <Button Content="并行基础测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="BaseTest" Style="{StaticResource MaterialDesignRaisedButton}" Margin="6"/>
-                                    <Button Content="并行丝杆测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="TestSmoothnessDetection" Style="{StaticResource MaterialDesignRaisedButton}" Margin="6"/>
-                                    <Button Content="并行耐久测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="DurabilityTest" Style="{StaticResource MaterialDesignRaisedButton}" Margin="6"/>
+                                    <Button Content="基础测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="BaseTest" Style="{StaticResource MaterialDesignRaisedButton}" Margin="6"/>
+                                    <Button Content="并行丝杆测试" Visibility="Collapsed"  Command="{Binding TestMotorTogetherCommand}" CommandParameter="TestSmoothnessDetection" Style="{StaticResource MaterialDesignRaisedButton}" Margin="6"/>
+                                    <Button Content="耐久测试" Command="{Binding TestMotorTogetherCommand}" CommandParameter="DurabilityTest" Style="{StaticResource MaterialDesignRaisedButton}" Margin="6"/>
 
-                                    <Button Content="串行基础测试" Command="{Binding IndependentMotortestCommand}" CommandParameter="BaseTest" Style="{StaticResource MaterialDesignRaisedButton}" Background="#424242" Foreground="White" BorderBrush="Transparent" Margin="6"/>
-                                    <Button Content="串行丝杆测试" Command="{Binding IndependentMotortestCommand}" CommandParameter="TestSmoothnessDetection" Style="{StaticResource MaterialDesignRaisedButton}" Background="#424242" Foreground="White" BorderBrush="Transparent" Margin="6"/>
-                                    <Button Content="串行耐久测试" Command="{Binding IndependentMotorDurabilityTestCommand}" Style="{StaticResource MaterialDesignRaisedButton}" Background="#424242" Foreground="White" BorderBrush="Transparent" Margin="6"/>
+                                    <Button Content="串行基础测试" Visibility="Collapsed" Command="{Binding IndependentMotortestCommand}" CommandParameter="BaseTest" Style="{StaticResource MaterialDesignRaisedButton}" Background="#424242" Foreground="White" BorderBrush="Transparent" Margin="6"/>
+                                    <Button Content="串行丝杆测试" Visibility="Collapsed" Command="{Binding IndependentMotortestCommand}" CommandParameter="TestSmoothnessDetection" Style="{StaticResource MaterialDesignRaisedButton}" Background="#424242" Foreground="White" BorderBrush="Transparent" Margin="6"/>
+                                    <Button Content="串行耐久测试" Visibility="Collapsed" Command="{Binding IndependentMotorDurabilityTestCommand}" Style="{StaticResource MaterialDesignRaisedButton}" Background="#424242" Foreground="White" BorderBrush="Transparent" Margin="6"/>
 
-                                    <Button Content="开启性能模式" Command="{Binding TestPerformanceCommand}" Style="{StaticResource MaterialDesignRaisedButton}" Background="#37474F" Foreground="White" BorderBrush="Transparent" Margin="6"/>
-                                    <Button Content="关闭性能模式" Command="{Binding CloseTestPerformanceCommand}" Style="{StaticResource MaterialDesignRaisedButton}" Background="#37474F" Foreground="White" BorderBrush="Transparent" Margin="6"/>
+                                    <Button Content="开启性能模式" Visibility="Collapsed" Command="{Binding TestPerformanceCommand}" Style="{StaticResource MaterialDesignRaisedButton}" Background="#37474F" Foreground="White" BorderBrush="Transparent" Margin="6"/>
+                                    <Button Content="关闭性能模式" Visibility="Collapsed" Command="{Binding CloseTestPerformanceCommand}" Style="{StaticResource MaterialDesignRaisedButton}" Background="#37474F" Foreground="White" BorderBrush="Transparent" Margin="6"/>
                                     <Button Content="数据库加载" Command="{Binding SqliteLoadCommand}" Style="{StaticResource MaterialDesignRaisedButton}" Background="#37474F" Foreground="White" BorderBrush="Transparent" Margin="6"/>
 
                                     <Button Content="关闭测试" Command="{Binding ShotDownCommand}" Style="{StaticResource MaterialDesignRaisedButton}" Background="#ef5350" Foreground="White" BorderBrush="Transparent" Margin="6"/>
