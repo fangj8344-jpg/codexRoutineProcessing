@@ -92,7 +92,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                 double stdDev = CalculateStdDev(errors); // 你原有的计算逻辑
                 double stdDevUm = Math.Round(stdDev / ratio, 3);
                 result.FinalStdDev = stdDevUm;
-                result.IsPassed = stdDevUm < 20;
+                result.IsPassed = stdDevUm < 1;
                 
                 result.MeasuredValue = $"StdDev: {stdDevUm} μm ({stdDev:F1} pls)";
             }

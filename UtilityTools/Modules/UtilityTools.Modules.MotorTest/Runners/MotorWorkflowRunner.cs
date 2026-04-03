@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows.Interop;
 using UtilityTools.Core.Interface; // 引用接口
 using UtilityTools.Core.Model;
+using UtilityTools.Modules.MotorTest.Entity;
 using UtilityTools.Modules.MotorTest.Event;
 using UtilityTools.Modules.MotorTest.Interface;
 using UtilityTools.Modules.MotorTest.Model;
@@ -198,9 +199,9 @@ namespace UtilityTools.Modules.MotorTest.Runners
             }
 
 
-            PublishTestResult(linearTest.TestName, "StdDev<150", linearResult);
+            PublishTestResult(linearTest.TestName, "StdDev<1", linearResult);
             _reportService.AddOrUpdateMotorData(myData);
-            PublishLog($"[{_motorName}] 数据已录入总报告。");
+
 
             // ==========================================
             // 【新增】积木 6：丝杆顺滑度测试 (获取正反向速度标准差)
@@ -255,6 +256,17 @@ namespace UtilityTools.Modules.MotorTest.Runners
             myData.BackwardSpeedStdDev = allBackwardStdDevs.Any() ? Math.Round(allBackwardStdDevs.Average(), 3) : 0;
 
             PublishLog($"✅ [{_motorName}] 30分钟测试达标！正向均值波动: {myData.ForwardSpeedStdDev}, 反向均值波动: {myData.BackwardSpeedStdDev}");
+            bool isSmoothnessPassed = myData.ForwardSpeedStdDev < 150 && myData.BackwardSpeedStdDev < 150; // 
+
+            var smoothnessFinalResult = new MotorTestResult
+            {
+                IsPassed = isSmoothnessPassed,
+                MeasuredValue = $"正:{myData.ForwardSpeedStdDev} / 反:{myData.BackwardSpeedStdDev}",
+                Description = "顺滑度测试完成",
+                ErrorDescription = isSmoothnessPassed ? "" : "速度波动超出150限值"
+            };
+
+            PublishTestResult("丝杆顺滑度测试", "波动 < 150", smoothnessFinalResult);
 
             // ==========================================
             // 终点站：把填得满满当当的体检表交上去！
@@ -268,6 +280,7 @@ namespace UtilityTools.Modules.MotorTest.Runners
             PublishLog($"[{_motorName}] 测试全部完毕，正在回到中点位置: {midPoint}");
 
             // 使用底层接口发指令，不再依赖外面的 Goto 方法
+            _motorEntity.SetMotorControlModeCommand(_motorId, EnumMotorCtrType.CloseLoopPosCtr);
             _motorEntity.SetMotorGoToCommand(_motorId, EnumMotorUnit.Pulse, midPoint);
 
             await Task.Delay(5000, cancellationToken);
