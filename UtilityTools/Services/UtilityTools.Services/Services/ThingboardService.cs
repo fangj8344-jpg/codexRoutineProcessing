@@ -51,7 +51,7 @@ namespace UtilityTools.Services.Services
             InitializeHttpClient();
         }
 
-       
+        
 
         /// <summary>
         /// 初始化HTTP客户端
@@ -460,6 +460,39 @@ namespace UtilityTools.Services.Services
             {
                 UploadFailed?.Invoke(this, new UploadFailedEventArgs { ErrorMessage = $"网络通讯异常: {ex.Message}" });
                 return false;
+            }
+        }
+
+        public async Task<(bool Success, bool HasData, string RawJson, string ErrorMsg)> QueryCalibrationExistsAsync(string sampleStageId)
+        {
+            if (!await EnsureAuthReadyAsync())
+                return (false, false, string.Empty, "授权令牌无效或已过期，请先在工程师配置界面登录");
+
+            var config = ThingsBoardAuthManager.Current;
+            string requestUrl = $"{config.ServerUrl.TrimEnd('/')}/api/calibration/?sample_stage_id={Uri.EscapeDataString(sampleStageId)}";
+
+            try
+            {
+                using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", config.JwtToken);
+
+                var response = await client.GetAsync(requestUrl);
+                if (response.IsSuccessStatusCode)
+                {
+                    string body = await response.Content.ReadAsStringAsync();
+                    using var doc = JsonDocument.Parse(body);
+                    bool hasData = doc.RootElement.GetArrayLength() > 0;
+                    return (true, hasData, body, string.Empty);
+                }
+                else
+                {
+                    string err = await response.Content.ReadAsStringAsync();
+                    return (false, false, string.Empty, $"查询失败 (HTTP {(int)response.StatusCode}): {err}");
+                }
+            }
+            catch (Exception ex)
+            {
+                return (false, false, string.Empty, $"网络异常: {ex.Message}");
             }
         }
     }

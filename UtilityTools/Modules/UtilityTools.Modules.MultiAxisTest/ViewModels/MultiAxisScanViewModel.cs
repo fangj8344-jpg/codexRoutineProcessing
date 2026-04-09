@@ -31,8 +31,60 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
         private readonly IRegionManager _regionManager;
         
         private readonly IContainerProvider _containerProvider;
+        private readonly IThingboardService _thingboardService;
 
         private IEventAggregator _eventAggregator;
+        // 云端查询状态
+        private Visibility _cloudCheckingVisibility = Visibility.Collapsed;
+        public Visibility CloudCheckingVisibility
+        {
+            get => _cloudCheckingVisibility;
+            set => SetProperty(ref _cloudCheckingVisibility, value);
+
+        }
+        private Visibility _cloudResultVisibility = Visibility.Collapsed;
+        public Visibility CloudResultVisibility
+        {
+            get => _cloudResultVisibility;
+            set => SetProperty(ref _cloudResultVisibility, value);
+        }
+        private string _cloudResultText = string.Empty;
+        public string CloudResultText
+        {
+            get => _cloudResultText;
+            set => SetProperty(ref _cloudResultText, value);
+        }
+        private Brush _cloudResultColor = Brushes.Gray;
+        public Brush CloudResultColor
+        {
+            get => _cloudResultColor;
+            set => SetProperty(ref _cloudResultColor, value);
+        }
+        private Visibility _cloudRecordVisibility = Visibility.Collapsed;
+        public Visibility CloudRecordVisibility
+        {
+            get => _cloudRecordVisibility;
+            set => SetProperty(ref _cloudRecordVisibility, value);
+        }
+        private string _cloudRecordDeviceId = string.Empty;
+        public string CloudRecordDeviceId
+        {
+            get => _cloudRecordDeviceId;
+            set => SetProperty(ref _cloudRecordDeviceId, value);
+        }
+        private string _cloudRecordUpdatedAt = string.Empty;
+        public string CloudRecordUpdatedAt
+        {
+            get => _cloudRecordUpdatedAt;
+            set => SetProperty(ref _cloudRecordUpdatedAt, value);
+        }
+        private string _cloudRecordContentUrl = string.Empty;
+        public string CloudRecordContentUrl
+        {
+            get => _cloudRecordContentUrl;
+            set => SetProperty(ref _cloudRecordContentUrl, value);
+        }
+
         public MultiAxisWorkflowState State { get; }
        
         public MultiAxisScanViewModel(IRegionManager regionManager, IEventAggregator eventAggregator, MultiAxisWorkflowState state, IContainerProvider containerProvider )
@@ -43,8 +95,8 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
             _eventAggregator = eventAggregator;
             ConfirmCommand = new DelegateCommand(Confirm, CanConfirm);
             InputLanguageManager.Current.CurrentInputLanguage = new CultureInfo("en-US");
-            
 
+            _thingboardService = containerProvider.Resolve<IServiceFactory>().GetThingboardService();
         }
 
       
@@ -145,9 +197,16 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
                 {
                     State.UploadInformation.Content.StageId = State.CurrentScanText;
                 }
+                if (barcodeParts.Length >= 6)
+                {
+                    _ = CheckCloudCalibrationAsync(State.UploadInformation.SampleStageId);
+                }
+
             }
             ConfirmCommand.RaiseCanExecuteChanged();
         }
+
+
         private void ScanErrorNotice() 
         {
             App.Current.Dispatcher.Invoke(async () =>
@@ -177,7 +236,64 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
                 await MaterialDesignThemes.Wpf.DialogHost.Show(errorContent, "MultiAxisScanViewHost");
             });
         }
+        private async Task CheckCloudCalibrationAsync(string sampleStageId)
+        {
+            App.Current.Dispatcher.Invoke(() =>
+            {
+                CloudCheckingVisibility = Visibility.Visible;
+                CloudResultVisibility = Visibility.Collapsed;
+                CloudRecordVisibility = Visibility.Collapsed;
+            });
 
+            var (success, hasData, rawJson, errorMsg) = await _thingboardService.QueryCalibrationExistsAsync(sampleStageId);
+
+            App.Current.Dispatcher.Invoke(() =>
+            {
+                CloudCheckingVisibility = Visibility.Collapsed;
+                CloudResultVisibility = Visibility.Visible;
+
+                if (!success)
+                {
+                    CloudResultText = $"⚠ 查询失败：{errorMsg}";
+                    CloudResultColor = Brushes.OrangeRed;
+                    CloudRecordVisibility = Visibility.Collapsed;
+                }
+                else if (hasData)
+                {
+                    CloudResultText = "✔ 云端已有标定数据，本次将覆盖更新";
+                    CloudResultColor = Brushes.Green;
+
+                    // 解析第一条记录的字段
+                    try
+                    {
+                        using var doc = System.Text.Json.JsonDocument.Parse(rawJson);
+                        var first = doc.RootElement[0];
+                        CloudRecordDeviceId = first.GetProperty("device_id").GetString() ?? "-";
+                        // 用 GetString() 避免微秒精度导致的解析异常
+                        string rawTime = first.GetProperty("updated_at").GetString() ?? "-";
+                        if (DateTime.TryParse(rawTime, null, System.Globalization.DateTimeStyles.RoundtripKind, out DateTime dt))
+                            CloudRecordUpdatedAt = dt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
+                        else
+                            CloudRecordUpdatedAt = rawTime;
+                        CloudRecordContentUrl = first.GetProperty("content").GetString() ?? "-";
+                        CloudRecordVisibility = Visibility.Visible;
+                    }
+                    catch (Exception ex)
+                    {
+                        CloudRecordDeviceId = "-";
+                        CloudRecordUpdatedAt = "-";
+                        // 解析失败也显示出来，方便排查
+                        CloudRecordVisibility = Visibility.Visible;
+                    }
+                }
+                else
+                {
+                    CloudResultText = "○ 云端暂无标定数据，本次为首次上传";
+                    CloudResultColor = Brushes.Orange;
+                    CloudRecordVisibility = Visibility.Collapsed;
+                }
+            });
+        }
         private void Confirm()
         {
             State.InitReport();

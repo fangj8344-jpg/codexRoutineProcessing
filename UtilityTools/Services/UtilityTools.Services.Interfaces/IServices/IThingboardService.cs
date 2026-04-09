@@ -141,9 +141,12 @@ namespace UtilityTools.Services.Interfaces.IServices
         /// </remarks>
         Task<bool> UploadAttributesAsync(string attributes);
 
-      
 
 
+        /// <summary>
+        /// 查询云端是否存在指定样品台的标定记录
+        /// </summary>
+        Task<(bool Success, bool HasData, string RawJson, string ErrorMsg)> QueryCalibrationExistsAsync(string sampleStageId);
 
 
         /// <summary>
