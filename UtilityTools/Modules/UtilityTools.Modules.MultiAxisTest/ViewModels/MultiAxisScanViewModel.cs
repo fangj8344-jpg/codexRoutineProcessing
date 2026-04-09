@@ -406,22 +406,41 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
             }
 
             // 2. 遍历电机列表
-            if (content.TryGetProperty("电机列表", out var motors))
+            // 2. 遍历电机列表
+            if (content.TryGetProperty("电机列表", out var motors) && motors.ValueKind == JsonValueKind.Array)
             {
                 foreach (var m in motors.EnumerateArray())
                 {
+                    if (m.ValueKind != JsonValueKind.Object) continue;
+
                     var row = new CloudMotorAxisDisplay
                     {
-                        AxisType = m.GetProperty("轴类型").GetString(),
+                        AxisType = GetJsonString(m, "轴类型"),
                         MinRange = GetJsonScalar(m, "最小量程(um)"),
                         MaxRange = GetJsonScalar(m, "最大量程(um)"),
-                        NegLimit = m.GetProperty("负向限位").GetBoolean() ? "已触发" : "正常",
-                        PosLimit = m.GetProperty("正向限位").GetBoolean() ? "已触发" : "正常",
-                        // 针对巨大的“定位精度误差表”，我们可以统计点数
-                        PrecisionStd = m.TryGetProperty("定位精度误差表", out var table)
-                                       ? $"已校准 ({table.GetArrayLength()} 个采样点)"
-                                       : "无校准数据"
+                        NegLimit = GetJsonScalar(m, "负向限位") == "True" ? "已触发" : "正常",
+                        PosLimit = GetJsonScalar(m, "正向限位") == "True" ? "已触发" : "正常",
+
+                        // 恢复这些详细数据
+                        ForwardStd = GetJsonScalar(m, "正向速度标准差"),
+                        ReverseStd = GetJsonScalar(m, "反向速度标准差"),
+                        PrecisionStd = GetJsonScalar(m, "定位精度标准差")
                     };
+
+                    // 恢复解析那几十个甚至上百个的采样点
+                    if (m.TryGetProperty("定位精度误差表", out var table) && table.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var pt in table.EnumerateArray())
+                        {
+                            if (pt.ValueKind != JsonValueKind.Object) continue;
+                            row.ErrorPoints.Add(new CloudErrorPointDisplay
+                            {
+                                TargetUm = GetJsonScalar(pt, "目标位置(um)"),
+                                ActualUm = GetJsonScalar(pt, "实际位置(um)")
+                            });
+                        }
+                    }
+
                     CloudMotors.Add(row);
                 }
             }
