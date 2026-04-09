@@ -77,6 +77,50 @@ namespace UtilityTools.Core.Model
         [JsonPropertyName("结束测试时间")]
         public string EndTime { get; set; }
 
+        /// <summary>
+        /// 样品台类型
+        /// </summary>
+        [JsonPropertyName("样品台类型")]
+        public string StageType { get; set; }
+
+        /// <summary>
+        /// 采购信息
+        /// </summary>
+        [JsonPropertyName("采购订单")]
+        public string PurchaseOrder { get; set; }
+
+
+        /// <summary>
+        /// 生产订单
+        /// </summary>
+        [JsonPropertyName("生产订单")]
+        public string ProductionOrder { get; set; }
+
+        /// <summary>
+        /// 操作者
+        /// </summary>
+        [JsonPropertyName("操作检验")]
+        public string OperatorId { get; set; }
+
+        /// <summary>
+        /// 生产日期
+        /// </summary>
+        [JsonPropertyName("生产日期")]
+        public string ProductionDate { get; set; }
+
+        /// <summary>
+        /// 序列号
+        /// </summary>
+        [JsonPropertyName("序列号")]
+        public string SerialNumber { get; set; }
+
+        /// <summary>
+        /// 电镜型号
+        /// </summary>
+        [JsonPropertyName("电镜型号")]
+        public string ElectronMicroscopeModel { get; set; }
+    
+
         [JsonPropertyName("电机列表")]
         public List<MotorData> Motors { get; set; }
     }

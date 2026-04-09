@@ -120,7 +120,6 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
                     if (IsConnected == true)
                     {
                         Model.QueryStatusTask();
-                       
                     }
                     else
                     {

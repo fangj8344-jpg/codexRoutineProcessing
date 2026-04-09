@@ -221,7 +221,7 @@ namespace UtilityTools.Modules.MotorTest.Runners
 
             // 掐表计时：30分钟
             var sw = Stopwatch.StartNew();
-            TimeSpan testDuration = TimeSpan.FromMinutes(5);
+            TimeSpan testDuration = TimeSpan.FromMinutes(30);
             int lapCount = 1;
 
             // 只要时间没到 30 分钟，就一直跑

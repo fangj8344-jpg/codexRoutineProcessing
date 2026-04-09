@@ -84,7 +84,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         private Double _progressValue;
         // 统一类型为 MotorDbContext
 
-        private string _version = "3.3.0";
+        private string _version = "4.0.1";
         /// <summary>
         /// 版本号
         /// </summary>

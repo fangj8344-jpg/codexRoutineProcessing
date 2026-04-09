@@ -57,50 +57,7 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
                    && State.CurrentScanDisplay != null
                    && !string.IsNullOrWhiteSpace(State.CurrentScanDisplay.SerialNumber);
         }
-        /*
-        private void OnBarcodeReceived(string[] barcodeParts)
-        {
 
-           
-            for (int i = 0; i < barcodeParts.Length; i++)
-            {
-                barcodeParts[i] = barcodeParts[i]?.Trim() ?? string.Empty;
-            }
-            State.CurrentScanText = string.Join("/", barcodeParts);
-            // 3. 拿到最后一段最关键的“日期序列号”
-            string lastPart = barcodeParts[3];
-
-            State.CurrentScanDisplay = new ScanDisplayModel
-            {
-                PurchaseOrder = barcodeParts[0],
-                ProductionOrder = barcodeParts[1],
-                OperatorId = barcodeParts[2],
-
-                // 日期固定取前 6 位，取不到 6 位有多少取多少
-                ProductionDate = lastPart.Length >= 6 ? lastPart.Substring(0, 6) : lastPart,
-
-                // 序列号取 6 位之后的所有内容
-                SerialNumber = lastPart.Length > 6 ? lastPart.Substring(6) : string.Empty
-            };
-
-            // 4. 严谨校验
-            bool isDateOk = State.CurrentScanDisplay.ProductionDate.Length == 6;
-            bool isSnOk = State.CurrentScanDisplay.SerialNumber.Length >= 3;
-
-            if (!isDateOk || !isSnOk)
-            {
-                ScanErrorNotice();
-                // 建议在这里打个日志，看看扫出来到底是什么鬼
-                // _logger.Warn($"扫码格式不对：日期长度{isDateOk}, 序号长度{isSnOk}, 原始文本: {State.CurrentScanText}");
-            }
-
-            // 5. 赋值上传信息
-            State.UploadInformation.SampleStageId = State.CurrentScanText;
-            State.UploadInformation.Content.StageId = State.CurrentScanText;
-
-            ConfirmCommand.RaiseCanExecuteChanged();
-        }
-        */
 
         /// <summary>
         /// 扫码枪扫码触发事件
@@ -132,7 +89,14 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
                 State.CurrentScanDisplay.ElectronMicroscopeModel = barcodeParts[3]; // 比如 ZEM20
                 string stageType = barcodeParts[4];                                 // 比如 SampleMini
                 State.CurrentScanDisplay.StageType = stageType;
-
+                //给上传的信息赋值
+                State.UploadInformation.Content.ElectronMicroscopeModel = State.CurrentScanDisplay.ElectronMicroscopeModel;
+                State.UploadInformation.Content.StageType = State.CurrentScanDisplay.StageType;
+                State.UploadInformation.Content.SerialNumber = State.CurrentScanDisplay.SerialNumber;
+                State.UploadInformation.Content.OperatorId = State.CurrentScanDisplay.OperatorId;
+                State.UploadInformation.Content.PurchaseOrder = State.CurrentScanDisplay.PurchaseOrder;
+                State.UploadInformation.Content.ProductionOrder = State.CurrentScanDisplay.ProductionOrder;
+                State.UploadInformation.Content.ProductionDate = State.CurrentScanDisplay.ProductionDate;
                 // 如果你的 State.UploadInformation 里也有这两个字段，也可以在这里一并赋值：
                 // State.UploadInformation.ElectronMicroscopeModel = barcodeParts[3];
                 // State.UploadInformation.StageType = barcodeParts[4];
@@ -153,10 +117,12 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
                         State.MotorKindObj = MachineProfile.UniversalFiveAxis;
                         break;
                     default:
-                        // 碰到不认识的新型号兜底
+                        // 碰到不认识的标准型号兜底
                         State.MotorKindObj = MachineProfile.StandardTwoAxis;
                         break;
                 }
+
+
             }
             else
             {

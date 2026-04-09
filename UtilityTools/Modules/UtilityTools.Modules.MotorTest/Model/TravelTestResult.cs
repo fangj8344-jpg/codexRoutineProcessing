@@ -37,4 +37,5 @@ namespace UtilityTools.Modules.MotorTest.Model
         // 【最关键】这98个点的名单就在这里传出去！
         public List<PositionError> PositionErrors { get; set; } = new List<PositionError>();
     }
+
 }
