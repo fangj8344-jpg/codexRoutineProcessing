@@ -6,11 +6,18 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
     xmlns:prism="http://prismlibrary.com/"
-    d:DesignHeight="550"
-    d:DesignWidth="1000"
+    d:DesignHeight="700"
+    d:DesignWidth="1100"
     prism:ViewModelLocator.AutoWireViewModel="True"
     InputMethod.IsInputMethodEnabled="False"
     mc:Ignorable="d">
+
+    <UserControl.InputBindings>
+        <KeyBinding
+            Key="L"
+            Command="{Binding OpenEngineerConfigCommand}"
+            Modifiers="Ctrl" />
+    </UserControl.InputBindings>
 
     <md:DialogHost DialogTheme="Inherit" Identifier="MultiAxisScanViewHost">
         <Grid Margin="30">
@@ -40,8 +47,8 @@
 
             <Grid Grid.Row="1" Margin="0,10">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="6*" />
                     <ColumnDefinition Width="4*" />
+                    <ColumnDefinition Width="6*" />
                 </Grid.ColumnDefinitions>
 
                 <md:Card
@@ -55,7 +62,7 @@
                             Margin="0,0,0,20"
                             Foreground="{DynamicResource PrimaryHueMidBrush}"
                             Style="{StaticResource MaterialDesignHeadline6TextBlock}"
-                            Text="解析详情" />
+                            Text="当前解析详情" />
 
                         <Grid>
                             <Grid.RowDefinitions>
@@ -69,61 +76,54 @@
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="40" />
-                                <ColumnDefinition Width="180" />
+                                <ColumnDefinition Width="130" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
 
                             <md:PackIcon
                                 Grid.Row="0"
-                                Grid.Column="0"
-                                Width="24"
-                                Height="24"
+                                Width="22"
+                                Height="22"
                                 VerticalAlignment="Center"
                                 Foreground="Gray"
-                                Kind="CalendarClockOutline" />
+                                Kind="Devices" />
                             <TextBlock
                                 Grid.Row="0"
                                 Grid.Column="1"
                                 VerticalAlignment="Center"
-                                FontSize="15"
                                 Foreground="Gray"
                                 Text="电镜型号" />
                             <TextBlock
                                 Grid.Row="0"
                                 Grid.Column="2"
                                 VerticalAlignment="Center"
-                                FontSize="16"
                                 FontWeight="SemiBold"
                                 Text="{Binding State.CurrentScanDisplay.ElectronMicroscopeModel}" />
 
                             <md:PackIcon
                                 Grid.Row="1"
-                                Grid.Column="0"
-                                Width="24"
-                                Height="24"
+                                Width="22"
+                                Height="22"
                                 VerticalAlignment="Center"
                                 Foreground="Gray"
-                                Kind="CalendarClockOutline" />
+                                Kind="TableSettings" />
                             <TextBlock
                                 Grid.Row="1"
                                 Grid.Column="1"
                                 VerticalAlignment="Center"
-                                FontSize="15"
                                 Foreground="Gray"
                                 Text="样品台型号" />
                             <TextBlock
                                 Grid.Row="1"
                                 Grid.Column="2"
                                 VerticalAlignment="Center"
-                                FontSize="16"
                                 FontWeight="SemiBold"
                                 Text="{Binding State.CurrentScanDisplay.StageType}" />
 
                             <md:PackIcon
                                 Grid.Row="2"
-                                Grid.Column="0"
-                                Width="24"
-                                Height="24"
+                                Width="22"
+                                Height="22"
                                 VerticalAlignment="Center"
                                 Foreground="Gray"
                                 Kind="CartOutline" />
@@ -131,22 +131,19 @@
                                 Grid.Row="2"
                                 Grid.Column="1"
                                 VerticalAlignment="Center"
-                                FontSize="15"
                                 Foreground="Gray"
                                 Text="采购订单号" />
                             <TextBlock
                                 Grid.Row="2"
                                 Grid.Column="2"
                                 VerticalAlignment="Center"
-                                FontSize="16"
                                 FontWeight="SemiBold"
                                 Text="{Binding State.CurrentScanDisplay.PurchaseOrder}" />
 
                             <md:PackIcon
                                 Grid.Row="3"
-                                Grid.Column="0"
-                                Width="24"
-                                Height="24"
+                                Width="22"
+                                Height="22"
                                 VerticalAlignment="Center"
                                 Foreground="Gray"
                                 Kind="Factory" />
@@ -154,22 +151,19 @@
                                 Grid.Row="3"
                                 Grid.Column="1"
                                 VerticalAlignment="Center"
-                                FontSize="15"
                                 Foreground="Gray"
                                 Text="生产订单号" />
                             <TextBlock
                                 Grid.Row="3"
                                 Grid.Column="2"
                                 VerticalAlignment="Center"
-                                FontSize="16"
                                 FontWeight="SemiBold"
                                 Text="{Binding State.CurrentScanDisplay.ProductionOrder}" />
 
                             <md:PackIcon
                                 Grid.Row="4"
-                                Grid.Column="0"
-                                Width="24"
-                                Height="24"
+                                Width="22"
+                                Height="22"
                                 VerticalAlignment="Center"
                                 Foreground="Gray"
                                 Kind="AccountHardHat" />
@@ -177,243 +171,253 @@
                                 Grid.Row="4"
                                 Grid.Column="1"
                                 VerticalAlignment="Center"
-                                FontSize="15"
                                 Foreground="Gray"
-                                Text="操作 / 检验员工号" />
+                                Text="操作员工号" />
                             <TextBlock
                                 Grid.Row="4"
                                 Grid.Column="2"
                                 VerticalAlignment="Center"
-                                FontSize="16"
                                 FontWeight="SemiBold"
                                 Text="{Binding State.CurrentScanDisplay.OperatorId}" />
 
                             <md:PackIcon
                                 Grid.Row="5"
-                                Grid.Column="0"
-                                Width="24"
-                                Height="24"
+                                Width="22"
+                                Height="22"
                                 VerticalAlignment="Center"
                                 Foreground="Gray"
-                                Kind="CalendarClockOutline" />
+                                Kind="CalendarClock" />
                             <TextBlock
                                 Grid.Row="5"
                                 Grid.Column="1"
                                 VerticalAlignment="Center"
-                                FontSize="15"
                                 Foreground="Gray"
                                 Text="生产日期" />
                             <TextBlock
                                 Grid.Row="5"
                                 Grid.Column="2"
                                 VerticalAlignment="Center"
-                                FontSize="16"
                                 FontWeight="SemiBold"
                                 Text="{Binding State.CurrentScanDisplay.ProductionDate}" />
 
                             <md:PackIcon
                                 Grid.Row="6"
-                                Grid.Column="0"
-                                Width="24"
-                                Height="24"
+                                Width="22"
+                                Height="22"
                                 VerticalAlignment="Center"
-                                Foreground="Gray"
+                                Foreground="{DynamicResource SecondaryHueMidBrush}"
                                 Kind="Barcode" />
                             <TextBlock
                                 Grid.Row="6"
                                 Grid.Column="1"
                                 VerticalAlignment="Center"
-                                FontSize="15"
                                 Foreground="Gray"
                                 Text="序列号" />
                             <TextBlock
                                 Grid.Row="6"
                                 Grid.Column="2"
                                 VerticalAlignment="Center"
-                                FontSize="16"
-                                FontWeight="SemiBold"
+                                FontSize="18"
+                                FontWeight="Bold"
                                 Foreground="{DynamicResource SecondaryHueMidBrush}"
                                 Text="{Binding State.CurrentScanDisplay.SerialNumber}" />
-
                         </Grid>
                     </StackPanel>
                 </md:Card>
-
                 <md:Card
                     Grid.Column="1"
                     Margin="12,0,0,0"
-                    Padding="24"
+                    Padding="0"
                     md:ElevationAssist.Elevation="Dp2"
                     UniformCornerRadius="8">
-                    <StackPanel>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
                         <TextBlock
-                            Margin="0,0,0,20"
+                            Grid.Row="0"
+                            Margin="24,24,24,10"
                             Foreground="{DynamicResource PrimaryHueMidBrush}"
                             Style="{StaticResource MaterialDesignHeadline6TextBlock}"
-                            Text="原始扫码数据" />
+                            Text="数据溯源与详情" />
 
-                        <TextBox
-                            Height="100"
-                            Margin="0,10,0,0"
-                            md:HintAssist.Hint="请使用扫码枪扫描条码..."
-                            md:HintAssist.IsFloating="True"
-                            Focusable="False"
-                            FontSize="16"
-                            IsReadOnly="True"
-                            Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                            Text="{Binding State.CurrentScanText}"
-                            TextWrapping="Wrap"
-                            VerticalScrollBarVisibility="Auto" />
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                            <Border Padding="24,0,24,24">
+                                <StackPanel>
+                                    <TextBox
+                                        md:HintAssist.Hint="原始扫码文本"
+                                        md:HintAssist.IsFloating="True"
+                                        BorderBrush="{DynamicResource PrimaryHueMidBrush}"
+                                        FontSize="14"
+                                        Foreground="{DynamicResource MaterialDesignBody}"
+                                        IsReadOnly="True"
+                                        Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                        Text="{Binding State.CurrentScanText}"
+                                        TextWrapping="Wrap" />
 
-                        <StackPanel
-                            Margin="0,20,0,0"
-                            HorizontalAlignment="Center"
-                            Opacity="0.6"
-                            Orientation="Horizontal">
-                            <md:PackIcon
-                                Margin="0,0,5,0"
-                                VerticalAlignment="Center"
-                                Kind="InformationOutline" />
-                            <TextBlock
-                                VerticalAlignment="Center"
-                                FontSize="13"
-                                Text="请确保输入法处于纯英文状态" />
-                        </StackPanel>
-                        <StackPanel
-                            Margin="0,16,0,0"
-                            Orientation="Horizontal"
-                            Visibility="{Binding CloudCheckingVisibility}">
-                            <ProgressBar
-                                Width="18"
-                                Height="18"
-                                Margin="0,0,8,0"
-                                VerticalAlignment="Center"
-                                IsIndeterminate="True"
-                                Style="{StaticResource MaterialDesignCircularProgressBar}" />
-                            <TextBlock
-                                VerticalAlignment="Center"
-                                FontSize="13"
-                                Opacity="0.6"
-                                Text="正在查询云端数据..." />
-                        </StackPanel>
-                        <!--  云端查询中  -->
-                        <StackPanel
-                            Margin="0,16,0,0"
-                            Orientation="Horizontal"
-                            Visibility="{Binding CloudCheckingVisibility}">
-                            <ProgressBar
-                                Width="18"
-                                Height="18"
-                                Margin="0,0,8,0"
-                                VerticalAlignment="Center"
-                                IsIndeterminate="True"
-                                Style="{StaticResource MaterialDesignCircularProgressBar}" />
-                            <TextBlock
-                                VerticalAlignment="Center"
-                                FontSize="13"
-                                Opacity="0.6"
-                                Text="正在查询云端数据..." />
-                        </StackPanel>
-                        <!--  云端查询结果：状态文字  -->
-                        <TextBlock
-                            Margin="0,16,0,0"
-                            FontSize="13"
-                            FontWeight="SemiBold"
-                            Foreground="{Binding CloudResultColor}"
-                            Text="{Binding CloudResultText}"
-                            TextWrapping="Wrap"
-                            Visibility="{Binding CloudResultVisibility}" />
-                        <!--  云端记录详情（有数据时才显示）  -->
-                        <Border
-                            Margin="0,8,0,0"
-                            Padding="10"
-                            Background="#E8F5E9"
-                            CornerRadius="6"
-                            Visibility="{Binding CloudRecordVisibility}">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock
-                                    Grid.Row="0"
-                                    Grid.Column="0"
-                                    Margin="0,2,8,2"
-                                    FontSize="12"
-                                    Foreground="#555555"
-                                    Text="设备ID：" />
-                                <TextBlock
-                                    Grid.Row="0"
-                                    Grid.Column="1"
-                                    Margin="0,2"
-                                    FontSize="12"
-                                    Foreground="#212121"
-                                    Text="{Binding CloudRecordDeviceId}"
-                                    TextWrapping="Wrap" />
-                                <TextBlock
-                                    Grid.Row="1"
-                                    Grid.Column="0"
-                                    Margin="0,2,8,2"
-                                    FontSize="12"
-                                    Foreground="#555555"
-                                    Text="更新时间：" />
-                                <TextBlock
-                                    Grid.Row="1"
-                                    Grid.Column="1"
-                                    Margin="0,2"
-                                    FontSize="12"
-                                    Foreground="#212121"
-                                    Text="{Binding CloudRecordUpdatedAt}" />
-                                <TextBlock
-                                    Grid.Row="2"
-                                    Grid.Column="0"
-                                    Margin="0,2,8,2"
-                                    FontSize="12"
-                                    Foreground="#555555"
-                                    Text="数据链接：" />
-                                <TextBlock
-                                    Grid.Row="2"
-                                    Grid.Column="1"
-                                    Margin="0,2"
-                                    FontSize="12"
-                                    Foreground="#1976D2"
-                                    Text="{Binding CloudRecordContentUrl}"
-                                    TextWrapping="Wrap" />
-                            </Grid>
-                        </Border>
-                    </StackPanel>
+                                    <Grid Margin="0,16,0,0">
+                                        <StackPanel Orientation="Horizontal" Visibility="{Binding CloudCheckingVisibility}">
+                                            <ProgressBar
+                                                Width="18"
+                                                Height="18"
+                                                Margin="0,0,8,0"
+                                                IsIndeterminate="True"
+                                                Style="{StaticResource MaterialDesignCircularProgressBar}" />
+                                            <TextBlock
+                                                VerticalAlignment="Center"
+                                                Opacity="0.6"
+                                                Text="正在同步云端标定数据..." />
+                                        </StackPanel>
+                                        <TextBlock
+                                            FontWeight="SemiBold"
+                                            Foreground="{Binding CloudResultColor}"
+                                            Text="{Binding CloudResultText}"
+                                            Visibility="{Binding CloudResultVisibility}" />
+                                    </Grid>
+
+                                    <Border
+                                        Margin="0,12,0,0"
+                                        Padding="16"
+                                        Background="#212121"
+                                        BorderBrush="#333"
+                                        BorderThickness="1"
+                                        CornerRadius="8">
+                                        <StackPanel>
+                                            <TextBlock
+                                                Margin="0,0,0,10"
+                                                FontWeight="Bold"
+                                                Foreground="{DynamicResource PrimaryHueLightBrush}"
+                                                Text="云端溯源详情 (JSON数据)" />
+
+                                            <ItemsControl ItemsSource="{Binding CloudContentFields}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Grid Margin="0,4">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="120" />
+                                                                <ColumnDefinition Width="*" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock
+                                                                FontSize="12"
+                                                                Foreground="#888"
+                                                                Text="{Binding Label}" />
+                                                            <TextBlock
+                                                                Grid.Column="1"
+                                                                HorizontalAlignment="Right"
+                                                                Foreground="White"
+                                                                Text="{Binding Value}"
+                                                                TextAlignment="Right"
+                                                                TextWrapping="Wrap" />
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+
+                                            <Separator Margin="0,12" Background="#333" />
+
+                                            <TextBlock
+                                                Margin="0,0,0,8"
+                                                FontSize="13"
+                                                FontWeight="Bold"
+                                                Foreground="{DynamicResource PrimaryHueLightBrush}"
+                                                Text="电机轴标定参数" />
+                                            <ItemsControl ItemsSource="{Binding CloudMotors}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border
+                                                            Margin="0,4"
+                                                            Padding="10"
+                                                            Background="#2D2D2D"
+                                                            CornerRadius="4">
+                                                            <StackPanel>
+                                                                <DockPanel>
+                                                                    <TextBlock
+                                                                        FontWeight="Bold"
+                                                                        Foreground="{DynamicResource SecondaryHueMidBrush}"
+                                                                        Text="{Binding AxisType}" />
+                                                                    <TextBlock
+                                                                        HorizontalAlignment="Right"
+                                                                        FontSize="11"
+                                                                        Foreground="#4CAF50"
+                                                                        Text="{Binding PrecisionStd}" />
+                                                                </DockPanel>
+
+                                                                <UniformGrid Margin="0,8,0,0" Columns="2">
+                                                                    <StackPanel Orientation="Horizontal">
+                                                                        <TextBlock
+                                                                            FontSize="11"
+                                                                            Foreground="#666"
+                                                                            Text="范围: " />
+                                                                        <TextBlock
+                                                                            FontSize="11"
+                                                                            Foreground="#DDD"
+                                                                            Text="{Binding MinRange}" />
+                                                                        <TextBlock
+                                                                            FontSize="11"
+                                                                            Foreground="#DDD"
+                                                                            Text="~" />
+                                                                        <TextBlock
+                                                                            FontSize="11"
+                                                                            Foreground="#DDD"
+                                                                            Text="{Binding MaxRange}" />
+                                                                    </StackPanel>
+                                                                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                                                                        <TextBlock
+                                                                            FontSize="11"
+                                                                            Foreground="#666"
+                                                                            Text="限位: " />
+                                                                        <TextBlock
+                                                                            FontSize="11"
+                                                                            Foreground="#DDD"
+                                                                            Text="{Binding NegLimit}" />
+                                                                        <TextBlock
+                                                                            FontSize="11"
+                                                                            Foreground="#DDD"
+                                                                            Text="/" />
+                                                                        <TextBlock
+                                                                            FontSize="11"
+                                                                            Foreground="#DDD"
+                                                                            Text="{Binding PosLimit}" />
+                                                                    </StackPanel>
+                                                                </UniformGrid>
+                                                            </StackPanel>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+                        </ScrollViewer>
+                    </Grid>
                 </md:Card>
             </Grid>
-
             <StackPanel
                 Grid.Row="2"
                 Margin="0,20,0,0"
                 HorizontalAlignment="Center"
                 Orientation="Horizontal">
                 <Button
-                    Width="220"
-                    Height="46"
-                    md:ButtonAssist.CornerRadius="23"
+                    Width="250"
+                    Height="50"
+                    md:ButtonAssist.CornerRadius="25"
                     Command="{Binding ConfirmCommand}"
-                    Style="{StaticResource MaterialDesignRaisedButton}"
-                    ToolTip="验证通过后点击进入测试">
+                    Style="{StaticResource MaterialDesignRaisedButton}">
                     <StackPanel Orientation="Horizontal">
                         <md:PackIcon
-                            Width="22"
-                            Height="22"
-                            Margin="0,0,8,0"
+                            Width="24"
+                            Height="24"
+                            Margin="0,0,10,0"
                             VerticalAlignment="Center"
-                            Kind="CheckCircleOutline" />
+                            Kind="PlayCircleOutline" />
                         <TextBlock
                             VerticalAlignment="Center"
                             FontSize="16"
                             FontWeight="Bold"
-                            Text="确认并进入测试" />
+                            Text="确认信息并进入测试" />
                     </StackPanel>
                 </Button>
             </StackPanel>

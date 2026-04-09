@@ -5,6 +5,7 @@ using Prism.Mvvm;
 using Prism.Regions;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.Design;
 using System.Globalization;
 using System.Text.Json;
@@ -84,9 +85,20 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
             get => _cloudRecordContentUrl;
             set => SetProperty(ref _cloudRecordContentUrl, value);
         }
+        /// <summary>云端 content 为对象时的摘要（开始/结束时间、电机数等）。</summary>
+        private string _cloudRecordSummary = string.Empty;
+        public string CloudRecordSummary
+        {
+            get => _cloudRecordSummary;
+            set => SetProperty(ref _cloudRecordSummary, value);
+        }
 
         public MultiAxisWorkflowState State { get; }
-       
+        public ObservableCollection<CloudKvDisplayItem> CloudContentFields { get; } = new();
+        public ObservableCollection<CloudMotorAxisDisplay> CloudMotors { get; } = new();
+        public DelegateCommand ConfirmCommand { get; private set; }
+        public DelegateCommand OpenEngineerConfigCommand { get; private set; }
+
         public MultiAxisScanViewModel(IRegionManager regionManager, IEventAggregator eventAggregator, MultiAxisWorkflowState state, IContainerProvider containerProvider )
             : base(containerProvider)
         {
@@ -97,10 +109,18 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
             InputLanguageManager.Current.CurrentInputLanguage = new CultureInfo("en-US");
 
             _thingboardService = containerProvider.Resolve<IServiceFactory>().GetThingboardService();
+            OpenEngineerConfigCommand = new DelegateCommand(ExecuteOpenEngineerConfig);
         }
 
-      
-        public DelegateCommand ConfirmCommand { get; private set; }
+        /// <summary>
+        /// 打开配置界面
+        /// </summary>
+        private async void ExecuteOpenEngineerConfig()
+        {
+            if (MaterialDesignThemes.Wpf.DialogHost.IsDialogOpen("MultiAxisScanViewHost")) return;
+            var view = new Views.EngineerConfigView();
+            await MaterialDesignThemes.Wpf.DialogHost.Show(view, "MultiAxisScanViewHost");
+        }
 
         private bool CanConfirm()
         {
@@ -243,6 +263,8 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
                 CloudCheckingVisibility = Visibility.Visible;
                 CloudResultVisibility = Visibility.Collapsed;
                 CloudRecordVisibility = Visibility.Collapsed;
+                CloudContentFields.Clear();
+                CloudMotors.Clear();
             });
 
             var (success, hasData, rawJson, errorMsg) = await _thingboardService.QueryCalibrationExistsAsync(sampleStageId);
@@ -250,6 +272,7 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
             App.Current.Dispatcher.Invoke(() =>
             {
                 CloudCheckingVisibility = Visibility.Collapsed;
+               
                 CloudResultVisibility = Visibility.Visible;
 
                 if (!success)
@@ -257,6 +280,7 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
                     CloudResultText = $"⚠ 查询失败：{errorMsg}";
                     CloudResultColor = Brushes.OrangeRed;
                     CloudRecordVisibility = Visibility.Collapsed;
+                    CloudRecordSummary = string.Empty;
                 }
                 else if (hasData)
                 {
@@ -266,25 +290,32 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
                     // 解析第一条记录的字段
                     try
                     {
-                        using var doc = System.Text.Json.JsonDocument.Parse(rawJson);
+                        using var doc = JsonDocument.Parse(rawJson);
                         var first = doc.RootElement[0];
-                        CloudRecordDeviceId = first.GetProperty("device_id").GetString() ?? "-";
-                        // 用 GetString() 避免微秒精度导致的解析异常
-                        string rawTime = first.GetProperty("updated_at").GetString() ?? "-";
-                        if (DateTime.TryParse(rawTime, null, System.Globalization.DateTimeStyles.RoundtripKind, out DateTime dt))
+                        CloudRecordDeviceId = first.TryGetProperty("device_id", out var did) && did.ValueKind == JsonValueKind.String
+                            ? did.GetString() ?? "-"
+                            : "-";
+                        string rawTime = first.TryGetProperty("updated_at", out var ut) && ut.ValueKind == JsonValueKind.String
+                            ? ut.GetString() ?? "-"
+                            : "-";
+                        if (DateTime.TryParse(rawTime, null, DateTimeStyles.RoundtripKind, out DateTime dt))
                             CloudRecordUpdatedAt = dt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
                         else
                             CloudRecordUpdatedAt = rawTime;
-                        CloudRecordContentUrl = first.GetProperty("content").GetString() ?? "-";
+                        CloudRecordContentUrl = GetCalibrationDataLink(first);
+                        CloudRecordSummary = BuildCalibrationContentSummary(first);
+                        PopulateCloudDetailFromRecord(first);
                         CloudRecordVisibility = Visibility.Visible;
                     }
-                    catch (Exception ex)
+                    catch
                     {
                         CloudRecordDeviceId = "-";
                         CloudRecordUpdatedAt = "-";
-                        // 解析失败也显示出来，方便排查
+                        CloudRecordContentUrl = "-";
+                        CloudRecordSummary = string.Empty;
                         CloudRecordVisibility = Visibility.Visible;
                     }
+
                 }
                 else
                 {
@@ -293,6 +324,132 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
                     CloudRecordVisibility = Visibility.Collapsed;
                 }
             });
+        }
+
+        /// <summary>数据链接：优先 content_url；老数据里 content 为字符串时当 URL。</summary>
+        private static string GetCalibrationDataLink(JsonElement record)
+        {
+            if (record.TryGetProperty("content_url", out var urlEl) && urlEl.ValueKind == JsonValueKind.String)
+            {
+                var s = urlEl.GetString();
+                if (!string.IsNullOrWhiteSpace(s))
+                    return s;
+            }
+            if (record.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.String)
+                return content.GetString() ?? "-";
+            return "-";
+        }
+
+        private static bool TryGetJsonString(JsonElement obj, string name, out string value)
+        {
+            value = string.Empty;
+            if (!obj.TryGetProperty(name, out var p))
+                return false;
+            if (p.ValueKind == JsonValueKind.String)
+            {
+                value = p.GetString() ?? string.Empty;
+                return true;
+            }
+            if (p.ValueKind == JsonValueKind.Null)
+                return false;
+            value = p.ToString();
+            return !string.IsNullOrEmpty(value);
+        }
+        /// <summary>content 为对象时拼可读摘要。</summary>
+        private static string BuildCalibrationContentSummary(JsonElement record)
+        {
+            if (!record.TryGetProperty("content", out var content) || content.ValueKind != JsonValueKind.Object)
+                return string.Empty;
+            var lines = new List<string>();
+            if (TryGetJsonString(content, "样品台ID", out var sid) && !string.IsNullOrEmpty(sid))
+                lines.Add($"样品台ID：{sid}");
+            if (TryGetJsonString(content, "开始测试时间", out var t0) && !string.IsNullOrEmpty(t0))
+                lines.Add($"开始测试：{t0}");
+            if (TryGetJsonString(content, "结束测试时间", out var t1) && !string.IsNullOrEmpty(t1))
+                lines.Add($"结束测试：{t1}");
+            if (content.TryGetProperty("电机列表", out var motors) && motors.ValueKind == JsonValueKind.Array)
+            {
+                lines.Add($"电机数：{motors.GetArrayLength()}");
+                int i = 0;
+                foreach (var m in motors.EnumerateArray())
+                {
+                    if (i >= 3) break;
+                    if (m.ValueKind != JsonValueKind.Object) continue;
+                    if (TryGetJsonString(m, "轴类型", out var axis))
+                        lines.Add($"  · {axis}");
+                    i++;
+                }
+                if (motors.GetArrayLength() > 3)
+                    lines.Add("  · …");
+            }
+            return lines.Count == 0 ? string.Empty : string.Join(Environment.NewLine, lines);
+        }
+        private void PopulateCloudDetailFromRecord(JsonElement record)
+        {
+            CloudContentFields.Clear();
+            CloudMotors.Clear();
+
+            // 假设数据结构是最外层数组的第一个元素
+            var firstRecord = record.ValueKind == JsonValueKind.Array ? record[0] : record;
+            if (!firstRecord.TryGetProperty("content", out var content)) return;
+
+            // 1. 遍历基础字段 (样品台ID, 测试时间等)
+            foreach (var prop in content.EnumerateObject())
+            {
+                if (prop.Name == "电机列表") continue;
+
+                CloudContentFields.Add(new CloudKvDisplayItem
+                {
+                    Label = prop.Name + "：",
+                    Value = prop.Value.ValueKind == JsonValueKind.Null ? "无" : prop.Value.ToString()
+                });
+            }
+
+            // 2. 遍历电机列表
+            if (content.TryGetProperty("电机列表", out var motors))
+            {
+                foreach (var m in motors.EnumerateArray())
+                {
+                    var row = new CloudMotorAxisDisplay
+                    {
+                        AxisType = m.GetProperty("轴类型").GetString(),
+                        MinRange = GetJsonScalar(m, "最小量程(um)"),
+                        MaxRange = GetJsonScalar(m, "最大量程(um)"),
+                        NegLimit = m.GetProperty("负向限位").GetBoolean() ? "已触发" : "正常",
+                        PosLimit = m.GetProperty("正向限位").GetBoolean() ? "已触发" : "正常",
+                        // 针对巨大的“定位精度误差表”，我们可以统计点数
+                        PrecisionStd = m.TryGetProperty("定位精度误差表", out var table)
+                                       ? $"已校准 ({table.GetArrayLength()} 个采样点)"
+                                       : "无校准数据"
+                    };
+                    CloudMotors.Add(row);
+                }
+            }
+        }
+
+        private static string JsonScalarToDisplay(JsonElement p)
+        {
+            return p.ValueKind switch
+            {
+                JsonValueKind.String => p.GetString() ?? "—",
+                JsonValueKind.Number => p.ToString(),
+                JsonValueKind.True => "是",
+                JsonValueKind.False => "否",
+                JsonValueKind.Null => "—",
+                _ => p.ToString()
+            };
+        }
+
+        private static string GetJsonScalar(JsonElement obj, string name)
+        {
+            return obj.TryGetProperty(name, out var p) ? JsonScalarToDisplay(p) : "—";
+        }
+
+        private static string GetJsonString(JsonElement obj, string name)
+        {
+            if (!obj.TryGetProperty(name, out var p) || p.ValueKind != JsonValueKind.String)
+                return "—";
+            return p.GetString() ?? "—";
         }
         private void Confirm()
         {

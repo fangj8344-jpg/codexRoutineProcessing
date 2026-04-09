@@ -162,11 +162,23 @@ namespace UtilityTools.Modules.MultiAxisTest.Model
 
         public void InitReport()
         {
-
-            UploadInformation.Content = new SampleStageReport()
+            // 如果 Content 为空才去 new（防呆设计）
+            if (UploadInformation.Content == null)
             {
-                Motors = new List<MotorData>(),
-            };
+                UploadInformation.Content = new SampleStageReport();
+            }
+
+            // 💡 正确做法：只清空电机列表，保留扫码得到的基础信息
+            if (UploadInformation.Content.Motors != null)
+            {
+                UploadInformation.Content.Motors.Clear();
+            }
+            else
+            {
+                UploadInformation.Content.Motors = new List<MotorData>();
+            }
+
+            // 这一步依然保留，确保 ID 一致
             UploadInformation.Content.StageId = UploadInformation.SampleStageId;
         }
 
