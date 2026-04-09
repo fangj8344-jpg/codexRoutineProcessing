@@ -15,10 +15,14 @@ namespace UtilityTools.Core.Helper
     /// </summary>
     public class ThingsBoardAuthManager
     {
-        // 🚨 文件名也跟着霸气一点，直接叫 tb_auth_config.json
+        // 文件名叫 tb_auth_config.json
         // 1. 先定义专属的配置文件夹路径 (在软件运行目录下的 Configs 文件夹)
         private static readonly string ConfigFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs");
         private static readonly string ConfigFilePath = Path.Combine(ConfigFolder, "tb_auth_config.json");
+        // 固定密钥，内部工具够用
+        private static readonly byte[] _aesKey = Encoding.UTF8.GetBytes("ZepTools@2025Key");  // 16字节
+        private static readonly byte[] _aesIv = Encoding.UTF8.GetBytes("ZepTools@2025_IV");  // 16字节
+
         // 全局单例对象，随处可用 ThingsBoardAuthManager.Current.JwtToken
         public static ThingsBoardAuthConfigModel Current { get; private set; } = new ThingsBoardAuthConfigModel();
         // ==========================================
@@ -66,30 +70,43 @@ namespace UtilityTools.Core.Helper
             }
         }
 
-        // ==========================================
-        // 3. 微软 DPAPI 原生加解密 (极其安全)
-        // ==========================================
+        /// <summary>
+        /// 加密
+        /// </summary>
+        /// <param name="plainText"></param>
+        /// <returns></returns>
         public static string EncryptPassword(string plainText)
         {
             if (string.IsNullOrEmpty(plainText)) return "";
-            byte[] plainBytes = Encoding.UTF8.GetBytes(plainText);
-            // 绑定当前机器主板环境加密，文件被拷走也解密不了
-            byte[] encryptedBytes = ProtectedData.Protect(plainBytes, null, DataProtectionScope.LocalMachine);
-            return Convert.ToBase64String(encryptedBytes);
+            using var aes = System.Security.Cryptography.Aes.Create();
+            aes.Key = _aesKey;
+            aes.IV = _aesIv;
+            byte[] encrypted = aes.CreateEncryptor().TransformFinalBlock(
+            Encoding.UTF8.GetBytes(plainText), 0, Encoding.UTF8.GetBytes(plainText).Length);
+            return Convert.ToBase64String(encrypted);
         }
+
+        /// <summary>
+        /// 解密
+        /// </summary>
+        /// <param name="encryptedText"></param>
+        /// <returns></returns>
 
         public static string DecryptPassword(string encryptedText)
         {
             if (string.IsNullOrEmpty(encryptedText)) return "";
             try
             {
-                byte[] encryptedBytes = Convert.FromBase64String(encryptedText);
-                byte[] plainBytes = ProtectedData.Unprotect(encryptedBytes, null, DataProtectionScope.LocalMachine);
-                return Encoding.UTF8.GetString(plainBytes);
+                using var aes = System.Security.Cryptography.Aes.Create();
+                aes.Key = _aesKey;
+                aes.IV = _aesIv;
+                byte[] bytes = Convert.FromBase64String(encryptedText);
+                byte[] decrypted = aes.CreateDecryptor().TransformFinalBlock(bytes, 0, bytes.Length);
+                return Encoding.UTF8.GetString(decrypted);
             }
             catch
             {
-                return ""; // 解密失败（比如重装了系统或换电脑了），直接返回空，让工程师重新输密码
+                return "";
             }
         }
 

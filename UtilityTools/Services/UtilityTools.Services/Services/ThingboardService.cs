@@ -486,6 +486,7 @@ namespace UtilityTools.Services.Services
                 }
                 else
                 {
+
                     string err = await response.Content.ReadAsStringAsync();
                     return (false, false, string.Empty, $"查询失败 (HTTP {(int)response.StatusCode}): {err}");
                 }
