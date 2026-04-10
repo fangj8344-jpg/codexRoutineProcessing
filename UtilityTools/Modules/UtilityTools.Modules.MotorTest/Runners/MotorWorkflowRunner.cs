@@ -111,19 +111,39 @@ namespace UtilityTools.Modules.MotorTest.Runners
 
         
 
-        // 专门用来发成绩单的大喇叭方法
-        private void PublishTestResult(string testProject, string standardValue, MotorTestResult result)
+        // 专门用来发测试进度和成绩单的大喇叭方法
+        private void PublishTestState(string testProject, string standardValue, MotorTestProgressState state, MotorTestResult result = null)
         {
             var msg = new MotorTestMessage
             {
                 AxisName = _motorName, // 🚨 给成绩单写上名字
                 TestProject = testProject,
                 StandardValue = standardValue,
-                TestResult = result.IsPassed ? "合格" : "不合格",
-                TestValue = result.MeasuredValue ?? "",
-                Description = result.IsPassed ? result.Description : result.ErrorDescription
+                ProgressState = state,
+                TestResult = (state == MotorTestProgressState.Passed) ? "合格"
+                          : (state == MotorTestProgressState.Failed) ? "不合格"
+                          : string.Empty,
+                TestValue = result?.MeasuredValue ?? string.Empty,
+                Description = result == null ? string.Empty : (result.IsPassed ? result.Description : result.ErrorDescription)
             };
             _eventAggregator.GetEvent<MotorTestResultEvent>().Publish(msg);
+        }
+
+        private void PublishTestResult(string testProject, string standardValue, MotorTestResult result)
+        {
+            PublishTestState(
+                testProject,
+                standardValue,
+                result.IsPassed ? MotorTestProgressState.Passed : MotorTestProgressState.Failed,
+                result);
+        }
+
+        private void InitializeBaseTestRows(IEnumerable<KeyValuePair<string, string>> rows)
+        {
+            foreach (var row in rows)
+            {
+                PublishTestState(row.Key, row.Value, MotorTestProgressState.NotStarted);
+            }
         }
 
         // ==========================================
@@ -136,32 +156,71 @@ namespace UtilityTools.Modules.MotorTest.Runners
 
             // 注意：这里不再清空界面的集合，清空动作由界面的 Command 触发前自己做
             PublishLog($"--- 开始执行 [{_motorName}] 全套基础测试 ---");
+            float ratio = _motorModel.MotorParams.SubRatio;
+
+            var moveTest = new MovementTestItem();
+            var encoderTest = new EncoderTestItem();
+            var fullTravelTest = new FullTravelTestItem(_strokeRange);
+            var accuracyTest = new PositioningAccuracyTestItem();
+
+            string moveStdValue = "到达指定位置";
+            string encoderStdValue = ratio > 0
+                ? $"变化>={Math.Round(100 / ratio, 3):F3}um (脉冲>=100)"
+                : "变化>=100脉冲";
+            string fullTravelStdValue = ratio > 0
+                ? $"[{_strokeRange.min / ratio:F3}-{_strokeRange.max / ratio:F3}]um (脉冲:[{_strokeRange.min}-{_strokeRange.max}])"
+                : $"脉冲:[{_strokeRange.min}-{_strokeRange.max}]";
+            string limitStdValue = ratio > 0
+                ? $"偏差<{Math.Round(200 / ratio, 3):F3}um (脉冲标准差<200)"
+                : "偏差<200脉冲";
+            string linearStdValue = ratio > 0
+                ? $"标准差<1.000um (脉冲标准差<{Math.Round(ratio, 1):F1})"
+                : "标准差<1.000um";
+            string smoothnessStdValue = "波动 < 150.000um";
+
+            InitializeBaseTestRows(new[]
+            {
+                new KeyValuePair<string, string>(moveTest.TestName, moveStdValue),
+                new KeyValuePair<string, string>(encoderTest.TestName, encoderStdValue),
+                new KeyValuePair<string, string>(fullTravelTest.TestName, fullTravelStdValue),
+                new KeyValuePair<string, string>(accuracyTest.TestName, limitStdValue),
+                new KeyValuePair<string, string>("分段定位线性测试", linearStdValue),
+                new KeyValuePair<string, string>("丝杆顺滑度测试", smoothnessStdValue),
+            });
 
             // ==========================================
             // 积木 1：电机基础移动测试
             // ==========================================
-            float ratio = _motorModel.MotorParams.SubRatio;
-            var moveTest = new MovementTestItem();
+            PublishLog($"[{_motorName}] 正在执行电机基础移动测试...");
+            PublishTestState(moveTest.TestName, moveStdValue, MotorTestProgressState.Running);
             var moveResult = await moveTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken);
-            PublishTestResult(moveTest.TestName, "到达指定位置", moveResult);
-            if (!moveResult.IsPassed) { PublishLog($"[{_motorName}] 移动测试失败，终止。"); return; }
+            PublishTestResult(moveTest.TestName, moveStdValue, moveResult);
+            if (!moveResult.IsPassed)
+            {
+                PublishLog($"[{_motorName}] 移动测试失败，终止。原因：{moveResult.ErrorDescription}");
+                return;
+            }
+            PublishLog($"[{_motorName}] 电机基础移动测试通过。");
 
             // ==========================================
             // 积木 2：编码器方向及响应测试
             // ==========================================
-            var encoderTest = new EncoderTestItem();
+            PublishLog($"[{_motorName}] 正在执行编码器方向及响应测试...");
+            PublishTestState(encoderTest.TestName, encoderStdValue, MotorTestProgressState.Running);
             var encoderResult = await encoderTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken);
-            string encoderStdValue = ratio > 0
-                ? $"变化>={Math.Round(100 / ratio, 3):F3}um (脉冲>=100)"
-                : "变化>=100脉冲";
             PublishTestResult(encoderTest.TestName, encoderStdValue, encoderResult);
-            if (!encoderResult.IsPassed) { PublishLog($"[{_motorName}] 编码器测试失败，终止。"); return; }
+            if (!encoderResult.IsPassed)
+            {
+                PublishLog($"[{_motorName}] 编码器测试失败，终止。原因：{encoderResult.ErrorDescription}");
+                return;
+            }
+            PublishLog($"[{_motorName}] 编码器方向及响应测试通过。");
 
             // ==========================================
             // 积木 3：满行程及限位测试 
             // ==========================================
             PublishLog($"[{_motorName}] 正在执行满行程及限位扫描...");
-            var fullTravelTest = new FullTravelTestItem(_strokeRange);
+            PublishTestState(fullTravelTest.TestName, fullTravelStdValue, MotorTestProgressState.Running);
             var fullTravelResult = await fullTravelTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken);
             // 判断积木交上来的是不是定义的 TravelTestResult
             if (fullTravelResult is TravelTestResult travelRes)
@@ -171,9 +230,6 @@ namespace UtilityTools.Modules.MotorTest.Runners
                 myData.PositiveLimit = travelRes.IsPositiveLimitFound;
                 myData.NegativeLimit = travelRes.IsNegativeLimitFound;
             }
-            string fullTravelStdValue = ratio > 0
-                ? $"[{_strokeRange.min / ratio:F3}-{_strokeRange.max / ratio:F3}]um (脉冲:[{_strokeRange.min}-{_strokeRange.max}])"
-                : $"脉冲:[{_strokeRange.min}-{_strokeRange.max}]";
             PublishTestResult(fullTravelTest.TestName, fullTravelStdValue, fullTravelResult);
             if (!fullTravelResult.IsPassed) { PublishLog($"[{_motorName}] 满行程测试失败，终止。"); return; }
 
@@ -181,11 +237,8 @@ namespace UtilityTools.Modules.MotorTest.Runners
             // 积木 4：限位精度(重复性)测试
             // ==========================================
             PublishLog($"[{_motorName}] 正在执行限位精度(重复性)测试...");
-            var accuracyTest = new PositioningAccuracyTestItem();
+            PublishTestState(accuracyTest.TestName, limitStdValue, MotorTestProgressState.Running);
             var accuracyResult = await accuracyTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken);
-            string limitStdValue = ratio > 0
-                ? $"偏差<{Math.Round(200 / ratio, 3):F3}um (脉冲标准差<200)"
-                : "偏差<200脉冲";
             PublishTestResult(accuracyTest.TestName, limitStdValue, accuracyResult);
             if (!accuracyResult.IsPassed) { PublishLog($"[{_motorName}] 限位精度测试失败，终止。"); return; }
 
@@ -198,6 +251,7 @@ namespace UtilityTools.Modules.MotorTest.Runners
             if (maxPos <= minPos) { minPos = 0; maxPos = 100000; }
 
             var linearTest = new LinearStepPrecisionTestItem(minPos, maxPos,msg => PublishLog(msg));
+            PublishTestState(linearTest.TestName, linearStdValue, MotorTestProgressState.Running);
             var linearResult = await linearTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken);
             //  98 个点和标准差记录下来
             if (linearResult is LinearTestResult linearRes)
@@ -208,9 +262,6 @@ namespace UtilityTools.Modules.MotorTest.Runners
             }
 
 
-            string linearStdValue = ratio > 0
-                ? $"标准差<1.000um (脉冲标准差<{Math.Round(ratio, 1):F1})"
-                : "标准差<1.000um";
             PublishTestResult(linearTest.TestName, linearStdValue, linearResult);
             _reportService.AddOrUpdateMotorData(myData);
 
@@ -218,7 +269,8 @@ namespace UtilityTools.Modules.MotorTest.Runners
             // ==========================================
             // 【新增】积木 6：丝杆顺滑度测试 (获取正反向速度标准差)
             // ==========================================
-            PublishLog($"🚀 [{_motorName}] 开始30分钟丝杆顺滑度测试...");
+            PublishLog($"🚀 [{_motorName}] 开始10分钟丝杆顺滑度测试...");
+            PublishTestState("丝杆顺滑度测试", smoothnessStdValue, MotorTestProgressState.Running);
             int midPoint = minPos + (maxPos - minPos) / 2;
 
             // 使用底层接口发指令，不再依赖外面的 Goto 方法
@@ -233,9 +285,9 @@ namespace UtilityTools.Modules.MotorTest.Runners
             List<double> allForwardStdDevsPulse = new List<double>();
             List<double> allBackwardStdDevsPulse = new List<double>();
 
-            // 掐表计时：30分钟
+            // 掐表计时：10分钟
             var sw = Stopwatch.StartNew();
-            TimeSpan testDuration = TimeSpan.FromMinutes(30);
+            TimeSpan testDuration = TimeSpan.FromMinutes(10);
             int lapCount = 1;
 
             // 只要时间没到 30 分钟，就一直跑
@@ -273,7 +325,7 @@ namespace UtilityTools.Modules.MotorTest.Runners
             double forwardStdPulse = allForwardStdDevsPulse.Any() ? Math.Round(allForwardStdDevsPulse.Average(), 3) : 0;
             double backwardStdPulse = allBackwardStdDevsPulse.Any() ? Math.Round(allBackwardStdDevsPulse.Average(), 3) : 0;
 
-            PublishLog($"✅ [{_motorName}] 30分钟测试达标！正向均值波动: {myData.ForwardSpeedStdDev:F3}um, 反向均值波动: {myData.BackwardSpeedStdDev:F3}um");
+            PublishLog($"✅ [{_motorName}] 10分钟测试达标！正向均值波动: {myData.ForwardSpeedStdDev:F3}um, 反向均值波动: {myData.BackwardSpeedStdDev:F3}um");
             bool isSmoothnessPassed = myData.ForwardSpeedStdDev < 150 && myData.BackwardSpeedStdDev < 150; // 
 
             var smoothnessFinalResult = new MotorTestResult
@@ -284,7 +336,7 @@ namespace UtilityTools.Modules.MotorTest.Runners
                 ErrorDescription = isSmoothnessPassed ? "" : "速度波动超出150限值"
             };
 
-            PublishTestResult("丝杆顺滑度测试", "波动 < 150.000um", smoothnessFinalResult);
+            PublishTestResult("丝杆顺滑度测试", smoothnessStdValue, smoothnessFinalResult);
 
             // ==========================================
             // 终点站：把填得满满当当的体检表交上去！

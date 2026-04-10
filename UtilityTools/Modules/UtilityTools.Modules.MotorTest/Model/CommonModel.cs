@@ -7,6 +7,14 @@ using System.Threading.Tasks;
 
 namespace UtilityTools.Modules.MotorTest.Model
 {
+    public enum MotorTestProgressState
+    {
+        NotStarted = 0,
+        Running = 1,
+        Passed = 2,
+        Failed = 3
+    }
+
     public class CommonModel
     {
         #region ------------Constructor------------
@@ -60,6 +68,12 @@ namespace UtilityTools.Modules.MotorTest.Model
     public class  MotorTestMessage:BindableBase
     {
         public string AxisName { get; set; }
+        private MotorTestProgressState _progressState = MotorTestProgressState.NotStarted;
+        public MotorTestProgressState ProgressState
+        {
+            get { return _progressState; }
+            set { _progressState = value; RaisePropertyChanged(); }
+        }
         private string _testProject;
         /// <summary>
         /// 项目名称
@@ -76,7 +90,19 @@ namespace UtilityTools.Modules.MotorTest.Model
         public string TestResult
         {
             get { return _testResult; }
-            set { _testResult = value; RaisePropertyChanged(); }
+            set
+            {
+                _testResult = value;
+                if (value == "合格")
+                {
+                    ProgressState = MotorTestProgressState.Passed;
+                }
+                else if (value == "不合格")
+                {
+                    ProgressState = MotorTestProgressState.Failed;
+                }
+                RaisePropertyChanged();
+            }
         }
 
         private string _testValue;

@@ -217,6 +217,30 @@
                                 <TabControl.ContentTemplate>
                                     <DataTemplate DataType="{x:Type mm:FiveAxisModel}">
                                         <DataGrid ItemsSource="{Binding MotorTestMessages}" AutoGenerateColumns="False" IsReadOnly="True" Style="{StaticResource MaterialDesignDataGrid}" Margin="15,0,0,0">
+                                            <DataGrid.RowStyle>
+                                                <Style TargetType="DataGridRow">
+                                                    <Setter Property="Background" Value="#383838"/>
+                                                    <Setter Property="Foreground" Value="#D0D0D0"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ProgressState}" Value="{x:Static mm:MotorTestProgressState.NotStarted}">
+                                                            <Setter Property="Background" Value="#383838"/>
+                                                            <Setter Property="Foreground" Value="#B0B0B0"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding ProgressState}" Value="{x:Static mm:MotorTestProgressState.Running}">
+                                                            <Setter Property="Background" Value="#1F3A5F"/>
+                                                            <Setter Property="Foreground" Value="#EAF4FF"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding ProgressState}" Value="{x:Static mm:MotorTestProgressState.Passed}">
+                                                            <Setter Property="Background" Value="#1F4D2D"/>
+                                                            <Setter Property="Foreground" Value="#E8F5E9"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding ProgressState}" Value="{x:Static mm:MotorTestProgressState.Failed}">
+                                                            <Setter Property="Background" Value="#5A1F1F"/>
+                                                            <Setter Property="Foreground" Value="#FFEBEE"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </DataGrid.RowStyle>
                                             <DataGrid.Columns>
                                                 <DataGridTextColumn Header="测试项目" Binding="{Binding TestProject}" Width="*"/>
                                                 <DataGridTextColumn Header="结果" Binding="{Binding TestResult}" Width="Auto"/>

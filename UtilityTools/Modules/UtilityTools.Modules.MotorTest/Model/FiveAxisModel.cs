@@ -276,7 +276,20 @@ namespace UtilityTools.Modules.MotorTest.Model
                 // 🚨 过滤逻辑：如果成绩单上的名字是我的，我才签收
                 if (msg.AxisName == Name)
                 {
-                    MotorTestMessages.Add(msg);
+                    var existing = MotorTestMessages.FirstOrDefault(x => x.TestProject == msg.TestProject);
+                    if (existing == null)
+                    {
+                        MotorTestMessages.Add(msg);
+                    }
+                    else
+                    {
+                        existing.AxisName = msg.AxisName;
+                        existing.ProgressState = msg.ProgressState;
+                        existing.TestResult = msg.TestResult;
+                        existing.TestValue = msg.TestValue;
+                        existing.StandardValue = msg.StandardValue;
+                        existing.Description = msg.Description;
+                    }
                 }
             }, ThreadOption.UIThread);
         }
