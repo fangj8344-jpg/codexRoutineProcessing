@@ -35,10 +35,10 @@ namespace UtilityTools.Core.Model
         [JsonPropertyName("轴类型")]
         public string AxisType { get; set; }
 
-        [JsonPropertyName("正向速度标准差")]
+        [JsonPropertyName("正向速度标准差(um)")]
         public double ForwardSpeedStdDev { get; set; }
 
-        [JsonPropertyName("反向速度标准差")]
+        [JsonPropertyName("反向速度标准差(um)")]
         public double BackwardSpeedStdDev { get; set; }
 
         [JsonPropertyName("最小量程(um)")]
@@ -53,7 +53,7 @@ namespace UtilityTools.Core.Model
         [JsonPropertyName("正向限位")]
         public bool PositiveLimit { get; set; }
 
-        [JsonPropertyName("定位精度标准差")]
+        [JsonPropertyName("定位精度标准差(um)")]
         public double PositioningStdDev { get; set; }
         [JsonPropertyName("定位精度误差表")]
         public List<PositionError> PositionErrors { get; set; }

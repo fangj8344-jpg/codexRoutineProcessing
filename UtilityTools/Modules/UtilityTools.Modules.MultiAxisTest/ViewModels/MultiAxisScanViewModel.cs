@@ -422,9 +422,9 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
                         PosLimit = GetJsonScalar(m, "正向限位") == "True" ? "已触发" : "正常",
 
                         // 恢复这些详细数据
-                        ForwardStd = GetJsonScalar(m, "正向速度标准差"),
-                        ReverseStd = GetJsonScalar(m, "反向速度标准差"),
-                        PrecisionStd = GetJsonScalar(m, "定位精度标准差")
+                        ForwardStd = GetJsonScalarAny(m, "正向速度标准差(um)", "正向速度标准差"),
+                        ReverseStd = GetJsonScalarAny(m, "反向速度标准差(um)", "反向速度标准差"),
+                        PrecisionStd = GetJsonScalarAny(m, "定位精度标准差(um)", "定位精度标准差")
                     };
 
                     // 恢复解析那几十个甚至上百个的采样点
@@ -462,6 +462,16 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
         private static string GetJsonScalar(JsonElement obj, string name)
         {
             return obj.TryGetProperty(name, out var p) ? JsonScalarToDisplay(p) : "—";
+        }
+
+        private static string GetJsonScalarAny(JsonElement obj, params string[] names)
+        {
+            foreach (var name in names)
+            {
+                if (obj.TryGetProperty(name, out var p))
+                    return JsonScalarToDisplay(p);
+            }
+            return "—";
         }
 
         private static string GetJsonString(JsonElement obj, string name)

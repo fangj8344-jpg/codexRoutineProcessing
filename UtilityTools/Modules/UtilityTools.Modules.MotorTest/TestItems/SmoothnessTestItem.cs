@@ -91,8 +91,8 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                 result.BackwardStdDevUm = Math.Round(stdDevB / motorModel.MotorParams.SubRatio, 3);
 
 
-                result.MeasuredValue = $"ForwardStdDevUm：{result.ForwardStdDevUm}:BackwardStdDevUm：{result.BackwardStdDevUm}";
-                result.Description = $"正向波动:{result.ForwardStdDevUm:F2}, 反向波动:{result.BackwardStdDevUm:F2}";
+                result.MeasuredValue = $"正向: {result.ForwardStdDevUm:F3}um (脉冲标准差: {result.ForwardStdDev:F2}), 反向: {result.BackwardStdDevUm:F3}um (脉冲标准差: {result.BackwardStdDev:F2})";
+                result.Description = $"正向波动:{result.ForwardStdDevUm:F3}um, 反向波动:{result.BackwardStdDevUm:F3}um";
             }
             return result;
         }

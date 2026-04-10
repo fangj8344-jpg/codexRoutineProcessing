@@ -68,7 +68,9 @@ namespace UtilityTools.Modules.MotorTest.TestItems
 
             // 3. 计算行程
             int fullStroke = posForward - posBackward;
-            result.MeasuredValue = fullStroke.ToString();
+            double ratio = motorModel.MotorParams.SubRatio;
+            double fullStrokeUm = Math.Round(fullStroke / ratio, 3);
+            result.MeasuredValue = $"{fullStrokeUm:F3}um (脉冲: {fullStroke})";
             // 4. 判定标准
             if (fullStroke < _standardRange.max && fullStroke > _standardRange.min)
             {

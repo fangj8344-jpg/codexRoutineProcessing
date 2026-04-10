@@ -65,17 +65,19 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             // 获取结束位置并计算
             var posEnd = motorModel.MotorParams.Pos;
             var distance = Math.Abs(posEnd - posStart);
+            double ratio = motorModel.MotorParams.SubRatio;
+            double distanceUm = ratio > 0 ? Math.Round(distance / ratio, 3) : 0;
 
             if (distance > 50)
             {
                 result.IsPassed = true;
-                result.MeasuredValue = $"移动距离: {distance}";
+                result.MeasuredValue = $"移动距离: {distanceUm:F3}um (脉冲: {distance})";
                 result.Description = $"起:{posStart} 止:{posEnd}";
             }
             else
             {
                 result.IsPassed = false;
-                result.MeasuredValue = $"移动距离: {distance} (过小)";
+                result.MeasuredValue = $"移动距离: {distanceUm:F3}um (脉冲: {distance}, 过小)";
                 result.ErrorDescription = "电机响应不正常，请查询电机手册排查故障";
             }
 

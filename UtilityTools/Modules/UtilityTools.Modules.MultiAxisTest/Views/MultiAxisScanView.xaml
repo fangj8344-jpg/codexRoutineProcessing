@@ -358,7 +358,7 @@
                                                                         <TextBlock
                                                                             FontSize="12"
                                                                             Foreground="#888"
-                                                                            Text="正向速度Std: " />
+                                                                            Text="正向速度Std(um): " />
                                                                         <TextBlock
                                                                             FontSize="12"
                                                                             Foreground="#DDD"
@@ -369,7 +369,7 @@
                                                                         <TextBlock
                                                                             FontSize="12"
                                                                             Foreground="#888"
-                                                                            Text="反向速度Std: " />
+                                                                            Text="反向速度Std(um): " />
                                                                         <TextBlock
                                                                             FontSize="12"
                                                                             Foreground="#DDD"
@@ -380,7 +380,7 @@
                                                                         <TextBlock
                                                                             FontSize="12"
                                                                             Foreground="#888"
-                                                                            Text="精度Std: " />
+                                                                            Text="精度Std(um): " />
                                                                         <TextBlock
                                                                             FontSize="12"
                                                                             FontWeight="SemiBold"

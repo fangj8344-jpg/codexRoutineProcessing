@@ -60,8 +60,10 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             // 注意：这里没有加 Math.Abs，因为编码器不仅要变，还要“变对方向”
             // 向正向发指令，posEnd 必须大于 posStart
             var diff = posEnd - posStart;
+            double ratio = motorModel.MotorParams.SubRatio;
+            double diffUm = ratio > 0 ? Math.Round(diff / ratio, 3) : 0;
 
-            result.MeasuredValue = $"编码器变化：{diff}";
+            result.MeasuredValue = $"编码器变化：{diffUm:F3}um (脉冲: {diff})";
 
             // 独特的合格判定逻辑：变化量需 >= 100
             if (diff >= 100)

@@ -91,10 +91,11 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                 var errors = result.PositionErrors.Select(p => p.ActualPosition - p.TargetPosition).ToList();
                 double stdDev = CalculateStdDev(errors); // 你原有的计算逻辑
                 double stdDevUm = Math.Round(stdDev / ratio, 3);
-                result.FinalStdDev = stdDevUm;
+                result.FinalStdDev = Math.Round(stdDev, 3);
+                result.FinalStdDevUm = stdDevUm;
                 result.IsPassed = stdDevUm < 1;
                 
-                result.MeasuredValue = $"StdDev: {stdDevUm} μm ({stdDev:F1} pls)";
+                result.MeasuredValue = $"标准差: {stdDevUm:F3}um (脉冲标准差: {stdDev:F1})";
             }
 
             return result;

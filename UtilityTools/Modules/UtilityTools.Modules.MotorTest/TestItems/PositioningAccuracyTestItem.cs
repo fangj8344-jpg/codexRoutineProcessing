@@ -51,8 +51,11 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             // 注意：根据你原代码，dir[0]通常是正向，dir[1]是负向
             int forwardDiff = Math.Abs(pos2F - pos1F);
             int backwardDiff = Math.Abs(pos2B - pos1B);
+            double ratio = motorModel.MotorParams.SubRatio;
+            double forwardDiffUm = ratio > 0 ? Math.Round(forwardDiff / ratio, 3) : 0;
+            double backwardDiffUm = ratio > 0 ? Math.Round(backwardDiff / ratio, 3) : 0;
 
-            result.MeasuredValue = $"正向偏差:{forwardDiff}, 负向偏差:{backwardDiff}";
+            result.MeasuredValue = $"正向:{forwardDiffUm:F3}um ({forwardDiff}脉冲), 负向:{backwardDiffUm:F3}um ({backwardDiff}脉冲)";
 
             // --- 判定标准 ---
             if (forwardDiff < _threshold && backwardDiff < _threshold)
@@ -66,7 +69,8 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             else
             {
                 result.IsPassed = false;
-                result.ErrorDescription = "限位偏差超出200脉冲阈值";
+                double thresholdUm = ratio > 0 ? Math.Round(_threshold / ratio, 3) : 0;
+                result.ErrorDescription = $"限位偏差超限(>{thresholdUm:F3}um / {_threshold}脉冲)";
             }
 
             return result;
