@@ -117,7 +117,9 @@
         </TabControl>
         <TabControl  Grid.Row="0" Grid.Column="1" >
             <TabItem Header="测试结果">
-                <DataGrid   AutoGenerateColumns="False" IsReadOnly="True"   Margin="50,0,50,0" ItemsSource="{Binding MotorTestMessages}">
+                <DataGrid   AutoGenerateColumns="False" IsReadOnly="True"   Margin="50,0,50,0" ItemsSource="{Binding MotorTestMessages}"
+                           ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                           ScrollViewer.VerticalScrollBarVisibility="Auto">
                     <DataGrid.RowStyle>
                         <Style TargetType="DataGridRow">
                             <Setter Property="Background" Value="#383838"/>

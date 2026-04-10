@@ -9,6 +9,7 @@ using OxyPlot.Legends;
 using OxyPlot.Series;
 using OxyPlot.Wpf;
 using Prism.Commands;
+using Prism.Events;
 using Prism.Ioc;
 using Prism.Mvvm;
 using ScottPlot.Drawing.Colormaps;
@@ -33,6 +34,7 @@ using System.Windows.Media.Converters;
 using UtilityTools.Core.Dialog;
 using UtilityTools.Core.Interface;
 using UtilityTools.Modules.MotorTest.Entity;
+using UtilityTools.Modules.MotorTest.Event;
 using UtilityTools.Modules.MotorTest.Protocol;
 using UtilityTools.Modules.MotorTest.Service;
 using UtilityTools.Modules.MotorTest.SQLite;
@@ -65,7 +67,9 @@ namespace UtilityTools.Modules.MotorTest.Model
             NetUdpService = netUdp;
             NetUdpService.UpdateResponse += NetUdpService_UpdateResponse;
             _reportService = containerProvider.Resolve<ITestReportService>();
+            _eventAggregator = containerProvider.Resolve<IEventAggregator>();
             Init();
+            SubscribeTestProgress();
         }
         private object _lockobj = new object();
         private IContainerProvider _containerProvider;
@@ -74,6 +78,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         private TaskCompletionSource<string> _waitingReply;
         private CancellationTokenSource _queryCts;
         private readonly ITestReportService _reportService;
+        private readonly IEventAggregator _eventAggregator;
 
         private BackgroundWorker _work;
         private bool _isTest = false;
@@ -82,6 +87,12 @@ namespace UtilityTools.Modules.MotorTest.Model
         private int _queryInterval = 500;
   
         private Double _progressValue;
+        private bool _isCurrentTestRunning;
+        private string _currentTestDisplay = "等待测试开始";
+        private Double _xProgressValue;
+        private Double _yProgressValue;
+        private string _xCurrentTestDisplay = "X轴等待测试开始";
+        private string _yCurrentTestDisplay = "Y轴等待测试开始";
         // 统一类型为 MotorDbContext
 
         private string _version = "4.0.1";
@@ -104,6 +115,36 @@ namespace UtilityTools.Modules.MotorTest.Model
         {
             get { return _progressValue; }
             set { _progressValue = value; RaisePropertyChanged(); }
+        }
+        public bool IsCurrentTestRunning
+        {
+            get { return _isCurrentTestRunning; }
+            set { _isCurrentTestRunning = value; RaisePropertyChanged(); }
+        }
+        public string CurrentTestDisplay
+        {
+            get { return _currentTestDisplay; }
+            set { _currentTestDisplay = value; RaisePropertyChanged(); }
+        }
+        public Double XProgressValue
+        {
+            get { return _xProgressValue; }
+            set { _xProgressValue = value; RaisePropertyChanged(); }
+        }
+        public Double YProgressValue
+        {
+            get { return _yProgressValue; }
+            set { _yProgressValue = value; RaisePropertyChanged(); }
+        }
+        public string XCurrentTestDisplay
+        {
+            get { return _xCurrentTestDisplay; }
+            set { _xCurrentTestDisplay = value; RaisePropertyChanged(); }
+        }
+        public string YCurrentTestDisplay
+        {
+            get { return _yCurrentTestDisplay; }
+            set { _yCurrentTestDisplay = value; RaisePropertyChanged(); }
         }
         public bool IsSpeedMode
         {
@@ -349,6 +390,55 @@ namespace UtilityTools.Modules.MotorTest.Model
 
         }
 
+        private void SubscribeTestProgress()
+        {
+            _eventAggregator.GetEvent<MotorTestResultEvent>().Subscribe(msg =>
+            {
+                if (msg == null) return;
+
+                string axisName = string.IsNullOrWhiteSpace(msg.AxisName) ? "未知轴" : msg.AxisName;
+                string testName = string.IsNullOrWhiteSpace(msg.TestProject) ? "未命名测试" : msg.TestProject;
+                bool isXAxis = axisName.Contains("X", StringComparison.OrdinalIgnoreCase);
+                bool isYAxis = axisName.Contains("Y", StringComparison.OrdinalIgnoreCase);
+
+                if (msg.ProgressState == MotorTestProgressState.Running)
+                {
+                    IsCurrentTestRunning = true;
+                    ProgressValue = Math.Max(0, Math.Min(95, msg.ProgressPercent));
+                    CurrentTestDisplay = $"{axisName} - {testName} 进行中 {ProgressValue:F0}%";
+                    if (isXAxis)
+                    {
+                        XProgressValue = ProgressValue;
+                        XCurrentTestDisplay = $"{axisName} - {testName} 进行中 {XProgressValue:F0}%";
+                    }
+                    if (isYAxis)
+                    {
+                        YProgressValue = ProgressValue;
+                        YCurrentTestDisplay = $"{axisName} - {testName} 进行中 {YProgressValue:F0}%";
+                    }
+                    return;
+                }
+
+                if (msg.ProgressState == MotorTestProgressState.Passed || msg.ProgressState == MotorTestProgressState.Failed)
+                {
+                    IsCurrentTestRunning = false;
+                    ProgressValue = 100;
+                    string resultText = msg.ProgressState == MotorTestProgressState.Passed ? "合格" : "不合格";
+                    CurrentTestDisplay = $"{axisName} - {testName} 已完成（{resultText}）";
+                    if (isXAxis)
+                    {
+                        XProgressValue = 100;
+                        XCurrentTestDisplay = $"{axisName} - {testName} 已完成（{resultText}）";
+                    }
+                    if (isYAxis)
+                    {
+                        YProgressValue = 100;
+                        YCurrentTestDisplay = $"{axisName} - {testName} 已完成（{resultText}）";
+                    }
+                }
+            }, ThreadOption.UIThread);
+        }
+
 
        
         private void TestPerformance()
@@ -532,6 +622,14 @@ namespace UtilityTools.Modules.MotorTest.Model
             {
                 CancellationToken.Cancel();
             }
+
+            IsCurrentTestRunning = false;
+            ProgressValue = 0;
+            CurrentTestDisplay = "测试已手动停止";
+            XProgressValue = 0;
+            YProgressValue = 0;
+            XCurrentTestDisplay = "X轴测试已手动停止";
+            YCurrentTestDisplay = "Y轴测试已手动停止";
 
             if (Motors != null)
             {

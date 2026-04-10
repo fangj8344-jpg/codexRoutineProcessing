@@ -112,7 +112,7 @@ namespace UtilityTools.Modules.MotorTest.Runners
         
 
         // 专门用来发测试进度和成绩单的大喇叭方法
-        private void PublishTestState(string testProject, string standardValue, MotorTestProgressState state, MotorTestResult result = null)
+        private void PublishTestState(string testProject, string standardValue, MotorTestProgressState state, MotorTestResult result = null, double progressPercent = 0)
         {
             var msg = new MotorTestMessage
             {
@@ -120,6 +120,7 @@ namespace UtilityTools.Modules.MotorTest.Runners
                 TestProject = testProject,
                 StandardValue = standardValue,
                 ProgressState = state,
+                ProgressPercent = Math.Max(0, Math.Min(100, progressPercent)),
                 TestResult = (state == MotorTestProgressState.Passed) ? "合格"
                           : (state == MotorTestProgressState.Failed) ? "不合格"
                           : string.Empty,
@@ -135,14 +136,48 @@ namespace UtilityTools.Modules.MotorTest.Runners
                 testProject,
                 standardValue,
                 result.IsPassed ? MotorTestProgressState.Passed : MotorTestProgressState.Failed,
-                result);
+                result,
+                100);
         }
 
         private void InitializeBaseTestRows(IEnumerable<KeyValuePair<string, string>> rows)
         {
             foreach (var row in rows)
             {
-                PublishTestState(row.Key, row.Value, MotorTestProgressState.NotStarted);
+                PublishTestState(row.Key, row.Value, MotorTestProgressState.NotStarted, null, 0);
+            }
+        }
+
+        private async Task<MotorTestResult> RunTestWithEstimatedProgress(
+            string testProject,
+            string standardValue,
+            int estimatedSeconds,
+            CancellationToken ct,
+            Func<Task<MotorTestResult>> runTest)
+        {
+            var sw = Stopwatch.StartNew();
+            using var progressCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            PublishTestState(testProject, standardValue, MotorTestProgressState.Running, null, 0);
+
+            var progressTask = Task.Run(async () =>
+            {
+                while (!progressCts.IsCancellationRequested)
+                {
+                    double ratio = estimatedSeconds > 0 ? sw.Elapsed.TotalSeconds / estimatedSeconds : 0;
+                    double progress = Math.Min(95, Math.Max(0, ratio * 100.0));
+                    PublishTestState(testProject, standardValue, MotorTestProgressState.Running, null, progress);
+                    await Task.Delay(500, progressCts.Token);
+                }
+            }, progressCts.Token);
+
+            try
+            {
+                return await runTest();
+            }
+            finally
+            {
+                progressCts.Cancel();
+                try { await progressTask; } catch { }
             }
         }
 
@@ -192,8 +227,9 @@ namespace UtilityTools.Modules.MotorTest.Runners
             // 积木 1：电机基础移动测试
             // ==========================================
             PublishLog($"[{_motorName}] 正在执行电机基础移动测试...");
-            PublishTestState(moveTest.TestName, moveStdValue, MotorTestProgressState.Running);
-            var moveResult = await moveTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken);
+            var moveResult = await RunTestWithEstimatedProgress(
+                moveTest.TestName, moveStdValue, 12, cancellationToken,
+                () => moveTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken));
             PublishTestResult(moveTest.TestName, moveStdValue, moveResult);
             if (!moveResult.IsPassed)
             {
@@ -206,8 +242,9 @@ namespace UtilityTools.Modules.MotorTest.Runners
             // 积木 2：编码器方向及响应测试
             // ==========================================
             PublishLog($"[{_motorName}] 正在执行编码器方向及响应测试...");
-            PublishTestState(encoderTest.TestName, encoderStdValue, MotorTestProgressState.Running);
-            var encoderResult = await encoderTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken);
+            var encoderResult = await RunTestWithEstimatedProgress(
+                encoderTest.TestName, encoderStdValue, 12, cancellationToken,
+                () => encoderTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken));
             PublishTestResult(encoderTest.TestName, encoderStdValue, encoderResult);
             if (!encoderResult.IsPassed)
             {
@@ -220,8 +257,9 @@ namespace UtilityTools.Modules.MotorTest.Runners
             // 积木 3：满行程及限位测试 
             // ==========================================
             PublishLog($"[{_motorName}] 正在执行满行程及限位扫描...");
-            PublishTestState(fullTravelTest.TestName, fullTravelStdValue, MotorTestProgressState.Running);
-            var fullTravelResult = await fullTravelTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken);
+            var fullTravelResult = await RunTestWithEstimatedProgress(
+                fullTravelTest.TestName, fullTravelStdValue, 160, cancellationToken,
+                () => fullTravelTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken));
             // 判断积木交上来的是不是定义的 TravelTestResult
             if (fullTravelResult is TravelTestResult travelRes)
             {
@@ -237,8 +275,9 @@ namespace UtilityTools.Modules.MotorTest.Runners
             // 积木 4：限位精度(重复性)测试
             // ==========================================
             PublishLog($"[{_motorName}] 正在执行限位精度(重复性)测试...");
-            PublishTestState(accuracyTest.TestName, limitStdValue, MotorTestProgressState.Running);
-            var accuracyResult = await accuracyTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken);
+            var accuracyResult = await RunTestWithEstimatedProgress(
+                accuracyTest.TestName, limitStdValue, 220, cancellationToken,
+                () => accuracyTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken));
             PublishTestResult(accuracyTest.TestName, limitStdValue, accuracyResult);
             if (!accuracyResult.IsPassed) { PublishLog($"[{_motorName}] 限位精度测试失败，终止。"); return; }
 
@@ -251,8 +290,9 @@ namespace UtilityTools.Modules.MotorTest.Runners
             if (maxPos <= minPos) { minPos = 0; maxPos = 100000; }
 
             var linearTest = new LinearStepPrecisionTestItem(minPos, maxPos,msg => PublishLog(msg));
-            PublishTestState(linearTest.TestName, linearStdValue, MotorTestProgressState.Running);
-            var linearResult = await linearTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken);
+            var linearResult = await RunTestWithEstimatedProgress(
+                linearTest.TestName, linearStdValue, 240, cancellationToken,
+                () => linearTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken));
             //  98 个点和标准差记录下来
             if (linearResult is LinearTestResult linearRes)
             {
@@ -270,7 +310,7 @@ namespace UtilityTools.Modules.MotorTest.Runners
             // 【新增】积木 6：丝杆顺滑度测试 (获取正反向速度标准差)
             // ==========================================
             PublishLog($"🚀 [{_motorName}] 开始10分钟丝杆顺滑度测试...");
-            PublishTestState("丝杆顺滑度测试", smoothnessStdValue, MotorTestProgressState.Running);
+            PublishTestState("丝杆顺滑度测试", smoothnessStdValue, MotorTestProgressState.Running, null, 0);
             int midPoint = minPos + (maxPos - minPos) / 2;
 
             // 使用底层接口发指令，不再依赖外面的 Goto 方法
@@ -294,6 +334,8 @@ namespace UtilityTools.Modules.MotorTest.Runners
             while (sw.Elapsed < testDuration)
             {
                 cancellationToken.ThrowIfCancellationRequested(); // 随时响应手动停止
+                double progress = Math.Min(95, Math.Max(0, sw.Elapsed.TotalMilliseconds / testDuration.TotalMilliseconds * 100.0));
+                PublishTestState("丝杆顺滑度测试", smoothnessStdValue, MotorTestProgressState.Running, null, progress);
 
                 PublishLog($"[{_motorName}] 正在跑第 {lapCount} 圈 (已耗时: {sw.Elapsed.TotalMinutes:F1} min)...");
 

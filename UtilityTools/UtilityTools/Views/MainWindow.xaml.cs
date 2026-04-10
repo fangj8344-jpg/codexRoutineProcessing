@@ -31,7 +31,6 @@ namespace UtilityTools.Views
             InitializeComponent();
             _eventAggregator = aggregator;
 
-            this.PreviewTextInput += Window_PreviewTextInput;
             this.PreviewKeyDown += Window_PreviewKeyDown;
             
 
@@ -112,7 +111,51 @@ namespace UtilityTools.Views
         }
 
 
-        private void Window_PreviewTextInput(object sender,TextCompositionEventArgs e) 
+        private static bool TryConvertKeyToBarcodeChar(Key key, bool isShiftDown, out char ch)
+        {
+            ch = '\0';
+
+            if (key >= Key.D0 && key <= Key.D9)
+            {
+                ch = (char)('0' + (key - Key.D0));
+                return true;
+            }
+
+            if (key >= Key.NumPad0 && key <= Key.NumPad9)
+            {
+                ch = (char)('0' + (key - Key.NumPad0));
+                return true;
+            }
+
+            if (key >= Key.A && key <= Key.Z)
+            {
+                bool isCapsLockOn = Keyboard.IsKeyToggled(Key.CapsLock);
+                bool isUpper = isCapsLockOn ^ isShiftDown;
+                ch = isUpper
+                    ? (char)('A' + (key - Key.A))
+                    : (char)('a' + (key - Key.A));
+                return true;
+            }
+
+            switch (key)
+            {
+                case Key.OemMinus: ch = '-'; return true;
+                case Key.OemPlus: ch = '='; return true;
+                case Key.OemOpenBrackets: ch = '['; return true;
+                case Key.Oem6: ch = ']'; return true;
+                case Key.Oem5: ch = '\\'; return true;
+                case Key.Oem1: ch = ';'; return true;
+                case Key.OemQuotes: ch = '\''; return true;
+                case Key.OemComma: ch = ','; return true;
+                case Key.OemPeriod: ch = '.'; return true;
+                case Key.Oem2: ch = '/'; return true;
+                case Key.Oem3: ch = '`'; return true;
+                case Key.Space: ch = ' '; return true;
+                default: return false;
+            }
+        }
+
+        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             DateTime now = DateTime.Now;
             if ((now - _lastInputTime) > _inputThreshold)
@@ -120,16 +163,8 @@ namespace UtilityTools.Views
                 _barcodeBuffer.Clear();
             }
 
-            _barcodeBuffer.Append(e.Text);
-            _lastInputTime = now;
-                
-        }
-
-        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
             if (e.Key == Key.Enter)
             {
-                DateTime now = DateTime.Now;
                 if ((now - _lastInputTime) <= _inputThreshold && _barcodeBuffer.Length > 0)
                 {
                     string finalBarcode = _barcodeBuffer.ToString();
@@ -143,6 +178,15 @@ namespace UtilityTools.Views
                         _eventAggregator.GetEvent<BarcodeScannedEvent>().Publish(parts);
                     }
 
+                }
+            }
+            else
+            {
+                bool isShiftDown = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
+                if (TryConvertKeyToBarcodeChar(e.Key, isShiftDown, out char ch))
+                {
+                    _barcodeBuffer.Append(ch);
+                    _lastInputTime = now;
                 }
             }
 

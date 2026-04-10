@@ -139,7 +139,7 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
         {
             for (int i = 0; i < barcodeParts.Length; i++)
             {
-                barcodeParts[i] = barcodeParts[i]?.Trim() ?? string.Empty;
+                barcodeParts[i] = NormalizeToEnglishInput(barcodeParts[i]);
             }
             State.CurrentScanText = string.Join("/", barcodeParts);
             string lastPart = barcodeParts[barcodeParts.Length - 1];
@@ -354,6 +354,48 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
                 return false;
             value = p.ToString();
             return !string.IsNullOrEmpty(value);
+        }
+
+        /// <summary>
+        /// 扫码输入归一化：把中文输入法下常见的全角/中文标点转为英文半角。
+        /// </summary>
+        private static string NormalizeToEnglishInput(string? text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return string.Empty;
+
+            string normalized = text.Normalize(NormalizationForm.FormKC);
+            var sb = new StringBuilder(normalized.Length);
+
+            foreach (char ch in normalized)
+            {
+                switch (ch)
+                {
+                    case '，': sb.Append(','); break;
+                    case '。': sb.Append('.'); break;
+                    case '；': sb.Append(';'); break;
+                    case '：': sb.Append(':'); break;
+                    case '（': sb.Append('('); break;
+                    case '）': sb.Append(')'); break;
+                    case '【': sb.Append('['); break;
+                    case '】': sb.Append(']'); break;
+                    case '｛': sb.Append('{'); break;
+                    case '｝': sb.Append('}'); break;
+                    case '“':
+                    case '”': sb.Append('"'); break;
+                    case '‘':
+                    case '’': sb.Append('\''); break;
+                    case '、':
+                    case '／': sb.Append('/'); break;
+                    case '－':
+                    case '—':
+                    case '–': sb.Append('-'); break;
+                    case '\u3000': sb.Append(' '); break;
+                    default: sb.Append(ch); break;
+                }
+            }
+
+            return sb.ToString().Trim();
         }
         /// <summary>content 为对象时拼可读摘要。</summary>
         private static string BuildCalibrationContentSummary(JsonElement record)

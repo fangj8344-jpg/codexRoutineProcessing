@@ -285,6 +285,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     {
                         existing.AxisName = msg.AxisName;
                         existing.ProgressState = msg.ProgressState;
+                        existing.ProgressPercent = msg.ProgressPercent;
                         existing.TestResult = msg.TestResult;
                         existing.TestValue = msg.TestValue;
                         existing.StandardValue = msg.StandardValue;

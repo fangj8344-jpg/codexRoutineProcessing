@@ -69,10 +69,16 @@ namespace UtilityTools.Modules.MotorTest.Model
     {
         public string AxisName { get; set; }
         private MotorTestProgressState _progressState = MotorTestProgressState.NotStarted;
+        private double _progressPercent;
         public MotorTestProgressState ProgressState
         {
             get { return _progressState; }
             set { _progressState = value; RaisePropertyChanged(); }
+        }
+        public double ProgressPercent
+        {
+            get { return _progressPercent; }
+            set { _progressPercent = value; RaisePropertyChanged(); }
         }
         private string _testProject;
         /// <summary>

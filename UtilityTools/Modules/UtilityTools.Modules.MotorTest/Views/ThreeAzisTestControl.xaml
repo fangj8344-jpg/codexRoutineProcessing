@@ -216,7 +216,9 @@
                                 </TabControl.ItemTemplate>
                                 <TabControl.ContentTemplate>
                                     <DataTemplate DataType="{x:Type mm:FiveAxisModel}">
-                                        <DataGrid ItemsSource="{Binding MotorTestMessages}" AutoGenerateColumns="False" IsReadOnly="True" Style="{StaticResource MaterialDesignDataGrid}" Margin="15,0,0,0">
+                                        <DataGrid ItemsSource="{Binding MotorTestMessages}" AutoGenerateColumns="False" IsReadOnly="True" Style="{StaticResource MaterialDesignDataGrid}" Margin="15,0,0,0"
+                                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                                  ScrollViewer.VerticalScrollBarVisibility="Auto">
                                             <DataGrid.RowStyle>
                                                 <Style TargetType="DataGridRow">
                                                     <Setter Property="Background" Value="#383838"/>
@@ -281,7 +283,25 @@
 
         <StatusBar Grid.Row="2" Background="{DynamicResource PrimaryHueLightBrush}" Foreground="{DynamicResource PrimaryHueLightForegroundBrush}">
             <StatusBarItem>
-                <ProgressBar Value="{Binding ProgressValue}" Width="150" Height="10" Style="{StaticResource MaterialDesignLinearProgressBar}"/>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="X轴:" Margin="0,0,6,0" Opacity="0.9"/>
+                    <ProgressBar Value="{Binding XProgressValue}" Width="140" Height="10" Style="{StaticResource MaterialDesignLinearProgressBar}"/>
+                </StackPanel>
+            </StatusBarItem>
+            <Separator Style="{StaticResource MaterialDesignLightSeparator}"/>
+            <StatusBarItem>
+                <TextBlock Text="{Binding XProgressValue, StringFormat=X轴: {0:F0}%}" FontWeight="SemiBold"/>
+            </StatusBarItem>
+            <Separator Style="{StaticResource MaterialDesignLightSeparator}"/>
+            <StatusBarItem>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Y轴:" Margin="0,0,6,0" Opacity="0.9"/>
+                    <ProgressBar Value="{Binding YProgressValue}" Width="140" Height="10" Style="{StaticResource MaterialDesignLinearProgressBar}"/>
+                </StackPanel>
+            </StatusBarItem>
+            <Separator Style="{StaticResource MaterialDesignLightSeparator}"/>
+            <StatusBarItem>
+                <TextBlock Text="{Binding YProgressValue, StringFormat=Y轴: {0:F0}%}" FontWeight="SemiBold"/>
             </StatusBarItem>
             <Separator Style="{StaticResource MaterialDesignLightSeparator}"/>
             <StatusBarItem>
