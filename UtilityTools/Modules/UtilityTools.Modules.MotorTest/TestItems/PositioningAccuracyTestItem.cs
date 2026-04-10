@@ -13,8 +13,13 @@ namespace UtilityTools.Modules.MotorTest.TestItems
     //测试成功
     public class PositioningAccuracyTestItem: IMotorTestItem
     {
-        private readonly int _threshold = 200; // 判定阈值
+        private readonly int _threshold; // 判定阈值
         public string TestName => "限位精度测试";
+
+        public PositioningAccuracyTestItem(int threshold = 200)
+        {
+            _threshold = threshold;
+        }
 
         public async Task<MotorTestResult> ExecuteAsync(
             EnumMotorId motorId, MotorModel motorModel, IMotorEntity motorEntity, CancellationToken ct)

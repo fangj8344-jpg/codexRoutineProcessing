@@ -51,179 +51,181 @@
                     <ColumnDefinition Width="6*" />
                 </Grid.ColumnDefinitions>
 
-                <md:Card
-                    Grid.Column="0"
-                    Margin="0,0,12,0"
-                    Padding="24"
-                    md:ElevationAssist.Elevation="Dp2"
-                    UniformCornerRadius="8">
+                <Grid Grid.Column="0" Margin="0,0,12,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
                     <StackPanel>
-                        <TextBlock
-                            Margin="0,0,0,20"
-                            Foreground="{DynamicResource PrimaryHueMidBrush}"
-                            Style="{StaticResource MaterialDesignHeadline6TextBlock}"
-                            Text="当前解析详情" />
+                        <md:Card
+                            Padding="20"
+                            md:ElevationAssist.Elevation="Dp2"
+                            UniformCornerRadius="8">
+                            <StackPanel>
+                                <TextBlock
+                                    Margin="0,0,0,16"
+                                    Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                    Style="{StaticResource MaterialDesignHeadline6TextBlock}"
+                                    Text="当前解析详情" />
 
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="40" />
-                                <RowDefinition Height="40" />
-                                <RowDefinition Height="40" />
-                                <RowDefinition Height="40" />
-                                <RowDefinition Height="40" />
-                                <RowDefinition Height="40" />
-                                <RowDefinition Height="40" />
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="40" />
-                                <ColumnDefinition Width="130" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="36" />
+                                        <RowDefinition Height="36" />
+                                        <RowDefinition Height="36" />
+                                        <RowDefinition Height="36" />
+                                        <RowDefinition Height="36" />
+                                        <RowDefinition Height="36" />
+                                        <RowDefinition Height="36" />
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="34" />
+                                        <ColumnDefinition Width="120" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
 
-                            <md:PackIcon
-                                Grid.Row="0"
-                                Width="22"
-                                Height="22"
-                                VerticalAlignment="Center"
-                                Foreground="Gray"
-                                Kind="Devices" />
-                            <TextBlock
-                                Grid.Row="0"
-                                Grid.Column="1"
-                                VerticalAlignment="Center"
-                                Foreground="Gray"
-                                Text="电镜型号" />
-                            <TextBlock
-                                Grid.Row="0"
-                                Grid.Column="2"
-                                VerticalAlignment="Center"
-                                FontWeight="SemiBold"
-                                Text="{Binding State.CurrentScanDisplay.ElectronMicroscopeModel}" />
+                                    <md:PackIcon Grid.Row="0" Width="20" Height="20" VerticalAlignment="Center" Foreground="Gray" Kind="Devices" />
+                                    <TextBlock Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" Foreground="Gray" Text="电镜型号" />
+                                    <TextBlock Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" FontWeight="SemiBold" Text="{Binding State.CurrentScanDisplay.ElectronMicroscopeModel}" />
 
-                            <md:PackIcon
-                                Grid.Row="1"
-                                Width="22"
-                                Height="22"
-                                VerticalAlignment="Center"
-                                Foreground="Gray"
-                                Kind="TableSettings" />
-                            <TextBlock
-                                Grid.Row="1"
-                                Grid.Column="1"
-                                VerticalAlignment="Center"
-                                Foreground="Gray"
-                                Text="样品台型号" />
-                            <TextBlock
-                                Grid.Row="1"
-                                Grid.Column="2"
-                                VerticalAlignment="Center"
-                                FontWeight="SemiBold"
-                                Text="{Binding State.CurrentScanDisplay.StageType}" />
+                                    <md:PackIcon Grid.Row="1" Width="20" Height="20" VerticalAlignment="Center" Foreground="Gray" Kind="TableSettings" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Foreground="Gray" Text="样品台型号" />
+                                    <TextBlock Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" FontWeight="SemiBold" Text="{Binding State.CurrentScanDisplay.StageType}" />
 
-                            <md:PackIcon
-                                Grid.Row="2"
-                                Width="22"
-                                Height="22"
-                                VerticalAlignment="Center"
-                                Foreground="Gray"
-                                Kind="CartOutline" />
-                            <TextBlock
-                                Grid.Row="2"
-                                Grid.Column="1"
-                                VerticalAlignment="Center"
-                                Foreground="Gray"
-                                Text="采购订单号" />
-                            <TextBlock
-                                Grid.Row="2"
-                                Grid.Column="2"
-                                VerticalAlignment="Center"
-                                FontWeight="SemiBold"
-                                Text="{Binding State.CurrentScanDisplay.PurchaseOrder}" />
+                                    <md:PackIcon Grid.Row="2" Width="20" Height="20" VerticalAlignment="Center" Foreground="Gray" Kind="CartOutline" />
+                                    <TextBlock Grid.Row="2" Grid.Column="1" VerticalAlignment="Center" Foreground="Gray" Text="采购订单号" />
+                                    <TextBlock Grid.Row="2" Grid.Column="2" VerticalAlignment="Center" FontWeight="SemiBold" Text="{Binding State.CurrentScanDisplay.PurchaseOrder}" />
 
-                            <md:PackIcon
-                                Grid.Row="3"
-                                Width="22"
-                                Height="22"
-                                VerticalAlignment="Center"
-                                Foreground="Gray"
-                                Kind="Factory" />
-                            <TextBlock
-                                Grid.Row="3"
-                                Grid.Column="1"
-                                VerticalAlignment="Center"
-                                Foreground="Gray"
-                                Text="生产订单号" />
-                            <TextBlock
-                                Grid.Row="3"
-                                Grid.Column="2"
-                                VerticalAlignment="Center"
-                                FontWeight="SemiBold"
-                                Text="{Binding State.CurrentScanDisplay.ProductionOrder}" />
+                                    <md:PackIcon Grid.Row="3" Width="20" Height="20" VerticalAlignment="Center" Foreground="Gray" Kind="Factory" />
+                                    <TextBlock Grid.Row="3" Grid.Column="1" VerticalAlignment="Center" Foreground="Gray" Text="生产订单号" />
+                                    <TextBlock Grid.Row="3" Grid.Column="2" VerticalAlignment="Center" FontWeight="SemiBold" Text="{Binding State.CurrentScanDisplay.ProductionOrder}" />
 
-                            <md:PackIcon
-                                Grid.Row="4"
-                                Width="22"
-                                Height="22"
-                                VerticalAlignment="Center"
-                                Foreground="Gray"
-                                Kind="AccountHardHat" />
-                            <TextBlock
-                                Grid.Row="4"
-                                Grid.Column="1"
-                                VerticalAlignment="Center"
-                                Foreground="Gray"
-                                Text="操作员工号" />
-                            <TextBlock
-                                Grid.Row="4"
-                                Grid.Column="2"
-                                VerticalAlignment="Center"
-                                FontWeight="SemiBold"
-                                Text="{Binding State.CurrentScanDisplay.OperatorId}" />
+                                    <md:PackIcon Grid.Row="4" Width="20" Height="20" VerticalAlignment="Center" Foreground="Gray" Kind="AccountHardHat" />
+                                    <TextBlock Grid.Row="4" Grid.Column="1" VerticalAlignment="Center" Foreground="Gray" Text="操作员工号" />
+                                    <TextBlock Grid.Row="4" Grid.Column="2" VerticalAlignment="Center" FontWeight="SemiBold" Text="{Binding State.CurrentScanDisplay.OperatorId}" />
 
-                            <md:PackIcon
-                                Grid.Row="5"
-                                Width="22"
-                                Height="22"
-                                VerticalAlignment="Center"
-                                Foreground="Gray"
-                                Kind="CalendarClock" />
-                            <TextBlock
-                                Grid.Row="5"
-                                Grid.Column="1"
-                                VerticalAlignment="Center"
-                                Foreground="Gray"
-                                Text="生产日期" />
-                            <TextBlock
-                                Grid.Row="5"
-                                Grid.Column="2"
-                                VerticalAlignment="Center"
-                                FontWeight="SemiBold"
-                                Text="{Binding State.CurrentScanDisplay.ProductionDate}" />
+                                    <md:PackIcon Grid.Row="5" Width="20" Height="20" VerticalAlignment="Center" Foreground="Gray" Kind="CalendarClock" />
+                                    <TextBlock Grid.Row="5" Grid.Column="1" VerticalAlignment="Center" Foreground="Gray" Text="生产日期" />
+                                    <TextBlock Grid.Row="5" Grid.Column="2" VerticalAlignment="Center" FontWeight="SemiBold" Text="{Binding State.CurrentScanDisplay.ProductionDate}" />
 
-                            <md:PackIcon
-                                Grid.Row="6"
-                                Width="22"
-                                Height="22"
-                                VerticalAlignment="Center"
-                                Foreground="{DynamicResource SecondaryHueMidBrush}"
-                                Kind="Barcode" />
-                            <TextBlock
-                                Grid.Row="6"
-                                Grid.Column="1"
-                                VerticalAlignment="Center"
-                                Foreground="Gray"
-                                Text="序列号" />
-                            <TextBlock
-                                Grid.Row="6"
-                                Grid.Column="2"
-                                VerticalAlignment="Center"
-                                FontSize="18"
-                                FontWeight="Bold"
-                                Foreground="{DynamicResource SecondaryHueMidBrush}"
-                                Text="{Binding State.CurrentScanDisplay.SerialNumber}" />
-                        </Grid>
+                                    <md:PackIcon Grid.Row="6" Width="20" Height="20" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryHueMidBrush}" Kind="Barcode" />
+                                    <TextBlock Grid.Row="6" Grid.Column="1" VerticalAlignment="Center" Foreground="Gray" Text="序列号" />
+                                    <TextBlock Grid.Row="6" Grid.Column="2" VerticalAlignment="Center" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource SecondaryHueMidBrush}" Text="{Binding State.CurrentScanDisplay.SerialNumber}" />
+                                </Grid>
+                            </StackPanel>
+                        </md:Card>
                     </StackPanel>
-                </md:Card>
+
+                    <md:Card
+                        Grid.Row="1"
+                        Margin="0,12,0,0"
+                        Padding="0"
+                        Background="#2A2A2A"
+                        md:ElevationAssist.Elevation="Dp2"
+                        UniformCornerRadius="8"
+                        Visibility="{Binding ThresholdPanelVisibility}">
+                        <Expander
+                            IsExpanded="True"
+                            Padding="12"
+                            Background="Transparent"
+                            Foreground="{DynamicResource MaterialDesignBody}">
+                            <Expander.Header>
+                                <DockPanel LastChildFill="False">
+                                    <TextBlock
+                                        FontSize="14"
+                                        FontWeight="Bold"
+                                        Foreground="{DynamicResource PrimaryHueLightBrush}"
+                                        Text="测试标准（按样品台）" />
+                                    <TextBlock
+                                        Margin="12,0,0,0"
+                                        VerticalAlignment="Center"
+                                        Foreground="#9E9E9E"
+                                        Text="{Binding ThresholdStageTypeDisplay, StringFormat=当前型号：{0}}" />
+                                </DockPanel>
+                            </Expander.Header>
+
+                            <ScrollViewer
+                                Margin="0,8,0,0"
+                                MaxHeight="270"
+                                VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="10" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <TextBox Grid.Row="0" Grid.Column="0" Margin="0,0,0,8" md:HintAssist.Hint="移动测试最小位移(脉冲)" Style="{StaticResource MaterialDesignOutlinedTextBox}" Text="{Binding MovementMinDistancePulseText, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox Grid.Row="0" Grid.Column="2" Margin="0,0,0,8" md:HintAssist.Hint="编码器最小变化(脉冲)" Style="{StaticResource MaterialDesignOutlinedTextBox}" Text="{Binding EncoderMinDeltaPulseText, UpdateSourceTrigger=PropertyChanged}" />
+
+                                        <TextBox Grid.Row="1" Grid.Column="0" Margin="0,0,0,8" md:HintAssist.Hint="限位精度最大偏差(脉冲)" Style="{StaticResource MaterialDesignOutlinedTextBox}" Text="{Binding LimitAccuracyMaxDiffPulseText, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox Grid.Row="1" Grid.Column="2" Margin="0,0,0,8" md:HintAssist.Hint="线性测试标准差上限(um)" Style="{StaticResource MaterialDesignOutlinedTextBox}" Text="{Binding LinearStdDevMaxUmText, UpdateSourceTrigger=PropertyChanged}" />
+
+                                        <TextBox Grid.Row="2" Grid.Column="0" Margin="0,0,0,8" md:HintAssist.Hint="顺滑度标准差上限(um)" Style="{StaticResource MaterialDesignOutlinedTextBox}" Text="{Binding SmoothnessStdDevMaxUmText, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox Grid.Row="2" Grid.Column="2" Margin="0,0,0,8" md:HintAssist.Hint="满行程最小值(脉冲)" Style="{StaticResource MaterialDesignOutlinedTextBox}" Text="{Binding FullTravelMinPulseText, UpdateSourceTrigger=PropertyChanged}" />
+
+                                        <TextBox Grid.Row="3" Grid.Column="0" Margin="0,0,0,8" md:HintAssist.Hint="满行程最大值(脉冲)" Style="{StaticResource MaterialDesignOutlinedTextBox}" Text="{Binding FullTravelMaxPulseText, UpdateSourceTrigger=PropertyChanged}" />
+
+                                        <TextBox Grid.Row="4" Grid.Column="0" Margin="0,0,0,8" md:HintAssist.Hint="X轴行程最小值(脉冲)" Style="{StaticResource MaterialDesignOutlinedTextBox}" Text="{Binding XFullTravelMinPulseText, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox Grid.Row="4" Grid.Column="2" Margin="0,0,0,8" md:HintAssist.Hint="X轴行程最大值(脉冲)" Style="{StaticResource MaterialDesignOutlinedTextBox}" Text="{Binding XFullTravelMaxPulseText, UpdateSourceTrigger=PropertyChanged}" />
+
+                                        <TextBox Grid.Row="5" Grid.Column="0" Margin="0,0,0,8" md:HintAssist.Hint="Y轴行程最小值(脉冲)" Style="{StaticResource MaterialDesignOutlinedTextBox}" Text="{Binding YFullTravelMinPulseText, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox Grid.Row="5" Grid.Column="2" Margin="0,0,0,8" md:HintAssist.Hint="Y轴行程最大值(脉冲)" Style="{StaticResource MaterialDesignOutlinedTextBox}" Text="{Binding YFullTravelMaxPulseText, UpdateSourceTrigger=PropertyChanged}" />
+                                    </Grid>
+
+                                    <DockPanel Margin="0,6,0,0">
+                                        <Button
+                                            Width="130"
+                                            Height="32"
+                                            Command="{Binding SaveThresholdConfigCommand}"
+                                            Style="{StaticResource MaterialDesignRaisedButton}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <md:PackIcon Width="16" Height="16" Margin="0,0,6,0" Kind="ContentSaveOutline" />
+                                                <TextBlock Text="保存" />
+                                            </StackPanel>
+                                        </Button>
+                                        <TextBlock
+                                            Margin="12,0,0,0"
+                                            VerticalAlignment="Center"
+                                            Foreground="{Binding ThresholdSaveMessageColor}"
+                                            Text="{Binding ThresholdSaveMessage}" />
+                                    </DockPanel>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Expander>
+                    </md:Card>
+
+                    <md:Card
+                        Grid.Row="1"
+                        Margin="0,12,0,0"
+                        Padding="14"
+                        md:ElevationAssist.Elevation="Dp1"
+                        UniformCornerRadius="8"
+                        Visibility="{Binding ThresholdPlaceholderVisibility}">
+                        <StackPanel Orientation="Horizontal">
+                            <md:PackIcon
+                                Width="20"
+                                Height="20"
+                                Margin="0,0,8,0"
+                                Foreground="#9E9E9E"
+                                Kind="BarcodeScan" />
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                Foreground="#9E9E9E"
+                                Text="请先扫码，识别样品台后显示测试标准配置面板" />
+                        </StackPanel>
+                    </md:Card>
+                </Grid>
                 <md:Card
                     Grid.Column="1"
                     Margin="12,0,0,0"
@@ -433,78 +435,6 @@
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>
 
-                                            <Separator Margin="0,12" Background="#333" />
-
-                                            <TextBlock
-                                                Margin="0,0,0,8"
-                                                FontSize="13"
-                                                FontWeight="Bold"
-                                                Foreground="{DynamicResource PrimaryHueLightBrush}"
-                                                Text="电机轴标定参数" />
-                                            <ItemsControl ItemsSource="{Binding CloudMotors}">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <Border
-                                                            Margin="0,4"
-                                                            Padding="10"
-                                                            Background="#2D2D2D"
-                                                            CornerRadius="4">
-                                                            <StackPanel>
-                                                                <DockPanel>
-                                                                    <TextBlock
-                                                                        FontWeight="Bold"
-                                                                        Foreground="{DynamicResource SecondaryHueMidBrush}"
-                                                                        Text="{Binding AxisType}" />
-                                                                    <TextBlock
-                                                                        HorizontalAlignment="Right"
-                                                                        FontSize="11"
-                                                                        Foreground="#4CAF50"
-                                                                        Text="{Binding PrecisionStd}" />
-                                                                </DockPanel>
-
-                                                                <UniformGrid Margin="0,8,0,0" Columns="2">
-                                                                    <StackPanel Orientation="Horizontal">
-                                                                        <TextBlock
-                                                                            FontSize="11"
-                                                                            Foreground="#666"
-                                                                            Text="范围: " />
-                                                                        <TextBlock
-                                                                            FontSize="11"
-                                                                            Foreground="#DDD"
-                                                                            Text="{Binding MinRange}" />
-                                                                        <TextBlock
-                                                                            FontSize="11"
-                                                                            Foreground="#DDD"
-                                                                            Text="~" />
-                                                                        <TextBlock
-                                                                            FontSize="11"
-                                                                            Foreground="#DDD"
-                                                                            Text="{Binding MaxRange}" />
-                                                                    </StackPanel>
-                                                                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
-                                                                        <TextBlock
-                                                                            FontSize="11"
-                                                                            Foreground="#666"
-                                                                            Text="限位: " />
-                                                                        <TextBlock
-                                                                            FontSize="11"
-                                                                            Foreground="#DDD"
-                                                                            Text="{Binding NegLimit}" />
-                                                                        <TextBlock
-                                                                            FontSize="11"
-                                                                            Foreground="#DDD"
-                                                                            Text="/" />
-                                                                        <TextBlock
-                                                                            FontSize="11"
-                                                                            Foreground="#DDD"
-                                                                            Text="{Binding PosLimit}" />
-                                                                    </StackPanel>
-                                                                </UniformGrid>
-                                                            </StackPanel>
-                                                        </Border>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
                                         </StackPanel>
                                     </Border>
                                 </StackPanel>

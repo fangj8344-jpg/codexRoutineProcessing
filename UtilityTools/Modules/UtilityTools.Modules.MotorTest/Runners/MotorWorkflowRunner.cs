@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UtilityTools.Core.Helper;
 using System.Windows.Interop;
 using UtilityTools.Core.Interface; // 引用接口
 using UtilityTools.Core.Model;
@@ -25,7 +26,7 @@ namespace UtilityTools.Modules.MotorTest.Runners
         private readonly string _motorName;
         private readonly EnumMotorId _motorId;
         private readonly MotorModel _motorModel;
-        private readonly (int min, int max) _strokeRange;
+        private readonly MotorTestThresholdConfigModel _testThresholds;
         private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
 
         // 构造函数：把工具全领进来
@@ -43,8 +44,10 @@ namespace UtilityTools.Modules.MotorTest.Runners
             _motorEntity = motorEntity;
             _motorId = motorId;
             _motorModel = motorModel;
-            _strokeRange = strokeRange;
             _motorName = motorName;
+            MotorTestThresholdConfigManager.LoadConfig();
+            var stageType = (_reportService as ITestStageTypeProvider)?.GetCurrentStageType();
+            _testThresholds = MotorTestThresholdConfigManager.ResolveForStage(stageType);
         }
 
         // 大喇叭广播方法
@@ -193,25 +196,26 @@ namespace UtilityTools.Modules.MotorTest.Runners
             PublishLog($"--- 开始执行 [{_motorName}] 全套基础测试 ---");
             float ratio = _motorModel.MotorParams.SubRatio;
 
-            var moveTest = new MovementTestItem();
-            var encoderTest = new EncoderTestItem();
-            var fullTravelTest = new FullTravelTestItem(_strokeRange);
-            var accuracyTest = new PositioningAccuracyTestItem();
+            var moveTest = new MovementTestItem(_testThresholds.MovementMinDistancePulse);
+            var encoderTest = new EncoderTestItem(_testThresholds.EncoderMinDeltaPulse);
+            var fullTravelRange = ResolveFullTravelRangeByAxis();
+            var fullTravelTest = new FullTravelTestItem(fullTravelRange);
+            var accuracyTest = new PositioningAccuracyTestItem(_testThresholds.LimitAccuracyMaxDiffPulse);
 
-            string moveStdValue = "到达指定位置";
+            string moveStdValue = $"位移>={_testThresholds.MovementMinDistancePulse}脉冲";
             string encoderStdValue = ratio > 0
-                ? $"变化>={Math.Round(100 / ratio, 3):F3}um (脉冲>=100)"
-                : "变化>=100脉冲";
+                ? $"变化>={Math.Round(_testThresholds.EncoderMinDeltaPulse / ratio, 3):F3}um (脉冲>={_testThresholds.EncoderMinDeltaPulse})"
+                : $"变化>={_testThresholds.EncoderMinDeltaPulse}脉冲";
             string fullTravelStdValue = ratio > 0
-                ? $"[{_strokeRange.min / ratio:F3}-{_strokeRange.max / ratio:F3}]um (脉冲:[{_strokeRange.min}-{_strokeRange.max}])"
-                : $"脉冲:[{_strokeRange.min}-{_strokeRange.max}]";
+                ? $"[{fullTravelRange.Item1 / ratio:F3}-{fullTravelRange.Item2 / ratio:F3}]um (脉冲:[{fullTravelRange.Item1}-{fullTravelRange.Item2}])"
+                : $"脉冲:[{fullTravelRange.Item1}-{fullTravelRange.Item2}]";
             string limitStdValue = ratio > 0
-                ? $"偏差<{Math.Round(200 / ratio, 3):F3}um (脉冲标准差<200)"
-                : "偏差<200脉冲";
+                ? $"偏差<{Math.Round(_testThresholds.LimitAccuracyMaxDiffPulse / ratio, 3):F3}um (脉冲标准差<{_testThresholds.LimitAccuracyMaxDiffPulse})"
+                : $"偏差<{_testThresholds.LimitAccuracyMaxDiffPulse}脉冲";
             string linearStdValue = ratio > 0
-                ? $"标准差<1.000um (脉冲标准差<{Math.Round(ratio, 1):F1})"
-                : "标准差<1.000um";
-            string smoothnessStdValue = "波动 < 150.000um";
+                ? $"标准差<{_testThresholds.LinearStdDevMaxUm:F3}um (脉冲标准差<{Math.Round(_testThresholds.LinearStdDevMaxUm * ratio, 1):F1})"
+                : $"标准差<{_testThresholds.LinearStdDevMaxUm:F3}um";
+            string smoothnessStdValue = $"波动 < {_testThresholds.SmoothnessStdDevMaxUm:F3}um";
 
             InitializeBaseTestRows(new[]
             {
@@ -289,7 +293,7 @@ namespace UtilityTools.Modules.MotorTest.Runners
             int maxPos = _motorModel.MotorParams.PositiveLimitPosition;
             if (maxPos <= minPos) { minPos = 0; maxPos = 100000; }
 
-            var linearTest = new LinearStepPrecisionTestItem(minPos, maxPos,msg => PublishLog(msg));
+            var linearTest = new LinearStepPrecisionTestItem(minPos, maxPos, _testThresholds.LinearStdDevMaxUm, msg => PublishLog(msg));
             var linearResult = await RunTestWithEstimatedProgress(
                 linearTest.TestName, linearStdValue, 240, cancellationToken,
                 () => linearTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken));
@@ -368,14 +372,15 @@ namespace UtilityTools.Modules.MotorTest.Runners
             double backwardStdPulse = allBackwardStdDevsPulse.Any() ? Math.Round(allBackwardStdDevsPulse.Average(), 3) : 0;
 
             PublishLog($"✅ [{_motorName}] 10分钟测试达标！正向均值波动: {myData.ForwardSpeedStdDev:F3}um, 反向均值波动: {myData.BackwardSpeedStdDev:F3}um");
-            bool isSmoothnessPassed = myData.ForwardSpeedStdDev < 150 && myData.BackwardSpeedStdDev < 150; // 
+            bool isSmoothnessPassed = myData.ForwardSpeedStdDev < _testThresholds.SmoothnessStdDevMaxUm
+                                      && myData.BackwardSpeedStdDev < _testThresholds.SmoothnessStdDevMaxUm;
 
             var smoothnessFinalResult = new MotorTestResult
             {
                 IsPassed = isSmoothnessPassed,
                 MeasuredValue = $"正向: {myData.ForwardSpeedStdDev:F3}um (脉冲标准差: {forwardStdPulse:F2}), 反向: {myData.BackwardSpeedStdDev:F3}um (脉冲标准差: {backwardStdPulse:F2})",
                 Description = "顺滑度测试完成",
-                ErrorDescription = isSmoothnessPassed ? "" : "速度波动超出150限值"
+                ErrorDescription = isSmoothnessPassed ? "" : $"速度波动超出{_testThresholds.SmoothnessStdDevMaxUm:F3}限值"
             };
 
             PublishTestResult("丝杆顺滑度测试", smoothnessStdValue, smoothnessFinalResult);
@@ -398,6 +403,24 @@ namespace UtilityTools.Modules.MotorTest.Runners
             await Task.Delay(5000, cancellationToken);
 
             PublishLog($"--- [{_motorName}] 所有基础测试已完美通过！ ---");
+        }
+
+        private (int min, int max) ResolveFullTravelRangeByAxis()
+        {
+            string axisKey = string.IsNullOrWhiteSpace(_motorName) ? string.Empty : _motorName.Trim().ToUpperInvariant();
+            if (axisKey.Length > 0)
+                axisKey = axisKey.Substring(0, 1); // "X轴" -> "X"
+
+            if (_testThresholds.FullTravelAxisRanges != null
+                && !string.IsNullOrWhiteSpace(axisKey)
+                && _testThresholds.FullTravelAxisRanges.TryGetValue(axisKey, out var axisRange)
+                && axisRange != null
+                && axisRange.MinPulse < axisRange.MaxPulse)
+            {
+                return (axisRange.MinPulse, axisRange.MaxPulse);
+            }
+
+            return (_testThresholds.FullTravelMinPulse, _testThresholds.FullTravelMaxPulse);
         }
         // ==========================================
         // 流程图纸 D：自动寻两端限位并回物理中点置零
@@ -534,7 +557,7 @@ namespace UtilityTools.Modules.MotorTest.Runners
                 };
 
                 // 调用你包工头自带的方法，第一个参数是测试名，第二个是标准值，第三个是结果对象
-                PublishTestResult("30分钟丝杆耐久测试", "< 150.000um", finalResult);
+            PublishTestResult("30分钟丝杆耐久测试", $"< {_testThresholds.SmoothnessStdDevMaxUm:F3}um", finalResult);
 
                 PublishLog($"✅ [{_motorName}] 30分钟测试圆满完成！已显示在结果表格中。");
             }

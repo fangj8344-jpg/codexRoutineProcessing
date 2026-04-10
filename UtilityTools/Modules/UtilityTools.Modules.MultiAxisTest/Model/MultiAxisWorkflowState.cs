@@ -87,7 +87,7 @@ namespace UtilityTools.Modules.MultiAxisTest.Model
     /// <summary>
     /// 多轴测试流程的共享状态（配置 + 扫码结果）
     /// </summary>
-    public class MultiAxisWorkflowState : BindableBase, ITestReportService
+    public class MultiAxisWorkflowState : BindableBase, ITestReportService, ITestStageTypeProvider
     {
 
         private MachineProfile _motorKind = MachineProfile.StandardTwoAxis;
@@ -219,6 +219,11 @@ namespace UtilityTools.Modules.MultiAxisTest.Model
         public void StartReport()
         {
             UploadInformation.Content.StartTime = DateTime.Now.ToString("o"); // ISO 8601格式
+        }
+
+        public string GetCurrentStageType()
+        {
+            return CurrentScanDisplay?.StageType ?? string.Empty;
         }
     }
 }

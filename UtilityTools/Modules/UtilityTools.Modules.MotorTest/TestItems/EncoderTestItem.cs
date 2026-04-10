@@ -11,7 +11,13 @@ namespace UtilityTools.Modules.MotorTest.TestItems
 {
     public class EncoderTestItem : IMotorTestItem
     {
+        private readonly int _minEncoderDeltaPulse;
         public string TestName => "编码器测试";
+
+        public EncoderTestItem(int minEncoderDeltaPulse = 100)
+        {
+            _minEncoderDeltaPulse = minEncoderDeltaPulse;
+        }
 
         public async Task<MotorTestResult> ExecuteAsync(
             EnumMotorId motorId,
@@ -65,8 +71,8 @@ namespace UtilityTools.Modules.MotorTest.TestItems
 
             result.MeasuredValue = $"编码器变化：{diffUm:F3}um (脉冲: {diff})";
 
-            // 独特的合格判定逻辑：变化量需 >= 100
-            if (diff >= 100)
+            // 独特的合格判定逻辑：变化量需 >= 配置阈值
+            if (diff >= _minEncoderDeltaPulse)
             {
                 result.IsPassed = true;
                 result.Description = $"起始:{posStart} 结束:{posEnd}";
@@ -74,7 +80,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             else
             {
                 result.IsPassed = false;
-                result.ErrorDescription = $"编码器异常或方向错误 (预期>=100, 实际:{diff})";
+                result.ErrorDescription = $"编码器异常或方向错误 (预期>={_minEncoderDeltaPulse}, 实际:{diff})";
             }
 
             return result;

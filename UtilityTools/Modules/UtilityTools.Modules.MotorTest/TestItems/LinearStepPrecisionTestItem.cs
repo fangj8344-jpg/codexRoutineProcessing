@@ -18,13 +18,15 @@ namespace UtilityTools.Modules.MotorTest.TestItems
     {
         private readonly int _posMin;
         private readonly int _posMax;
+        private readonly double _stdDevThresholdUm;
         private readonly Action<string> _logAction;
         public string TestName => "分段定位线性测试";
 
-        public LinearStepPrecisionTestItem(int posMin, int posMax, Action<string> logAction = null)
+        public LinearStepPrecisionTestItem(int posMin, int posMax, double stdDevThresholdUm = 1.0, Action<string> logAction = null)
         {
             _posMin = posMin;
             _posMax = posMax;
+            _stdDevThresholdUm = stdDevThresholdUm;
             _logAction = logAction;
         }
 
@@ -93,7 +95,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                 double stdDevUm = Math.Round(stdDev / ratio, 3);
                 result.FinalStdDev = Math.Round(stdDev, 3);
                 result.FinalStdDevUm = stdDevUm;
-                result.IsPassed = stdDevUm < 1;
+                result.IsPassed = stdDevUm < _stdDevThresholdUm;
                 
                 result.MeasuredValue = $"标准差: {stdDevUm:F3}um (脉冲标准差: {stdDev:F1})";
             }

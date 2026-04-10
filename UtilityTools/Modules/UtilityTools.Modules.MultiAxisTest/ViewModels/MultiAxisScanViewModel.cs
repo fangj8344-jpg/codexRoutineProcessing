@@ -18,6 +18,7 @@ using System.Windows.Media;
 using UtilityTools.Core;
 using UtilityTools.Core.Event;
 using UtilityTools.Core.Helper;
+using UtilityTools.Core.Model;
 using UtilityTools.Core.Mvvm;
 using UtilityTools.Modules.MotorTest.Model;
 using UtilityTools.Modules.MultiAxisTest.Model;
@@ -99,6 +100,119 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
         public ObservableCollection<CloudMotorAxisDisplay> CloudMotors { get; } = new();
         public DelegateCommand ConfirmCommand { get; private set; }
         public DelegateCommand OpenEngineerConfigCommand { get; private set; }
+        public DelegateCommand SaveThresholdConfigCommand { get; private set; }
+
+        private string _thresholdStageTypeDisplay = "未识别";
+        public string ThresholdStageTypeDisplay
+        {
+            get => _thresholdStageTypeDisplay;
+            set => SetProperty(ref _thresholdStageTypeDisplay, value);
+        }
+
+        private string _movementMinDistancePulseText = "50";
+        public string MovementMinDistancePulseText
+        {
+            get => _movementMinDistancePulseText;
+            set => SetProperty(ref _movementMinDistancePulseText, value);
+        }
+
+        private string _encoderMinDeltaPulseText = "100";
+        public string EncoderMinDeltaPulseText
+        {
+            get => _encoderMinDeltaPulseText;
+            set => SetProperty(ref _encoderMinDeltaPulseText, value);
+        }
+
+        private string _limitAccuracyMaxDiffPulseText = "200";
+        public string LimitAccuracyMaxDiffPulseText
+        {
+            get => _limitAccuracyMaxDiffPulseText;
+            set => SetProperty(ref _limitAccuracyMaxDiffPulseText, value);
+        }
+
+        private string _linearStdDevMaxUmText = "1.0";
+        public string LinearStdDevMaxUmText
+        {
+            get => _linearStdDevMaxUmText;
+            set => SetProperty(ref _linearStdDevMaxUmText, value);
+        }
+
+        private string _smoothnessStdDevMaxUmText = "150.0";
+        public string SmoothnessStdDevMaxUmText
+        {
+            get => _smoothnessStdDevMaxUmText;
+            set => SetProperty(ref _smoothnessStdDevMaxUmText, value);
+        }
+
+        private string _fullTravelMinPulseText = "215000";
+        public string FullTravelMinPulseText
+        {
+            get => _fullTravelMinPulseText;
+            set => SetProperty(ref _fullTravelMinPulseText, value);
+        }
+
+        private string _fullTravelMaxPulseText = "255000";
+        public string FullTravelMaxPulseText
+        {
+            get => _fullTravelMaxPulseText;
+            set => SetProperty(ref _fullTravelMaxPulseText, value);
+        }
+
+        private string _xFullTravelMinPulseText = "235000";
+        public string XFullTravelMinPulseText
+        {
+            get => _xFullTravelMinPulseText;
+            set => SetProperty(ref _xFullTravelMinPulseText, value);
+        }
+
+        private string _xFullTravelMaxPulseText = "255000";
+        public string XFullTravelMaxPulseText
+        {
+            get => _xFullTravelMaxPulseText;
+            set => SetProperty(ref _xFullTravelMaxPulseText, value);
+        }
+
+        private string _yFullTravelMinPulseText = "215000";
+        public string YFullTravelMinPulseText
+        {
+            get => _yFullTravelMinPulseText;
+            set => SetProperty(ref _yFullTravelMinPulseText, value);
+        }
+
+        private string _yFullTravelMaxPulseText = "225000";
+        public string YFullTravelMaxPulseText
+        {
+            get => _yFullTravelMaxPulseText;
+            set => SetProperty(ref _yFullTravelMaxPulseText, value);
+        }
+
+        private string _thresholdSaveMessage = "请先扫码识别样品台，再检查/修改测试标准";
+        public string ThresholdSaveMessage
+        {
+            get => _thresholdSaveMessage;
+            set => SetProperty(ref _thresholdSaveMessage, value);
+        }
+
+        private Brush _thresholdSaveMessageColor = Brushes.Gray;
+        public Brush ThresholdSaveMessageColor
+        {
+            get => _thresholdSaveMessageColor;
+            set => SetProperty(ref _thresholdSaveMessageColor, value);
+        }
+
+        private Visibility _thresholdPanelVisibility = Visibility.Collapsed;
+        public Visibility ThresholdPanelVisibility
+        {
+            get => _thresholdPanelVisibility;
+            set => SetProperty(ref _thresholdPanelVisibility, value);
+        }
+
+        private Visibility _thresholdPlaceholderVisibility = Visibility.Visible;
+        public Visibility ThresholdPlaceholderVisibility
+        {
+            get => _thresholdPlaceholderVisibility;
+            set => SetProperty(ref _thresholdPlaceholderVisibility, value);
+        }
 
         public MultiAxisScanViewModel(IRegionManager regionManager, IEventAggregator eventAggregator, MultiAxisWorkflowState state, IContainerProvider containerProvider )
             : base(containerProvider)
@@ -111,8 +225,11 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
 
             _thingboardService = containerProvider.Resolve<IServiceFactory>().GetThingboardService();
             OpenEngineerConfigCommand = new DelegateCommand(ExecuteOpenEngineerConfig);
+            SaveThresholdConfigCommand = new DelegateCommand(ExecuteSaveThresholdConfig);
             // 兜底：扫码页VM创建后先打开一次扫码捕获，避免首帧导航时机差导致失效
             _eventAggregator.GetEvent<BarcodeCaptureEnabledEvent>().Publish(true);
+            LoadThresholdConfigForStage(string.Empty);
+            SetThresholdDisplayState(false);
         }
 
         /// <summary>
@@ -197,6 +314,7 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
                         break;
                 }
 
+                LoadThresholdConfigForStage(stageType);
 
             }
             else
@@ -204,15 +322,18 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
                 // 如果是旧码（只有4段），赋个空值或者默认值，防止空引用
                 State.CurrentScanDisplay.ElectronMicroscopeModel = string.Empty;
                 State.CurrentScanDisplay.StageType = string.Empty;
+                LoadThresholdConfigForStage(string.Empty);
             }
             bool isDateOk = State.CurrentScanDisplay.ProductionDate.Length == 6;
             bool isSnOk = State.CurrentScanDisplay.SerialNumber.Length >= 3;
 
             if (!isDateOk || !isSnOk)
             {
+                SetThresholdDisplayState(false);
                 ScanErrorNotice();
                 return; // 校验失败直接中断，保护后续逻辑
             }
+            SetThresholdDisplayState(barcodeParts.Length >= 6);
             if (State.UploadInformation != null)
             {
                 State.UploadInformation.SampleStageId = State.CurrentScanText;
@@ -362,6 +483,140 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
         /// <summary>
         /// 扫码输入归一化：把中文输入法下常见的全角/中文标点转为英文半角。
         /// </summary>
+        private void LoadThresholdConfigForStage(string stageType)
+        {
+            MotorTestThresholdConfigManager.LoadConfig();
+            string requestedKey = MotorTestThresholdConfigManager.NormalizeStageKey(stageType);
+            var config = MotorTestThresholdConfigManager.ResolveForStage(stageType, out string resolvedKey, out bool usedFallback);
+
+            ThresholdStageTypeDisplay = requestedKey;
+            MovementMinDistancePulseText = config.MovementMinDistancePulse.ToString();
+            EncoderMinDeltaPulseText = config.EncoderMinDeltaPulse.ToString();
+            LimitAccuracyMaxDiffPulseText = config.LimitAccuracyMaxDiffPulse.ToString();
+            LinearStdDevMaxUmText = config.LinearStdDevMaxUm.ToString(CultureInfo.InvariantCulture);
+            SmoothnessStdDevMaxUmText = config.SmoothnessStdDevMaxUm.ToString(CultureInfo.InvariantCulture);
+            FullTravelMinPulseText = config.FullTravelMinPulse.ToString();
+            FullTravelMaxPulseText = config.FullTravelMaxPulse.ToString();
+            (int xMin, int xMax) = GetAxisRangeOrFallback(config, "X");
+            (int yMin, int yMax) = GetAxisRangeOrFallback(config, "Y");
+            XFullTravelMinPulseText = xMin.ToString();
+            XFullTravelMaxPulseText = xMax.ToString();
+            YFullTravelMinPulseText = yMin.ToString();
+            YFullTravelMaxPulseText = yMax.ToString();
+
+            if (usedFallback)
+            {
+                ThresholdSaveMessage = $"未找到 {requestedKey} 对应配置，已使用标准20({resolvedKey})";
+                ThresholdSaveMessageColor = Brushes.Orange;
+            }
+            else
+            {
+                ThresholdSaveMessage = $"已加载 {resolvedKey} 对应测试标准";
+                ThresholdSaveMessageColor = Brushes.Gray;
+            }
+        }
+
+        private void SetThresholdDisplayState(bool hasValidScan)
+        {
+            ThresholdPanelVisibility = hasValidScan ? Visibility.Visible : Visibility.Collapsed;
+            ThresholdPlaceholderVisibility = hasValidScan ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        private static (int min, int max) GetAxisRangeOrFallback(MotorTestThresholdConfigModel config, string axisKey)
+        {
+            if (config.FullTravelAxisRanges != null
+                && config.FullTravelAxisRanges.TryGetValue(axisKey, out var range)
+                && range != null
+                && range.MinPulse < range.MaxPulse)
+            {
+                return (range.MinPulse, range.MaxPulse);
+            }
+            return (config.FullTravelMinPulse, config.FullTravelMaxPulse);
+        }
+
+        private void ExecuteSaveThresholdConfig()
+        {
+            string stageType = State.CurrentScanDisplay?.StageType ?? string.Empty;
+            string key = MotorTestThresholdConfigManager.NormalizeStageKey(stageType);
+
+            if (!int.TryParse(MovementMinDistancePulseText, out int movementPulse)
+                || !int.TryParse(EncoderMinDeltaPulseText, out int encoderPulse)
+                || !int.TryParse(LimitAccuracyMaxDiffPulseText, out int limitPulse)
+                || !int.TryParse(FullTravelMinPulseText, out int fullTravelMinPulse)
+                || !int.TryParse(FullTravelMaxPulseText, out int fullTravelMaxPulse)
+                || !int.TryParse(XFullTravelMinPulseText, out int xMinPulse)
+                || !int.TryParse(XFullTravelMaxPulseText, out int xMaxPulse)
+                || !int.TryParse(YFullTravelMinPulseText, out int yMinPulse)
+                || !int.TryParse(YFullTravelMaxPulseText, out int yMaxPulse))
+            {
+                ThresholdSaveMessage = "保存失败：参数格式错误（脉冲需为整数，um 阈值需为数字）";
+                ThresholdSaveMessageColor = Brushes.OrangeRed;
+                return;
+            }
+
+            if (fullTravelMinPulse >= fullTravelMaxPulse)
+            {
+                ThresholdSaveMessage = "保存失败：满行程最小脉冲必须小于最大脉冲";
+                ThresholdSaveMessageColor = Brushes.OrangeRed;
+                return;
+            }
+
+            if (xMinPulse >= xMaxPulse || yMinPulse >= yMaxPulse)
+            {
+                ThresholdSaveMessage = "保存失败：X/Y轴最小脉冲必须小于最大脉冲";
+                ThresholdSaveMessageColor = Brushes.OrangeRed;
+                return;
+            }
+
+            bool linearParsed = double.TryParse(LinearStdDevMaxUmText, NumberStyles.Float, CultureInfo.InvariantCulture, out double linearUm);
+            if (!linearParsed)
+            {
+                linearParsed = double.TryParse(LinearStdDevMaxUmText, NumberStyles.Float, CultureInfo.CurrentCulture, out linearUm);
+            }
+
+            bool smoothnessParsed = double.TryParse(SmoothnessStdDevMaxUmText, NumberStyles.Float, CultureInfo.InvariantCulture, out double smoothnessUm);
+            if (!smoothnessParsed)
+            {
+                smoothnessParsed = double.TryParse(SmoothnessStdDevMaxUmText, NumberStyles.Float, CultureInfo.CurrentCulture, out smoothnessUm);
+            }
+
+            if (!linearParsed || !smoothnessParsed)
+            {
+                ThresholdSaveMessage = "保存失败：参数格式错误（脉冲需为整数，um 阈值需为数字）";
+                ThresholdSaveMessageColor = Brushes.OrangeRed;
+                return;
+            }
+
+            if (linearUm <= 0 || smoothnessUm <= 0)
+            {
+                ThresholdSaveMessage = "保存失败：um 阈值必须大于 0";
+                ThresholdSaveMessageColor = Brushes.OrangeRed;
+                return;
+            }
+
+            var stageConfig = new MotorTestThresholdConfigModel
+            {
+                MovementMinDistancePulse = movementPulse,
+                EncoderMinDeltaPulse = encoderPulse,
+                LimitAccuracyMaxDiffPulse = limitPulse,
+                LinearStdDevMaxUm = linearUm,
+                SmoothnessStdDevMaxUm = smoothnessUm,
+                FullTravelMinPulse = fullTravelMinPulse,
+                FullTravelMaxPulse = fullTravelMaxPulse,
+                FullTravelAxisRanges = new Dictionary<string, AxisPulseRange>
+                {
+                    ["X"] = new AxisPulseRange { MinPulse = xMinPulse, MaxPulse = xMaxPulse },
+                    ["Y"] = new AxisPulseRange { MinPulse = yMinPulse, MaxPulse = yMaxPulse }
+                }
+            };
+
+            MotorTestThresholdConfigManager.LoadConfig();
+            MotorTestThresholdConfigManager.SaveForStage(key, stageConfig);
+
+            ThresholdSaveMessage = $"已保存 {key} 测试标准配置文件";
+            ThresholdSaveMessageColor = Brushes.Green;
+        }
+
         private static string NormalizeToEnglishInput(string? text)
         {
             if (string.IsNullOrWhiteSpace(text))

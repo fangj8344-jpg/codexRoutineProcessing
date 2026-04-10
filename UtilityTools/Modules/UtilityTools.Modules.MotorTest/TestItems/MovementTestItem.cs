@@ -12,7 +12,13 @@ namespace UtilityTools.Modules.MotorTest.TestItems
    //测试成功
     public class MovementTestItem : IMotorTestItem
     {
+        private readonly int _minDistancePulse;
         public string TestName => "电机控制测试";
+
+        public MovementTestItem(int minDistancePulse = 50)
+        {
+            _minDistancePulse = minDistancePulse;
+        }
 
         public async Task<MotorTestResult> ExecuteAsync(
             EnumMotorId motorId,
@@ -68,7 +74,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             double ratio = motorModel.MotorParams.SubRatio;
             double distanceUm = ratio > 0 ? Math.Round(distance / ratio, 3) : 0;
 
-            if (distance > 50)
+            if (distance >= _minDistancePulse)
             {
                 result.IsPassed = true;
                 result.MeasuredValue = $"移动距离: {distanceUm:F3}um (脉冲: {distance})";
@@ -78,7 +84,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             {
                 result.IsPassed = false;
                 result.MeasuredValue = $"移动距离: {distanceUm:F3}um (脉冲: {distance}, 过小)";
-                result.ErrorDescription = "电机响应不正常，请查询电机手册排查故障";
+                result.ErrorDescription = $"电机响应不正常，实际位移未达到阈值({_minDistancePulse}脉冲)";
             }
 
             return result;
