@@ -45,7 +45,13 @@
             <md:Card Grid.Row="0" md:ElevationAssist.Elevation="Dp2" UniformCornerRadius="6">
                 <TabControl Style="{StaticResource MaterialDesignFilledTabControl}" Margin="0">
                     <TabItem Header="位置曲线图">
-                        <oxy:PlotView Model="{Binding MotorplotModel}" Foreground="Black">
+                        <oxy:PlotView
+                            Model="{Binding MotorplotModel}"
+                            Foreground="Black"
+                            SnapsToDevicePixels="True"
+                            UseLayoutRounding="True"
+                            RenderOptions.EdgeMode="Aliased"
+                            RenderOptions.BitmapScalingMode="LowQuality">
                             <oxy:PlotView.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Header="自适应" Command="{Binding AutoAdjustCommand}" CommandParameter="point" />
@@ -55,7 +61,13 @@
                         </oxy:PlotView>
                     </TabItem>
                     <TabItem Header="速度曲线图">
-                        <oxy:PlotView Model="{Binding MotorSpeedplotModel}" Foreground="Black">
+                        <oxy:PlotView
+                            Model="{Binding MotorSpeedplotModel}"
+                            Foreground="Black"
+                            SnapsToDevicePixels="True"
+                            UseLayoutRounding="True"
+                            RenderOptions.EdgeMode="Aliased"
+                            RenderOptions.BitmapScalingMode="LowQuality">
                             <oxy:PlotView.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Header="自适应" Command="{Binding AutoAdjustCommand}" CommandParameter="speed"/>

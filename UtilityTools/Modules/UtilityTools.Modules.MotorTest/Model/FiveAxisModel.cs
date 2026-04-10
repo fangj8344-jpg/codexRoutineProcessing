@@ -223,7 +223,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                 MarkerType = MarkerType.None,
                 MarkerSize = 0,
          
-                MinimumSegmentLength = 2,
+                MinimumSegmentLength = 3,
                 // 直连数据，拒绝反射！
                 Mapping = item =>
                 {
@@ -241,7 +241,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                 MarkerType = MarkerType.None,
                 MarkerSize = 0,
                 // 
-                MinimumSegmentLength = 2,
+                MinimumSegmentLength = 3,
                 // 直连数据，拒绝反射！
                 Mapping = item =>
                 {
@@ -778,6 +778,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         }
         // 🚨 请在类开头声明一个私有队列，用来存最近的 3 个原始点
         private Queue<PlotViewPointMessage> _calcQueue = new Queue<PlotViewPointMessage>();
+        private int _uiPlotSampleCounter = 0;
 
         private void AddPoint(SelfMotorPacket e)
         {
@@ -831,41 +832,46 @@ namespace UtilityTools.Modules.MotorTest.Model
                     MotorModelAxis = MotorModel.MotorModelAxis
                 };
 
-                // 6. 【UI 安全层】：更新界面
-                System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
-                {
-                    int maxCount = Math.Max(1000, _testModel.MaxCount);
-                    int trimBatch = Math.Max(50, maxCount / 50); // 约 2% 批量裁剪，降低头删频次
-
-                    // 批量裁剪，避免每次新增都触发一次头删导致卡顿
-                    if (MotorModel.PointList.Count >= maxCount)
-                    {
-                        int removeCount = Math.Min(trimBatch, MotorModel.PointList.Count);
-                        for (int i = 0; i < removeCount; i++)
-                        {
-                            MotorModel.PointList.RemoveAt(0);
-                        }
-                    }
-                    if (MotorModel.SpeedList.Count >= maxCount)
-                    {
-                        int removeCount = Math.Min(trimBatch, MotorModel.SpeedList.Count);
-                        for (int i = 0; i < removeCount; i++)
-                        {
-                            MotorModel.SpeedList.RemoveAt(0);
-                        }
-                    }
-
-                    // 注意：这里 Add 的是 p2，因为 p2 现在的速度才算出来
-                    MotorModel.PointList.Add(p2);
-                    MotorModel.SpeedList.Add(speedView);
-                    _testModel.MarkPlotDirty();
-                }));
-
-                // 7. 【数据缓冲层】：加锁存库
+                // 6. 【数据缓冲层】：全量加锁存库
                 lock (_lockobj)
                 {
                     MotorModel.PointListBuffer.Add(p2);
                     MotorModel.SpeedListBuffer.Add(speedView);
+                }
+
+                // 7. 【UI 安全层】：显示抽样，优先保证长时间运行不卡顿
+                int stride = Math.Max(1, _testModel.PlotDisplayStride);
+                _uiPlotSampleCounter++;
+                if (_uiPlotSampleCounter % stride == 0)
+                {
+                    System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        int maxCount = Math.Max(1000, _testModel.MaxCount);
+                        int trimBatch = Math.Max(50, maxCount / 50); // 约 2% 批量裁剪，降低头删频次
+
+                        // 批量裁剪，避免每次新增都触发一次头删导致卡顿
+                        if (MotorModel.PointList.Count >= maxCount)
+                        {
+                            int removeCount = Math.Min(trimBatch, MotorModel.PointList.Count);
+                            for (int i = 0; i < removeCount; i++)
+                            {
+                                MotorModel.PointList.RemoveAt(0);
+                            }
+                        }
+                        if (MotorModel.SpeedList.Count >= maxCount)
+                        {
+                            int removeCount = Math.Min(trimBatch, MotorModel.SpeedList.Count);
+                            for (int i = 0; i < removeCount; i++)
+                            {
+                                MotorModel.SpeedList.RemoveAt(0);
+                            }
+                        }
+
+                        // 注意：这里 Add 的是 p2，因为 p2 现在的速度才算出来
+                        MotorModel.PointList.Add(p2);
+                        MotorModel.SpeedList.Add(speedView);
+                        _testModel.MarkPlotDirty();
+                    }));
                 }
 
                 // 8. 弹出最老的一包，为下一轮计算做准备

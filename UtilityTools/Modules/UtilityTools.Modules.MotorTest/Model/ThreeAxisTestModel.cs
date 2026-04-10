@@ -87,7 +87,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         private int _queryInterval = 500;
         private int _plotDirty = 0;
         private DateTime _lastPlotRefreshAt = DateTime.MinValue;
-        private const int PlotRefreshMinIntervalMs = 200;
+        private const int PlotRefreshMinIntervalMs = 100;
   
         private Double _progressValue;
         private bool _isCurrentTestRunning;
@@ -107,11 +107,25 @@ namespace UtilityTools.Modules.MotorTest.Model
             get { return _version; }
             set { _version = value; RaisePropertyChanged(); }
         }
-        private int _maxCount = 30000;
+        private int _maxCount = 12000;
         public int MaxCount
         {
             get { return _maxCount; }
             set { _maxCount = value; RaisePropertyChanged(); }
+        }
+        private int _plotDisplayStride = 3;
+        /// <summary>
+        /// 图表显示抽样步长（每 N 个点显示 1 个）；采集与存库保持全量。
+        /// </summary>
+        public int PlotDisplayStride
+        {
+            get { return _plotDisplayStride; }
+            set
+            {
+                if (value <= 0) value = 1;
+                _plotDisplayStride = value;
+                RaisePropertyChanged();
+            }
         }
        
         public Double ProgressValue
@@ -384,10 +398,34 @@ namespace UtilityTools.Modules.MotorTest.Model
             MotorplotModel.Legends.Add(new Legend());
             MotorSpeedplotModel = new PlotModel();
             MotorSpeedplotModel.Legends.Add(new Legend());
-            MotorplotModel.Axes.Add(new DateTimeAxis() { Title = "时间", Position = AxisPosition.Bottom });
-            MotorplotModel.Axes.Add(new LinearAxis() { Title = "位置(μm)", Position = AxisPosition.Left });
-            MotorSpeedplotModel.Axes.Add(new DateTimeAxis() { Title = "时间", Position = AxisPosition.Bottom });
-            MotorSpeedplotModel.Axes.Add(new LinearAxis() { Title = "速度(μm/s)", Position = AxisPosition.Left });
+            MotorplotModel.Axes.Add(new DateTimeAxis()
+            {
+                Title = "时间",
+                Position = AxisPosition.Bottom,
+                IsPanEnabled = true,
+                IsZoomEnabled = true
+            });
+            MotorplotModel.Axes.Add(new LinearAxis()
+            {
+                Title = "位置(μm)",
+                Position = AxisPosition.Left,
+                IsPanEnabled = true,
+                IsZoomEnabled = true
+            });
+            MotorSpeedplotModel.Axes.Add(new DateTimeAxis()
+            {
+                Title = "时间",
+                Position = AxisPosition.Bottom,
+                IsPanEnabled = true,
+                IsZoomEnabled = true
+            });
+            MotorSpeedplotModel.Axes.Add(new LinearAxis()
+            {
+                Title = "速度(μm/s)",
+                Position = AxisPosition.Left,
+                IsPanEnabled = true,
+                IsZoomEnabled = true
+            });
             MachineProfile targetProfile = MachineProfile.StandardTwoAxis;
             if (_reportService.MotorKindObj is MachineProfile parsedProfile)
             {
@@ -407,7 +445,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     return;
                 }
 
-                // 节流：最短刷新间隔 200ms（约 5 FPS），避免跟随每包数据频繁重绘。
+                // 节流：最短刷新间隔 100ms（10 FPS），优先保证长时间运行流畅性。
                 var now = DateTime.UtcNow;
                 if ((now - _lastPlotRefreshAt).TotalMilliseconds < PlotRefreshMinIntervalMs)
                 {
