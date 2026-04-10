@@ -172,13 +172,13 @@ namespace UtilityTools.Modules.MotorTest.Runners
             if (!fullTravelResult.IsPassed) { PublishLog($"[{_motorName}] 满行程测试失败，终止。"); return; }
 
             // ==========================================
-            // 积木 4：定位精度(重复性)测试
+            // 积木 4：限位精度(重复性)测试
             // ==========================================
-            PublishLog($"[{_motorName}] 正在执行定位精度(重复性)测试...");
+            PublishLog($"[{_motorName}] 正在执行限位精度(重复性)测试...");
             var accuracyTest = new PositioningAccuracyTestItem();
             var accuracyResult = await accuracyTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken);
             PublishTestResult(accuracyTest.TestName, "偏差<200", accuracyResult);
-            if (!accuracyResult.IsPassed) { PublishLog($"[{_motorName}] 定位精度测试失败，终止。"); return; }
+            if (!accuracyResult.IsPassed) { PublishLog($"[{_motorName}] 限位精度测试失败，终止。"); return; }
 
             // ==========================================
             // 积木 5：分段定位线性测试 (98点测试)

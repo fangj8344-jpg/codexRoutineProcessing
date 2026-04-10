@@ -14,7 +14,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
     public class PositioningAccuracyTestItem: IMotorTestItem
     {
         private readonly int _threshold = 200; // 判定阈值
-        public string TestName => "定位精度测试";
+        public string TestName => "限位精度测试";
 
         public async Task<MotorTestResult> ExecuteAsync(
             EnumMotorId motorId, MotorModel motorModel, IMotorEntity motorEntity, CancellationToken ct)
@@ -58,7 +58,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             if (forwardDiff < _threshold && backwardDiff < _threshold)
             {
                 result.IsPassed = true;
-                result.Description = "定位精度合格";
+                result.Description = "限位精度合格";
 
                 // --- 数据库保存逻辑 ---
                 //await SaveAccuracyData(motorModel.MotorModelAxis, pos1F, pos1B, pos2F, pos2B);
@@ -66,7 +66,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             else
             {
                 result.IsPassed = false;
-                result.ErrorDescription = "定位偏差超出200脉冲阈值";
+                result.ErrorDescription = "限位偏差超出200脉冲阈值";
             }
 
             return result;

@@ -1212,7 +1212,7 @@ namespace UtilityTools.Modules.MotorTest.Model
 
         }
         /// <summary>
-        /// 定位精度检测
+        /// 限位精度检测
         /// </summary>
         private async Task<bool> LimitPositioningAccuracyDetection(EnumMotorId enumMotorId)
         {
@@ -1226,12 +1226,12 @@ namespace UtilityTools.Modules.MotorTest.Model
             MotorModel motorModel;
             if (enumMotorId == EnumMotorId.MOTOR_1)
             {
-                TestMessage.TestProject = "X轴定位精度测试";
+                TestMessage.TestProject = "X轴限位精度测试";
                 motorModel = MotorModelX;
             }
             else
             {
-                TestMessage.TestProject = "Y轴定位精度测试";
+                TestMessage.TestProject = "Y轴限位精度测试";
                 motorModel = MotorModelY;
             }
             string result = "x";
