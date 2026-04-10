@@ -203,6 +203,10 @@ namespace UtilityTools.Modules.MotorTest.Model
             ReverseMoveCommand = new DelegateCommand<bool?>(ReverseMove);
             ForwardMoveCommand = new DelegateCommand<bool?>(ForwardMove);
             StopMotorCommand = new DelegateCommand(StopMotor);
+            SetCloseLoopPosModeCommand = new DelegateCommand(SetCloseLoopPosMode);
+            SetOpenLoopSpeedModeCommand = new DelegateCommand(SetOpenLoopSpeedMode);
+            EnableMotorCommand = new DelegateCommand(EnableMotor);
+            DisableMotorCommand = new DelegateCommand(DisableMotor);
             ByteQueue = new Queue<byte[]>();
             ImportantByteQueue = new Queue<byte[]>();
             PosLine = new LineSeries();
@@ -347,6 +351,22 @@ namespace UtilityTools.Modules.MotorTest.Model
                     break;
             }
         }
+
+        /// <summary>
+        /// 切换手动控制模式时，先下发控制模式与使能，确保后续点动命令前置条件满足。
+        /// </summary>
+        public void EnsureControlModeAndEnable(bool useSpeedMode)
+        {
+            if (useSpeedMode)
+            {
+                SetMotorSpeedInit();
+            }
+            else
+            {
+                SetMotorInit();
+            }
+        }
+
         public void TestPerformance()
         {
             _isPerformance = true;
@@ -425,6 +445,33 @@ namespace UtilityTools.Modules.MotorTest.Model
       
       
         public DelegateCommand StopMotorCommand { get; set; }
+        public DelegateCommand SetCloseLoopPosModeCommand { get; set; }
+        public DelegateCommand SetOpenLoopSpeedModeCommand { get; set; }
+        public DelegateCommand EnableMotorCommand { get; set; }
+        public DelegateCommand DisableMotorCommand { get; set; }
+
+        private void SetCloseLoopPosMode()
+        {
+            InitAxType();
+            _testModel.MotorEntity.SetMotorControlModeCommand(_enumMotorId, EnumMotorCtrType.CloseLoopPosCtr);
+        }
+
+        private void SetOpenLoopSpeedMode()
+        {
+            InitAxType();
+            _testModel.MotorEntity.SetMotorControlModeCommand(_enumMotorId, EnumMotorCtrType.OpenLoopSpeedCtr);
+        }
+
+        private void EnableMotor()
+        {
+            _testModel.MotorEntity.SetMotorEnableCommand(_enumMotorId, EnumMotorEnable.Enable);
+        }
+
+        private void DisableMotor()
+        {
+            _testModel.MotorEntity.SetMotorEnableCommand(_enumMotorId, EnumMotorEnable.DisableEnable);
+        }
+
         public void StopMotor()
         {
             _testModel.MotorEntity.SetMotorOperatingStatusCommand(_enumMotorId, EnumMotorOperatingState.Stop);
@@ -498,14 +545,26 @@ namespace UtilityTools.Modules.MotorTest.Model
         {
 
             SetMotorSpeedInit();
+            // UI 输入使用 um/s，发送前按当前轴转换系数换算为脉冲速度。
+            double ratio = MotorModel?.MotorParams?.SubRatio ?? 0;
+            int speedPulse = _testModel.MagnitudeOfSpeed;
+            if (ratio > 0)
+            {
+                speedPulse = (int)Math.Round(_testModel.MagnitudeOfSpeed * ratio);
+            }
+            if (speedPulse <= 0)
+            {
+                speedPulse = 1;
+            }
+
             if (direction)
             {
-                _testModel.MotorEntity.SetMotorGoToCommand(_enumMotorId, EnumMotorUnit.Pulse, _testModel.MagnitudeOfSpeed);
+                _testModel.MotorEntity.SetMotorGoToCommand(_enumMotorId, EnumMotorUnit.Pulse, speedPulse);
 
             }
             else
             {
-                _testModel.MotorEntity.SetMotorGoToCommand(_enumMotorId, EnumMotorUnit.Pulse, -(_testModel.MagnitudeOfSpeed));
+                _testModel.MotorEntity.SetMotorGoToCommand(_enumMotorId, EnumMotorUnit.Pulse, -speedPulse);
             }
            
         }
@@ -654,6 +713,8 @@ namespace UtilityTools.Modules.MotorTest.Model
             MotorModel.MotorParams.MoveDirection = (EmumMotorMoveDirection)MotorRunningDirection;
             MotorModel.MotorParams.SubRatio = unitConversionFactor;
             MotorModel.MotorParams.Pos = pulseCoordinate;
+            // 回传速度：来自控制器状态包
+            MotorModel.MotorParams.Speed = pulseSpeed;
             AddPoint(e);
             //增加限位位置
             if (MotorModel.MotorParams.LimitedState == EnumMotorLimitedState.PhyForwardLimited)
@@ -757,30 +818,47 @@ namespace UtilityTools.Modules.MotorTest.Model
                     // 速度 = (第三包位置 - 第一包位置) / (第三包时间 - 第一包时间)
                     speedForP2 = (p3.Point - p1.Point) / (deltaMs / 1000.0);
                 }
-
-                // 更新界面显示的瞬时速度
-                MotorModel.MotorParams.Speed = speedForP2;
+                // 计算速度：由位置采样差分得到
+                MotorModel.MotorParams.CalculatedSpeed = speedForP2;
 
                 // 5. 封装最终的 SpeedView (关联的是第二包的时间)
+                // 速度曲线始终使用“计算速度”，不使用回传速度。
                 var speedView = new PlotViewSpeedMessage()
                 {
                     SpeedDate = p2.Date, // 对应中间那一包的时间
                     Speed = speedForP2,
-                    SpeedUm = MotorModel.MotorParams.SpeedUm,
+                    SpeedUm = MotorModel.MotorParams.CalculatedSpeedUm,
                     MotorModelAxis = MotorModel.MotorModelAxis
                 };
 
                 // 6. 【UI 安全层】：更新界面
                 System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    while (MotorModel.PointList.Count >= _testModel.MaxCount)
-                        MotorModel.PointList.RemoveAt(0);
-                    while (MotorModel.SpeedList.Count >= _testModel.MaxCount)
-                        MotorModel.SpeedList.RemoveAt(0);
+                    int maxCount = Math.Max(1000, _testModel.MaxCount);
+                    int trimBatch = Math.Max(50, maxCount / 50); // 约 2% 批量裁剪，降低头删频次
+
+                    // 批量裁剪，避免每次新增都触发一次头删导致卡顿
+                    if (MotorModel.PointList.Count >= maxCount)
+                    {
+                        int removeCount = Math.Min(trimBatch, MotorModel.PointList.Count);
+                        for (int i = 0; i < removeCount; i++)
+                        {
+                            MotorModel.PointList.RemoveAt(0);
+                        }
+                    }
+                    if (MotorModel.SpeedList.Count >= maxCount)
+                    {
+                        int removeCount = Math.Min(trimBatch, MotorModel.SpeedList.Count);
+                        for (int i = 0; i < removeCount; i++)
+                        {
+                            MotorModel.SpeedList.RemoveAt(0);
+                        }
+                    }
 
                     // 注意：这里 Add 的是 p2，因为 p2 现在的速度才算出来
                     MotorModel.PointList.Add(p2);
                     MotorModel.SpeedList.Add(speedView);
+                    _testModel.MarkPlotDirty();
                 }));
 
                 // 7. 【数据缓冲层】：加锁存库

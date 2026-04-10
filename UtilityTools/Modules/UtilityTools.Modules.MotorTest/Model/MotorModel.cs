@@ -91,8 +91,10 @@ namespace UtilityTools.Modules.MotorTest.Model
     {
 
 
-        public double PosUm => _pos / _subRatio;
-        public double SpeedUm => _speed / _subRatio;
+        public double PosUm => _subRatio == 0 ? 0 : _pos / _subRatio;
+        public double SpeedUm => _subRatio == 0 ? 0 : _speed / _subRatio;
+        public double FeedbackSpeedUm => _subRatio == 0 ? 0 : _speed / _subRatio;
+        public double CalculatedSpeedUm => _subRatio == 0 ? 0 : _calculatedSpeed / _subRatio;
 
 
         private bool _enable;
@@ -182,6 +184,21 @@ namespace UtilityTools.Modules.MotorTest.Model
                 _speed = value;
                 RaisePropertyChanged();
                 RaisePropertyChanged(nameof(SpeedUm));
+                RaisePropertyChanged(nameof(FeedbackSpeedUm));
+            }
+        }
+        private double _calculatedSpeed;
+        /// <summary>
+        /// 由位置采样差分计算得到的速度（脉冲/s）
+        /// </summary>
+        public double CalculatedSpeed
+        {
+            get { return _calculatedSpeed; }
+            set
+            {
+                _calculatedSpeed = value;
+                RaisePropertyChanged();
+                RaisePropertyChanged(nameof(CalculatedSpeedUm));
             }
         }
         private float _subRatio;
@@ -191,7 +208,15 @@ namespace UtilityTools.Modules.MotorTest.Model
         public float SubRatio
         {
             get { return _subRatio; }
-            set { _subRatio = value; RaisePropertyChanged(); }
+            set
+            {
+                _subRatio = value;
+                RaisePropertyChanged();
+                RaisePropertyChanged(nameof(PosUm));
+                RaisePropertyChanged(nameof(SpeedUm));
+                RaisePropertyChanged(nameof(FeedbackSpeedUm));
+                RaisePropertyChanged(nameof(CalculatedSpeedUm));
+            }
         }
 
         private int _times;

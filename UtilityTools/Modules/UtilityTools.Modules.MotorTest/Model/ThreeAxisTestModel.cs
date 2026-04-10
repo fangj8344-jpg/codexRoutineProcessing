@@ -85,6 +85,9 @@ namespace UtilityTools.Modules.MotorTest.Model
         private EnumMotorInquiry _testMotorId;
         private bool _isSpeedMode = false;
         private int _queryInterval = 500;
+        private int _plotDirty = 0;
+        private DateTime _lastPlotRefreshAt = DateTime.MinValue;
+        private const int PlotRefreshMinIntervalMs = 200;
   
         private Double _progressValue;
         private bool _isCurrentTestRunning;
@@ -149,7 +152,15 @@ namespace UtilityTools.Modules.MotorTest.Model
         public bool IsSpeedMode
         {
             get { return _isSpeedMode; }
-            set { _isSpeedMode = value;  RaisePropertyChanged(); }
+            set
+            {
+                if (_isSpeedMode == value)
+                    return;
+
+                _isSpeedMode = value;
+                RaisePropertyChanged();
+                ApplyManualModeToAllMotors(_isSpeedMode);
+            }
         }
         private FiveAxisModel _xAxis;
         /// <summary> 
@@ -323,9 +334,19 @@ namespace UtilityTools.Modules.MotorTest.Model
         }
         private int _magnitudeOfSpeed = 10000;
         /// <summary>
-        /// 速度模式移动的速度大小
+        /// 速度模式移动速度（单位：um/s）
         /// </summary>
-        public int MagnitudeOfSpeed = 10000;
+        public int MagnitudeOfSpeed
+        {
+            get { return _magnitudeOfSpeed; }
+            set
+            {
+                if (value <= 0)
+                    value = 1000;
+                _magnitudeOfSpeed = value;
+                RaisePropertyChanged();
+            }
+        }
         public DelegateCommand<string> IndependentMotortestCommand { get; set; }
         public DelegateCommand ShotDownCommand { get; set; }
         public DelegateCommand IndependentMotorDurabilityTestCommand { get; set; }
@@ -374,20 +395,41 @@ namespace UtilityTools.Modules.MotorTest.Model
             }
            
             MotorTypeModel = new MotorTypeModel(this, _containerProvider, targetProfile);
+            ApplyManualModeToAllMotors(_isSpeedMode);
 
             var uiRenderTimer = new System.Windows.Threading.DispatcherTimer();
-            uiRenderTimer.Interval = TimeSpan.FromMilliseconds(50); // 50ms 刷新一次，即 20 FPS，极其丝滑且不占 CPU
+            uiRenderTimer.Interval = TimeSpan.FromMilliseconds(50); // 轻量心跳，真正刷新由最小间隔节流控制
             uiRenderTimer.Tick += (s, e) =>
             {
-                // 统一在这里触发图表重绘
+                // 数据没有变化，不刷新图表
+                if (System.Threading.Volatile.Read(ref _plotDirty) == 0)
+                {
+                    return;
+                }
+
+                // 节流：最短刷新间隔 200ms（约 5 FPS），避免跟随每包数据频繁重绘。
+                var now = DateTime.UtcNow;
+                if ((now - _lastPlotRefreshAt).TotalMilliseconds < PlotRefreshMinIntervalMs)
+                {
+                    return;
+                }
+
+                _lastPlotRefreshAt = now;
+                System.Threading.Interlocked.Exchange(ref _plotDirty, 0);
+
                 if (MotorplotModel != null)
-                    MotorplotModel.InvalidatePlot(true);
+                    MotorplotModel.InvalidatePlot(false);
 
                 if (MotorSpeedplotModel != null)
-                    MotorSpeedplotModel.InvalidatePlot(true);
+                    MotorSpeedplotModel.InvalidatePlot(false);
             };
             uiRenderTimer.Start(); // 启动定时器
 
+        }
+
+        public void MarkPlotDirty()
+        {
+            System.Threading.Interlocked.Exchange(ref _plotDirty, 1);
         }
 
         private void SubscribeTestProgress()
@@ -437,6 +479,17 @@ namespace UtilityTools.Modules.MotorTest.Model
                     }
                 }
             }, ThreadOption.UIThread);
+        }
+
+        private void ApplyManualModeToAllMotors(bool useSpeedMode)
+        {
+            if (Motors == null || Motors.Count == 0)
+                return;
+
+            foreach (var motor in Motors)
+            {
+                motor?.EnsureControlModeAndEnable(useSpeedMode);
+            }
         }
 
 
@@ -803,7 +856,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         {
             _parser.ReceiveBytes(e);
         }
-        private async void Parser_PacketReceivedEvent(object? sender, SelfMotorPacket e)
+        private void Parser_PacketReceivedEvent(object? sender, SelfMotorPacket e)
         {
             if (e != null)
             {
@@ -817,11 +870,9 @@ namespace UtilityTools.Modules.MotorTest.Model
                     {
                         if (Motors[i].EnumMotorId == channel)
                         {
-                            await Task.Run(() =>
-                            {
-                                Motors[i].Parser_PacketReceivedEvent(e);
-                            });
-                           
+                            // 高频状态包直接处理，避免每包 Task.Run 造成额外线程调度开销。
+                            Motors[i].Parser_PacketReceivedEvent(e);
+                            break;
                         }
                     }
                 }

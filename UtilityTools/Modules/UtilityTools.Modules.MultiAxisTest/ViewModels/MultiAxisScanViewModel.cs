@@ -144,20 +144,6 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
             set => SetProperty(ref _smoothnessStdDevMaxUmText, value);
         }
 
-        private string _fullTravelMinPulseText = "215000";
-        public string FullTravelMinPulseText
-        {
-            get => _fullTravelMinPulseText;
-            set => SetProperty(ref _fullTravelMinPulseText, value);
-        }
-
-        private string _fullTravelMaxPulseText = "255000";
-        public string FullTravelMaxPulseText
-        {
-            get => _fullTravelMaxPulseText;
-            set => SetProperty(ref _fullTravelMaxPulseText, value);
-        }
-
         private string _xFullTravelMinPulseText = "235000";
         public string XFullTravelMinPulseText
         {
@@ -495,8 +481,6 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
             LimitAccuracyMaxDiffPulseText = config.LimitAccuracyMaxDiffPulse.ToString();
             LinearStdDevMaxUmText = config.LinearStdDevMaxUm.ToString(CultureInfo.InvariantCulture);
             SmoothnessStdDevMaxUmText = config.SmoothnessStdDevMaxUm.ToString(CultureInfo.InvariantCulture);
-            FullTravelMinPulseText = config.FullTravelMinPulse.ToString();
-            FullTravelMaxPulseText = config.FullTravelMaxPulse.ToString();
             (int xMin, int xMax) = GetAxisRangeOrFallback(config, "X");
             (int yMin, int yMax) = GetAxisRangeOrFallback(config, "Y");
             XFullTravelMinPulseText = xMin.ToString();
@@ -542,21 +526,12 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
             if (!int.TryParse(MovementMinDistancePulseText, out int movementPulse)
                 || !int.TryParse(EncoderMinDeltaPulseText, out int encoderPulse)
                 || !int.TryParse(LimitAccuracyMaxDiffPulseText, out int limitPulse)
-                || !int.TryParse(FullTravelMinPulseText, out int fullTravelMinPulse)
-                || !int.TryParse(FullTravelMaxPulseText, out int fullTravelMaxPulse)
                 || !int.TryParse(XFullTravelMinPulseText, out int xMinPulse)
                 || !int.TryParse(XFullTravelMaxPulseText, out int xMaxPulse)
                 || !int.TryParse(YFullTravelMinPulseText, out int yMinPulse)
                 || !int.TryParse(YFullTravelMaxPulseText, out int yMaxPulse))
             {
                 ThresholdSaveMessage = "保存失败：参数格式错误（脉冲需为整数，um 阈值需为数字）";
-                ThresholdSaveMessageColor = Brushes.OrangeRed;
-                return;
-            }
-
-            if (fullTravelMinPulse >= fullTravelMaxPulse)
-            {
-                ThresholdSaveMessage = "保存失败：满行程最小脉冲必须小于最大脉冲";
                 ThresholdSaveMessageColor = Brushes.OrangeRed;
                 return;
             }
@@ -601,8 +576,8 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
                 LimitAccuracyMaxDiffPulse = limitPulse,
                 LinearStdDevMaxUm = linearUm,
                 SmoothnessStdDevMaxUm = smoothnessUm,
-                FullTravelMinPulse = fullTravelMinPulse,
-                FullTravelMaxPulse = fullTravelMaxPulse,
+                FullTravelMinPulse = Math.Min(xMinPulse, yMinPulse),
+                FullTravelMaxPulse = Math.Max(xMaxPulse, yMaxPulse),
                 FullTravelAxisRanges = new Dictionary<string, AxisPulseRange>
                 {
                     ["X"] = new AxisPulseRange { MinPulse = xMinPulse, MaxPulse = xMaxPulse },
