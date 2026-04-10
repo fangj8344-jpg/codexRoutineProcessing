@@ -19,7 +19,8 @@ namespace UtilityTools.Views
 
         private StringBuilder _barcodeBuffer = new StringBuilder();
         private DateTime _lastInputTime = DateTime.Now;
-        private readonly TimeSpan _inputThreshold = TimeSpan.FromMilliseconds(200);
+        private readonly TimeSpan _inputThreshold = TimeSpan.FromMilliseconds(500);
+        private bool _barcodeCaptureEnabled = false;
 
         //声明 Prism 的事件聚合器013157/001252/ZP030506J08/260317001
 
@@ -31,7 +32,8 @@ namespace UtilityTools.Views
             InitializeComponent();
             _eventAggregator = aggregator;
 
-            this.PreviewKeyDown += Window_PreviewKeyDown;
+            // 全局捕获窗口内所有按键（即使子控件已处理），避免必须点击输入框后才能扫码
+            this.AddHandler(Keyboard.PreviewKeyDownEvent, new KeyEventHandler(Window_PreviewKeyDown), true);
             
 
             this.btnMin.Click += BtnMin_Click;
@@ -64,6 +66,16 @@ namespace UtilityTools.Views
                     DialogHost.DialogContent = new ProgressView(arg.Title);
                 }
             });
+
+            // 仅在需要扫码的页面（如扫码页）开启全局扫码捕获
+            aggregator.GetEvent<BarcodeCaptureEnabledEvent>().Subscribe(enabled =>
+            {
+                _barcodeCaptureEnabled = enabled;
+                if (!enabled)
+                {
+                    _barcodeBuffer.Clear();
+                }
+            }, ThreadOption.UIThread);
         }
 
 
@@ -139,6 +151,9 @@ namespace UtilityTools.Views
 
             switch (key)
             {
+                case Key.Divide: ch = '/'; return true;
+                case Key.Subtract: ch = '-'; return true;
+                case Key.Decimal: ch = '.'; return true;
                 case Key.OemMinus: ch = '-'; return true;
                 case Key.OemPlus: ch = '='; return true;
                 case Key.OemOpenBrackets: ch = '['; return true;
@@ -157,13 +172,28 @@ namespace UtilityTools.Views
 
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if (!_barcodeCaptureEnabled)
+            {
+                return;
+            }
+
+            Key actualKey = e.Key;
+            if (actualKey == Key.ImeProcessed)
+            {
+                actualKey = e.ImeProcessedKey;
+            }
+            else if (actualKey == Key.System)
+            {
+                actualKey = e.SystemKey;
+            }
+
             DateTime now = DateTime.Now;
             if ((now - _lastInputTime) > _inputThreshold)
             {
                 _barcodeBuffer.Clear();
             }
 
-            if (e.Key == Key.Enter)
+            if (actualKey == Key.Enter || actualKey == Key.Return)
             {
                 if ((now - _lastInputTime) <= _inputThreshold && _barcodeBuffer.Length > 0)
                 {
@@ -183,7 +213,7 @@ namespace UtilityTools.Views
             else
             {
                 bool isShiftDown = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
-                if (TryConvertKeyToBarcodeChar(e.Key, isShiftDown, out char ch))
+                if (TryConvertKeyToBarcodeChar(actualKey, isShiftDown, out char ch))
                 {
                     _barcodeBuffer.Append(ch);
                     _lastInputTime = now;

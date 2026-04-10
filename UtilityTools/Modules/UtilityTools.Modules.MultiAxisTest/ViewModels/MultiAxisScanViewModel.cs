@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Design;
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
@@ -110,6 +111,8 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
 
             _thingboardService = containerProvider.Resolve<IServiceFactory>().GetThingboardService();
             OpenEngineerConfigCommand = new DelegateCommand(ExecuteOpenEngineerConfig);
+            // 兜底：扫码页VM创建后先打开一次扫码捕获，避免首帧导航时机差导致失效
+            _eventAggregator.GetEvent<BarcodeCaptureEnabledEvent>().Publish(true);
         }
 
         /// <summary>
@@ -536,6 +539,7 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
         {
             // 将当前输入法的语言强制切换为美式英文
             InputLanguageManager.Current.CurrentInputLanguage = new CultureInfo("en-US");
+            _eventAggregator.GetEvent<BarcodeCaptureEnabledEvent>().Publish(true);
             _token = _eventAggregator.GetEvent<BarcodeScannedEvent>().Subscribe(OnBarcodeReceived);
         }
 
@@ -549,6 +553,7 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
 
                 _token = null;
             }
+            _eventAggregator.GetEvent<BarcodeCaptureEnabledEvent>().Publish(false);
            
         }
     }
