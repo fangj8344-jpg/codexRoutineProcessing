@@ -98,7 +98,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         private string _yCurrentTestDisplay = "Y轴等待测试开始";
         // 统一类型为 MotorDbContext
 
-        private string _version = "4.0.2";
+        private string _version = "4.0.3";
         /// <summary>
         /// 版本号
         /// </summary>
