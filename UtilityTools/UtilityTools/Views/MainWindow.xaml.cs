@@ -2,6 +2,7 @@
 using Prism.Events;
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Windows;
 using System.Windows.Input;
@@ -74,6 +75,19 @@ namespace UtilityTools.Views
                 if (!enabled)
                 {
                     _barcodeBuffer.Clear();
+                }
+                else
+                {
+                    // 中文 IME 开启时，模拟键盘的扫码枪只会把字母交给输入法，导致缓冲区只剩数字和 /（样品台英文型号整段丢失）
+                    try
+                    {
+                        InputMethod.Current.ImeState = InputMethodState.Off;
+                        InputLanguageManager.Current.CurrentInputLanguage = new CultureInfo("en-US");
+                    }
+                    catch
+                    {
+                        // 无 IME 或非 WPF 输入线程时忽略
+                    }
                 }
             }, ThreadOption.UIThread);
         }

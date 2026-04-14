@@ -15,6 +15,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using UtilityTools.Core;
 using UtilityTools.Core.Event;
 using UtilityTools.Core.Helper;
@@ -207,7 +208,7 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
             State = state;
             _eventAggregator = eventAggregator;
             ConfirmCommand = new DelegateCommand(Confirm, CanConfirm);
-            InputLanguageManager.Current.CurrentInputLanguage = new CultureInfo("en-US");
+            ApplyEnglishKeyboardForBarcodeScan();
 
             _thingboardService = containerProvider.Resolve<IServiceFactory>().GetThingboardService();
             OpenEngineerConfigCommand = new DelegateCommand(ExecuteOpenEngineerConfig);
@@ -765,12 +766,36 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
          
         public bool KeepAlive => true;
 
+        /// <summary>
+        /// 从测试页返回时若系统仍是中文输入法，模拟键盘的扫码只会留下数字和 /，英文字段会丢；与「英文输入法下正常」的现象一致。
+        /// </summary>
+        private static void ApplyEnglishKeyboardForBarcodeScan()
+        {
+            try
+            {
+                InputMethod.Current.ImeState = InputMethodState.Off;
+                InputLanguageManager.Current.CurrentInputLanguage = new CultureInfo("en-US");
+            }
+            catch
+            {
+                // 无 IME 或非 UI 线程时忽略
+            }
+        }
+
         public void OnNavigatedTo(NavigationContext navigationContext)
         {
-            // 将当前输入法的语言强制切换为美式英文
-            InputLanguageManager.Current.CurrentInputLanguage = new CultureInfo("en-US");
+            // 立即关闭中文 IME（仅设 InputLanguageManager 为 en-US 往往不够）
+            ApplyEnglishKeyboardForBarcodeScan();
             _eventAggregator.GetEvent<BarcodeCaptureEnabledEvent>().Publish(true);
             _token = _eventAggregator.GetEvent<BarcodeScannedEvent>().Subscribe(OnBarcodeReceived);
+
+            // 返回扫码页后，焦点与布局稍晚才稳定，系统可能再次切回中文 IME；延迟再关一次，专防「只有中文时才坏」
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher != null)
+            {
+                dispatcher.BeginInvoke(ApplyEnglishKeyboardForBarcodeScan, DispatcherPriority.Input);
+                dispatcher.BeginInvoke(ApplyEnglishKeyboardForBarcodeScan, DispatcherPriority.ApplicationIdle);
+            }
         }
 
         public bool IsNavigationTarget(NavigationContext navigationContext) => true;
