@@ -118,6 +118,7 @@
                                         <RowDefinition Height="36" />
                                         <RowDefinition Height="36" />
                                         <RowDefinition Height="36" />
+                                        <RowDefinition Height="36" />
                                     </Grid.RowDefinitions>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="34" />
@@ -128,112 +129,128 @@
                                     <md:PackIcon
                                         Grid.Row="0"
                                         Grid.Column="0"
-                                        Kind="Devices"
-                                        Style="{StaticResource DetailIconStyle}" />
-                                    <TextBlock
-                                        Grid.Row="0"
-                                        Grid.Column="1"
-                                        Style="{StaticResource DetailLabelStyle}"
-                                        Text="电镜型号" />
-                                    <TextBlock
-                                        Grid.Row="0"
-                                        Grid.Column="2"
-                                        Style="{StaticResource DetailValueStyle}"
-                                        Text="{Binding State.CurrentScanDisplay.ElectronMicroscopeModel}" />
-
-                                    <md:PackIcon
-                                        Grid.Row="1"
-                                        Grid.Column="0"
-                                        Kind="TableSettings"
-                                        Style="{StaticResource DetailIconStyle}" />
-                                    <TextBlock
-                                        Grid.Row="1"
-                                        Grid.Column="1"
-                                        Style="{StaticResource DetailLabelStyle}"
-                                        Text="样品台型号" />
-                                    <TextBlock
-                                        Grid.Row="1"
-                                        Grid.Column="2"
-                                        Style="{StaticResource DetailValueStyle}"
-                                        Text="{Binding State.CurrentScanDisplay.StageType}" />
-
-                                    <md:PackIcon
-                                        Grid.Row="2"
-                                        Grid.Column="0"
                                         Kind="CartOutline"
                                         Style="{StaticResource DetailIconStyle}" />
                                     <TextBlock
-                                        Grid.Row="2"
+                                        Grid.Row="0"
                                         Grid.Column="1"
                                         Style="{StaticResource DetailLabelStyle}"
                                         Text="采购订单号" />
                                     <TextBlock
-                                        Grid.Row="2"
+                                        Grid.Row="0"
                                         Grid.Column="2"
                                         Style="{StaticResource DetailValueStyle}"
                                         Text="{Binding State.CurrentScanDisplay.PurchaseOrder}" />
 
                                     <md:PackIcon
-                                        Grid.Row="3"
+                                        Grid.Row="1"
                                         Grid.Column="0"
                                         Kind="Factory"
                                         Style="{StaticResource DetailIconStyle}" />
                                     <TextBlock
-                                        Grid.Row="3"
+                                        Grid.Row="1"
                                         Grid.Column="1"
                                         Style="{StaticResource DetailLabelStyle}"
                                         Text="生产订单号" />
                                     <TextBlock
-                                        Grid.Row="3"
+                                        Grid.Row="1"
                                         Grid.Column="2"
                                         Style="{StaticResource DetailValueStyle}"
                                         Text="{Binding State.CurrentScanDisplay.ProductionOrder}" />
 
                                     <md:PackIcon
-                                        Grid.Row="4"
+                                        Grid.Row="2"
+                                        Grid.Column="0"
+                                        Kind="TagTextOutline"
+                                        Style="{StaticResource DetailIconStyle}" />
+                                    <TextBlock
+                                        Grid.Row="2"
+                                        Grid.Column="1"
+                                        Style="{StaticResource DetailLabelStyle}"
+                                        Text="物料编码" />
+                                    <TextBlock
+                                        Grid.Row="2"
+                                        Grid.Column="2"
+                                        Style="{StaticResource DetailValueStyle}"
+                                        Text="{Binding State.CurrentScanDisplay.MaterialCode}" />
+
+                                    <md:PackIcon
+                                        Grid.Row="3"
                                         Grid.Column="0"
                                         Kind="AccountHardHat"
                                         Style="{StaticResource DetailIconStyle}" />
                                     <TextBlock
-                                        Grid.Row="4"
+                                        Grid.Row="3"
                                         Grid.Column="1"
                                         Style="{StaticResource DetailLabelStyle}"
                                         Text="操作员工号" />
                                     <TextBlock
-                                        Grid.Row="4"
+                                        Grid.Row="3"
                                         Grid.Column="2"
                                         Style="{StaticResource DetailValueStyle}"
                                         Text="{Binding State.CurrentScanDisplay.OperatorId}" />
 
                                     <md:PackIcon
+                                        Grid.Row="4"
+                                        Grid.Column="0"
+                                        Kind="Devices"
+                                        Style="{StaticResource DetailIconStyle}" />
+                                    <TextBlock
+                                        Grid.Row="4"
+                                        Grid.Column="1"
+                                        Style="{StaticResource DetailLabelStyle}"
+                                        Text="电镜型号" />
+                                    <TextBlock
+                                        Grid.Row="4"
+                                        Grid.Column="2"
+                                        Style="{StaticResource DetailValueStyle}"
+                                        Text="{Binding State.CurrentScanDisplay.ElectronMicroscopeModel}" />
+
+                                    <md:PackIcon
                                         Grid.Row="5"
                                         Grid.Column="0"
-                                        Kind="CalendarClock"
+                                        Kind="TableSettings"
                                         Style="{StaticResource DetailIconStyle}" />
                                     <TextBlock
                                         Grid.Row="5"
                                         Grid.Column="1"
                                         Style="{StaticResource DetailLabelStyle}"
-                                        Text="生产日期" />
+                                        Text="样品台型号" />
                                     <TextBlock
                                         Grid.Row="5"
+                                        Grid.Column="2"
+                                        Style="{StaticResource DetailValueStyle}"
+                                        Text="{Binding State.CurrentScanDisplay.StageType}" />
+
+                                    <md:PackIcon
+                                        Grid.Row="6"
+                                        Grid.Column="0"
+                                        Kind="CalendarClock"
+                                        Style="{StaticResource DetailIconStyle}" />
+                                    <TextBlock
+                                        Grid.Row="6"
+                                        Grid.Column="1"
+                                        Style="{StaticResource DetailLabelStyle}"
+                                        Text="生产日期" />
+                                    <TextBlock
+                                        Grid.Row="6"
                                         Grid.Column="2"
                                         Style="{StaticResource DetailValueStyle}"
                                         Text="{Binding State.CurrentScanDisplay.ProductionDate}" />
 
                                     <md:PackIcon
-                                        Grid.Row="6"
+                                        Grid.Row="7"
                                         Grid.Column="0"
                                         Foreground="{DynamicResource SecondaryHueMidBrush}"
                                         Kind="Barcode"
                                         Style="{StaticResource DetailIconStyle}" />
                                     <TextBlock
-                                        Grid.Row="6"
+                                        Grid.Row="7"
                                         Grid.Column="1"
                                         Style="{StaticResource DetailLabelStyle}"
                                         Text="序列号" />
                                     <TextBlock
-                                        Grid.Row="6"
+                                        Grid.Row="7"
                                         Grid.Column="2"
                                         FontSize="16"
                                         Foreground="{DynamicResource SecondaryHueMidBrush}"

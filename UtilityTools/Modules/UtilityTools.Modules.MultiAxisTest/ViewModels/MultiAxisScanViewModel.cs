@@ -250,67 +250,61 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
             }
             State.CurrentScanText = string.Join("/", barcodeParts);
             string lastPart = barcodeParts[barcodeParts.Length - 1];
+
+            // 新格式固定 7 段：采购/生产/物料编码/操作员/电镜型号/样品台类型/生产日期+序列号
+            const int newFormatSegmentCount = 7;
+            if (barcodeParts.Length != newFormatSegmentCount)
+            {
+                State.CurrentScanDisplay = new ScanDisplayModel();
+                SetThresholdDisplayState(false);
+                ScanErrorNotice("请使用新二维码格式（共 7 段，含物料编码）。");
+                ConfirmCommand.RaiseCanExecuteChanged();
+                return;
+            }
+
             State.CurrentScanDisplay = new ScanDisplayModel
             {
-                // 前三个固定不变
                 PurchaseOrder = barcodeParts[0],
                 ProductionOrder = barcodeParts[1],
-                OperatorId = barcodeParts[2],
+                MaterialCode = barcodeParts[2],
+                OperatorId = barcodeParts[3],
+                ElectronMicroscopeModel = barcodeParts[4],
+                StageType = barcodeParts[5],
 
-                // 日期固定取前 6 位，取不到 6 位有多少取多少
                 ProductionDate = lastPart.Length >= 6 ? lastPart.Substring(0, 6) : lastPart,
-
-                // 序列号取 6 位之后的所有内容
                 SerialNumber = lastPart.Length > 6 ? lastPart.Substring(6) : string.Empty
             };
-            if (barcodeParts.Length >= 6)
-            {
-                State.CurrentScanDisplay.ElectronMicroscopeModel = barcodeParts[3]; // 比如 ZEM20
-                string stageType = barcodeParts[4];                                 // 比如 SampleMini
-                State.CurrentScanDisplay.StageType = stageType;
-                //给上传的信息赋值
-                State.UploadInformation.Content.ElectronMicroscopeModel = State.CurrentScanDisplay.ElectronMicroscopeModel;
-                State.UploadInformation.Content.StageType = State.CurrentScanDisplay.StageType;
-                State.UploadInformation.Content.SerialNumber = State.CurrentScanDisplay.SerialNumber;
-                State.UploadInformation.Content.OperatorId = State.CurrentScanDisplay.OperatorId;
-                State.UploadInformation.Content.PurchaseOrder = State.CurrentScanDisplay.PurchaseOrder;
-                State.UploadInformation.Content.ProductionOrder = State.CurrentScanDisplay.ProductionOrder;
-                State.UploadInformation.Content.ProductionDate = State.CurrentScanDisplay.ProductionDate;
-                // 如果你的 State.UploadInformation 里也有这两个字段，也可以在这里一并赋值：
-                // State.UploadInformation.ElectronMicroscopeModel = barcodeParts[3];
-                // State.UploadInformation.StageType = barcodeParts[4];
-                // 🌟 核心映射：识别样品台，装箱存入全局状态
-                string normalizedStage = stageType.ToUpper();
-                switch (normalizedStage)
-                {
-                    case "SAMPLEMINI":
-                        State.MotorKindObj = MachineProfile.CompactTwoAxis;
-                        break;
-                    case "SAMPLESTANDARD":
-                        State.MotorKindObj = MachineProfile.StandardTwoAxis;
-                        break;
-                    case "SAMPLEPRO":
-                        State.MotorKindObj = MachineProfile.HeavyDutyThreeAxis;
-                        break;
-                    case "SAMPLEULTRA":
-                        State.MotorKindObj = MachineProfile.UniversalFiveAxis;
-                        break;
-                    default:
-                        // 碰到不认识的标准型号兜底
-                        State.MotorKindObj = MachineProfile.StandardTwoAxis;
-                        break;
-                }
+            string stageType = barcodeParts[5];
+            State.UploadInformation.Content.ElectronMicroscopeModel = State.CurrentScanDisplay.ElectronMicroscopeModel;
+            State.UploadInformation.Content.StageType = State.CurrentScanDisplay.StageType;
+            State.UploadInformation.Content.SerialNumber = State.CurrentScanDisplay.SerialNumber;
+            State.UploadInformation.Content.OperatorId = State.CurrentScanDisplay.OperatorId;
+            State.UploadInformation.Content.PurchaseOrder = State.CurrentScanDisplay.PurchaseOrder;
+            State.UploadInformation.Content.ProductionOrder = State.CurrentScanDisplay.ProductionOrder;
+            State.UploadInformation.Content.ProductionDate = State.CurrentScanDisplay.ProductionDate;
+            State.UploadInformation.Content.MaterialCode = State.CurrentScanDisplay.MaterialCode;
 
-                LoadThresholdConfigForStage(stageType);
-
-            }
-            else
+            string normalizedStage = stageType.ToUpper();
+            switch (normalizedStage)
             {
-                // 如果是旧码（只有4段），赋个空值或者默认值，防止空引用
-                State.CurrentScanDisplay.ElectronMicroscopeModel = string.Empty;
-                State.CurrentScanDisplay.StageType = string.Empty;
-                LoadThresholdConfigForStage(string.Empty);
+                case "SAMPLEMINI":
+                    State.MotorKindObj = MachineProfile.CompactTwoAxis;
+                    break;
+                case "SAMPLESTANDARD":
+                    State.MotorKindObj = MachineProfile.StandardTwoAxis;
+                    break;
+                case "SAMPLEPRO":
+                    State.MotorKindObj = MachineProfile.HeavyDutyThreeAxis;
+                    break;
+                case "SAMPLEULTRA":
+                    State.MotorKindObj = MachineProfile.UniversalFiveAxis;
+                    break;
+                default:
+                    State.MotorKindObj = MachineProfile.StandardTwoAxis;
+                    break;
             }
+
+            LoadThresholdConfigForStage(stageType);
             bool isDateOk = State.CurrentScanDisplay.ProductionDate.Length == 6;
             bool isSnOk = State.CurrentScanDisplay.SerialNumber.Length >= 3;
 
@@ -320,7 +314,7 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
                 ScanErrorNotice();
                 return; // 校验失败直接中断，保护后续逻辑
             }
-            SetThresholdDisplayState(barcodeParts.Length >= 6);
+            SetThresholdDisplayState(true);
             if (State.UploadInformation != null)
             {
                 State.UploadInformation.SampleStageId = State.CurrentScanText;
@@ -328,18 +322,16 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
                 {
                     State.UploadInformation.Content.StageId = State.CurrentScanText;
                 }
-                if (barcodeParts.Length >= 6)
-                {
-                    _ = CheckCloudCalibrationAsync(State.UploadInformation.SampleStageId);
-                }
-
+                _ = CheckCloudCalibrationAsync(State.UploadInformation.SampleStageId);
             }
             ConfirmCommand.RaiseCanExecuteChanged();
         }
 
 
-        private void ScanErrorNotice() 
+        private void ScanErrorNotice(string? detail = null)
         {
+            if (string.IsNullOrWhiteSpace(detail))
+                detail = "请检查输入是否是英文";
             App.Current.Dispatcher.Invoke(async () =>
             {
                 var errorContent = new StackPanel
@@ -355,7 +347,7 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
                 });
                 errorContent.Children.Add(new TextBlock
                 {
-                    Text = $"请检查输入是否是英文",
+                    Text = detail,
                     Margin = new Thickness(0, 10, 0, 10),
                     TextWrapping = TextWrapping.Wrap
                 });

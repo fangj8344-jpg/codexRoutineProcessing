@@ -42,6 +42,17 @@ namespace UtilityTools.Modules.MultiAxisTest.Model
             get => _productionOrder;
             set => SetProperty(ref _productionOrder, value);
         }
+
+        /// <summary>
+        /// 物料编码（新二维码格式第 3 段）
+        /// </summary>
+        private string _materialCode;
+        public string MaterialCode
+        {
+            get => _materialCode;
+            set => SetProperty(ref _materialCode, value);
+        }
+
         /// <summary>
         /// 操作者
         /// </summary>

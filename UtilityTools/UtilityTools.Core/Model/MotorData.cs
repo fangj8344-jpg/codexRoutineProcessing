@@ -97,6 +97,12 @@ namespace UtilityTools.Core.Model
         public string ProductionOrder { get; set; }
 
         /// <summary>
+        /// 物料编码（二维码第 3 段，如 WB0049）
+        /// </summary>
+        [JsonPropertyName("物料编码")]
+        public string MaterialCode { get; set; }
+
+        /// <summary>
         /// 操作者
         /// </summary>
         [JsonPropertyName("操作检验")]

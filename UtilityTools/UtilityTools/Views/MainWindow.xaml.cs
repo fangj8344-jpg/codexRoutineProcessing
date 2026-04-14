@@ -217,7 +217,8 @@ namespace UtilityTools.Views
                     e.Handled = true;
 
                     string[] parts = finalBarcode.Split('/');
-                    if (parts.Length >= 4)
+                    // 仅识别新格式：采购/生产/物料编码/操作员/电镜/样品台/日期与序号（共 7 段）
+                    if (parts.Length >= 7)
                     {
                         _eventAggregator.GetEvent<BarcodeScannedEvent>().Publish(parts);
                     }
