@@ -10,7 +10,7 @@ using UtilityTools.Modules.MotorTest.SQLite;
 
 namespace UtilityTools.Modules.MotorTest.TestItems
 {
-    //测试成功
+    //限位精度测试
     public class PositioningAccuracyTestItem: IMotorTestItem
     {
         private readonly int _threshold; // 判定阈值

@@ -12,7 +12,6 @@ using Prism.Commands;
 using Prism.Events;
 using Prism.Ioc;
 using Prism.Mvvm;
-using ScottPlot.Drawing.Colormaps;
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
@@ -20,14 +19,15 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Converters;
@@ -87,7 +87,8 @@ namespace UtilityTools.Modules.MotorTest.Model
         private int _queryInterval = 500;
         private int _plotDirty = 0;
         private DateTime _lastPlotRefreshAt = DateTime.MinValue;
-        private const int PlotRefreshMinIntervalMs = 100;
+        private const int PlotRefreshMinIntervalMs = 50;
+        private System.Windows.Threading.DispatcherTimer? _uiRenderTimer;
   
         private Double _progressValue;
         private bool _isCurrentTestRunning;
@@ -374,8 +375,32 @@ namespace UtilityTools.Modules.MotorTest.Model
         public DelegateCommand<string> SaveToFileCommand { get; set; }
         public DelegateCommand<string> AutoAdjustCommand { get; set; }
         public DelegateCommand<string> ClearMonitorCommand { get; set; }
+        public DelegateCommand RandomRepeatabilityTestCommand { get; set; }
+        public DelegateCommand GenerateRandomRepeatabilityReportCommand { get; set; }
 
         public DelegateCommand<string> TestMotorTogetherCommand { get; set; }
+        public ObservableCollection<RandomTargetPointRecord> RandomTargetPoints { get; } = new();
+        public ObservableCollection<RandomMoveTripAxisRecord> RandomMoveTripsX { get; } = new();
+        public ObservableCollection<RandomMoveTripAxisRecord> RandomMoveTripsY { get; } = new();
+        public ObservableCollection<RandomPointStatAxisRecord> RandomPointStatsX { get; } = new();
+        public ObservableCollection<RandomPointStatAxisRecord> RandomPointStatsY { get; } = new();
+        public ObservableCollection<HistogramBinRecord> RandomDistanceHistogramX { get; } = new();
+        public ObservableCollection<HistogramBinRecord> RandomDistanceHistogramY { get; } = new();
+        public ObservableCollection<HistogramBinRecord> RandomSpeedHistogramX { get; } = new();
+        public ObservableCollection<HistogramBinRecord> RandomSpeedHistogramY { get; } = new();
+
+        private string _randomRepeatabilitySummary = "未执行随机坐标重复精度测试。";
+        public string RandomRepeatabilitySummary
+        {
+            get => _randomRepeatabilitySummary;
+            set { _randomRepeatabilitySummary = value; RaisePropertyChanged(); }
+        }
+
+        /// <summary>最近一次完成的随机重复精度测试原始结果（用于事后生成报告）。</summary>
+        private RandomRepeatabilityTestResult? _lastRandomRepeatabilityXResult;
+
+        private RandomRepeatabilityTestResult? _lastRandomRepeatabilityYResult;
+
         private void Init()
         {
             ClearMonitorCommand = new DelegateCommand<string>(ClearMonitor);
@@ -391,6 +416,10 @@ namespace UtilityTools.Modules.MotorTest.Model
             ReadDataFileCommand = new DelegateCommand(ReadDataFile);
             CloseSlimitedCommand = new DelegateCommand(CloseSlimited);
             SqliteLoadCommand = new DelegateCommand(SqliteLoad);
+            RandomRepeatabilityTestCommand = new DelegateCommand(StartRandomRepeatabilityTest);
+            GenerateRandomRepeatabilityReportCommand = new DelegateCommand(
+                GenerateRandomRepeatabilityReport,
+                CanGenerateRandomRepeatabilityReport);
             ByteQueue = new ConcurrentQueue<byte[]>();
             ImportantByteQueue = new ConcurrentQueue<byte[]>();
             MotorEntity = new MotorEntity(SerialPortService, NetUdpService);
@@ -433,11 +462,16 @@ namespace UtilityTools.Modules.MotorTest.Model
             }
            
             MotorTypeModel = new MotorTypeModel(this, _containerProvider, targetProfile);
+            if (_reportService.DevShortcutXyOnlyAxes && targetProfile == MachineProfile.UniversalFiveAxis)
+            {
+                ApplyUniversalFiveAxisDevShortcutXyOnlyTrim();
+            }
+
             ApplyManualModeToAllMotors(_isSpeedMode);
 
-            var uiRenderTimer = new System.Windows.Threading.DispatcherTimer();
-            uiRenderTimer.Interval = TimeSpan.FromMilliseconds(50); // 轻量心跳，真正刷新由最小间隔节流控制
-            uiRenderTimer.Tick += (s, e) =>
+            _uiRenderTimer = new System.Windows.Threading.DispatcherTimer();
+            _uiRenderTimer.Interval = TimeSpan.FromMilliseconds(50); // 轻量心跳，真正刷新由最小间隔节流控制
+            _uiRenderTimer.Tick += (s, e) =>
             {
                 // 数据没有变化，不刷新图表
                 if (System.Threading.Volatile.Read(ref _plotDirty) == 0)
@@ -456,12 +490,12 @@ namespace UtilityTools.Modules.MotorTest.Model
                 System.Threading.Interlocked.Exchange(ref _plotDirty, 0);
 
                 if (MotorplotModel != null)
-                    MotorplotModel.InvalidatePlot(false);
+                    MotorplotModel.InvalidatePlot(true);
 
                 if (MotorSpeedplotModel != null)
-                    MotorSpeedplotModel.InvalidatePlot(false);
+                    MotorSpeedplotModel.InvalidatePlot(true);
             };
-            uiRenderTimer.Start(); // 启动定时器
+            _uiRenderTimer.Start(); // 启动定时器
 
         }
 
@@ -731,6 +765,669 @@ namespace UtilityTools.Modules.MotorTest.Model
             }
         }
 
+        private async void StartRandomRepeatabilityTest()
+        {
+            CancellationToken?.Cancel();
+            CancellationToken = new CancellationTokenSource();
+            try
+            {
+                AppendRandomRepeatLogSafe("随机重复精度：测试任务已启动。");
+                await RunRandomRepeatabilityTestAsync(CancellationToken.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                var msg = "随机坐标重复精度测试已取消（可能点了「关闭测试」或再次点了测试按钮）。";
+                RandomRepeatabilitySummary = msg;
+                AppendRandomRepeatLogSafe(msg);
+                NLog.LogManager.GetCurrentClassLogger().Warn("随机坐标重复精度测试已取消");
+            }
+            catch (Exception ex)
+            {
+                var detail = ex is AggregateException agg
+                    ? string.Join("；", agg.InnerExceptions.Select(e => e.Message))
+                    : ex.Message;
+                var summary = $"随机坐标重复精度测试异常：{detail}";
+                RandomRepeatabilitySummary = summary;
+                AppendRandomRepeatLogSafe($"{summary}\n{ex}");
+                NLog.LogManager.GetCurrentClassLogger().Error(ex, "随机坐标重复精度测试异常");
+                TryRestoreXyMotorsAfterRandomFailure();
+                ShowRandomRepeatabilityErrorDialog(detail);
+            }
+        }
+
+        /// <summary>
+        /// 满行程/堵转流程可能下发「停止运行」；随机段若不再发「运行」部分驱动器会拒收 GOTO，表现为轴全不动。此处统一恢复闭环+使能+运行。
+        /// </summary>
+        private void TryRestoreXyMotorsAfterRandomFailure()
+        {
+            try
+            {
+                var xAxis = Motors?.FirstOrDefault(m => m.Name.Contains("X", StringComparison.OrdinalIgnoreCase));
+                var yAxis = Motors?.FirstOrDefault(m => m.Name.Contains("Y", StringComparison.OrdinalIgnoreCase));
+                if (xAxis == null || yAxis == null) return;
+                foreach (var axis in new[] { xAxis, yAxis })
+                {
+                    MotorEntity.SetMotorControlModeCommand(axis.EnumMotorId, EnumMotorCtrType.CloseLoopPosCtr);
+                    MotorEntity.SetMotorEnableCommand(axis.EnumMotorId, EnumMotorEnable.Enable);
+                    MotorEntity.SetMotorOperatingStatusCommand(axis.EnumMotorId, EnumMotorOperatingState.Run);
+                }
+
+                AppendRandomRepeatLog(xAxis, "测试异常结束：已恢复闭环位置、使能与运行。");
+                AppendRandomRepeatLog(yAxis, "测试异常结束：已恢复闭环位置、使能与运行。");
+            }
+            catch (Exception ex)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Warn(ex, "随机重复精度：恢复 X/Y 运动状态失败");
+            }
+        }
+
+        private void AppendRandomRepeatLogSafe(string message)
+        {
+            var xAxis = Motors?.FirstOrDefault(m => m.Name.Contains("X", StringComparison.OrdinalIgnoreCase));
+            var yAxis = Motors?.FirstOrDefault(m => m.Name.Contains("Y", StringComparison.OrdinalIgnoreCase));
+            if (xAxis != null) AppendRandomRepeatLog(xAxis, message);
+            if (yAxis != null) AppendRandomRepeatLog(yAxis, message);
+        }
+
+        private static void ShowRandomRepeatabilityErrorDialog(string detail)
+        {
+            var app = System.Windows.Application.Current;
+            if (app?.Dispatcher == null) return;
+            var text = $"随机坐标重复精度测试中断。\n\n原因：{detail}\n\n请查看「随机重复精度」页顶部摘要与「实时日志」。";
+            app.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                try
+                {
+                    System.Windows.MessageBox.Show(app.MainWindow, text, "随机重复精度", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                }
+                catch
+                {
+                    System.Windows.MessageBox.Show(text, "随机重复精度", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                }
+            }));
+        }
+
+        /// <summary>
+        /// 随机坐标重复精度测试：
+        /// 1) 以 XY 中心为原点生成高斯分布点（5mm 密度级别）
+        /// 2) 点间随机跳转，每点至少 10 次
+        /// 3) 输出点表、行程表、重复精度统计和距离/速度直方图
+        /// </summary>
+        private void AppendRandomRepeatLog(FiveAxisModel axis, string message)
+        {
+            var line = $"[{DateTime.Now:HH:mm:ss}] {message}";
+            _eventAggregator.GetEvent<MotorLogEvent>().Publish($"{axis.Name}|{line}");
+        }
+
+        /// <summary>
+        /// 随机坐标跳转：单轴 MoveState 两段判停（先离开 MotorStop，再回到 MotorStop）。超时返回 false，不抛异常；取消仍向上抛出。
+        /// </summary>
+        private static async Task<bool> TryRandomAxisLeaveThenStopAsync(
+            FiveAxisModel axis,
+            CancellationToken token,
+            int leaveStopTimeoutSeconds,
+            int stopTimeoutSeconds,
+            int pollDelayMs)
+        {
+            static bool IsMotorStop(FiveAxisModel a) =>
+                a.MotorModel.MotorParams.MoveState == EnumMotorMoveState.MotorStop;
+
+            try
+            {
+                var startWait = DateTime.UtcNow;
+                while (IsMotorStop(axis))
+                {
+                    token.ThrowIfCancellationRequested();
+                    if ((DateTime.UtcNow - startWait).TotalSeconds > leaveStopTimeoutSeconds)
+                        return false;
+                    await Task.Delay(pollDelayMs, token).ConfigureAwait(false);
+                }
+
+                startWait = DateTime.UtcNow;
+                while (!IsMotorStop(axis))
+                {
+                    token.ThrowIfCancellationRequested();
+                    if ((DateTime.UtcNow - startWait).TotalSeconds > stopTimeoutSeconds)
+                        return false;
+                    await Task.Delay(pollDelayMs, token).ConfigureAwait(false);
+                }
+
+                return true;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 随机坐标重复精度测试
+        /// 
+        /// 测试概述：
+        /// 1) 以 XY 中心为原点生成高斯分布点（5mm 密度级别）
+        /// 2) 点间随机跳转，每点至少 10 次
+        /// 3) 输出点表、行程表、重复精度统计和距离/速度直方图
+        /// 
+        /// 实现方式：
+        /// - 使用规范化的 RandomRepeatabilityTestItem 类执行测试
+        /// - 该类封装了完整的测试逻辑，包括满行程检测、随机点生成、跳转测试等
+        /// - 测试结果通过 RandomRepeatabilityTestResult 返回
+        /// 
+        /// 测试流程：
+        /// 1. 查找 X/Y 轴电机
+        /// 2. 清空之前的测试数据
+        /// 3. 创建 RandomRepeatabilityTestItem 实例
+        /// 4. 调用 ExecuteAsync 执行测试
+        /// 5. 将测试结果复制到 UI 集合（ObservableCollection）
+        /// 6. 更新测试摘要信息
+        /// 
+        /// 异常处理：
+        /// - OperationCanceledException：测试被取消，更新 UI 并返回
+        /// - 其他异常：捕获并显示错误信息，不中断程序
+        /// 
+        /// UI 更新：
+        /// - 所有测试数据都通过 ObservableCollection 绑定到 UI
+        /// - 测试摘要显示在 RandomRepeatabilitySummary 属性中
+        /// - 测试日志通过 AppendRandomRepeatLog 记录
+        /// </summary>
+        /// <summary>
+        /// 随机坐标重复精度测试
+        /// 
+        /// 测试概述：
+        /// 1) 以 XY 中心为原点生成高斯分布点（5mm 密度级别）
+        /// 2) 点间随机跳转，每点至少 10 次
+        /// 3) 输出点表、行程表、重复精度统计和距离/速度直方图
+        /// 
+        /// 实现方式：
+        /// - 使用规范化的 RandomRepeatabilityTestItem 类执行测试
+        /// - 该类封装了完整的测试逻辑，包括满行程检测、随机点生成、跳转测试等
+        /// - 测试结果通过 RandomRepeatabilityTestResult 返回
+        /// 
+        /// 测试流程：
+        /// 1. 查找 X/Y 轴电机
+        /// 2. 清空之前的测试数据
+        /// 3. 创建 RandomRepeatabilityTestItem 实例
+        /// 4. 分别调用 X 轴和 Y 轴测试（单轴测试）
+        /// 5. 将测试结果复制到 UI 集合（ObservableCollection）
+        /// 6. 更新测试摘要信息
+        /// 
+        /// 异常处理：
+        /// - OperationCanceledException：测试被取消，更新 UI 并返回
+        /// - 其他异常：捕获并显示错误信息，不中断程序
+        /// 
+        /// UI 更新：
+        /// - 所有测试数据都通过 ObservableCollection 绑定到 UI
+        /// - 测试摘要显示在 RandomRepeatabilitySummary 属性中
+        /// - 测试日志通过 AppendRandomRepeatLog 记录
+        /// </summary>
+        /// <param name="token">取消令牌</param>
+        private async Task RunRandomRepeatabilityTestAsync(CancellationToken token)
+        {
+            var xAxis = Motors?.FirstOrDefault(m => m.Name.Contains("X", StringComparison.OrdinalIgnoreCase));
+            var yAxis = Motors?.FirstOrDefault(m => m.Name.Contains("Y", StringComparison.OrdinalIgnoreCase));
+            if (xAxis == null || yAxis == null)
+                throw new InvalidOperationException("未找到 X/Y 轴，无法执行随机坐标重复精度测试。");
+
+            AppendRandomRepeatLog(xAxis,
+                $"随机重复精度：准备开始。轴={xAxis.Name}({xAxis.EnumMotorId})，当前位置={xAxis.MotorModel.MotorParams.PosUm:F3}μm");
+            AppendRandomRepeatLog(yAxis,
+                $"随机重复精度：准备开始。轴={yAxis.Name}({yAxis.EnumMotorId})，当前位置={yAxis.MotorModel.MotorParams.PosUm:F3}μm");
+
+            _lastRandomRepeatabilityXResult = null;
+            _lastRandomRepeatabilityYResult = null;
+            GenerateRandomRepeatabilityReportCommand.RaiseCanExecuteChanged();
+
+            // 清空之前的数据
+            RandomTargetPoints.Clear();
+            RandomMoveTripsX.Clear();
+            RandomMoveTripsY.Clear();
+            RandomPointStatsX.Clear();
+            RandomPointStatsY.Clear();
+            RandomDistanceHistogramX.Clear();
+            RandomDistanceHistogramY.Clear();
+            RandomSpeedHistogramX.Clear();
+            RandomSpeedHistogramY.Clear();
+
+            AppendRandomRepeatLog(xAxis, "随机重复精度：任务已启动（本轴独立执行）。");
+            AppendRandomRepeatLog(yAxis, "随机重复精度：任务已启动（本轴独立执行）。");
+
+            var testItemX = new UtilityTools.Modules.MotorTest.TestItems.RandomRepeatabilityTestItem(
+                progressReporter: (completed, total, elapsed, eta) =>
+                    AppendRandomRepeatProgressLog(xAxis, completed, total, elapsed, eta));
+            var testItemY = new UtilityTools.Modules.MotorTest.TestItems.RandomRepeatabilityTestItem(
+                progressReporter: (completed, total, elapsed, eta) =>
+                    AppendRandomRepeatProgressLog(yAxis, completed, total, elapsed, eta));
+
+            var xTask = testItemX.ExecuteAsync(xAxis.EnumMotorId, xAxis.MotorModel, MotorEntity, token);
+            var yTask = testItemY.ExecuteAsync(yAxis.EnumMotorId, yAxis.MotorModel, MotorEntity, token);
+            AppendRandomRepeatLog(xAxis, "随机重复精度：任务已提交，等待完成。");
+            AppendRandomRepeatLog(yAxis, "随机重复精度：任务已提交，等待完成。");
+
+            UtilityTools.Modules.MotorTest.Model.RandomRepeatabilityTestResult xResult = null;
+            UtilityTools.Modules.MotorTest.Model.RandomRepeatabilityTestResult yResult = null;
+
+            try
+            {
+                await Task.WhenAll(xTask, yTask).ConfigureAwait(true);
+            }
+            catch (OperationCanceledException)
+            {
+                RandomRepeatabilitySummary = "测试已取消";
+                AppendRandomRepeatLog(xAxis, "随机重复精度测试已取消。");
+                AppendRandomRepeatLog(yAxis, "随机重复精度测试已取消。");
+                return;
+            }
+            catch (Exception ex)
+            {
+                AppendRandomRepeatLog(xAxis, $"并行等待异常: {ex.Message}");
+                AppendRandomRepeatLog(yAxis, $"并行等待异常: {ex.Message}");
+            }
+
+            if (xTask.Status == TaskStatus.RanToCompletion)
+                xResult = (UtilityTools.Modules.MotorTest.Model.RandomRepeatabilityTestResult)xTask.Result;
+            else if (xTask.IsFaulted)
+                AppendRandomRepeatLog(xAxis, $"任务失败: {xTask.Exception?.GetBaseException()?.Message ?? "未知错误"}");
+            else if (xTask.IsCanceled)
+                AppendRandomRepeatLog(xAxis, "任务已取消。");
+
+            if (yTask.Status == TaskStatus.RanToCompletion)
+                yResult = (UtilityTools.Modules.MotorTest.Model.RandomRepeatabilityTestResult)yTask.Result;
+            else if (yTask.IsFaulted)
+                AppendRandomRepeatLog(yAxis, $"任务失败: {yTask.Exception?.GetBaseException()?.Message ?? "未知错误"}");
+            else if (yTask.IsCanceled)
+                AppendRandomRepeatLog(yAxis, "任务已取消。");
+
+            if (xResult != null)
+            {
+                AppendRandomRepeatLog(xAxis,
+                    $"结果：完成={xResult.IsTestCompleted}，通过={xResult.IsPassed}，标准差={xResult.AvgStdX:F3}μm，点数={xResult.TargetPoints.Count}，行程记录={xResult.MoveTripsX.Count}，错误={xResult.ErrorDescription ?? "无"}");
+            }
+            if (yResult != null)
+            {
+                AppendRandomRepeatLog(yAxis,
+                    $"结果：完成={yResult.IsTestCompleted}，通过={yResult.IsPassed}，标准差={yResult.AvgStdX:F3}μm，点数={yResult.TargetPoints.Count}，行程记录={yResult.MoveTripsX.Count}，错误={yResult.ErrorDescription ?? "无"}");
+            }
+
+            // 更新界面数据 - X轴
+            if (xResult != null)
+            {
+                foreach (var point in xResult.TargetPoints)
+                    RandomTargetPoints.Add(point);
+
+                foreach (var trip in xResult.MoveTripsX)
+                    RandomMoveTripsX.Add(trip);
+
+                foreach (var stat in xResult.PointStatsX)
+                    RandomPointStatsX.Add(stat);
+
+                foreach (var bin in xResult.DistanceHistogramX)
+                    RandomDistanceHistogramX.Add(bin);
+
+                foreach (var bin in xResult.SpeedHistogramX)
+                    RandomSpeedHistogramX.Add(bin);
+
+                AppendRandomRepeatLog(xAxis,
+                    $"数据写入界面：目标点={xResult.TargetPoints.Count}，统计点={xResult.PointStatsX.Count}，行程={xResult.MoveTripsX.Count}，距离分箱={xResult.DistanceHistogramX.Count}，速度分箱={xResult.SpeedHistogramX.Count}");
+            }
+
+            // 更新界面数据 - Y轴
+            if (yResult != null)
+            {
+                foreach (var point in yResult.TargetPoints)
+                    RandomTargetPoints.Add(point);
+
+                foreach (var trip in yResult.MoveTripsX)
+                    RandomMoveTripsY.Add(trip);
+
+                foreach (var stat in yResult.PointStatsX)
+                    RandomPointStatsY.Add(stat);
+
+                foreach (var bin in yResult.DistanceHistogramX)
+                    RandomDistanceHistogramY.Add(bin);
+
+                foreach (var bin in yResult.SpeedHistogramX)
+                    RandomSpeedHistogramY.Add(bin);
+
+                AppendRandomRepeatLog(yAxis,
+                    $"数据写入界面：目标点={yResult.TargetPoints.Count}，统计点={yResult.PointStatsX.Count}，行程={yResult.MoveTripsX.Count}，距离分箱={yResult.DistanceHistogramX.Count}，速度分箱={yResult.SpeedHistogramX.Count}");
+            }
+
+            // 更新测试摘要（Y 轴单轴结果的标准差仍记在 AvgStdX）
+            RandomRepeatabilitySummary =
+                $"完成（并行）：X轴标准差={xResult?.AvgStdX:F3} μm，Y轴标准差={yResult?.AvgStdX:F3} μm\n" +
+                $"可点击「生成随机重复精度报告」导出到程序目录：{GetRandomRepeatabilityReportDirectory()}（Word 与同次导出的 CSV）。";
+
+            _lastRandomRepeatabilityXResult = xResult;
+            _lastRandomRepeatabilityYResult = yResult;
+            GenerateRandomRepeatabilityReportCommand.RaiseCanExecuteChanged();
+
+            AppendRandomRepeatLog(xAxis, "随机重复精度测试全部结束。");
+            AppendRandomRepeatLog(yAxis, "随机重复精度测试全部结束。");
+        }
+
+        private void AppendRandomRepeatProgressLog(
+            FiveAxisModel axis,
+            int completed,
+            int total,
+            TimeSpan elapsed,
+            TimeSpan eta)
+        {
+            int remaining = Math.Max(0, total - completed);
+            string elapsedText = elapsed.TotalHours >= 1 ? elapsed.ToString(@"hh\:mm\:ss") : elapsed.ToString(@"mm\:ss");
+            string etaText = completed == 0 ? "--:--" : (eta.TotalHours >= 1 ? eta.ToString(@"hh\:mm\:ss") : eta.ToString(@"mm\:ss"));
+            double percent = total <= 0 ? 0 : (completed * 100.0 / total);
+
+            AppendRandomRepeatLog(
+                axis,
+                $"进度：{completed}/{total}（剩余{remaining}）| {percent:F1}% | 已用{elapsedText} | 预计剩余{etaText}");
+        }
+
+        private bool CanGenerateRandomRepeatabilityReport()
+        {
+            return _lastRandomRepeatabilityXResult != null || _lastRandomRepeatabilityYResult != null;
+        }
+
+        private void GenerateRandomRepeatabilityReport()
+        {
+            var reportPath = BuildRandomRepeatabilityWordReport(_lastRandomRepeatabilityXResult, _lastRandomRepeatabilityYResult);
+            if (!string.IsNullOrWhiteSpace(reportPath))
+            {
+                AppendRandomRepeatLogSafe($"随机重复精度报告已生成：{reportPath}");
+                RandomRepeatabilitySummary += $"\n最近导出：{reportPath}";
+                NotifyRandomRepeatabilityExportFinished(reportPath, success: true);
+            }
+            else
+            {
+                AppendRandomRepeatLogSafe("随机重复精度报告生成失败：请查看日志（NLog Error）。");
+                NotifyRandomRepeatabilityExportFinished(null, success: false);
+            }
+        }
+
+        private static void NotifyRandomRepeatabilityExportFinished(string? reportPath, bool success)
+        {
+            var app = System.Windows.Application.Current;
+            if (app?.Dispatcher == null)
+                return;
+            app.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                try
+                {
+                    if (success && !string.IsNullOrEmpty(reportPath))
+                    {
+                        System.Windows.MessageBox.Show(
+                            app.MainWindow,
+                            $"导出成功。\n\n{reportPath}\n\nWord 含摘要、曲线图与完整表格；另附同目录 CSV（UTF-8 BOM，可用 Excel 打开）。",
+                            "随机重复精度报告",
+                            System.Windows.MessageBoxButton.OK,
+                            System.Windows.MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        System.Windows.MessageBox.Show(
+                            app.MainWindow,
+                            "导出失败，请查看日志（NLog）。",
+                            "随机重复精度报告",
+                            System.Windows.MessageBoxButton.OK,
+                            System.Windows.MessageBoxImage.Warning);
+                    }
+                }
+                catch
+                {
+                    if (success && !string.IsNullOrEmpty(reportPath))
+                    {
+                        System.Windows.MessageBox.Show(
+                            $"导出成功。\n\n{reportPath}",
+                            "随机重复精度报告",
+                            System.Windows.MessageBoxButton.OK,
+                            System.Windows.MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        System.Windows.MessageBox.Show(
+                            "导出失败，请查看日志（NLog）。",
+                            "随机重复精度报告",
+                            System.Windows.MessageBoxButton.OK,
+                            System.Windows.MessageBoxImage.Warning);
+                    }
+                }
+            }));
+        }
+
+        /// <summary>
+        /// 随机重复精度报告输出目录：<c>程序目录\报告\随机重复精度</c>。
+        /// </summary>
+        private static string GetRandomRepeatabilityReportDirectory()
+        {
+            string dir = Path.Combine(AppContext.BaseDirectory, "报告", "随机重复精度");
+            if (!Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
+            return dir;
+        }
+
+        /// <summary>
+        /// 导出随机重复精度报告：Word 使用 DocumentFormat.OpenXml（免费）；明细同时写入 CSV。
+        /// </summary>
+        private string BuildRandomRepeatabilityWordReport(
+            RandomRepeatabilityTestResult? xResult,
+            RandomRepeatabilityTestResult? yResult)
+        {
+            try
+            {
+                if (xResult == null && yResult == null)
+                {
+                    NLog.LogManager.GetCurrentClassLogger().Warn("无随机重复精度缓存数据，跳过报告导出。");
+                    return string.Empty;
+                }
+
+                string reportDir = GetRandomRepeatabilityReportDirectory();
+
+                string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                IReadOnlyList<string> csvRelative = ExportRandomRepeatabilityDetailCsvs(reportDir, stamp, xResult, yResult);
+
+                string? positionPng = ExportPlotToPng(reportDir, "random_position_curve", MotorplotModel);
+                string? speedPng = ExportPlotToPng(reportDir, "random_speed_curve", MotorSpeedplotModel);
+
+                string? histXDistPng = ExportHistogramToPng(reportDir, $"{stamp}_hist_x_distance", "X轴距离分箱", xResult?.DistanceHistogramX, "分箱区间 (μm)");
+                string? histYDistPng = ExportHistogramToPng(reportDir, $"{stamp}_hist_y_distance", "Y轴距离分箱", yResult?.DistanceHistogramX, "分箱区间 (μm)");
+                string? histXSpdPng = ExportHistogramToPng(reportDir, $"{stamp}_hist_x_speed", "X轴速度分箱", xResult?.SpeedHistogramX, "分箱区间 (μm/s)");
+                string? histYSpdPng = ExportHistogramToPng(reportDir, $"{stamp}_hist_y_speed", "Y轴速度分箱", yResult?.SpeedHistogramX, "分箱区间 (μm/s)");
+
+                string reportPath = Path.Combine(reportDir, $"随机重复精度报告_{stamp}.docx");
+                RandomRepeatabilityOpenXmlReport.Save(
+                    reportPath,
+                    xResult,
+                    yResult,
+                    positionPng,
+                    speedPng,
+                    histXDistPng,
+                    histYDistPng,
+                    histXSpdPng,
+                    histYSpdPng,
+                    csvRelative);
+                return reportPath;
+            }
+            catch (Exception ex)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Error(ex, "生成随机重复精度 Word 报告失败");
+                return string.Empty;
+            }
+        }
+
+        private static IReadOnlyList<string> ExportRandomRepeatabilityDetailCsvs(
+            string reportDir,
+            string stamp,
+            RandomRepeatabilityTestResult? xResult,
+            RandomRepeatabilityTestResult? yResult)
+        {
+            var names = new List<string>();
+            var utf8Bom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: true);
+
+            void WriteCsv<T>(string fileSuffix, IEnumerable<T> rows)
+            {
+                string path = Path.Combine(reportDir, $"{stamp}_{fileSuffix}");
+                using var writer = new StreamWriter(path, false, utf8Bom);
+                using var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
+                csv.WriteRecords(rows);
+                names.Add($"{stamp}_{fileSuffix}");
+            }
+
+            try
+            {
+                var targets = xResult?.TargetPoints ?? yResult?.TargetPoints;
+                if (targets != null && targets.Count > 0)
+                    WriteCsv("TargetPoints.csv", targets);
+
+                if (xResult != null)
+                {
+                    WriteCsv("X_PointStats.csv", xResult.PointStatsX);
+                    WriteCsv("X_MoveTrips.csv", xResult.MoveTripsX);
+                    WriteCsv("X_DistanceHistogram.csv", xResult.DistanceHistogramX);
+                    WriteCsv("X_SpeedHistogram.csv", xResult.SpeedHistogramX);
+                }
+
+                if (yResult != null)
+                {
+                    WriteCsv("Y_PointStats.csv", yResult.PointStatsX);
+                    WriteCsv("Y_MoveTrips.csv", yResult.MoveTripsX);
+                    WriteCsv("Y_DistanceHistogram.csv", yResult.DistanceHistogramX);
+                    WriteCsv("Y_SpeedHistogram.csv", yResult.SpeedHistogramX);
+                }
+            }
+            catch (Exception ex)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Error(ex, "导出随机重复精度 CSV 失败");
+            }
+
+            return names;
+        }
+
+        private string ExportPlotToPng(string outputDir, string prefix, PlotModel? model)
+        {
+            if (model == null)
+                return string.Empty;
+
+            try
+            {
+                string imagePath = Path.Combine(outputDir, $"{prefix}_{DateTime.Now:yyyyMMdd_HHmmss}.png");
+                System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    var exporter = new PngExporter { Width = 1280, Height = 720 };
+                    exporter.ExportToFile(model, imagePath);
+                });
+                return imagePath;
+            }
+            catch (Exception ex)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Warn(ex, $"导出图像失败: {prefix}");
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// 将直方图分箱数据用 OxyPlot 导出为柱状图 PNG（与位置/速度曲线相同的导出尺寸，便于插入 Word）。
+        /// </summary>
+        private static string ExportHistogramToPng(
+            string outputDir,
+            string filePrefix,
+            string plotTitle,
+            IEnumerable<HistogramBinRecord>? bins,
+            string binAxisTitle)
+        {
+            var list = bins?.ToList();
+            if (list == null || list.Count == 0)
+                return string.Empty;
+
+            try
+            {
+                string imagePath = Path.Combine(outputDir, $"{filePrefix}_{DateTime.Now:yyyyMMdd_HHmmss}.png");
+                System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    var model = new PlotModel { Title = plotTitle };
+                    var categoryAxis = new CategoryAxis
+                    {
+                        Position = AxisPosition.Bottom,
+                        Title = binAxisTitle,
+                        Angle = 45,
+                        GapWidth = 0.35
+                    };
+                    var valueAxis = new LinearAxis
+                    {
+                        Position = AxisPosition.Left,
+                        Title = "计数",
+                        MinimumPadding = 0,
+                        AbsoluteMinimum = 0
+                    };
+                    model.Axes.Add(categoryAxis);
+                    model.Axes.Add(valueAxis);
+
+                    var series = new ColumnSeries
+                    {
+                        FillColor = OxyColor.FromArgb(220, 66, 165, 245),
+                        StrokeColor = OxyColors.DarkBlue,
+                        StrokeThickness = 1
+                    };
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        var b = list[i];
+                        categoryAxis.Labels.Add($"{b.MinValue:F1}–{b.MaxValue:F1}");
+                        series.Items.Add(new ColumnItem(b.Count, i));
+                    }
+
+                    model.Series.Add(series);
+                    var exporter = new PngExporter { Width = 1280, Height = 720 };
+                    exporter.ExportToFile(model, imagePath);
+                });
+                return imagePath;
+            }
+            catch (Exception ex)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Warn(ex, $"导出直方图失败: {filePrefix}");
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// 测量轴满行程（保留方法以兼容其他测试）
+        /// </summary>
+        private async Task<(double minUm, double maxUm)> MeasureAxisFullTravelUmAsync(FiveAxisModel axis, CancellationToken token)
+        {
+            var testItem = new FullTravelTestItem(axis.FullStrokeRange);
+            var result = await testItem.ExecuteAsync(axis.EnumMotorId, axis.MotorModel, MotorEntity, token);
+            if (result is not TravelTestResult travel)
+                throw new InvalidOperationException($"{axis.Name} 满行程检测返回结果异常。");
+            // 无论是否超出标准，都优先采用实测最大/最小位置
+            double minUm = Math.Min(travel.RealMinPosUm, travel.RealMaxPosUm);
+            double maxUm = Math.Max(travel.RealMinPosUm, travel.RealMaxPosUm);
+            if (maxUm - minUm <= 0)
+                throw new InvalidOperationException($"{axis.Name} 满行程检测结果无效。");
+            return (minUm, maxUm);
+        }
+
+        /// <summary>
+        /// 随机跳转前：闭环位置、使能、运行（保留方法以兼容其他测试）
+        /// </summary>
+        private async Task PrepareXyAxesForRandomJumpsAsync(FiveAxisModel xAxis, FiveAxisModel yAxis, CancellationToken token)
+        {
+            foreach (var axis in new[] { xAxis, yAxis })
+            {
+                MotorEntity.SetMotorControlModeCommand(axis.EnumMotorId, EnumMotorCtrType.CloseLoopPosCtr);
+                MotorEntity.SetMotorEnableCommand(axis.EnumMotorId, EnumMotorEnable.Enable);
+            }
+
+            await Task.Delay(120, token);
+            foreach (var axis in new[] { xAxis, yAxis })
+                MotorEntity.SetMotorOperatingStatusCommand(axis.EnumMotorId, EnumMotorOperatingState.Run);
+            await Task.Delay(80, token);
+            AppendRandomRepeatLog(xAxis, "已置于闭环位置、使能并已发「运行」，开始下发随机 GOTO。");
+            AppendRandomRepeatLog(yAxis, "已置于闭环位置、使能并已发「运行」，开始下发随机 GOTO。");
+        }
+
+
+
         /// <summary>
         /// 异步耐久测试
         /// </summary> 
@@ -967,9 +1664,36 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// </summary>
         private void CloseSlimited()
         {
-            XAxis.CloseSlimited();
-            YAxis.CloseSlimited();
-            ZAxis.CloseSlimited();
+            XAxis?.CloseSlimited();
+            YAxis?.CloseSlimited();
+            ZAxis?.CloseSlimited();
+        }
+
+        /// <summary>
+        /// 无扫码快捷键进入全动五轴时：从集合与曲线中移除 Z/T/R，仅保留 X/Y。
+        /// </summary>
+        private void ApplyUniversalFiveAxisDevShortcutXyOnlyTrim()
+        {
+            if (Motors == null || Motors.Count == 0)
+                return;
+
+            var toRemove = Motors
+                .Where(m =>
+                    m.MotorModel.MotorParams.MotorModelID != EnumMotorModel.MOTOR_x
+                    && m.MotorModel.MotorParams.MotorModelID != EnumMotorModel.MOTOR_y)
+                .ToList();
+
+            foreach (var m in toRemove)
+            {
+                if (m.PosLine != null)
+                    MotorplotModel.Series.Remove(m.PosLine);
+                if (m.SpeedLine != null)
+                    MotorSpeedplotModel.Series.Remove(m.SpeedLine);
+                Motors.Remove(m);
+            }
+
+            MotorplotModel?.InvalidatePlot(true);
+            MotorSpeedplotModel?.InvalidatePlot(true);
         }
 
         /// <summary>

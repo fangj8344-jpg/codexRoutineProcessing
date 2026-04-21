@@ -59,7 +59,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                 // 3. 发送移动指令
                 motorEntity.SetMotorGoToCommand(motorId, EnumMotorUnit.Pulse, targetPos);
 
-                // 4. 【关键】先等电机“动起来”，再等电机“停下来”
+                // 4. 【关键】先等电机“动起来”，再等电机“停下来”（短步固定点，与随机全行程测试无关）
                 bool isOk = await WaitForMoveAndStop(motorModel, ct);
                 if (!isOk)
                 {
@@ -104,32 +104,29 @@ namespace UtilityTools.Modules.MotorTest.TestItems
         }
 
         /// <summary>
-        /// 利用你提供的 MoveState 进行双重判定
+        /// 利用 MoveState 做两段判定（仅适用于本测试的短距离分段点）。
         /// </summary>
         private async Task<bool> WaitForMoveAndStop(MotorModel model, CancellationToken ct)
         {
-            // 第一步：等待电机离开 Stop 状态（确认启动）
             DateTime startWait = DateTime.Now;
             while (model.MotorParams.MoveState == EnumMotorMoveState.MotorStop)
             {
                 if (ct.IsCancellationRequested) return false;
-                // 如果 2 秒都没动，说明指令没执行
                 if ((DateTime.Now - startWait).TotalSeconds > 2) return false;
                 await Task.Delay(50, ct);
             }
 
-            // 第二步：等待电机回到 Stop 状态（确认停止）
             startWait = DateTime.Now;
             while (model.MotorParams.MoveState != EnumMotorMoveState.MotorStop)
             {
                 if (ct.IsCancellationRequested) return false;
-                // 给一个 15 秒的最长运行时间
                 if ((DateTime.Now - startWait).TotalSeconds > 15) return false;
                 await Task.Delay(50, ct);
             }
 
             return true;
         }
+
         /// <summary>
         /// 计算一组数据的标准差
         /// </summary>

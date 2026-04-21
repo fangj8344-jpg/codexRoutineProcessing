@@ -137,6 +137,9 @@ namespace UtilityTools.Modules.MultiAxisTest.Model
             get => _motorKindObj; 
             set =>  _motorKindObj = value; }
 
+        /// <inheritdoc />
+        public bool DevShortcutXyOnlyAxes { get; set; }
+
         public MultiAxisWorkflowState()
         {
             ResetNewTestCycle();
@@ -144,6 +147,7 @@ namespace UtilityTools.Modules.MultiAxisTest.Model
 
         public void ResetNewTestCycle()
         {
+            DevShortcutXyOnlyAxes = false;
             CurrentScanDisplay = new ScanDisplayModel();
 
             UploadInformation = new UploadInformation()

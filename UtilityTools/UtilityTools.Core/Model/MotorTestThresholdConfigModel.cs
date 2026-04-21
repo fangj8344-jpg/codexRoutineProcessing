@@ -9,8 +9,7 @@ namespace UtilityTools.Core.Model
     }
 
     /// <summary>
-    /// 电机基础测试标准阈值配置（可通过 JSON 读写）。
-    /// </summary>
+    /// 电机基础测试标准阈值配置（可通过 JSON 读写）/// </summary>
     public class MotorTestThresholdConfigModel
     {
         /// <summary>移动测试最小位移阈值（脉冲）。</summary>

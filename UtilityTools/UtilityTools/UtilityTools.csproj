@@ -8,6 +8,8 @@
     <ApplicationIcon>ZepTools.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <!-- MotorTest 模块 LoadFrom 时从主程序目录解析 OpenXml / System.IO.Packaging（Modules 目录仅有模块 dll） -->
+    <PackageReference Include="DocumentFormat.OpenXml" Version="3.2.0" />
     <PackageReference Include="OxyPlot.Wpf" Version="2.1.2" />
     <PackageReference Include="Prism.DryIoc" Version="8.1.97" />
   </ItemGroup>

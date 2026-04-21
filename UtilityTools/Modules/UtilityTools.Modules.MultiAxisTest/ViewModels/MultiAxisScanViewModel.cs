@@ -100,8 +100,13 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
         public ObservableCollection<CloudKvDisplayItem> CloudContentFields { get; } = new();
         public ObservableCollection<CloudMotorAxisDisplay> CloudMotors { get; } = new();
         public DelegateCommand ConfirmCommand { get; private set; }
+        public DelegateCommand EnterTestWithoutScanCommand { get; private set; }
         public DelegateCommand OpenEngineerConfigCommand { get; private set; }
         public DelegateCommand SaveThresholdConfigCommand { get; private set; }
+
+        /// <summary>无扫码（Ctrl+Shift+T）占位码（7 段新格式）；样品台为 SampleUltra → 五轴 UniversalFiveAxis。仅调试用。</summary>
+        private static readonly string[] DevModeBarcodeParts =
+            "OFFLINE/DEV/NOBAR/LOCAL/ZEM20/SampleUltra/260101001".Split('/');
 
         private string _thresholdStageTypeDisplay = "未识别";
         public string ThresholdStageTypeDisplay
@@ -208,6 +213,7 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
             State = state;
             _eventAggregator = eventAggregator;
             ConfirmCommand = new DelegateCommand(Confirm, CanConfirm);
+            EnterTestWithoutScanCommand = new DelegateCommand(EnterTestWithoutScan);
             ApplyEnglishKeyboardForBarcodeScan();
 
             _thingboardService = containerProvider.Resolve<IServiceFactory>().GetThingboardService();
@@ -235,6 +241,20 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
             return !string.IsNullOrWhiteSpace(State.CurrentScanText)
                    && State.CurrentScanDisplay != null
                    && !string.IsNullOrWhiteSpace(State.CurrentScanDisplay.SerialNumber);
+        }
+
+        /// <summary>
+        /// 不扫码：写入占位解析结果并直接进入测试（调试用；上传时请改用真实扫码数据）。
+        /// </summary>
+        private void EnterTestWithoutScan()
+        {
+            var parts = (string[])DevModeBarcodeParts.Clone();
+            OnBarcodeReceived(parts);
+            if (!CanConfirm())
+                return;
+            // 五轴占位进测：界面与测试流程只保留 X/Y（与真实扫码全五轴区分）
+            State.DevShortcutXyOnlyAxes = true;
+            Confirm();
         }
 
 

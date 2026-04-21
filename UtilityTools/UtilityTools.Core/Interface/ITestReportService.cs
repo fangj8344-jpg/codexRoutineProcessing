@@ -10,6 +10,11 @@ namespace UtilityTools.Core.Interface
     public interface ITestReportService
     {
         object MotorKindObj { get; set; }
+
+        /// <summary>
+        /// 无扫码快捷键进入五轴机型时，仅保留 X/Y 轴参与界面与测试（Z/T/R 不显示不测）。
+        /// </summary>
+        bool DevShortcutXyOnlyAxes { get; set; }
         // 告诉大家：谁签了这份合同，谁就要负责收 MotorData
         void AddOrUpdateMotorData(MotorData data);
 
