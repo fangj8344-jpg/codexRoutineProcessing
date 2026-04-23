@@ -598,6 +598,10 @@
             </StatusBarItem>
             <Separator Style="{StaticResource MaterialDesignLightSeparator}"/>
             <StatusBarItem>
+                <TextBlock Text="{Binding SpeedCalcTimeSource}" FontWeight="SemiBold"/>
+            </StatusBarItem>
+            <Separator Style="{StaticResource MaterialDesignLightSeparator}"/>
+            <StatusBarItem>
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="软件版本: " Opacity="0.8"/>
                     <TextBlock Text="{Binding Version}" FontWeight="Bold"/>

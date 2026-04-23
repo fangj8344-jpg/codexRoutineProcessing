@@ -97,6 +97,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         private Double _yProgressValue;
         private string _xCurrentTestDisplay = "X轴等待测试开始";
         private string _yCurrentTestDisplay = "Y轴等待测试开始";
+        private string _speedCalcTimeSource = "速度时间源: 本地时间(回退)";
         // 统一类型为 MotorDbContext
 
         private string _version = "4.0.3";
@@ -163,6 +164,16 @@ namespace UtilityTools.Modules.MotorTest.Model
         {
             get { return _yCurrentTestDisplay; }
             set { _yCurrentTestDisplay = value; RaisePropertyChanged(); }
+        }
+        public string SpeedCalcTimeSource
+        {
+            get { return _speedCalcTimeSource; }
+            set
+            {
+                if (_speedCalcTimeSource == value) return;
+                _speedCalcTimeSource = value;
+                RaisePropertyChanged();
+            }
         }
         public bool IsSpeedMode
         {
@@ -562,6 +573,24 @@ namespace UtilityTools.Modules.MotorTest.Model
             {
                 motor?.EnsureControlModeAndEnable(useSpeedMode);
             }
+        }
+
+        internal void UpdateSpeedCalcTimeSource(bool useHardwareTimestamp)
+        {
+            string sourceText = useHardwareTimestamp
+                ? "速度时间源: 下位机时间戳(ms)"
+                : "速度时间源: 本地时间(回退)";
+
+            if (System.Windows.Application.Current?.Dispatcher?.CheckAccess() == true)
+            {
+                SpeedCalcTimeSource = sourceText;
+                return;
+            }
+
+            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+            {
+                SpeedCalcTimeSource = sourceText;
+            }));
         }
 
 

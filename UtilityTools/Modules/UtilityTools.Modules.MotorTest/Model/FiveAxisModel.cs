@@ -780,8 +780,14 @@ namespace UtilityTools.Modules.MotorTest.Model
             }));
 
         }
-        // 🚨 请在类开头声明一个私有队列，用来存最近的 3 个原始点
-        private Queue<PlotViewPointMessage> _calcQueue = new Queue<PlotViewPointMessage>();
+        private struct SpeedCalcSample
+        {
+            public PlotViewPointMessage Point { get; set; }
+            public long? PowerOnElapsedMs { get; set; }
+        }
+
+        // 用最近 3 个样本做中心差分，时间优先使用硬件上电时间戳(ms)。
+        private Queue<SpeedCalcSample> _calcQueue = new Queue<SpeedCalcSample>();
         private int _uiPlotSampleCounter = 0;
 
         private void AddPoint(SelfMotorPacket e)
@@ -791,6 +797,13 @@ namespace UtilityTools.Modules.MotorTest.Model
             var data = e.DataSource;
             if (data == null || data.Length < 16) return;
             int currentPos = BitConverter.ToInt32(data, 12);
+            long? powerOnElapsedMs = null;
+            if (data.Length >= 28)
+            {
+                long ts = BitConverter.ToInt64(data, 20);
+                if (ts >= 0)
+                    powerOnElapsedMs = ts;
+            }
 
             // 2. 封装成临时的点对象（此时速度还不知道，设为 0）
             var currentPoint = new PlotViewPointMessage()
@@ -804,7 +817,11 @@ namespace UtilityTools.Modules.MotorTest.Model
             };
 
             // 3. 塞进计算队列
-            _calcQueue.Enqueue(currentPoint);
+            _calcQueue.Enqueue(new SpeedCalcSample
+            {
+                Point = currentPoint,
+                PowerOnElapsedMs = powerOnElapsedMs
+            });
 
             // 🚨 核心：只有当队列攒够 3 个点时，才计算中间那个点（第 2 包）的速度
             if (_calcQueue.Count == 3)
@@ -815,13 +832,25 @@ namespace UtilityTools.Modules.MotorTest.Model
                 var p3 = _calcQueue.ElementAt(2); // 第三包
 
                 // 4. ：用 1 包和 3 包算 2 包的速度
-                double deltaMs = (p3.Date - p1.Date).TotalMilliseconds;
+                bool useHardwareTimestamp = p1.PowerOnElapsedMs.HasValue
+                    && p3.PowerOnElapsedMs.HasValue
+                    && p3.PowerOnElapsedMs.Value > p1.PowerOnElapsedMs.Value;
+                double deltaMs;
+                if (useHardwareTimestamp)
+                {
+                    deltaMs = p3.PowerOnElapsedMs.Value - p1.PowerOnElapsedMs.Value;
+                }
+                else
+                {
+                    deltaMs = (p3.Point.Date - p1.Point.Date).TotalMilliseconds;
+                }
+                _testModel.UpdateSpeedCalcTimeSource(useHardwareTimestamp);
                 double speedForP2 = 0;
 
                 if (deltaMs > 0)
                 {
                     // 速度 = (第三包位置 - 第一包位置) / (第三包时间 - 第一包时间)
-                    speedForP2 = (p3.Point - p1.Point) / (deltaMs / 1000.0);
+                    speedForP2 = (p3.Point.Point - p1.Point.Point) / (deltaMs / 1000.0);
                 }
                 // 计算速度：由位置采样差分得到
                 MotorModel.MotorParams.CalculatedSpeed = speedForP2;
@@ -830,7 +859,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                 // 速度曲线始终使用“计算速度”，不使用回传速度。
                 var speedView = new PlotViewSpeedMessage()
                 {
-                    SpeedDate = p2.Date, // 对应中间那一包的时间
+                    SpeedDate = p2.Point.Date, // 对应中间那一包的时间
                     Speed = speedForP2,
                     SpeedUm = MotorModel.MotorParams.CalculatedSpeedUm,
                     MotorModelAxis = MotorModel.MotorModelAxis
@@ -839,7 +868,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                 // 6. 【数据缓冲层】：全量加锁存库
                 lock (_lockobj)
                 {
-                    MotorModel.PointListBuffer.Add(p2);
+                    MotorModel.PointListBuffer.Add(p2.Point);
                     MotorModel.SpeedListBuffer.Add(speedView);
                 }
 
@@ -872,7 +901,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                         }
 
                         // 注意：这里 Add 的是 p2，因为 p2 现在的速度才算出来
-                        MotorModel.PointList.Add(p2);
+                        MotorModel.PointList.Add(p2.Point);
                         MotorModel.SpeedList.Add(speedView);
                         _testModel.MarkPlotDirty();
                     }));
