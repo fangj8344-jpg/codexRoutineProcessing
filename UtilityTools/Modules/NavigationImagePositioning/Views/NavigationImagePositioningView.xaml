@@ -1,0 +1,248 @@
+<UserControl
+    x:Class="UtilityTools.Modules.NavigationImagePositioning.Views.NavigationImagePositioningView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
+    xmlns:prism="http://prismlibrary.com/"
+    d:DesignHeight="800"
+    d:DesignWidth="1200"
+    prism:ViewModelLocator.AutoWireViewModel="True"
+    FontFamily="{md:MaterialDesignFont}"
+    TextElement.FontSize="14"
+    TextElement.FontWeight="Regular"
+    TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+    mc:Ignorable="d">
+    <!-- 三行：顶栏（模型/图片/运行）、中部大图预览、底部检测结果表 -->
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="220" />
+        </Grid.RowDefinitions>
+
+        <!-- 操作区：标题、ONNX 下拉与刷新、图片路径、运行检测 -->
+        <md:Card
+            Grid.Row="0"
+            Margin="0,0,0,12"
+            Padding="12"
+            md:ElevationAssist.Elevation="Dp1"
+            UniformCornerRadius="6">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel
+                    Grid.Column="0"
+                    Margin="0,0,24,0"
+                    VerticalAlignment="Center">
+                    <TextBlock
+                        FontWeight="Bold"
+                        Style="{StaticResource MaterialDesignHeadline6TextBlock}"
+                        Text="导航图定位" />
+                    <TextBlock
+                        Foreground="Gray"
+                        Style="{StaticResource MaterialDesignCaptionTextBlock}"
+                        Text="YOLO 推理终端" />
+                </StackPanel>
+
+                <Grid
+                    Grid.Column="1"
+                    Margin="0,0,16,0"
+                    VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <md:PackIcon
+                        Grid.Column="0"
+                        Margin="0,0,8,0"
+                        VerticalAlignment="Center"
+                        Foreground="Gray"
+                        Kind="ViewInAr" />
+                    <ComboBox
+                        Grid.Column="1"
+                        md:HintAssist.Hint="选择 ONNX 模型"
+                        DisplayMemberPath="FileName"
+                        ItemsSource="{Binding OnnxModelItems}"
+                        SelectedItem="{Binding SelectedModelItem, Mode=TwoWay}"
+                        Style="{StaticResource MaterialDesignOutlinedComboBox}" />
+                    <Button
+                        Grid.Column="2"
+                        Margin="8,0,0,0"
+                        Padding="8,4"
+                        Command="{Binding RefreshModelListCommand}"
+                        Style="{StaticResource MaterialDesignOutlinedButton}"
+                        ToolTip="刷新">
+                        <md:PackIcon Kind="Refresh" />
+                    </Button>
+                </Grid>
+
+                <Grid
+                    Grid.Column="2"
+                    Margin="0,0,16,0"
+                    VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <md:PackIcon
+                        Grid.Column="0"
+                        Margin="0,0,8,0"
+                        VerticalAlignment="Center"
+                        Foreground="Gray"
+                        Kind="Image" />
+                    <TextBox
+                        Grid.Column="1"
+                        md:HintAssist.Hint="选择待检测图片"
+                        IsReadOnly="True"
+                        Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                        Text="{Binding ImagePath, Mode=OneWay}" />
+                    <Button
+                        Grid.Column="2"
+                        Margin="8,0,0,0"
+                        Padding="8,4"
+                        Command="{Binding OpenImageCommand}"
+                        Style="{StaticResource MaterialDesignOutlinedButton}">
+                        <md:PackIcon Kind="FolderOpen" />
+                    </Button>
+                </Grid>
+
+                <StackPanel
+                    Grid.Column="3"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal">
+                    <Button
+                        Height="40"
+                        Padding="16,0"
+                        md:ButtonAssist.CornerRadius="4"
+                        Command="{Binding RunDetectionCommand}"
+                        Style="{StaticResource MaterialDesignRaisedButton}">
+                        <StackPanel Orientation="Horizontal">
+                            <md:PackIcon
+                                Margin="0,0,8,0"
+                                VerticalAlignment="Center"
+                                Kind="Play" />
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                FontWeight="Bold"
+                                Text="运行检测" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </md:Card>
+
+        <!-- 预览区：StatusMessage 浮层 + DisplayImage（有结果时显示叠框图，否则原图） -->
+        <md:Card
+            Grid.Row="1"
+            Margin="0,0,0,12"
+            md:ElevationAssist.Elevation="Dp2"
+            Background="#2B2B2B"
+            UniformCornerRadius="6">
+            <Grid ClipToBounds="True">
+                <TextBlock
+                    Margin="12"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Panel.ZIndex="1"
+                    Foreground="#88FFFFFF"
+                    Style="{StaticResource MaterialDesignCaptionTextBlock}"
+                    Text="{Binding StatusMessage}" />
+
+                <Image
+                    Margin="10"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    RenderOptions.BitmapScalingMode="HighQuality"
+                    Source="{Binding DisplayImage}"
+                    Stretch="Uniform">
+                    <Image.Effect>
+                        <DropShadowEffect
+                            BlurRadius="15"
+                            Opacity="0.4"
+                            ShadowDepth="0" />
+                    </Image.Effect>
+                </Image>
+            </Grid>
+        </md:Card>
+
+        <!-- 结果明细表：Label / 置信度 / 原图坐标框 -->
+        <md:Card
+            Grid.Row="2"
+            md:ElevationAssist.Elevation="Dp2"
+            UniformCornerRadius="6">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Border
+                    Grid.Row="0"
+                    Padding="16,8"
+                    Background="{DynamicResource MaterialDesignDivider}">
+                    <StackPanel Orientation="Horizontal">
+                        <md:PackIcon
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center"
+                            Kind="Table" />
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            FontWeight="SemiBold"
+                            Text="结果明细" />
+                        <TextBlock
+                            Margin="16,0,0,0"
+                            VerticalAlignment="Center"
+                            Foreground="Gray"
+                            Style="{StaticResource MaterialDesignCaptionTextBlock}"
+                            Text="{Binding Detections.Count, StringFormat='共检测到 {0} 个目标'}" />
+                    </StackPanel>
+                </Border>
+                <DataGrid
+                    Grid.Row="1"
+                    AutoGenerateColumns="False"
+                    CanUserAddRows="False"
+                    HeadersVisibility="Column"
+                    HorizontalScrollBarVisibility="Auto"
+                    IsReadOnly="True"
+                    ItemsSource="{Binding Detections}"
+                    VerticalScrollBarVisibility="Auto">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn
+                            Width="2*"
+                            Binding="{Binding Label}"
+                            Header="目标类别" />
+                        <DataGridTextColumn
+                            Width="100"
+                            Binding="{Binding Confidence, StringFormat=P1}"
+                            Header="置信度" />
+                        <DataGridTextColumn
+                            Width="1*"
+                            Binding="{Binding Left, StringFormat=F1}"
+                            Header="左边界 (X)" />
+                        <DataGridTextColumn
+                            Width="1*"
+                            Binding="{Binding Top, StringFormat=F1}"
+                            Header="上边界 (Y)" />
+                        <DataGridTextColumn
+                            Width="1*"
+                            Binding="{Binding Width, StringFormat=F1}"
+                            Header="宽度 (W)" />
+                        <DataGridTextColumn
+                            Width="1*"
+                            Binding="{Binding Height, StringFormat=F1}"
+                            Header="高度 (H)" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </md:Card>
+    </Grid>
+</UserControl>

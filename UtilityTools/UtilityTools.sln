@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.5.33627.172
+# Visual Studio Version 18
+VisualStudioVersion = 18.4.11626.88 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{A07B706B-AA10-43DA-9614-609D1CD48548}"
 EndProject
@@ -82,6 +82,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UtilityTools.Modules.ButterflyValveTest", "Modules\UtilityTools.Modules.ButterflyValveTest\UtilityTools.Modules.ButterflyValveTest.csproj", "{9F66C6CC-2623-4A70-A244-119E8E2142A6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UtilityTools.Modules.MultiAxisTest", "Modules\UtilityTools.Modules.MultiAxisTest\UtilityTools.Modules.MultiAxisTest.csproj", "{6E3B05A1-AD86-4AAC-BE65-EE1D285F9E18}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NavigationImagePositioning", "Modules\NavigationImagePositioning\NavigationImagePositioning.csproj", "{543A3D88-906A-46CD-800D-5D794D4FC80D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -237,6 +239,10 @@ Global
 		{6E3B05A1-AD86-4AAC-BE65-EE1D285F9E18}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6E3B05A1-AD86-4AAC-BE65-EE1D285F9E18}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6E3B05A1-AD86-4AAC-BE65-EE1D285F9E18}.Release|Any CPU.Build.0 = Release|Any CPU
+		{543A3D88-906A-46CD-800D-5D794D4FC80D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{543A3D88-906A-46CD-800D-5D794D4FC80D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{543A3D88-906A-46CD-800D-5D794D4FC80D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{543A3D88-906A-46CD-800D-5D794D4FC80D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -276,6 +282,7 @@ Global
 		{3A2C9B9D-DA1A-461D-90AD-71C1972C6500} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
 		{9F66C6CC-2623-4A70-A244-119E8E2142A6} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
 		{6E3B05A1-AD86-4AAC-BE65-EE1D285F9E18} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
+		{543A3D88-906A-46CD-800D-5D794D4FC80D} = {29EBDD46-32BF-4A3D-891B-FE378C4F415F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {4877E460-1ABE-4B63-8221-9202D7477E25}

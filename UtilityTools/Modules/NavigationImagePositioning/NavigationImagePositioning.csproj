@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>UtilityTools.Modules.NavigationImagePositioning</AssemblyName>
+    <RootNamespace>UtilityTools.Modules.NavigationImagePositioning</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OpenCvSharp4" Version="4.9.0.20240103" />
+    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.9.0.20240103" />
+    <PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.9.0.20240103" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Services\UtilityTools.Services.Interfaces\UtilityTools.Services.Interfaces.csproj" />
+    <ProjectReference Include="..\..\Services\UtilityTools.Services\UtilityTools.Services.csproj" />
+    <ProjectReference Include="..\..\UtilityTools.Core\UtilityTools.Core.csproj" />
+    <ProjectReference Include="..\..\UtilityTools\UtilityTools.csproj" />
+  </ItemGroup>
+
+  <Target Name="CopyTargetFiles" AfterTargets="PostBuildEvent">
+    <ItemGroup>
+      <SomeFiles Include="$(OutDir)$(TargetFileName)" />
+    </ItemGroup>
+    <Copy SourceFiles="@(SomeFiles)" DestinationFolder="$(SolutionDir)UtilityTools\bin\$(ConfigurationName)\$(TargetFramework)\Modules\" SkipUnchangedFiles="true" />
+    <!-- 默认 ONNX 目录同步到主程序输出根下，与运行时 NavigationModelPaths 一致；你放入仓库的 onnx 也会随下次生成复制过去 -->
+    <ItemGroup>
+      <_OnnxInRepo Include="$(MSBuildThisFileDirectory)OnnxModels\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_OnnxInRepo)" DestinationFolder="$(SolutionDir)UtilityTools\bin\$(ConfigurationName)\$(TargetFramework)\NavigationImagePositioning\OnnxModels" SkipUnchangedFiles="true" Condition="'@(_OnnxInRepo)' != '' And '$(SolutionDir)' != ''" />
+  </Target>
+
+</Project>

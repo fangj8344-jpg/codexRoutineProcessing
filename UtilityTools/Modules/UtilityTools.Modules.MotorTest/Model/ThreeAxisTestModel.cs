@@ -1364,7 +1364,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     model.Axes.Add(categoryAxis);
                     model.Axes.Add(valueAxis);
 
-                    var series = new ColumnSeries
+                    var series = new BarSeries
                     {
                         FillColor = OxyColor.FromArgb(220, 66, 165, 245),
                         StrokeColor = OxyColors.DarkBlue,
@@ -1374,7 +1374,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     {
                         var b = list[i];
                         categoryAxis.Labels.Add($"{b.MinValue:F1}–{b.MaxValue:F1}");
-                        series.Items.Add(new ColumnItem(b.Count, i));
+                        series.Items.Add(new BarItem(b.Count));
                     }
 
                     model.Series.Add(series);
