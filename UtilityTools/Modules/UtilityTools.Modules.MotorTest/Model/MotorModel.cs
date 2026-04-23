@@ -201,6 +201,21 @@ namespace UtilityTools.Modules.MotorTest.Model
                 RaisePropertyChanged(nameof(CalculatedSpeedUm));
             }
         }
+        private long _powerOnElapsedMs;
+        /// <summary>
+        /// 电机上电后的累计工作时间（毫秒），由 CMD_GET_STATUS 状态包尾部的 int64 字段提供；旧协议无该字段时不更新。
+        /// </summary>
+        public long PowerOnElapsedMs
+        {
+            get => _powerOnElapsedMs;
+            set
+            {
+                if (_powerOnElapsedMs == value) return;
+                _powerOnElapsedMs = value;
+                RaisePropertyChanged();
+            }
+        }
+
         private float _subRatio;
         /// <summary>
         /// 物理与脉冲的换算系数

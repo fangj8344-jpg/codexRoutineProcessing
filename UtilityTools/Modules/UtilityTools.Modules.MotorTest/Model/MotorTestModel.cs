@@ -2361,6 +2361,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             float unitConversionFactor = BitConverter.ToSingle(data, 8);//单位换算比例
             Int32 pulseCoordinate = BitConverter.ToInt32(data, 12);//当前的脉冲坐标
             Int32 pulseSpeed = BitConverter.ToInt32(data, 16);//当前的脉冲速度
+            const int statusPayloadLenWithPowerOnMs = 28; // 尾部 int64：上电后工作时间 ms
 
             EnumMotorId channelId = (EnumMotorId)channel;
             //电机状态掩码分析
@@ -2398,6 +2399,8 @@ namespace UtilityTools.Modules.MotorTest.Model
             motorModel.MotorParams.MoveDirection = (EmumMotorMoveDirection)MotorRunningDirection;
             motorModel.MotorParams.SubRatio = unitConversionFactor;
             motorModel.MotorParams.Pos = pulseCoordinate;
+            if (data.Length >= statusPayloadLenWithPowerOnMs)
+                motorModel.MotorParams.PowerOnElapsedMs = BitConverter.ToInt64(data, 20);
             AddPoint( motorModel, channelId);
             //增加限位位置
             if (motorModel.MotorParams.LimitedState == EnumMotorLimitedState.PhyForwardLimited)
