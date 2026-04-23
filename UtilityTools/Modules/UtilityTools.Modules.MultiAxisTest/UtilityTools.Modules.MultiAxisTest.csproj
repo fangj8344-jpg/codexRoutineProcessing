@@ -9,6 +9,7 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\UtilityTools.Modules.OtaTool\UtilityTools.Modules.OtaTool.csproj" />
     <ProjectReference Include="..\UtilityTools.Modules.MotorTest\UtilityTools.Modules.MotorTest.csproj" />
     <ProjectReference Include="..\..\Services\UtilityTools.Services.Interfaces\UtilityTools.Services.Interfaces.csproj" />
     <ProjectReference Include="..\..\Services\UtilityTools.Services\UtilityTools.Services.csproj" />

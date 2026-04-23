@@ -98,8 +98,9 @@ namespace UtilityTools.Modules.MultiAxisTest.Model
     /// <summary>
     /// 多轴测试流程的共享状态（配置 + 扫码结果）
     /// </summary>
-    public class MultiAxisWorkflowState : BindableBase, ITestReportService, ITestStageTypeProvider
+    public class MultiAxisWorkflowState : BindableBase, ITestReportService, ITestStageTypeProvider, IFirmwareUpgradeWorkflowState
     {
+        private const string DefaultFirmwareIndexUrl = "http://60.173.16.125:9090/%E5%AE%89%E8%A3%85%E6%96%87%E4%BB%B6/%E4%B8%B4%E6%97%B6/%E5%9B%BA%E4%BB%B6/";
 
         private MachineProfile _motorKind = MachineProfile.StandardTwoAxis;
         public MachineProfile MotorKind
@@ -149,6 +150,7 @@ namespace UtilityTools.Modules.MultiAxisTest.Model
         {
             DevShortcutXyOnlyAxes = false;
             CurrentScanDisplay = new ScanDisplayModel();
+            ResetFirmwareCheckState();
 
             UploadInformation = new UploadInformation()
             {
@@ -159,6 +161,82 @@ namespace UtilityTools.Modules.MultiAxisTest.Model
                 },
                
             };
+        }
+
+        private bool _firmwareCheckCompleted;
+        public bool FirmwareCheckCompleted
+        {
+            get => _firmwareCheckCompleted;
+            set => SetProperty(ref _firmwareCheckCompleted, value);
+        }
+
+        private bool _firmwareUpgradeRequired;
+        public bool FirmwareUpgradeRequired
+        {
+            get => _firmwareUpgradeRequired;
+            set => SetProperty(ref _firmwareUpgradeRequired, value);
+        }
+
+        private bool _firmwareUpgradeSkipped;
+        public bool FirmwareUpgradeSkipped
+        {
+            get => _firmwareUpgradeSkipped;
+            set => SetProperty(ref _firmwareUpgradeSkipped, value);
+        }
+
+        private bool _firmwareUpgradeInProgress;
+        public bool FirmwareUpgradeInProgress
+        {
+            get => _firmwareUpgradeInProgress;
+            set => SetProperty(ref _firmwareUpgradeInProgress, value);
+        }
+
+        private string _firmwareCheckMessage = "未执行固件检查";
+        public string FirmwareCheckMessage
+        {
+            get => _firmwareCheckMessage;
+            set => SetProperty(ref _firmwareCheckMessage, value);
+        }
+
+        private string _currentFirmwareVersion = string.Empty;
+        public string CurrentFirmwareVersion
+        {
+            get => _currentFirmwareVersion;
+            set => SetProperty(ref _currentFirmwareVersion, value);
+        }
+
+        private string _latestFirmwareVersion = string.Empty;
+        public string LatestFirmwareVersion
+        {
+            get => _latestFirmwareVersion;
+            set => SetProperty(ref _latestFirmwareVersion, value);
+        }
+
+        private string _latestFirmwareUrl = string.Empty;
+        public string LatestFirmwareUrl
+        {
+            get => _latestFirmwareUrl;
+            set => SetProperty(ref _latestFirmwareUrl, value);
+        }
+
+        private string _firmwareIndexUrl = DefaultFirmwareIndexUrl;
+        public string FirmwareIndexUrl
+        {
+            get => _firmwareIndexUrl;
+            set => SetProperty(ref _firmwareIndexUrl, value);
+        }
+
+        public void ResetFirmwareCheckState()
+        {
+            FirmwareCheckCompleted = false;
+            FirmwareUpgradeRequired = false;
+            FirmwareUpgradeSkipped = false;
+            FirmwareUpgradeInProgress = false;
+            FirmwareCheckMessage = "未执行固件检查";
+            CurrentFirmwareVersion = string.Empty;
+            LatestFirmwareVersion = string.Empty;
+            LatestFirmwareUrl = string.Empty;
+            FirmwareIndexUrl = string.IsNullOrWhiteSpace(FirmwareIndexUrl) ? DefaultFirmwareIndexUrl : FirmwareIndexUrl;
         }
 
         public void AddOrUpdateMotorData(MotorData data)

@@ -8,7 +8,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UtilityTools.Core.Dialog;
+using UtilityTools.Core.Extension;
+using UtilityTools.Core.Interface;
 using UtilityTools.Modules.MotorTest.Model;
+using UtilityTools.Modules.MotorTest.Service;
 using UtilityTools.Modules.MotorTest.Views;
 using UtilityTools.Services.Interfaces.IServices;
 using UtilityTools.Services.Services;
@@ -21,6 +24,8 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
         {
             _containerProvider = containerProvider;
             _dialogHostService = dialogHostService;
+            try { _firmwareUpgradeCoordinator = _containerProvider.Resolve<IFirmwareUpgradeCoordinator>(); } catch { }
+            try { _firmwareWorkflowState = _containerProvider.Resolve<IFirmwareUpgradeWorkflowState>(); } catch { }
             InitProperty();
             InitCommand();
         }
@@ -30,6 +35,9 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
         #region ------------Field------------
         private readonly IDialogHostService _dialogHostService;
         private IContainerProvider _containerProvider;
+        private readonly IFirmwareUpgradeCoordinator? _firmwareUpgradeCoordinator;
+        private readonly IFirmwareUpgradeWorkflowState? _firmwareWorkflowState;
+        private bool _firmwareCheckRunning;
         public string name = "scccc";
         #endregion
 
@@ -120,6 +128,7 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
                     if (IsConnected == true)
                     {
                         Model.QueryStatusTask();
+                        await TryRunFirmwareCheckAsync();
                     }
                     else
                     {
@@ -150,13 +159,70 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
                     if (NetIsConnected == true)
                     {
                         Model.QueryStatusTask();
-                     
+                        await TryRunFirmwareCheckAsync();
                     }
                     else
                     {
                         Model.CloseQueryStatusTask();
                     }
                 }
+            }
+        }
+
+        private async Task TryRunFirmwareCheckAsync()
+        {
+            if (_firmwareUpgradeCoordinator == null || _firmwareWorkflowState == null)
+                return;
+            if (_firmwareCheckRunning || _firmwareWorkflowState.FirmwareCheckCompleted)
+                return;
+            if ((Model.SerialPortService?.IsOpen != true) && (Model.NetUdpService?.IsOpen != true))
+                return;
+
+            _firmwareCheckRunning = true;
+            _firmwareWorkflowState.FirmwareUpgradeInProgress = true;
+            try
+            {
+                var checkResult = await _firmwareUpgradeCoordinator.CheckAndUpgradeIfNeededAsync(
+                    Model.SerialPortService,
+                    Model.NetUdpService,
+                    _firmwareWorkflowState.FirmwareIndexUrl,
+                    _dialogHostService,
+                    CommonModel.ThreeAxisTestModelWindowsViewModelRegionName);
+
+                _firmwareWorkflowState.FirmwareCheckCompleted = true;
+                _firmwareWorkflowState.FirmwareUpgradeRequired = !checkResult.IsLatest;
+                _firmwareWorkflowState.FirmwareUpgradeSkipped = checkResult.UserSkippedUpgrade;
+                _firmwareWorkflowState.FirmwareCheckMessage = checkResult.Message;
+                _firmwareWorkflowState.CurrentFirmwareVersion = checkResult.CurrentVersionText;
+                _firmwareWorkflowState.LatestFirmwareVersion = checkResult.LatestVersionText;
+                _firmwareWorkflowState.LatestFirmwareUrl = checkResult.LatestPackageUrl;
+
+                if (!checkResult.IsLatest && checkResult.UserSkippedUpgrade)
+                {
+                    await _dialogHostService.Information(
+                        "固件提醒",
+                        $"检测到固件非最新，已按你的选择暂不升级。\n{checkResult.Message}",
+                        CommonModel.ThreeAxisTestModelWindowsViewModelRegionName);
+                }
+                else if (!checkResult.IsLatest && !checkResult.UpgradeSucceeded)
+                {
+                    await _dialogHostService.Information(
+                        "固件提醒",
+                        $"固件未更新到最新版本。\n{checkResult.Message}",
+                        CommonModel.ThreeAxisTestModelWindowsViewModelRegionName);
+                }
+            }
+            catch (Exception ex)
+            {
+                _firmwareWorkflowState.FirmwareCheckCompleted = true;
+                _firmwareWorkflowState.FirmwareUpgradeRequired = false;
+                _firmwareWorkflowState.FirmwareUpgradeSkipped = true;
+                _firmwareWorkflowState.FirmwareCheckMessage = $"固件检查失败：{ex.Message}";
+            }
+            finally
+            {
+                _firmwareWorkflowState.FirmwareUpgradeInProgress = false;
+                _firmwareCheckRunning = false;
             }
         }
         #endregion

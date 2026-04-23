@@ -36,6 +36,7 @@ using UtilityTools.Core.Interface;
 using UtilityTools.Modules.MotorTest.Entity;
 using UtilityTools.Modules.MotorTest.Event;
 using UtilityTools.Modules.MotorTest.Protocol;
+using UtilityTools.Modules.MotorTest.Runners;
 using UtilityTools.Modules.MotorTest.Service;
 using UtilityTools.Modules.MotorTest.SQLite;
 using UtilityTools.Modules.MotorTest.TestItems;
@@ -1024,15 +1025,31 @@ namespace UtilityTools.Modules.MotorTest.Model
             AppendRandomRepeatLog(xAxis, "随机重复精度：任务已启动（本轴独立执行）。");
             AppendRandomRepeatLog(yAxis, "随机重复精度：任务已启动（本轴独立执行）。");
 
-            var testItemX = new UtilityTools.Modules.MotorTest.TestItems.RandomRepeatabilityTestItem(
-                progressReporter: (completed, total, elapsed, eta) =>
-                    AppendRandomRepeatProgressLog(xAxis, completed, total, elapsed, eta));
-            var testItemY = new UtilityTools.Modules.MotorTest.TestItems.RandomRepeatabilityTestItem(
-                progressReporter: (completed, total, elapsed, eta) =>
-                    AppendRandomRepeatProgressLog(yAxis, completed, total, elapsed, eta));
+            var xRunner = new MotorWorkflowRunner(
+                _reportService,
+                _eventAggregator,
+                MotorEntity,
+                xAxis.EnumMotorId,
+                xAxis.MotorModel,
+                xAxis.FullStrokeRange,
+                xAxis.Name);
+            var yRunner = new MotorWorkflowRunner(
+                _reportService,
+                _eventAggregator,
+                MotorEntity,
+                yAxis.EnumMotorId,
+                yAxis.MotorModel,
+                yAxis.FullStrokeRange,
+                yAxis.Name);
 
-            var xTask = testItemX.ExecuteAsync(xAxis.EnumMotorId, xAxis.MotorModel, MotorEntity, token);
-            var yTask = testItemY.ExecuteAsync(yAxis.EnumMotorId, yAxis.MotorModel, MotorEntity, token);
+            var xTask = xRunner.RunRandomRepeatabilityTestAsync(
+                progressReporter: (completed, total, elapsed, eta) =>
+                    AppendRandomRepeatProgressLog(xAxis, completed, total, elapsed, eta),
+                token);
+            var yTask = yRunner.RunRandomRepeatabilityTestAsync(
+                progressReporter: (completed, total, elapsed, eta) =>
+                    AppendRandomRepeatProgressLog(yAxis, completed, total, elapsed, eta),
+                token);
             AppendRandomRepeatLog(xAxis, "随机重复精度：任务已提交，等待完成。");
             AppendRandomRepeatLog(yAxis, "随机重复精度：任务已提交，等待完成。");
 

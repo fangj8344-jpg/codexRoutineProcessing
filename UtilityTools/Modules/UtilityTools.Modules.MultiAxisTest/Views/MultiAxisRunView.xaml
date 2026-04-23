@@ -31,6 +31,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <DockPanel
@@ -87,6 +88,30 @@
             <Grid Grid.Row="1" Margin="0,5,0,0">
                 <mtViews:ThreeAxisTestModelWindowsView Margin="0" />
             </Grid>
+
+            <StatusBar Grid.Row="2"
+                       Background="{DynamicResource PrimaryHueLightBrush}"
+                       Foreground="{DynamicResource PrimaryHueLightForegroundBrush}">
+                <StatusBarItem>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="FW 当前: " Opacity="0.85" />
+                        <TextBlock FontWeight="SemiBold" Text="{Binding FirmwareCurrentVersion}" />
+                    </StackPanel>
+                </StatusBarItem>
+                <Separator Style="{StaticResource MaterialDesignLightSeparator}" />
+                <StatusBarItem>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="最新: " Opacity="0.85" />
+                        <TextBlock FontWeight="SemiBold" Text="{Binding FirmwareLatestVersion}" />
+                    </StackPanel>
+                </StatusBarItem>
+                <Separator Style="{StaticResource MaterialDesignLightSeparator}" />
+                <StatusBarItem>
+                    <TextBlock FontWeight="SemiBold"
+                               Opacity="0.95"
+                               Text="{Binding FirmwareStatusText}" />
+                </StatusBarItem>
+            </StatusBar>
 
         </Grid>
     </md:DialogHost>

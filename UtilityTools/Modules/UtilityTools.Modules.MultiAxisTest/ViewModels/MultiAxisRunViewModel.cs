@@ -6,6 +6,7 @@ using Prism.Mvvm;
 using Prism.Regions;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
@@ -73,6 +74,10 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
         public DelegateCommand UploadDataCommand { get; set; }
         public DelegateCommand OpenEngineerConfigCommand { get; set; }
 
+        public string FirmwareCurrentVersion => string.IsNullOrWhiteSpace(_state.CurrentFirmwareVersion) ? "--" : _state.CurrentFirmwareVersion;
+        public string FirmwareLatestVersion => string.IsNullOrWhiteSpace(_state.LatestFirmwareVersion) ? "--" : _state.LatestFirmwareVersion;
+        public string FirmwareStatusText => string.IsNullOrWhiteSpace(_state.FirmwareCheckMessage) ? "未执行固件检查" : _state.FirmwareCheckMessage;
+
         //构造函数注入
         public MultiAxisRunViewModel(IRegionManager region, MultiAxisWorkflowState workflowState, Prism.Ioc.IContainerProvider containerProvider)
         {
@@ -85,9 +90,28 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
             _thingboardService = containerProvider.Resolve<IServiceFactory>().GetThingboardService();
             _thingboardService.DataUploaded += _thingboardService_DataUploaded;
             _thingboardService.UploadFailed += _thingboardService_UploadFailed;
+            _state.PropertyChanged += State_PropertyChanged;
 
             // 订阅测试结果事件，追踪各轴测试状态
             _eventAggregator.GetEvent<MotorTestResultEvent>().Subscribe(OnMotorTestResult, ThreadOption.UIThread);
+        }
+
+        private void State_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(MultiAxisWorkflowState.CurrentFirmwareVersion))
+            {
+                RaisePropertyChanged(nameof(FirmwareCurrentVersion));
+                return;
+            }
+            if (e.PropertyName == nameof(MultiAxisWorkflowState.LatestFirmwareVersion))
+            {
+                RaisePropertyChanged(nameof(FirmwareLatestVersion));
+                return;
+            }
+            if (e.PropertyName == nameof(MultiAxisWorkflowState.FirmwareCheckMessage))
+            {
+                RaisePropertyChanged(nameof(FirmwareStatusText));
+            }
         }
 
         /// <summary>

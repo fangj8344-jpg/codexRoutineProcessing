@@ -575,5 +575,42 @@ namespace UtilityTools.Modules.MotorTest.Runners
             }
         }
 
+        // ==========================================
+        // 流程图纸 E：随机坐标重复精度测试（单轴）
+        // ==========================================
+        public async Task<RandomRepeatabilityTestResult> RunRandomRepeatabilityTestAsync(
+            Action<int, int, TimeSpan, TimeSpan>? progressReporter,
+            CancellationToken ct)
+        {
+            const string testProject = "随机坐标重复精度测试";
+            const string standardValue = "随机点重复精度标准差越小越好";
+
+            PublishLog($"--- [{_motorName}] 开始 {testProject} ---");
+            PublishTestState(testProject, standardValue, MotorTestProgressState.Running, null, 0);
+
+            var testItem = new RandomRepeatabilityTestItem(progressReporter: progressReporter);
+            var baseResult = await testItem.ExecuteAsync(_motorId, _motorModel, _motorEntity, ct);
+            var result = baseResult as RandomRepeatabilityTestResult ?? new RandomRepeatabilityTestResult
+            {
+                IsPassed = baseResult.IsPassed,
+                Description = baseResult.Description,
+                ErrorDescription = baseResult.ErrorDescription
+            };
+
+            var finalResult = new MotorTestResult
+            {
+                IsPassed = result.IsPassed,
+                MeasuredValue = $"标准差={result.AvgStdX:F3}um, 点数={result.TargetPoints?.Count ?? 0}",
+                Description = result.IsPassed
+                    ? "随机重复精度测试完成"
+                    : (string.IsNullOrWhiteSpace(result.ErrorDescription) ? "随机重复精度测试失败" : result.ErrorDescription),
+                ErrorDescription = result.IsPassed ? string.Empty : result.ErrorDescription
+            };
+
+            PublishTestResult(testProject, standardValue, finalResult);
+            PublishLog($"--- [{_motorName}] {testProject} 结束，结果: {(result.IsPassed ? "通过" : "失败")} ---");
+            return result;
+        }
+
     }
 }
