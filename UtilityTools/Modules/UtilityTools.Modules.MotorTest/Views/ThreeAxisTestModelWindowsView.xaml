@@ -59,6 +59,12 @@
                         Content="首刷固件"
                         Style="{StaticResource MaterialDesignFlatButton}"
                         Margin="0,0,8,0" />
+                <Button DockPanel.Dock="Right"
+                        Command="{Binding UpgradeFirmwareCommand}"
+                        ToolTip="通过 zip 包检查并升级固件"
+                        Content="升级固件"
+                        Style="{StaticResource MaterialDesignFlatButton}"
+                        Margin="0,0,8,0" />
             </DockPanel>
 
             <local:ThreeAzisTestControl Grid.Row="1" DataContext="{Binding Model}" />
