@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,6 +30,9 @@ namespace UtilityTools.Modules.MotorTest.TestItems
     /// </summary>
     public class RandomRepeatabilityTestItem : IMotorTestItem
     {
+        private const double FixedPointSpacingUm = 5000.0; // 5mm
+        private const int FixedRepeatsPerPoint = 40;
+        private static readonly object FlowLogFileLock = new();
         /// <summary>
         /// 测试名称
         /// </summary>
@@ -68,8 +72,8 @@ namespace UtilityTools.Modules.MotorTest.TestItems
         /// <param name="repeatsPerPoint">每点重复次数</param>
         /// <param name="histogramBins">直方图 bin 数</param>
         public RandomRepeatabilityTestItem(
-            double spacingUm = 5000,  // 5mm
-            int repeatsPerPoint = 10, // 每点10次
+            double spacingUm = 5000,  // 5mm（兼容参数，执行时固定按 5mm 计算点数）
+            int repeatsPerPoint = 40, // 默认每点40次
             int histogramBins = 10,
             Action<int, int, TimeSpan, TimeSpan>? progressReporter = null)
         {
@@ -108,11 +112,14 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             CancellationToken ct)
         {
             var result = new RandomRepeatabilityTestResult { IsPassed = false };
+            string flowLogPath = CreateFlowLogPath(motorId);
+            WriteFlowLog(flowLogPath, $"[{motorId}] 流程开始：designSpacingUm={FixedPointSpacingUm:F1}, repeatsPerPoint={FixedRepeatsPerPoint}, histogramBins={_histogramBins}, 当前PosUm={motorModel.MotorParams.PosUm:F3}");
 
             // 验证参数
             if (motorModel.MotorParams.SubRatio <= 0)
             {
                 result.ErrorDescription = "电机换算系数异常（SubRatio<=0）";
+                WriteFlowLog(flowLogPath, $"[{motorId}] 参数异常：SubRatio={motorModel.MotorParams.SubRatio}");
                 return result;
             }
 
@@ -127,24 +134,28 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                 {
                     (minUm, maxUm) = await MeasureAxisFullTravelUmAsync(motorId, motorModel, motorEntity, ct);
                     measureOk = true;
+                    WriteFlowLog(flowLogPath, $"[{motorId}] 满行程检测成功：minUm={minUm:F3}, maxUm={maxUm:F3}, travelUm={maxUm - minUm:F3}");
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
                     measureOk = false;
                     var p = motorModel.MotorParams.PosUm;
                     minUm = maxUm = p;
+                    WriteFlowLog(flowLogPath, $"[{motorId}] 满行程检测失败，降级为当前位置单点：posUm={p:F3}，异常={ex.Message}");
                 }
 
                 if (!measureOk && maxUm - minUm <= 0)
                 {
                     result.ErrorDescription = "满行程检测失败，无法生成随机点";
+                    WriteFlowLog(flowLogPath, $"[{motorId}] 满行程降级后范围无效，流程终止。");
                     return result;
                 }
 
                 double travelUm = maxUm - minUm;
-                if (travelUm < _spacingUm)
+                if (travelUm < FixedPointSpacingUm)
                 {
-                    result.ErrorDescription = $"行程范围过小（{travelUm:F1} μm < {_spacingUm:F1} μm），无法生成有效随机点";
+                    result.ErrorDescription = $"行程范围过小（{travelUm:F1} μm < {FixedPointSpacingUm:F1} μm），无法生成有效随机点";
+                    WriteFlowLog(flowLogPath, $"[{motorId}] 行程过小：travelUm={travelUm:F3}, spacingUm={FixedPointSpacingUm:F3}，流程终止。");
                     return result;
                 }
 
@@ -153,13 +164,14 @@ namespace UtilityTools.Modules.MotorTest.TestItems
 
                 // 2. 计算中心点和生成随机点
                 double centerUm = (minUm + maxUm) / 2;
-                int totalPointCount = Math.Max(1, (int)(travelUm / _spacingUm));
+                // 新方案：按总行程每 5mm 设计一个目标点，取上整确保“总点数”覆盖全行程。
+                int totalPointCount = Math.Max(1, (int)Math.Ceiling(travelUm / FixedPointSpacingUm));
                 int minPulse = (int)Math.Round(minUm * motorModel.MotorParams.SubRatio);
                 int maxPulse = (int)Math.Round(maxUm * motorModel.MotorParams.SubRatio);
 
                 var points = GenerateGaussianPoints(
                     totalPointCount,
-                    _spacingUm,
+                    FixedPointSpacingUm,
                     centerUm,
                     0, // 单轴测试，Y轴设为0
                     motorModel.MotorParams.SubRatio,
@@ -170,15 +182,28 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                     0,
                     new Random());
 
+                WriteFlowLog(flowLogPath, $"[{motorId}] 随机点生成完成：totalPointCount={points.Count}, centerUm={centerUm:F3}, pulseRange=[{minPulse},{maxPulse}]");
+                foreach (var point in points.Take(10))
+                {
+                    WriteFlowLog(flowLogPath, $"[{motorId}] 点明细：index={point.Index}, targetUm={point.TargetXUm:F3}, targetPulse={point.TargetXPulse}");
+                }
+                if (points.Count > 10)
+                {
+                    WriteFlowLog(flowLogPath, $"[{motorId}] 点明细已截断：仅打印前10个点，剩余={points.Count - 10}");
+                }
+
                 foreach (var point in points)
                     result.TargetPoints.Add(point);
 
                 // 3. 准备电机
+                WriteFlowLog(flowLogPath, $"[{motorId}] 准备电机：设置闭环位置控制 + 使能 + 运行。");
                 await PrepareAxisForRandomJumpsAsync(motorId, motorEntity, ct);
+                WriteFlowLog(flowLogPath, $"[{motorId}] 电机准备完成。");
 
-                int totalPlannedMoves = _repeatsPerPoint * points.Count;
+                int totalPlannedMoves = FixedRepeatsPerPoint * points.Count;
                 int completedMoves = 0;
                 ReportProgress(completedMoves, totalPlannedMoves, overallSw.Elapsed);
+                WriteFlowLog(flowLogPath, $"[{motorId}] 跳转计划：points={points.Count}, repeatsPerPoint={FixedRepeatsPerPoint}, totalPlannedMoves={totalPlannedMoves}");
 
                 // 4. 随机跳转测试
                 var moveTrips = new ObservableCollection<RandomMoveTripAxisRecord>();
@@ -192,7 +217,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
 
                 bool axisOk = true;
 
-                for (int repeat = 0; repeat < _repeatsPerPoint; repeat++)
+                for (int repeat = 0; repeat < FixedRepeatsPerPoint; repeat++)
                 {
                     foreach (var target in points.OrderBy(_ => Guid.NewGuid()))
                     {
@@ -236,6 +261,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                             axisOk = false;
                             result.ErrorDescription =
                                 $"电机超时未停止，目标脉冲={target.TargetXPulse}，当前位置={motorModel.MotorParams.Pos}，状态={motorModel.MotorParams.MoveState}";
+                            WriteFlowLog(flowLogPath, $"[{motorId}] 跳转失败：seqNo={seqNo}, pointIndex={target.Index}, targetPulse={target.TargetXPulse}, currentPulse={motorModel.MotorParams.Pos}, state={motorModel.MotorParams.MoveState}");
                             break;
                         }
 
@@ -263,6 +289,10 @@ namespace UtilityTools.Modules.MotorTest.TestItems
 
                         completedMoves++;
                         ReportProgress(completedMoves, totalPlannedMoves, overallSw.Elapsed);
+                        if (completedMoves <= 5 || completedMoves % 20 == 0 || completedMoves == totalPlannedMoves)
+                        {
+                            WriteFlowLog(flowLogPath, $"[{motorId}] 跳转进度：{completedMoves}/{totalPlannedMoves}, seqNo={seqNo - 1}, pointIndex={target.Index}, actualStartUm={actualStartUm:F3}, actualTargetUm={actualTargetUm:F3}, moveMs={moveMs:F1}, distanceUm={distanceUm:F3}, speedUmPerSec={speed:F3}");
+                        }
 
                         plannedCurrent = target;
                     }
@@ -270,6 +300,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
 
                 // 5. 计算统计数据
                 BuildRepeatabilityAxisStats(points, moveTrips, result.PointStatsX, t => t.ActualTargetUm, p => p.TargetXUm);
+                WriteFlowLog(flowLogPath, $"[{motorId}] 统计完成：pointStatsCount={result.PointStatsX.Count}, tripCount={moveTrips.Count}");
 
                 foreach (var trip in moveTrips)
                     result.MoveTripsX.Add(trip);
@@ -277,6 +308,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                 // 6. 生成直方图
                 BuildHistogram(moveTrips.Select(t => t.DistanceUm).ToList(), _histogramBins, result.DistanceHistogramX);
                 BuildHistogram(moveTrips.Select(t => t.AvgSpeedUmPerSec).ToList(), _histogramBins, result.SpeedHistogramX);
+                WriteFlowLog(flowLogPath, $"[{motorId}] 直方图完成：distanceBins={result.DistanceHistogramX.Count}, speedBins={result.SpeedHistogramX.Count}");
 
                 // 7. 计算结果
                 result.AvgStdX = result.PointStatsX.Count == 0 ? 0 : result.PointStatsX.Average(s => s.StdUm);
@@ -292,26 +324,48 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                     result.IsPassed = false;
                     result.IsTestCompleted = false;
                     result.Description = "随机坐标重复精度测试未正常完成（存在超时或指令失败）";
+                    WriteFlowLog(flowLogPath, $"[{motorId}] 流程结束（失败）：isCompleted={result.IsTestCompleted}, avgStdX={result.AvgStdX:F3}, avgMoveMs={result.AvgMoveTimeMs:F2}, error={result.ErrorDescription ?? "无"}");
                 }
                 else
                 {
                     result.IsPassed = true;
                     result.IsTestCompleted = true;
                     result.Description = "随机坐标重复精度测试完成";
+                    WriteFlowLog(flowLogPath, $"[{motorId}] 流程结束（成功）：isCompleted={result.IsTestCompleted}, avgStdX={result.AvgStdX:F3}, avgMoveMs={result.AvgMoveTimeMs:F2}, points={result.TargetPoints.Count}, trips={result.MoveTripsX.Count}");
                 }
 
             }
             catch (OperationCanceledException)
             {
                 result.ErrorDescription = "测试已取消";
+                WriteFlowLog(flowLogPath, $"[{motorId}] 流程取消。");
                 throw;
             }
             catch (Exception ex)
             {
                 result.ErrorDescription = $"测试异常: {ex.Message}";
+                WriteFlowLog(flowLogPath, $"[{motorId}] 流程异常终止：{ex.Message}");
             }
 
+            WriteFlowLog(flowLogPath, $"[{motorId}] 详细日志文件：{flowLogPath}");
             return result;
+        }
+
+        private static string CreateFlowLogPath(EnumMotorId motorId)
+        {
+            string dir = Path.Combine(AppContext.BaseDirectory, "报告", "随机重复精度", "流程日志");
+            Directory.CreateDirectory(dir);
+            string file = $"随机重复精度_{motorId}_{DateTime.Now:yyyyMMdd_HHmmss_fff}.log";
+            return Path.Combine(dir, file);
+        }
+
+        private static void WriteFlowLog(string filePath, string message)
+        {
+            string line = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}";
+            lock (FlowLogFileLock)
+            {
+                File.AppendAllText(filePath, line + Environment.NewLine);
+            }
         }
 
         private void ReportProgress(int completed, int total, TimeSpan elapsed)
@@ -617,6 +671,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             Func<RandomTargetPointRecord, double> targetDisplayUmSelector)
         {
             foreach (var point in points)
+            
             {
                 var pointTrips = trips.Where(t => t.PointIndex == point.Index).ToList();
                 if (pointTrips.Count == 0) continue;

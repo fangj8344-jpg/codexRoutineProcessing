@@ -1323,9 +1323,11 @@ namespace UtilityTools.Modules.MotorTest.Model
 
             try
             {
-                var targets = xResult?.TargetPoints ?? yResult?.TargetPoints;
-                if (targets != null && targets.Count > 0)
-                    WriteCsv("TargetPoints.csv", targets);
+                if (xResult != null && xResult.TargetPoints.Count > 0)
+                    WriteCsv("X_TargetPoints.csv", xResult.TargetPoints);
+
+                if (yResult != null && yResult.TargetPoints.Count > 0)
+                    WriteCsv("Y_TargetPoints.csv", yResult.TargetPoints);
 
                 if (xResult != null)
                 {

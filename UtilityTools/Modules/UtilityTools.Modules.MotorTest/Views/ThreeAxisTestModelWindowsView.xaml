@@ -30,6 +30,19 @@
                            FontWeight="Bold"
                            DockPanel.Dock="Left"
                            VerticalAlignment="Center" />
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Margin="20,0,0,0" VerticalAlignment="Center">
+                    <ProgressBar Width="150"
+                                 Height="8"
+                                 Maximum="100"
+                                 Value="{Binding FirstFlashProgressValue}"
+                                 IsIndeterminate="{Binding FirstFlashInProgress}"
+                                 Style="{StaticResource MaterialDesignLinearProgressBar}" />
+                    <TextBlock Margin="8,0,0,0"
+                               VerticalAlignment="Center"
+                               FontSize="12"
+                               Opacity="0.85"
+                               Text="{Binding FirstFlashStatusText}" />
+                </StackPanel>
                 <Button DockPanel.Dock="Right"
                         Command="{Binding ShowNetDeviceCommand}"
                         Content="{md:PackIcon Kind=EthernetCable, Size=24}"
@@ -40,6 +53,12 @@
                         Content="{md:PackIcon Kind=UsbPort, Size=24}"
                         Style="{StaticResource MaterialDesignToolButton}"
                         Foreground="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <Button DockPanel.Dock="Right"
+                        Command="{Binding FirstFlashFirmwareCommand}"
+                        ToolTip="通过 ST-LINK 进行首刷固件"
+                        Content="首刷固件"
+                        Style="{StaticResource MaterialDesignFlatButton}"
+                        Margin="0,0,8,0" />
             </DockPanel>
 
             <local:ThreeAzisTestControl Grid.Row="1" DataContext="{Binding Model}" />

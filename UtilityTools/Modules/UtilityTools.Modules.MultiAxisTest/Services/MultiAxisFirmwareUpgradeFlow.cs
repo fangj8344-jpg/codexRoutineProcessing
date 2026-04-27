@@ -46,6 +46,7 @@ namespace UtilityTools.Modules.MultiAxisTest.Services
         {
             Timeout = TimeSpan.FromSeconds(20)
         };
+        private static readonly object UpgradeFlowLogLock = new();
 
         public async Task<FirmwareCheckResult> CheckAndUpgradeIfNeededAsync(
             IAsynRWService serialService,
@@ -55,38 +56,49 @@ namespace UtilityTools.Modules.MultiAxisTest.Services
             string dialogHostName,
             CancellationToken ct = default)
         {
+            string flowLogPath = CreateUpgradeFlowLogPath();
             var result = new FirmwareCheckResult();
+            WriteUpgradeFlowLog(flowLogPath, $"流程开始：indexUrl={indexUrl}");
             if ((serialService?.IsOpen != true) && (netService?.IsOpen != true))
             {
                 result.Message = "设备未连接，跳过固件检查。";
+                WriteUpgradeFlowLog(flowLogPath, "设备未连接，流程结束。");
                 return result;
             }
 
             OtaPackageInfo? package = null;
             try
             {
+                WriteUpgradeFlowLog(flowLogPath, "步骤1：下载并解析最新升级包。");
                 package = await DownloadLatestPackageAsync(indexUrl, ct);
+                WriteUpgradeFlowLog(flowLogPath,
+                    $"升级包解析完成：sourceUrl={package.SourceUrl}, firmwareName={package.BoardMessage.FileName}, updateDataLength={package.UpdateData.Length}, frameCount={package.MaxFrameCount}, crc={package.UpdateDataCrc}");
                 result.LatestPackageUrl = package.SourceUrl;
                 result.LatestVersionText = package.BoardMessage.VersionNumber ?? string.Empty;
 
                 if (!package.BoardMessage.DeviceID.HasValue)
                 {
                     result.Message = "最新固件包未包含有效 DeviceID，无法比对。";
+                    WriteUpgradeFlowLog(flowLogPath, "升级包缺少 DeviceID，流程终止。");
                     return result;
                 }
 
+                WriteUpgradeFlowLog(flowLogPath, $"步骤2：查询设备当前版本，deviceId={package.BoardMessage.DeviceID.Value}");
                 var deviceVersion = await QueryDeviceVersionAsync(
                     serialService,
                     netService,
                     package.BoardMessage.DeviceID.Value,
                     ct);
                 result.CurrentVersionText = deviceVersion.VersionText;
+                WriteUpgradeFlowLog(flowLogPath,
+                    $"设备版本查询完成：currentVersion={result.CurrentVersionText}, currentCrc={deviceVersion.Crc}");
 
                 bool isLatest = IsDeviceVersionLatest(deviceVersion, package);
                 result.IsLatest = isLatest;
                 if (isLatest)
                 {
                     result.Message = $"固件已是最新版本（当前 {result.CurrentVersionText}）。";
+                    WriteUpgradeFlowLog(flowLogPath, "比对结果：设备已是最新版本，流程结束。");
                     return result;
                 }
 
@@ -101,33 +113,42 @@ namespace UtilityTools.Modules.MultiAxisTest.Services
                 {
                     result.UserSkippedUpgrade = true;
                     result.Message = "用户选择暂不升级。";
+                    WriteUpgradeFlowLog(flowLogPath, "用户取消升级，流程结束。");
                     return result;
                 }
 
                 result.UpgradeTriggered = true;
+                WriteUpgradeFlowLog(flowLogPath, "步骤3：开始执行 OTA 升级流程。");
                 bool upgraded = await RunUpgradeWorkflowAsync(serialService, netService, package, ct);
                 result.UpgradeSucceeded = upgraded;
                 if (upgraded)
                 {
+                    WriteUpgradeFlowLog(flowLogPath, "步骤4：升级完成，复查设备版本。");
                     var refreshed = await QueryDeviceVersionAsync(serialService, netService, package.BoardMessage.DeviceID.Value, ct);
                     result.CurrentVersionText = refreshed.VersionText;
                     result.IsLatest = true;
+                    WriteUpgradeFlowLog(flowLogPath,
+                        $"复查完成：currentVersion={result.CurrentVersionText}, currentCrc={refreshed.Crc}");
                 }
                 result.Message = upgraded ? "固件升级成功。" : "固件升级失败，请查看日志。";
+                WriteUpgradeFlowLog(flowLogPath, $"流程结束：upgraded={upgraded}, message={result.Message}");
                 return result;
             }
             catch (OperationCanceledException)
             {
+                WriteUpgradeFlowLog(flowLogPath, "流程取消：OperationCanceledException。");
                 throw;
             }
             catch (Exception ex)
             {
                 result.Message = $"固件检查异常：{ex.Message}";
+                WriteUpgradeFlowLog(flowLogPath, $"流程异常：{ex}");
                 return result;
             }
             finally
             {
                 TryDeleteTempPackage(package);
+                WriteUpgradeFlowLog(flowLogPath, "流程收尾：临时包清理结束。");
             }
         }
 
@@ -136,41 +157,83 @@ namespace UtilityTools.Modules.MultiAxisTest.Services
             if (string.IsNullOrWhiteSpace(indexUrl))
                 throw new InvalidOperationException("固件索引地址为空。");
 
-            var baseUri = new Uri(indexUrl);
-            var html = await _httpClient.GetStringAsync(baseUri, ct);
-            var links = ExtractLinks(html)
-                .Select(link => BuildAbsoluteUri(baseUri, link))
-                .Where(uri => uri != null && uri.AbsoluteUri.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-                .Select(uri => uri!)
-                .Distinct()
-                .ToList();
-
-            if (links.Count == 0)
-                throw new InvalidOperationException($"目录未找到 zip 固件包：{indexUrl}");
-
-            var ordered = links
-                .Select(uri => new
-                {
-                    Uri = uri,
-                    Version = TryParseVersionFromName(Uri.UnescapeDataString(Path.GetFileName(uri.LocalPath)))
-                })
-                .OrderByDescending(x => x.Version != null)
-                .ThenByDescending(x => x.Version)
-                .ThenByDescending(x => x.Uri.AbsoluteUri)
-                .ToList();
-
-            var selected = ordered.First().Uri;
             string tempZip = Path.Combine(Path.GetTempPath(), $"multi_axis_fw_{Guid.NewGuid():N}.zip");
-            using var response = await _httpClient.GetAsync(selected, ct);
-            response.EnsureSuccessStatusCode();
-            await using (var fs = File.Create(tempZip))
+            string sourceTag;
+
+            bool isHttp =
+                Uri.TryCreate(indexUrl, UriKind.Absolute, out var indexUri) &&
+                (string.Equals(indexUri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
+                 || string.Equals(indexUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase));
+            if (isHttp)
             {
-                await response.Content.CopyToAsync(fs, ct);
+                var html = await _httpClient.GetStringAsync(indexUri!, ct);
+                var links = ExtractLinks(html)
+                    .Select(link => BuildAbsoluteUri(indexUri!, link))
+                    .Where(uri => uri != null && uri.AbsoluteUri.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                    .Select(uri => uri!)
+                    .Distinct()
+                    .ToList();
+
+                if (links.Count == 0)
+                    throw new InvalidOperationException($"目录未找到 zip 固件包：{indexUrl}");
+
+                var ordered = links
+                    .Select(uri => new
+                    {
+                        Uri = uri,
+                        Version = TryParseVersionFromName(Uri.UnescapeDataString(Path.GetFileName(uri.LocalPath)))
+                    })
+                    .OrderByDescending(x => x.Version != null)
+                    .ThenByDescending(x => x.Version)
+                    .ThenByDescending(x => x.Uri.AbsoluteUri)
+                    .ToList();
+
+                var selected = ordered.First().Uri;
+                using var response = await _httpClient.GetAsync(selected, ct);
+                response.EnsureSuccessStatusCode();
+                await using (var fs = File.Create(tempZip))
+                {
+                    await response.Content.CopyToAsync(fs, ct);
+                }
+                sourceTag = selected.AbsoluteUri;
+            }
+            else
+            {
+                string directory = NormalizeDirectoryPath(indexUrl);
+                if (!Directory.Exists(directory))
+                    throw new InvalidOperationException($"固件目录不存在：{directory}");
+
+                var candidates = Directory.EnumerateFiles(directory, "*.zip", SearchOption.TopDirectoryOnly)
+                    .Select(path => new
+                    {
+                        Path = path,
+                        Version = TryParseVersionFromName(Path.GetFileName(path)),
+                        LastWrite = File.GetLastWriteTimeUtc(path)
+                    })
+                    .OrderByDescending(x => x.Version != null)
+                    .ThenByDescending(x => x.Version)
+                    .ThenByDescending(x => x.LastWrite)
+                    .ThenByDescending(x => x.Path)
+                    .ToList();
+
+                if (candidates.Count == 0)
+                    throw new InvalidOperationException($"目录未找到 zip 固件包：{directory}");
+
+                var selectedPath = candidates.First().Path;
+                File.Copy(selectedPath, tempZip, true);
+                sourceTag = selectedPath;
             }
 
             var package = ParsePackage(tempZip);
-            package.SourceUrl = selected.AbsoluteUri;
+            package.SourceUrl = sourceTag;
             return package;
+        }
+
+        private static string NormalizeDirectoryPath(string path)
+        {
+            if (Uri.TryCreate(path, UriKind.Absolute, out var uri) && uri.IsFile)
+                return uri.LocalPath;
+            return path.Trim().TrimEnd('\\', '/');
         }
 
         private static IEnumerable<string> ExtractLinks(string html)
@@ -214,28 +277,42 @@ namespace UtilityTools.Modules.MultiAxisTest.Services
 
         private static OtaPackageInfo ParsePackage(string zipPath)
         {
+            string flowLogPath = CreateUpgradeFlowLogPath();
+            WriteUpgradeFlowLog(flowLogPath, $"解析升级包开始：zipPath={zipPath}");
             using var archive = ZipFile.OpenRead(zipPath);
             var msgEntry = archive.Entries.FirstOrDefault(e =>
                 e.FullName.EndsWith("DevelopmentBoardMessage.json", StringComparison.OrdinalIgnoreCase));
             if (msgEntry == null)
+            {
+                WriteUpgradeFlowLog(flowLogPath, "解析失败：缺少 DevelopmentBoardMessage.json");
                 throw new InvalidOperationException("固件包缺少 DevelopmentBoardMessage.json。");
+            }
 
             DevelopmentBoardMessage? msg;
             using (var sr = new StreamReader(msgEntry.Open()))
             {
                 var json = sr.ReadToEnd();
+                WriteUpgradeFlowLog(flowLogPath, $"读取升级描述成功：jsonLength={json.Length}");
                 msg = JsonSerializer.Deserialize<DevelopmentBoardMessage>(json, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 });
             }
             if (msg == null || string.IsNullOrWhiteSpace(msg.FileName))
+            {
+                WriteUpgradeFlowLog(flowLogPath, "解析失败：升级描述无效或缺少 FileName");
                 throw new InvalidOperationException("升级信息文件无效，无法读取固件文件名。");
+            }
+            WriteUpgradeFlowLog(flowLogPath,
+                $"升级描述解析：fileName={msg.FileName}, version={msg.VersionNumber}, deviceId={msg.DeviceID}");
 
             var fwEntry = archive.Entries.FirstOrDefault(e =>
                 e.FullName.EndsWith(msg.FileName, StringComparison.OrdinalIgnoreCase));
             if (fwEntry == null)
+            {
+                WriteUpgradeFlowLog(flowLogPath, $"解析失败：zip 中未找到固件文件 {msg.FileName}");
                 throw new InvalidOperationException($"固件包缺少固件文件：{msg.FileName}");
+            }
 
             byte[] rawData;
             using (var ms = new MemoryStream())
@@ -244,12 +321,15 @@ namespace UtilityTools.Modules.MultiAxisTest.Services
                 s.CopyTo(ms);
                 rawData = ms.ToArray();
             }
+            WriteUpgradeFlowLog(flowLogPath, $"固件文件读取成功：fileName={msg.FileName}, rawLength={rawData.Length}");
 
             uint maxFrameCount = (uint)((rawData.Length + 31) / 32);
             var updateData = new byte[maxFrameCount * 32];
             Array.Fill(updateData, (byte)0xFF);
             Array.Copy(rawData, updateData, rawData.Length);
             var crc = CRCHelper.Data_GetCRC16(updateData, 0, updateData.Length);
+            WriteUpgradeFlowLog(flowLogPath,
+                $"解析升级包完成：paddedLength={updateData.Length}, maxFrameCount={maxFrameCount}, crc={crc}");
 
             return new OtaPackageInfo
             {
@@ -321,15 +401,19 @@ namespace UtilityTools.Modules.MultiAxisTest.Services
             OtaPackageInfo package,
             CancellationToken ct)
         {
+            string flowLogPath = CreateUpgradeFlowLogPath();
             if (!package.BoardMessage.DeviceID.HasValue)
                 throw new InvalidOperationException("固件包 DeviceID 为空，无法升级。");
 
             int deviceId = package.BoardMessage.DeviceID.Value;
+            WriteUpgradeFlowLog(flowLogPath,
+                $"升级流程开始：deviceId={deviceId}, updateDataLength={package.UpdateData.Length}, frameCount={package.MaxFrameCount}, crc={package.UpdateDataCrc}");
             using var session = new OtaSession(serialService, netService);
 
             var request = OtaProtocol.GetRequestOtaCmd((uint)package.UpdateData.Length, package.MaxFrameCount, deviceId, package.UpdateDataCrc);
             await session.SendAsync(request, ct);
             await session.WaitPacketAsync(EnumOtaCommandType.OTA_REQUEST, 5000, ct);
+            WriteUpgradeFlowLog(flowLogPath, "请求升级通过：收到 OTA_REQUEST 回包。");
 
             for (uint i = 0; i < package.MaxFrameCount; i++)
             {
@@ -342,17 +426,104 @@ namespace UtilityTools.Modules.MultiAxisTest.Services
                 {
                     uint ackId = BitConverter.ToUInt32(ack.DataSource, 0);
                     if (ackId != i)
+                    {
+                        WriteUpgradeFlowLog(flowLogPath, $"升级帧确认异常：expected={i}, actual={ackId}");
                         throw new InvalidOperationException($"升级帧确认异常，期望={i}，实际={ackId}");
+                    }
                 }
+                if (i < 3 || i % 100 == 0 || i + 1 == package.MaxFrameCount)
+                    WriteUpgradeFlowLog(flowLogPath, $"升级帧进度：{i + 1}/{package.MaxFrameCount}");
             }
 
             var restart = OtaProtocol.GetRestartCmd(deviceId);
             await session.SendAsync(restart, ct);
-            await session.WaitPacketAsync(EnumOtaCommandType.OTA_RESTART, 5000, ct);
+            bool restartAckReceived = false;
+            try
+            {
+                // 部分设备收到重启命令后会立即复位，可能来不及回 ACK。
+                // 因此这里采用“软等待”：ACK 超时不直接判失败，后续以版本/CRC复核为准。
+                await session.WaitPacketAsync(EnumOtaCommandType.OTA_RESTART, 2000, ct);
+                restartAckReceived = true;
+                WriteUpgradeFlowLog(flowLogPath, "重启命令发送并确认完成（收到 OTA_RESTART ACK）。");
+            }
+            catch (TimeoutException)
+            {
+                WriteUpgradeFlowLog(flowLogPath, "重启 ACK 超时：未收到 OTA_RESTART 回包，继续执行重启后复核。");
+            }
 
-            await Task.Delay(1500, ct);
-            var after = await QueryDeviceVersionAsync(serialService, netService, deviceId, ct);
-            return IsDeviceVersionLatest(after, package);
+            // 对齐旧 OTA 流程：重启后进行多次复查，不依赖单次查询结果。
+            var (latest, finalVersion) = await VerifyAfterRestartWithRetriesAsync(
+                serialService,
+                netService,
+                deviceId,
+                package,
+                flowLogPath,
+                ct);
+            WriteUpgradeFlowLog(flowLogPath,
+                $"升级后最终复核：version={finalVersion.VersionText}, crc={finalVersion.Crc}, isLatest={latest}, restartAckReceived={restartAckReceived}");
+            return latest;
+        }
+
+        private async Task<(bool isLatest, DeviceVersionInfo finalVersion)> VerifyAfterRestartWithRetriesAsync(
+            IAsynRWService serialService,
+            IAsynRWService netService,
+            int deviceId,
+            OtaPackageInfo package,
+            string flowLogPath,
+            CancellationToken ct)
+        {
+            const int maxAttempts = 10;
+            const int intervalMs = 1000;
+            DeviceVersionInfo? lastVersion = null;
+            Exception? lastException = null;
+
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                ct.ThrowIfCancellationRequested();
+                if (attempt > 1)
+                    await Task.Delay(intervalMs, ct);
+
+                try
+                {
+                    var version = await QueryDeviceVersionAsync(serialService, netService, deviceId, ct);
+                    lastVersion = version;
+                    bool latest = IsDeviceVersionLatest(version, package);
+                    WriteUpgradeFlowLog(flowLogPath,
+                        $"重启后复核第{attempt}/{maxAttempts}次：version={version.VersionText}, crc={version.Crc}, isLatest={latest}");
+                    if (latest)
+                        return (true, version);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    lastException = ex;
+                    WriteUpgradeFlowLog(flowLogPath,
+                        $"重启后复核第{attempt}/{maxAttempts}次失败：{ex.Message}");
+                }
+            }
+
+            if (lastVersion != null)
+                return (false, lastVersion);
+
+            throw new InvalidOperationException(
+                $"重启后复核连续失败（{maxAttempts}次），最后异常：{lastException?.Message ?? "未知错误"}",
+                lastException);
+        }
+
+        private static string CreateUpgradeFlowLogPath()
+        {
+            string dir = Path.Combine(AppContext.BaseDirectory, "报告", "固件升级", "流程日志");
+            Directory.CreateDirectory(dir);
+            string file = $"固件升级流程_{DateTime.Now:yyyyMMdd}.log";
+            return Path.Combine(dir, file);
+        }
+
+        private static void WriteUpgradeFlowLog(string filePath, string message)
+        {
+            string line = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}";
+            lock (UpgradeFlowLogLock)
+            {
+                File.AppendAllText(filePath, line + Environment.NewLine);
+            }
         }
 
         private sealed class OtaSession : IDisposable

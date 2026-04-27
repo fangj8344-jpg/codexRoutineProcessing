@@ -100,7 +100,7 @@ namespace UtilityTools.Modules.MultiAxisTest.Model
     /// </summary>
     public class MultiAxisWorkflowState : BindableBase, ITestReportService, ITestStageTypeProvider, IFirmwareUpgradeWorkflowState
     {
-        private const string DefaultFirmwareIndexUrl = "http://60.173.16.125:9090/%E5%AE%89%E8%A3%85%E6%96%87%E4%BB%B6/%E4%B8%B4%E6%97%B6/%E5%9B%BA%E4%BB%B6/";
+        private const string DefaultFirmwareIndexUrl = @"http://60.173.16.125:9090/安装文件/st工具/电机固件/";
 
         private MachineProfile _motorKind = MachineProfile.StandardTwoAxis;
         public MachineProfile MotorKind

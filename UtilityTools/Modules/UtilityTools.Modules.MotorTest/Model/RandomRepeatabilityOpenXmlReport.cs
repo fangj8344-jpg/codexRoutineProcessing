@@ -53,15 +53,18 @@ namespace UtilityTools.Modules.MotorTest.Model
             AddPlotSection(mainPart, body, "X轴速度分箱直方图", histXSpeedPngPath, 5U);
             AddPlotSection(mainPart, body, "Y轴速度分箱直方图", histYSpeedPngPath, 6U);
 
-            AddTargetPointsTable(body, "X轴目标点", xResult?.TargetPoints);
-            AddTargetPointsTable(body, "Y轴目标点", yResult?.TargetPoints);
-            AddPointStatsTable(body, "X轴点位统计", xResult?.PointStatsX);
-            AddPointStatsTable(body, "Y轴点位统计", yResult?.PointStatsX);
-            AddMoveTripsTable(body, "X轴行程明细", xResult?.MoveTripsX);
-            AddMoveTripsTable(body, "Y轴行程明细", yResult?.MoveTripsX);
+            AddParagraph(body, "================ X轴测试明细 ================");
+            AddTargetPointsTable(body, "X轴目标点（设计点位）", xResult?.TargetPoints);
+            AddPointStatsTable(body, "X轴点位统计（目标/实际均值/标准差）", xResult?.PointStatsX);
+            AddMoveTripsTable(body, "X轴行程明细（每次访问的目标与实际）", xResult?.MoveTripsX);
             AddHistogramTable(body, "X轴距离分箱", xResult?.DistanceHistogramX);
-            AddHistogramTable(body, "Y轴距离分箱", yResult?.DistanceHistogramX);
             AddHistogramTable(body, "X轴速度分箱", xResult?.SpeedHistogramX);
+
+            AddParagraph(body, "================ Y轴测试明细 ================");
+            AddTargetPointsTable(body, "Y轴目标点（设计点位）", yResult?.TargetPoints);
+            AddPointStatsTable(body, "Y轴点位统计（目标/实际均值/标准差）", yResult?.PointStatsX);
+            AddMoveTripsTable(body, "Y轴行程明细（每次访问的目标与实际）", yResult?.MoveTripsX);
+            AddHistogramTable(body, "Y轴距离分箱", yResult?.DistanceHistogramX);
             AddHistogramTable(body, "Y轴速度分箱", yResult?.SpeedHistogramX);
 
             mainPart.Document.Save();
