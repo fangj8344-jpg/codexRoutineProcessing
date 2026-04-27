@@ -43,6 +43,19 @@
                                Opacity="0.85"
                                Text="{Binding FirstFlashStatusText}" />
                 </StackPanel>
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Margin="14,0,0,0" VerticalAlignment="Center">
+                    <ProgressBar Width="150"
+                                 Height="8"
+                                 Maximum="100"
+                                 Value="{Binding ZipUpgradeProgressValue}"
+                                 IsIndeterminate="{Binding ZipUpgradeInProgress}"
+                                 Style="{StaticResource MaterialDesignLinearProgressBar}" />
+                    <TextBlock Margin="8,0,0,0"
+                               VerticalAlignment="Center"
+                               FontSize="12"
+                               Opacity="0.85"
+                               Text="{Binding ZipUpgradeStatusText}" />
+                </StackPanel>
                 <Button DockPanel.Dock="Right"
                         Command="{Binding ShowNetDeviceCommand}"
                         Content="{md:PackIcon Kind=EthernetCable, Size=24}"

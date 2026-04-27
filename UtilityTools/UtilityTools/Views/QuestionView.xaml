@@ -22,10 +22,20 @@
             Text="{Binding Content}"/>
 
         <StackPanel Margin="10" Orientation="Horizontal" Grid.Row="2" HorizontalAlignment="Right">
-            <Button Content="{DynamicResource QV_Cancel}" Margin="0,0,10,0"
+            <Button Content="取消" Margin="0,0,10,0"
+                    MinWidth="90"
+                    Foreground="White"
+                    Background="#5F6368"
+                    BorderBrush="#B0BEC5"
                     Command="{Binding CancelCommand}"
-                    Style="{StaticResource MaterialDesignOutlinedButton}"/>
-            <Button Content="{DynamicResource QV_Ok}" Command="{Binding SaveCommand}"/>
+                    Style="{StaticResource MaterialDesignRaisedButton}"/>
+            <Button Content="确认"
+                    MinWidth="90"
+                    Foreground="White"
+                    Background="#7C4DFF"
+                    BorderBrush="#7C4DFF"
+                    Command="{Binding SaveCommand}"
+                    Style="{StaticResource MaterialDesignRaisedButton}"/>
         </StackPanel>
     </Grid>
 </UserControl>

@@ -72,6 +72,27 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
             set => SetProperty(ref _firstFlashStatusText, value);
         }
 
+        private bool _zipUpgradeInProgress;
+        public bool ZipUpgradeInProgress
+        {
+            get => _zipUpgradeInProgress;
+            set => SetProperty(ref _zipUpgradeInProgress, value);
+        }
+
+        private double _zipUpgradeProgressValue;
+        public double ZipUpgradeProgressValue
+        {
+            get => _zipUpgradeProgressValue;
+            set => SetProperty(ref _zipUpgradeProgressValue, value);
+        }
+
+        private string _zipUpgradeStatusText = "升级待命";
+        public string ZipUpgradeStatusText
+        {
+            get => _zipUpgradeStatusText;
+            set => SetProperty(ref _zipUpgradeStatusText, value);
+        }
+
         private bool _isConnected;
         /// <summary>
         /// 设备是否连接
@@ -318,10 +339,14 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
 
             _upgradeFirmwareRunning = true;
             UpgradeFirmwareCommand.RaiseCanExecuteChanged();
+            bool shouldResumeQueryTask = false;
+            UpdateZipUpgradeProgress(2, "开始升级流程...");
+            ZipUpgradeInProgress = true;
             try
             {
                 if (_firmwareUpgradeCoordinator == null || _firmwareWorkflowState == null)
                 {
+                    UpdateZipUpgradeProgress(100, "升级功能未初始化");
                     await _dialogHostService.Information(
                         "升级固件",
                         "升级功能未初始化",
@@ -330,12 +355,18 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
                 }
                 if ((Model.SerialPortService?.IsOpen != true) && (Model.NetUdpService?.IsOpen != true))
                 {
+                    UpdateZipUpgradeProgress(100, "设备未连接");
                     await _dialogHostService.Information(
                         "升级固件",
                         "请先连接串口或网口设备",
                         CommonModel.ThreeAxisTestModelWindowsViewModelRegionName);
                     return;
                 }
+                // 升级期间暂停状态问询，避免轮询报文干扰 OTA 升级链路。
+                shouldResumeQueryTask = true;
+                Model.CloseQueryStatusTask();
+                _firmwareWorkflowState.FirmwareUpgradeInProgress = true;
+                UpdateZipUpgradeProgress(20, "已暂停问询，开始检查升级包...");
 
                 var result = await _firmwareUpgradeCoordinator.CheckAndUpgradeIfNeededAsync(
                     Model.SerialPortService,
@@ -343,6 +374,7 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
                     _firmwareWorkflowState.FirmwareIndexUrl,
                     _dialogHostService,
                     CommonModel.ThreeAxisTestModelWindowsViewModelRegionName);
+                UpdateZipUpgradeProgress(90, "升级流程执行完成，整理结果...");
 
                 _firmwareWorkflowState.FirmwareCheckCompleted = true;
                 _firmwareWorkflowState.FirmwareUpgradeRequired = !result.IsLatest;
@@ -352,20 +384,30 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
                 _firmwareWorkflowState.LatestFirmwareVersion = result.LatestVersionText;
                 _firmwareWorkflowState.LatestFirmwareUrl = result.LatestPackageUrl;
 
+                bool success = result.IsLatest || result.UpgradeSucceeded;
+                UpdateZipUpgradeProgress(100, success ? "升级成功" : "升级失败");
                 await _dialogHostService.Information(
                     "升级固件",
-                    (result.IsLatest || result.UpgradeSucceeded) ? "升级成功" : "升级失败",
+                    success ? "升级成功" : $"升级失败：{result.Message}",
                     CommonModel.ThreeAxisTestModelWindowsViewModelRegionName);
             }
-            catch
+            catch (Exception ex)
             {
+                UpdateZipUpgradeProgress(100, "升级异常中断");
                 await _dialogHostService.Information(
                     "升级固件",
-                    "升级失败",
+                    $"升级失败：[未分类异常] {ex.Message}",
                     CommonModel.ThreeAxisTestModelWindowsViewModelRegionName);
             }
             finally
             {
+                if (_firmwareWorkflowState != null)
+                    _firmwareWorkflowState.FirmwareUpgradeInProgress = false;
+                if (shouldResumeQueryTask && ((Model.SerialPortService?.IsOpen == true) || (Model.NetUdpService?.IsOpen == true)))
+                {
+                    Model.QueryStatusTask();
+                }
+                ZipUpgradeInProgress = false;
                 _upgradeFirmwareRunning = false;
                 UpgradeFirmwareCommand.RaiseCanExecuteChanged();
             }
@@ -375,6 +417,12 @@ namespace UtilityTools.Modules.MotorTest.ViewModels
         {
             FirstFlashProgressValue = value;
             FirstFlashStatusText = status;
+        }
+
+        private void UpdateZipUpgradeProgress(double value, string status)
+        {
+            ZipUpgradeProgressValue = value;
+            ZipUpgradeStatusText = status;
         }
 
         private static async Task DownloadFileAsync(string url, string targetPath, string flowLogPath)

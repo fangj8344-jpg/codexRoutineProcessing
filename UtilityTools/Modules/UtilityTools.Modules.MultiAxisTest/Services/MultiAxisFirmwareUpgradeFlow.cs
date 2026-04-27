@@ -102,11 +102,12 @@ namespace UtilityTools.Modules.MultiAxisTest.Services
                     return result;
                 }
 
+                string displayUrl = BuildDisplayUrl(result.LatestPackageUrl);
                 string promptText =
                     $"检测到固件可升级：\n" +
                     $"当前版本：{result.CurrentVersionText} (CRC={deviceVersion.Crc})\n" +
                     $"最新版本：{result.LatestVersionText} (CRC={package.UpdateDataCrc})\n\n" +
-                    $"固件地址：{result.LatestPackageUrl}\n\n" +
+                    $"固件地址：{displayUrl}\n\n" +
                     $"是否立即升级？";
                 var question = await dialogHostService.Question("固件升级提示", promptText, dialogHostName);
                 if (question.Result != Prism.Services.Dialogs.ButtonResult.OK)
@@ -119,7 +120,8 @@ namespace UtilityTools.Modules.MultiAxisTest.Services
 
                 result.UpgradeTriggered = true;
                 WriteUpgradeFlowLog(flowLogPath, "步骤3：开始执行 OTA 升级流程。");
-                bool upgraded = await RunUpgradeWorkflowAsync(serialService, netService, package, ct);
+                var upgradeOutcome = await RunUpgradeWorkflowAsync(serialService, netService, package, ct);
+                bool upgraded = upgradeOutcome.Success;
                 result.UpgradeSucceeded = upgraded;
                 if (upgraded)
                 {
@@ -130,7 +132,7 @@ namespace UtilityTools.Modules.MultiAxisTest.Services
                     WriteUpgradeFlowLog(flowLogPath,
                         $"复查完成：currentVersion={result.CurrentVersionText}, currentCrc={refreshed.Crc}");
                 }
-                result.Message = upgraded ? "固件升级成功。" : "固件升级失败，请查看日志。";
+                result.Message = upgraded ? "固件升级成功。" : $"[升级后复核失败] {upgradeOutcome.Reason}";
                 WriteUpgradeFlowLog(flowLogPath, $"流程结束：upgraded={upgraded}, message={result.Message}");
                 return result;
             }
@@ -141,7 +143,7 @@ namespace UtilityTools.Modules.MultiAxisTest.Services
             }
             catch (Exception ex)
             {
-                result.Message = $"固件检查异常：{ex.Message}";
+                result.Message = BuildClassifiedFailureMessage(ex);
                 WriteUpgradeFlowLog(flowLogPath, $"流程异常：{ex}");
                 return result;
             }
@@ -263,6 +265,20 @@ namespace UtilityTools.Modules.MultiAxisTest.Services
             {
                 return null;
             }
+        }
+
+        private static string BuildDisplayUrl(string rawUrl)
+        {
+            if (string.IsNullOrWhiteSpace(rawUrl))
+                return "--";
+            string decoded = Uri.UnescapeDataString(rawUrl);
+            if (decoded.Length <= 96)
+                return decoded;
+
+            string fileName = Path.GetFileName(decoded);
+            if (!string.IsNullOrWhiteSpace(fileName))
+                return $".../{fileName}";
+            return decoded.Substring(0, 96) + "...";
         }
 
         private static Version? TryParseVersionFromName(string fileName)
@@ -395,7 +411,7 @@ namespace UtilityTools.Modules.MultiAxisTest.Services
             };
         }
 
-        private async Task<bool> RunUpgradeWorkflowAsync(
+        private async Task<(bool Success, string Reason)> RunUpgradeWorkflowAsync(
             IAsynRWService serialService,
             IAsynRWService netService,
             OtaPackageInfo package,
@@ -461,7 +477,12 @@ namespace UtilityTools.Modules.MultiAxisTest.Services
                 ct);
             WriteUpgradeFlowLog(flowLogPath,
                 $"升级后最终复核：version={finalVersion.VersionText}, crc={finalVersion.Crc}, isLatest={latest}, restartAckReceived={restartAckReceived}");
-            return latest;
+            if (latest)
+                return (true, "升级并复核通过。");
+
+            string reason =
+                $"重启后复核未通过：设备版本={finalVersion.VersionText}, 设备CRC={finalVersion.Crc}, 目标CRC={package.UpdateDataCrc}。";
+            return (false, reason);
         }
 
         private async Task<(bool isLatest, DeviceVersionInfo finalVersion)> VerifyAfterRestartWithRetriesAsync(
@@ -524,6 +545,20 @@ namespace UtilityTools.Modules.MultiAxisTest.Services
             {
                 File.AppendAllText(filePath, line + Environment.NewLine);
             }
+        }
+
+        private static string BuildClassifiedFailureMessage(Exception ex)
+        {
+            string msg = ex.Message ?? "未知错误";
+            if (ex is TimeoutException)
+                return $"[通信超时] {msg}";
+            if (ex is HttpRequestException)
+                return $"[下载失败] {msg}";
+            if (ex is IOException || ex is UnauthorizedAccessException)
+                return $"[文件读写失败] {msg}";
+            if (ex is InvalidOperationException)
+                return $"[协议或流程异常] {msg}";
+            return $"[未知异常] {msg}";
         }
 
         private sealed class OtaSession : IDisposable
