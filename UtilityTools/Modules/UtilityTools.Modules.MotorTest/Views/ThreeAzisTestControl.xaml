@@ -192,10 +192,15 @@
                                     <Border Grid.Row="0" Padding="10" CornerRadius="6" BorderThickness="1" BorderBrush="{DynamicResource MaterialDesignDivider}">
                                         <StackPanel>
                                             <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                <Button Content="填充虚拟数据"
+                                                        Command="{Binding FillRandomRepeatabilityMockDataCommand}"
+                                                        Style="{StaticResource MaterialDesignRaisedButton}"
+                                                        ToolTip="填充X/Y虚拟数据，便于图表与Excel导出联调"
+                                                        Padding="12,4" Margin="0,0,8,0"/>
                                                 <Button Content="生成随机重复精度报告"
                                                         Command="{Binding GenerateRandomRepeatabilityReportCommand}"
                                                         Style="{StaticResource MaterialDesignRaisedButton}"
-                                                        ToolTip="导出到程序目录「报告\随机重复精度」：Word（摘要+曲线+表格）与同目录 CSV"
+                                                        ToolTip="导出单个 Excel：含数据表与「嵌入图表」页（PNG 曲线/直方图内嵌），不另存附件"
                                                         Padding="12,4" Margin="0,0,8,0"/>
                                             </StackPanel>
                                             <TextBlock Text="{Binding RandomRepeatabilitySummary}" TextWrapping="Wrap"/>

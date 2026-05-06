@@ -1,5 +1,4 @@
-﻿using CsvHelper;
-using MathNet.Numerics;
+﻿using MathNet.Numerics;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OpenCvSharp;
@@ -86,10 +85,14 @@ namespace UtilityTools.Modules.MotorTest.Model
         private EnumMotorInquiry _testMotorId;
         private bool _isSpeedMode = false;
         private int _queryInterval = 500;
+        private const int FastInquiryQueryIntervalMs = 50;
+        private const int NormalInquiryQueryIntervalMs = 500;
         private int _plotDirty = 0;
         private DateTime _lastPlotRefreshAt = DateTime.MinValue;
         private const int PlotRefreshMinIntervalMs = 50;
         private System.Windows.Threading.DispatcherTimer? _uiRenderTimer;
+        /// <summary>导出随机精度报告嵌入图表时暂停图表定时刷新，避免与 OxyPlot 导出并发触发渲染异常。</summary>
+        private volatile int _plotUiFreezeDepth;
   
         private Double _progressValue;
         private bool _isCurrentTestRunning;
@@ -389,6 +392,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         public DelegateCommand<string> ClearMonitorCommand { get; set; }
         public DelegateCommand RandomRepeatabilityTestCommand { get; set; }
         public DelegateCommand GenerateRandomRepeatabilityReportCommand { get; set; }
+        public DelegateCommand FillRandomRepeatabilityMockDataCommand { get; set; }
 
         public DelegateCommand<string> TestMotorTogetherCommand { get; set; }
         public ObservableCollection<RandomTargetPointRecord> RandomTargetPoints { get; } = new();
@@ -432,6 +436,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             GenerateRandomRepeatabilityReportCommand = new DelegateCommand(
                 GenerateRandomRepeatabilityReport,
                 CanGenerateRandomRepeatabilityReport);
+            FillRandomRepeatabilityMockDataCommand = new DelegateCommand(FillRandomRepeatabilityMockData);
             ByteQueue = new ConcurrentQueue<byte[]>();
             ImportantByteQueue = new ConcurrentQueue<byte[]>();
             MotorEntity = new MotorEntity(SerialPortService, NetUdpService);
@@ -485,6 +490,9 @@ namespace UtilityTools.Modules.MotorTest.Model
             _uiRenderTimer.Interval = TimeSpan.FromMilliseconds(50); // 轻量心跳，真正刷新由最小间隔节流控制
             _uiRenderTimer.Tick += (s, e) =>
             {
+                if (System.Threading.Volatile.Read(ref _plotUiFreezeDepth) > 0)
+                    return;
+
                 // 数据没有变化，不刷新图表
                 if (System.Threading.Volatile.Read(ref _plotDirty) == 0)
                 {
@@ -935,64 +943,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         }
 
         /// <summary>
-        /// 随机坐标重复精度测试
-        /// 
-        /// 测试概述：
-        /// 1) 以 XY 中心为原点生成高斯分布点（5mm 密度级别）
-        /// 2) 点间随机跳转，每点至少 10 次
-        /// 3) 输出点表、行程表、重复精度统计和距离/速度直方图
-        /// 
-        /// 实现方式：
-        /// - 使用规范化的 RandomRepeatabilityTestItem 类执行测试
-        /// - 该类封装了完整的测试逻辑，包括满行程检测、随机点生成、跳转测试等
-        /// - 测试结果通过 RandomRepeatabilityTestResult 返回
-        /// 
-        /// 测试流程：
-        /// 1. 查找 X/Y 轴电机
-        /// 2. 清空之前的测试数据
-        /// 3. 创建 RandomRepeatabilityTestItem 实例
-        /// 4. 调用 ExecuteAsync 执行测试
-        /// 5. 将测试结果复制到 UI 集合（ObservableCollection）
-        /// 6. 更新测试摘要信息
-        /// 
-        /// 异常处理：
-        /// - OperationCanceledException：测试被取消，更新 UI 并返回
-        /// - 其他异常：捕获并显示错误信息，不中断程序
-        /// 
-        /// UI 更新：
-        /// - 所有测试数据都通过 ObservableCollection 绑定到 UI
-        /// - 测试摘要显示在 RandomRepeatabilitySummary 属性中
-        /// - 测试日志通过 AppendRandomRepeatLog 记录
-        /// </summary>
-        /// <summary>
-        /// 随机坐标重复精度测试
-        /// 
-        /// 测试概述：
-        /// 1) 以 XY 中心为原点生成高斯分布点（5mm 密度级别）
-        /// 2) 点间随机跳转，每点至少 10 次
-        /// 3) 输出点表、行程表、重复精度统计和距离/速度直方图
-        /// 
-        /// 实现方式：
-        /// - 使用规范化的 RandomRepeatabilityTestItem 类执行测试
-        /// - 该类封装了完整的测试逻辑，包括满行程检测、随机点生成、跳转测试等
-        /// - 测试结果通过 RandomRepeatabilityTestResult 返回
-        /// 
-        /// 测试流程：
-        /// 1. 查找 X/Y 轴电机
-        /// 2. 清空之前的测试数据
-        /// 3. 创建 RandomRepeatabilityTestItem 实例
-        /// 4. 分别调用 X 轴和 Y 轴测试（单轴测试）
-        /// 5. 将测试结果复制到 UI 集合（ObservableCollection）
-        /// 6. 更新测试摘要信息
-        /// 
-        /// 异常处理：
-        /// - OperationCanceledException：测试被取消，更新 UI 并返回
-        /// - 其他异常：捕获并显示错误信息，不中断程序
-        /// 
-        /// UI 更新：
-        /// - 所有测试数据都通过 ObservableCollection 绑定到 UI
-        /// - 测试摘要显示在 RandomRepeatabilitySummary 属性中
-        /// - 测试日志通过 AppendRandomRepeatLog 记录
+        /// 随机坐标重复精度测试：并行跑 X/Y 单轴项；全程启用快速问询以便行程与速度采样。
         /// </summary>
         /// <param name="token">取消令牌</param>
         private async Task RunRandomRepeatabilityTestAsync(CancellationToken token)
@@ -1002,6 +953,13 @@ namespace UtilityTools.Modules.MotorTest.Model
             if (xAxis == null || yAxis == null)
                 throw new InvalidOperationException("未找到 X/Y 轴，无法执行随机坐标重复精度测试。");
 
+            // 含行程与平均速度时，下位机位置/时间更依赖高频状态问询；与耐久测试一致，在此启用「快速问询」(缩短 QueryStatus 间隔)。
+            TestPerformance();
+            AppendRandomRepeatLog(xAxis, $"已开启快速问询：状态轮询间隔={FastInquiryQueryIntervalMs}ms（原 {NormalInquiryQueryIntervalMs}ms，结束后自动恢复）。");
+            AppendRandomRepeatLog(yAxis, $"已开启快速问询：状态轮询间隔={FastInquiryQueryIntervalMs}ms（原 {NormalInquiryQueryIntervalMs}ms，结束后自动恢复）。");
+
+            try
+            {
             AppendRandomRepeatLog(xAxis,
                 $"随机重复精度：准备开始。轴={xAxis.Name}({xAxis.EnumMotorId})，当前位置={xAxis.MotorModel.MotorParams.PosUm:F3}μm");
             AppendRandomRepeatLog(yAxis,
@@ -1145,7 +1103,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             // 更新测试摘要（Y 轴单轴结果的标准差仍记在 AvgStdX）
             RandomRepeatabilitySummary =
                 $"完成（并行）：X轴标准差={xResult?.AvgStdX:F3} μm，Y轴标准差={yResult?.AvgStdX:F3} μm\n" +
-                $"可点击「生成随机重复精度报告」导出到程序目录：{GetRandomRepeatabilityReportDirectory()}（Word 与同次导出的 CSV）。";
+                $"可点击「生成随机重复精度报告」导出单个 Excel 到：{GetRandomRepeatabilityReportDirectory()}";
 
             _lastRandomRepeatabilityXResult = xResult;
             _lastRandomRepeatabilityYResult = yResult;
@@ -1153,6 +1111,13 @@ namespace UtilityTools.Modules.MotorTest.Model
 
             AppendRandomRepeatLog(xAxis, "随机重复精度测试全部结束。");
             AppendRandomRepeatLog(yAxis, "随机重复精度测试全部结束。");
+            }
+            finally
+            {
+                CloseTestPerformance();
+                AppendRandomRepeatLog(xAxis, $"已恢复常规问询：状态轮询间隔={NormalInquiryQueryIntervalMs}ms。");
+                AppendRandomRepeatLog(yAxis, $"已恢复常规问询：状态轮询间隔={NormalInquiryQueryIntervalMs}ms。");
+            }
         }
 
         private void AppendRandomRepeatProgressLog(
@@ -1177,9 +1142,199 @@ namespace UtilityTools.Modules.MotorTest.Model
             return _lastRandomRepeatabilityXResult != null || _lastRandomRepeatabilityYResult != null;
         }
 
+        private void FillRandomRepeatabilityMockData()
+        {
+            var xResult = BuildRandomRepeatabilityMockResult(axisName: "X", seed: 20260506);
+            var yResult = BuildRandomRepeatabilityMockResult(axisName: "Y", seed: 20260507);
+            ApplyRandomRepeatabilityResultsToUi(xResult, yResult, "虚拟数据已填充（用于图表和Excel导出联调）。");
+            AppendRandomRepeatLogSafe("随机重复精度：已填充虚拟数据（X/Y），可直接导出报告。");
+        }
+
+        private void ApplyRandomRepeatabilityResultsToUi(
+            RandomRepeatabilityTestResult? xResult,
+            RandomRepeatabilityTestResult? yResult,
+            string summaryPrefix)
+        {
+            RandomTargetPoints.Clear();
+            RandomMoveTripsX.Clear();
+            RandomMoveTripsY.Clear();
+            RandomPointStatsX.Clear();
+            RandomPointStatsY.Clear();
+            RandomDistanceHistogramX.Clear();
+            RandomDistanceHistogramY.Clear();
+            RandomSpeedHistogramX.Clear();
+            RandomSpeedHistogramY.Clear();
+
+            if (xResult != null)
+            {
+                foreach (var point in xResult.TargetPoints)
+                    RandomTargetPoints.Add(point);
+                foreach (var trip in xResult.MoveTripsX)
+                    RandomMoveTripsX.Add(trip);
+                foreach (var stat in xResult.PointStatsX)
+                    RandomPointStatsX.Add(stat);
+                foreach (var bin in xResult.DistanceHistogramX)
+                    RandomDistanceHistogramX.Add(bin);
+                foreach (var bin in xResult.SpeedHistogramX)
+                    RandomSpeedHistogramX.Add(bin);
+            }
+
+            if (yResult != null)
+            {
+                foreach (var point in yResult.TargetPoints)
+                    RandomTargetPoints.Add(point);
+                foreach (var trip in yResult.MoveTripsX)
+                    RandomMoveTripsY.Add(trip);
+                foreach (var stat in yResult.PointStatsX)
+                    RandomPointStatsY.Add(stat);
+                foreach (var bin in yResult.DistanceHistogramX)
+                    RandomDistanceHistogramY.Add(bin);
+                foreach (var bin in yResult.SpeedHistogramX)
+                    RandomSpeedHistogramY.Add(bin);
+            }
+
+            _lastRandomRepeatabilityXResult = xResult;
+            _lastRandomRepeatabilityYResult = yResult;
+            GenerateRandomRepeatabilityReportCommand.RaiseCanExecuteChanged();
+
+            RandomRepeatabilitySummary =
+                $"{summaryPrefix}\n" +
+                $"X轴标准差={xResult?.AvgStdX:F3} μm，Y轴标准差={yResult?.AvgStdX:F3} μm\n" +
+                $"可点击「生成随机重复精度报告」导出单个 Excel 到：{GetRandomRepeatabilityReportDirectory()}";
+        }
+
+        private static RandomRepeatabilityTestResult BuildRandomRepeatabilityMockResult(string axisName, int seed)
+        {
+            var random = new Random(seed);
+            const int pointCount = 12;
+            const int repeatsPerPoint = 10;
+            const double targetSpanUm = 55000;
+            const double moveTimeMinMs = 180;
+            const double moveTimeRangeMs = 280;
+
+            var result = new RandomRepeatabilityTestResult
+            {
+                IsPassed = true,
+                IsTestCompleted = true,
+                Description = $"{axisName}轴随机重复精度虚拟数据",
+                MeasuredValue = "虚拟数据"
+            };
+
+            for (int i = 0; i < pointCount; i++)
+            {
+                double targetUm = (i - (pointCount - 1) / 2.0) * (targetSpanUm / pointCount);
+                int pulse = (int)Math.Round(targetUm * 2.0);
+                result.TargetPoints.Add(new RandomTargetPointRecord
+                {
+                    Index = i + 1,
+                    TargetXUm = axisName == "X" ? targetUm : 0,
+                    TargetYUm = axisName == "Y" ? targetUm : 0,
+                    TargetXPulse = axisName == "X" ? pulse : 0,
+                    TargetYPulse = axisName == "Y" ? pulse : 0
+                });
+            }
+
+            double plannedStart = result.TargetPoints[0].Index == 1
+                ? (axisName == "X" ? result.TargetPoints[0].TargetXUm : result.TargetPoints[0].TargetYUm)
+                : 0;
+            int seqNo = 1;
+            for (int repeat = 0; repeat < repeatsPerPoint; repeat++)
+            {
+                foreach (var point in result.TargetPoints.OrderBy(_ => random.Next()))
+                {
+                    double targetUm = axisName == "X" ? point.TargetXUm : point.TargetYUm;
+                    double startDriftUm = (random.NextDouble() - 0.5) * 16;
+                    double endNoiseUm = (random.NextDouble() - 0.5) * 7;
+                    double actualStartUm = plannedStart + startDriftUm;
+                    double actualTargetUm = targetUm + endNoiseUm;
+                    double distanceUm = Math.Abs(actualTargetUm - actualStartUm);
+                    double moveMs = moveTimeMinMs + random.NextDouble() * moveTimeRangeMs;
+                    double speedUmPerSec = distanceUm / Math.Max(0.001, moveMs / 1000.0);
+
+                    result.MoveTripsX.Add(new RandomMoveTripAxisRecord
+                    {
+                        SeqNo = seqNo++,
+                        PointIndex = point.Index,
+                        PlannedStartUm = plannedStart,
+                        ActualStartUm = actualStartUm,
+                        TargetUm = targetUm,
+                        ActualTargetUm = actualTargetUm,
+                        MoveTimeMs = moveMs,
+                        DistanceUm = distanceUm,
+                        AvgSpeedUmPerSec = speedUmPerSec
+                    });
+
+                    plannedStart = targetUm;
+                }
+            }
+
+            foreach (var point in result.TargetPoints)
+            {
+                double targetUm = axisName == "X" ? point.TargetXUm : point.TargetYUm;
+                var values = result.MoveTripsX
+                    .Where(t => t.PointIndex == point.Index)
+                    .Select(t => t.ActualTargetUm)
+                    .ToList();
+                if (values.Count == 0)
+                    continue;
+
+                double mean = values.Average();
+                double variance = values.Sum(v => Math.Pow(v - mean, 2)) / values.Count;
+                result.PointStatsX.Add(new RandomPointStatAxisRecord
+                {
+                    PointIndex = point.Index,
+                    SampleCount = values.Count,
+                    TargetUm = targetUm,
+                    MeanUm = mean,
+                    StdUm = Math.Sqrt(variance)
+                });
+            }
+
+            BuildMockHistogram(result.MoveTripsX.Select(t => t.DistanceUm).ToList(), 10, result.DistanceHistogramX);
+            BuildMockHistogram(result.MoveTripsX.Select(t => t.AvgSpeedUmPerSec).ToList(), 10, result.SpeedHistogramX);
+
+            result.AvgStdX = result.PointStatsX.Count == 0 ? 0 : result.PointStatsX.Average(s => s.StdUm);
+            result.AvgStdY = 0;
+            result.AvgMoveTimeMs = result.MoveTripsX.Count == 0 ? 0 : result.MoveTripsX.Average(t => t.MoveTimeMs);
+            result.XTravelUm = targetSpanUm;
+            result.YTravelUm = 0;
+            result.MeasuredValue = $"标准差: {result.AvgStdX:F3} μm";
+
+            return result;
+        }
+
+        private static void BuildMockHistogram(
+            List<double> values,
+            int binCount,
+            ObservableCollection<HistogramBinRecord> output)
+        {
+            if (values.Count == 0 || binCount <= 0)
+                return;
+
+            double min = values.Min();
+            double max = values.Max();
+            double width = Math.Max(1e-6, (max - min) / binCount);
+
+            for (int i = 0; i < binCount; i++)
+            {
+                double binMin = min + i * width;
+                double binMax = (i == binCount - 1) ? max : (binMin + width);
+                int count = values.Count(v => i == binCount - 1
+                    ? v >= binMin && v <= binMax
+                    : v >= binMin && v < binMax);
+                output.Add(new HistogramBinRecord
+                {
+                    BinIndex = i + 1,
+                    MinValue = binMin,
+                    MaxValue = binMax,
+                    Count = count
+                });
+            }
+        }
+
         private void GenerateRandomRepeatabilityReport()
         {
-            var reportPath = BuildRandomRepeatabilityWordReport(_lastRandomRepeatabilityXResult, _lastRandomRepeatabilityYResult);
+            var reportPath = BuildRandomRepeatabilityExcelReport(_lastRandomRepeatabilityXResult, _lastRandomRepeatabilityYResult);
             if (!string.IsNullOrWhiteSpace(reportPath))
             {
                 AppendRandomRepeatLogSafe($"随机重复精度报告已生成：{reportPath}");
@@ -1206,7 +1361,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     {
                         System.Windows.MessageBox.Show(
                             app.MainWindow,
-                            $"导出成功。\n\n{reportPath}\n\nWord 含摘要、曲线图与完整表格；另附同目录 CSV（UTF-8 BOM，可用 Excel 打开）。",
+                            $"导出成功。\n\n{reportPath}\n\n表格在各工作表中；差值曲线与距离/速度直方图已嵌入「嵌入图表」工作表（仍不另存外部文件）。",
                             "随机重复精度报告",
                             System.Windows.MessageBoxButton.OK,
                             System.Windows.MessageBoxImage.Information);
@@ -1255,9 +1410,9 @@ namespace UtilityTools.Modules.MotorTest.Model
         }
 
         /// <summary>
-        /// 导出随机重复精度报告：Word 使用 DocumentFormat.OpenXml（免费）；明细同时写入 CSV。
+        /// 导出随机重复精度报告：仅生成单个 Excel（xlsx），点表、行程、分箱与差值均在各工作表中。
         /// </summary>
-        private string BuildRandomRepeatabilityWordReport(
+        private string BuildRandomRepeatabilityExcelReport(
             RandomRepeatabilityTestResult? xResult,
             RandomRepeatabilityTestResult? yResult)
         {
@@ -1269,173 +1424,84 @@ namespace UtilityTools.Modules.MotorTest.Model
                     return string.Empty;
                 }
 
-                string reportDir = GetRandomRepeatabilityReportDirectory();
-
-                string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                IReadOnlyList<string> csvRelative = ExportRandomRepeatabilityDetailCsvs(reportDir, stamp, xResult, yResult);
-
-                string? positionPng = ExportPlotToPng(reportDir, "random_position_curve", MotorplotModel);
-                string? speedPng = ExportPlotToPng(reportDir, "random_speed_curve", MotorSpeedplotModel);
-
-                string? histXDistPng = ExportHistogramToPng(reportDir, $"{stamp}_hist_x_distance", "X轴距离分箱", xResult?.DistanceHistogramX, "分箱区间 (μm)");
-                string? histYDistPng = ExportHistogramToPng(reportDir, $"{stamp}_hist_y_distance", "Y轴距离分箱", yResult?.DistanceHistogramX, "分箱区间 (μm)");
-                string? histXSpdPng = ExportHistogramToPng(reportDir, $"{stamp}_hist_x_speed", "X轴速度分箱", xResult?.SpeedHistogramX, "分箱区间 (μm/s)");
-                string? histYSpdPng = ExportHistogramToPng(reportDir, $"{stamp}_hist_y_speed", "Y轴速度分箱", yResult?.SpeedHistogramX, "分箱区间 (μm/s)");
-
-                string reportPath = Path.Combine(reportDir, $"随机重复精度报告_{stamp}.docx");
-                RandomRepeatabilityOpenXmlReport.Save(
-                    reportPath,
-                    xResult,
-                    yResult,
-                    positionPng,
-                    speedPng,
-                    histXDistPng,
-                    histYDistPng,
-                    histXSpdPng,
-                    histYSpdPng,
-                    csvRelative);
-                return reportPath;
-            }
-            catch (Exception ex)
-            {
-                NLog.LogManager.GetCurrentClassLogger().Error(ex, "生成随机重复精度 Word 报告失败");
-                return string.Empty;
-            }
-        }
-
-        private static IReadOnlyList<string> ExportRandomRepeatabilityDetailCsvs(
-            string reportDir,
-            string stamp,
-            RandomRepeatabilityTestResult? xResult,
-            RandomRepeatabilityTestResult? yResult)
-        {
-            var names = new List<string>();
-            var utf8Bom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: true);
-
-            void WriteCsv<T>(string fileSuffix, IEnumerable<T> rows)
-            {
-                string path = Path.Combine(reportDir, $"{stamp}_{fileSuffix}");
-                using var writer = new StreamWriter(path, false, utf8Bom);
-                using var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
-                csv.WriteRecords(rows);
-                names.Add($"{stamp}_{fileSuffix}");
-            }
-
-            try
-            {
-                if (xResult != null && xResult.TargetPoints.Count > 0)
-                    WriteCsv("X_TargetPoints.csv", xResult.TargetPoints);
-
-                if (yResult != null && yResult.TargetPoints.Count > 0)
-                    WriteCsv("Y_TargetPoints.csv", yResult.TargetPoints);
-
-                if (xResult != null)
+                BeginPlotUiFreezeForExport();
+                try
                 {
-                    WriteCsv("X_PointStats.csv", xResult.PointStatsX);
-                    WriteCsv("X_MoveTrips.csv", xResult.MoveTripsX);
-                    WriteCsv("X_DistanceHistogram.csv", xResult.DistanceHistogramX);
-                    WriteCsv("X_SpeedHistogram.csv", xResult.SpeedHistogramX);
-                }
+                    string reportDir = GetRandomRepeatabilityReportDirectory();
+                    string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                    string reportPath = Path.Combine(reportDir, $"随机重复精度报告_{stamp}.xlsx");
 
-                if (yResult != null)
-                {
-                    WriteCsv("Y_PointStats.csv", yResult.PointStatsX);
-                    WriteCsv("Y_MoveTrips.csv", yResult.MoveTripsX);
-                    WriteCsv("Y_DistanceHistogram.csv", yResult.DistanceHistogramX);
-                    WriteCsv("Y_SpeedHistogram.csv", yResult.SpeedHistogramX);
-                }
-            }
-            catch (Exception ex)
-            {
-                NLog.LogManager.GetCurrentClassLogger().Error(ex, "导出随机重复精度 CSV 失败");
-            }
-
-            return names;
-        }
-
-        private string ExportPlotToPng(string outputDir, string prefix, PlotModel? model)
-        {
-            if (model == null)
-                return string.Empty;
-
-            try
-            {
-                string imagePath = Path.Combine(outputDir, $"{prefix}_{DateTime.Now:yyyyMMdd_HHmmss}.png");
-                System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
-                {
-                    var exporter = new PngExporter { Width = 1280, Height = 720 };
-                    exporter.ExportToFile(model, imagePath);
-                });
-                return imagePath;
-            }
-            catch (Exception ex)
-            {
-                NLog.LogManager.GetCurrentClassLogger().Warn(ex, $"导出图像失败: {prefix}");
-                return string.Empty;
-            }
-        }
-
-        /// <summary>
-        /// 将直方图分箱数据用 OxyPlot 导出为柱状图 PNG（与位置/速度曲线相同的导出尺寸，便于插入 Word）。
-        /// </summary>
-        private static string ExportHistogramToPng(
-            string outputDir,
-            string filePrefix,
-            string plotTitle,
-            IEnumerable<HistogramBinRecord>? bins,
-            string binAxisTitle)
-        {
-            var list = bins?.ToList();
-            if (list == null || list.Count == 0)
-                return string.Empty;
-
-            try
-            {
-                string imagePath = Path.Combine(outputDir, $"{filePrefix}_{DateTime.Now:yyyyMMdd_HHmmss}.png");
-                System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
-                {
-                    var model = new PlotModel { Title = plotTitle };
-                    var categoryAxis = new CategoryAxis
+                    var embeddedCharts = new List<(string Title, byte[] Png)>();
+                    void AddChart(string title, byte[]? png)
                     {
-                        Position = AxisPosition.Bottom,
-                        Title = binAxisTitle,
-                        Angle = 45,
-                        GapWidth = 0.35
-                    };
-                    var valueAxis = new LinearAxis
-                    {
-                        Position = AxisPosition.Left,
-                        Title = "计数",
-                        MinimumPadding = 0,
-                        AbsoluteMinimum = 0
-                    };
-                    model.Axes.Add(categoryAxis);
-                    model.Axes.Add(valueAxis);
-
-                    var series = new BarSeries
-                    {
-                        FillColor = OxyColor.FromArgb(220, 66, 165, 245),
-                        StrokeColor = OxyColors.DarkBlue,
-                        StrokeThickness = 1
-                    };
-                    for (int i = 0; i < list.Count; i++)
-                    {
-                        var b = list[i];
-                        categoryAxis.Labels.Add($"{b.MinValue:F1}–{b.MaxValue:F1}");
-                        series.Items.Add(new BarItem(b.Count));
+                        if (png != null && png.Length > 0)
+                            embeddedCharts.Add((title, png));
                     }
 
-                    model.Series.Add(series);
-                    var exporter = new PngExporter { Width = 1280, Height = 720 };
-                    exporter.ExportToFile(model, imagePath);
-                });
-                return imagePath;
+                    RunOnUiDispatcher(() =>
+                    {
+                        AddChart("X轴目标−实际差值", RandomRepeatabilityPlotPngGenerator.ExportDiffCurve(xResult?.MoveTripsX, "X轴目标−实际差值"));
+                        AddChart("Y轴目标−实际差值", RandomRepeatabilityPlotPngGenerator.ExportDiffCurve(yResult?.MoveTripsX, "Y轴目标−实际差值"));
+                        AddChart("X轴距离分箱", RandomRepeatabilityPlotPngGenerator.ExportHistogram(xResult?.DistanceHistogramX, "X轴距离分箱", "分箱区间 (μm)"));
+                        AddChart("Y轴距离分箱", RandomRepeatabilityPlotPngGenerator.ExportHistogram(yResult?.DistanceHistogramX, "Y轴距离分箱", "分箱区间 (μm)"));
+                        AddChart("X轴速度分箱", RandomRepeatabilityPlotPngGenerator.ExportHistogram(xResult?.SpeedHistogramX, "X轴速度分箱", "分箱区间 (μm/s)"));
+                        AddChart("Y轴速度分箱", RandomRepeatabilityPlotPngGenerator.ExportHistogram(yResult?.SpeedHistogramX, "Y轴速度分箱", "分箱区间 (μm/s)"));
+                    });
+
+                    RandomRepeatabilityExcelReport.Save(
+                        reportPath,
+                        xResult,
+                        yResult,
+                        FastInquiryQueryIntervalMs,
+                        NormalInquiryQueryIntervalMs,
+                        embeddedCharts);
+                    return reportPath;
+                }
+                finally
+                {
+                    EndPlotUiFreezeForExport();
+                }
             }
             catch (Exception ex)
             {
-                NLog.LogManager.GetCurrentClassLogger().Warn(ex, $"导出直方图失败: {filePrefix}");
+                NLog.LogManager.GetCurrentClassLogger().Error(ex, "生成随机重复精度 Excel 报告失败");
                 return string.Empty;
             }
+        }
+
+        /// <summary>暂停界面曲线定时刷新（导出嵌入图时使用）。已在本线程则直接执行。</summary>
+        private static void RunOnUiDispatcher(Action action)
+        {
+            var app = System.Windows.Application.Current;
+            if (app?.Dispatcher == null)
+            {
+                action();
+                return;
+            }
+
+            if (app.Dispatcher.CheckAccess())
+                action();
+            else
+                app.Dispatcher.Invoke(action);
+        }
+
+        private void BeginPlotUiFreezeForExport()
+        {
+            RunOnUiDispatcher(() =>
+            {
+                System.Threading.Interlocked.Increment(ref _plotUiFreezeDepth);
+                _uiRenderTimer?.Stop();
+                System.Threading.Interlocked.Exchange(ref _plotDirty, 0);
+            });
+        }
+
+        private void EndPlotUiFreezeForExport()
+        {
+            RunOnUiDispatcher(() =>
+            {
+                System.Threading.Interlocked.Decrement(ref _plotUiFreezeDepth);
+                _uiRenderTimer?.Start();
+            });
         }
 
         /// <summary>

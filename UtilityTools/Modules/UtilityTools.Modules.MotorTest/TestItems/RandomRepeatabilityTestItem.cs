@@ -31,7 +31,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
     public class RandomRepeatabilityTestItem : IMotorTestItem
     {
         private const double FixedPointSpacingUm = 5000.0; // 5mm
-        private const int FixedRepeatsPerPoint = 40;
+        private const int FixedRepeatsPerPoint = 10;
         private static readonly object FlowLogFileLock = new();
         /// <summary>
         /// 测试名称
@@ -73,7 +73,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
         /// <param name="histogramBins">直方图 bin 数</param>
         public RandomRepeatabilityTestItem(
             double spacingUm = 5000,  // 5mm（兼容参数，执行时固定按 5mm 计算点数）
-            int repeatsPerPoint = 40, // 默认每点40次
+            int repeatsPerPoint = 10, // 默认每点10次
             int histogramBins = 10,
             Action<int, int, TimeSpan, TimeSpan>? progressReporter = null)
         {
@@ -730,6 +730,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
 
                 histogram.Add(new HistogramBinRecord
                 {
+                    BinIndex = i + 1,
                     MinValue = binMin,
                     MaxValue = binMax,
                     Count = count
