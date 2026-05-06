@@ -3,6 +3,7 @@ using DocumentFormat.OpenXml.Drawing;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using A = DocumentFormat.OpenXml.Drawing;
+using S = DocumentFormat.OpenXml.Spreadsheet;
 using Xdr = DocumentFormat.OpenXml.Drawing.Spreadsheet;
 using System;
 using System.Buffers.Binary;
@@ -31,6 +32,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             using var doc = SpreadsheetDocument.Create(xlsxPath, SpreadsheetDocumentType.Workbook);
             var wbPart = doc.AddWorkbookPart();
             wbPart.Workbook = new Workbook();
+            uint separatorStyleIndex = EnsureSeparatorCellStyle(wbPart);
             var sheets = wbPart.Workbook.AppendChild(new Sheets());
 
             uint sheetId = 1;
@@ -49,13 +51,13 @@ namespace UtilityTools.Modules.MotorTest.Model
             AddMoveTripSheet(wbPart, sheets, ref sheetId, "X轴行程明细", xResult?.MoveTripsX);
             AddMoveTripSheet(wbPart, sheets, ref sheetId, "Y轴行程明细", yResult?.MoveTripsX);
 
-            AddHistogramCombinedSheet(wbPart, sheets, ref sheetId, "距离分箱(XY)", xResult?.DistanceHistogramX, yResult?.DistanceHistogramX);
-            AddHistogramCombinedSheet(wbPart, sheets, ref sheetId, "速度分箱(XY)", xResult?.SpeedHistogramX, yResult?.SpeedHistogramX);
+            AddHistogramCombinedSheet(wbPart, sheets, ref sheetId, "距离分箱(XY)", xResult?.DistanceHistogramX, yResult?.DistanceHistogramX, separatorStyleIndex);
+            AddHistogramCombinedSheet(wbPart, sheets, ref sheetId, "速度分箱(XY)", xResult?.SpeedHistogramX, yResult?.SpeedHistogramX, separatorStyleIndex);
 
             AddDiffSheet(wbPart, sheets, ref sheetId, "X轴差值", xResult?.MoveTripsX);
             AddDiffSheet(wbPart, sheets, ref sheetId, "Y轴差值", yResult?.MoveTripsX);
 
-            AddPointStatsCombinedSheet(wbPart, sheets, ref sheetId, xResult, yResult);
+            AddPointStatsCombinedSheet(wbPart, sheets, ref sheetId, xResult, yResult, separatorStyleIndex);
 
             AddEmbeddedChartsSheet(wbPart, sheets, ref sheetId, embeddedChartPngs);
 
@@ -171,9 +173,10 @@ namespace UtilityTools.Modules.MotorTest.Model
                 xDict.TryGetValue(index, out var xPoint);
                 yDict.TryGetValue(index, out var yPoint);
                 double targetX = xPoint?.TargetXUm ?? 0;
-                double targetY = yPoint?.TargetYUm ?? 0;
+                // 单轴测试结果中目标值统一写入 TargetXUm/TargetXPulse，Y轴结果同样如此。
+                double targetY = yPoint?.TargetXUm ?? 0;
                 double pulseX = xPoint?.TargetXPulse ?? 0;
-                double pulseY = yPoint?.TargetYPulse ?? 0;
+                double pulseY = yPoint?.TargetXPulse ?? 0;
                 AddNumberRow(data, index, targetX, targetY, pulseX, pulseY);
             }
         }
@@ -221,38 +224,41 @@ namespace UtilityTools.Modules.MotorTest.Model
             ref uint sheetId,
             string sheetName,
             IEnumerable<HistogramBinRecord>? xBins,
-            IEnumerable<HistogramBinRecord>? yBins)
+            IEnumerable<HistogramBinRecord>? yBins,
+            uint separatorStyleIndex)
         {
             var wsPart = wbPart.AddNewPart<WorksheetPart>();
             var data = new SheetData();
-            int dataRows = (xBins?.Count() ?? 0) + (yBins?.Count() ?? 0);
+            var xList = xBins?.ToList() ?? new List<HistogramBinRecord>();
+            var yList = yBins?.ToList() ?? new List<HistogramBinRecord>();
+            int dataRows = Math.Max(xList.Count, yList.Count);
             int rowCount = 1 + dataRows;
-            string filterRef = $"A1:E{Math.Max(1, rowCount)}";
+            string filterRef = $"A1:I{Math.Max(1, rowCount)}";
             AttachWorksheet(
                 wsPart,
                 data,
                 freezeTopRow: true,
                 autoFilterReference: filterRef,
-                columnWidths: new[] { 8d, 10d, 18d, 18d, 10d });
+                columnWidths: new[] { 8d, 14d, 14d, 10d, 3d, 8d, 14d, 14d, 10d });
             sheets.Append(new Sheet { Id = wbPart.GetIdOfPart(wsPart), SheetId = sheetId++, Name = sheetName });
 
-            AddHeaderRow(data, "轴别", "序号", "下限", "上限", "计数");
-            void AppendBins(IEnumerable<HistogramBinRecord>? bins, string axisName)
+            AddHeaderRow(data, "X序号", "X下限", "X上限", "X计数", "", "Y序号", "Y下限", "Y上限", "Y计数");
+            for (int i = 0; i < dataRows; i++)
             {
-                if (bins == null) return;
-                foreach (var b in bins)
-                {
-                    var row = new Row();
-                    row.Append(TextCell(axisName));
-                    row.Append(NumberCell(b.BinIndex));
-                    row.Append(NumberCell(b.MinValue));
-                    row.Append(NumberCell(b.MaxValue));
-                    row.Append(NumberCell(b.Count));
-                    data.Append(row);
-                }
+                var row = new Row();
+                var xb = i < xList.Count ? xList[i] : null;
+                var yb = i < yList.Count ? yList[i] : null;
+                row.Append(xb == null ? TextCell(string.Empty) : NumberCell(xb.BinIndex));
+                row.Append(xb == null ? TextCell(string.Empty) : NumberCell(xb.MinValue));
+                row.Append(xb == null ? TextCell(string.Empty) : NumberCell(xb.MaxValue));
+                row.Append(xb == null ? TextCell(string.Empty) : NumberCell(xb.Count));
+                row.Append(SeparatorCell(separatorStyleIndex));
+                row.Append(yb == null ? TextCell(string.Empty) : NumberCell(yb.BinIndex));
+                row.Append(yb == null ? TextCell(string.Empty) : NumberCell(yb.MinValue));
+                row.Append(yb == null ? TextCell(string.Empty) : NumberCell(yb.MaxValue));
+                row.Append(yb == null ? TextCell(string.Empty) : NumberCell(yb.Count));
+                data.Append(row);
             }
-            AppendBins(xBins, "X");
-            AppendBins(yBins, "Y");
         }
 
         private static void AddDiffSheet(
@@ -290,12 +296,15 @@ namespace UtilityTools.Modules.MotorTest.Model
             Sheets sheets,
             ref uint sheetId,
             RandomRepeatabilityTestResult? xResult,
-            RandomRepeatabilityTestResult? yResult)
+            RandomRepeatabilityTestResult? yResult,
+            uint separatorStyleIndex)
         {
             var wsPart = wbPart.AddNewPart<WorksheetPart>();
             var data = new SheetData();
-            const int colCount = 8;
-            int dataRows = (xResult?.PointStatsX.Count ?? 0) + (yResult?.PointStatsX.Count ?? 0);
+            var xStats = xResult?.PointStatsX?.ToList() ?? new List<RandomPointStatAxisRecord>();
+            var yStats = yResult?.PointStatsX?.ToList() ?? new List<RandomPointStatAxisRecord>();
+            const int colCount = 15;
+            int dataRows = Math.Max(xStats.Count, yStats.Count);
             int rowCount = 1 + dataRows;
             string filterRef = $"A1:{ExcelColumnName(colCount)}{Math.Max(1, rowCount)}";
             AttachWorksheet(
@@ -303,22 +312,25 @@ namespace UtilityTools.Modules.MotorTest.Model
                 data,
                 freezeTopRow: true,
                 autoFilterReference: filterRef,
-                columnWidths: new[] { 8d, 10d, 10d, 14d, 14d, 14d, 14d, 16d });
+                columnWidths: new[] { 10d, 10d, 14d, 14d, 14d, 14d, 16d, 3d, 10d, 10d, 14d, 14d, 14d, 14d, 16d });
             sheets.Append(new Sheet { Id = wbPart.GetIdOfPart(wsPart), SheetId = sheetId++, Name = "点统计(XY)" });
 
-            AddHeaderRow(data, "轴别", "点序号", "样本数", "目标(μm)", "均值(μm)", "标准差(μm)", "均值偏差(μm)", "行程平均速度(μm/s)");
-            void AppendStats(IEnumerable<RandomPointStatAxisRecord>? stats, IEnumerable<RandomMoveTripAxisRecord>? trips, string axisName)
+            AddHeaderRow(data,
+                "X点序号", "X样本数", "X目标(μm)", "X均值(μm)", "X标准差(μm)", "X均值偏差(μm)", "X行程平均速度(μm/s)",
+                "",
+                "Y点序号", "Y样本数", "Y目标(μm)", "Y均值(μm)", "Y标准差(μm)", "Y均值偏差(μm)", "Y行程平均速度(μm/s)");
+            for (int i = 0; i < dataRows; i++)
             {
-                if (stats == null) return;
-                foreach (var s in stats)
-                {
-                    double meanDiff = s.MeanUm - s.TargetUm;
-                    double meanSpeed = MeanTripSpeedUmPerSecAtPoint(trips, s.PointIndex);
-                    AppendPointStatRow(data, axisName, s.PointIndex, s.SampleCount, s.TargetUm, s.MeanUm, s.StdUm, meanDiff, meanSpeed);
-                }
+                var row = new Row();
+                var xs = i < xStats.Count ? xStats[i] : null;
+                var ys = i < yStats.Count ? yStats[i] : null;
+                double xMeanSpeed = xs == null ? double.NaN : MeanTripSpeedUmPerSecAtPoint(xResult?.MoveTripsX, xs.PointIndex);
+                double yMeanSpeed = ys == null ? double.NaN : MeanTripSpeedUmPerSecAtPoint(yResult?.MoveTripsX, ys.PointIndex);
+                AppendPointStatCells(row, xs, xMeanSpeed);
+                row.Append(SeparatorCell(separatorStyleIndex));
+                AppendPointStatCells(row, ys, yMeanSpeed);
+                data.Append(row);
             }
-            AppendStats(xResult?.PointStatsX, xResult?.MoveTripsX, "X");
-            AppendStats(yResult?.PointStatsX, yResult?.MoveTripsX, "Y");
         }
 
         /// <summary>该目标点下各次跳转的平均速度均值（μm/s）。</summary>
@@ -337,30 +349,76 @@ namespace UtilityTools.Modules.MotorTest.Model
             return n == 0 ? double.NaN : sum / n;
         }
 
-        private static void AppendPointStatRow(
-            SheetData data,
-            string axisName,
-            double pointIndex,
-            double sampleCount,
-            double targetUm,
-            double meanUm,
-            double stdUm,
-            double meanBiasUm,
+        private static void AppendPointStatCells(
+            Row row,
+            RandomPointStatAxisRecord? stat,
             double meanTripSpeedUmPerSec)
         {
-            var row = new Row();
-            row.Append(TextCell(axisName));
-            row.Append(NumberCell(pointIndex));
-            row.Append(NumberCell(sampleCount));
-            row.Append(NumberCell(targetUm));
-            row.Append(NumberCell(meanUm));
-            row.Append(NumberCell(stdUm));
-            row.Append(NumberCell(meanBiasUm));
+            if (stat == null)
+            {
+                row.Append(TextCell(string.Empty));
+                row.Append(TextCell(string.Empty));
+                row.Append(TextCell(string.Empty));
+                row.Append(TextCell(string.Empty));
+                row.Append(TextCell(string.Empty));
+                row.Append(TextCell(string.Empty));
+                row.Append(TextCell(string.Empty));
+                return;
+            }
+
+            row.Append(NumberCell(stat.PointIndex));
+            row.Append(NumberCell(stat.SampleCount));
+            row.Append(NumberCell(stat.TargetUm));
+            row.Append(NumberCell(stat.MeanUm));
+            row.Append(NumberCell(stat.StdUm));
+            row.Append(NumberCell(stat.MeanUm - stat.TargetUm));
             if (double.IsNaN(meanTripSpeedUmPerSec))
                 row.Append(TextCell("--"));
             else
                 row.Append(NumberCell(meanTripSpeedUmPerSec));
-            data.Append(row);
+        }
+
+        private static Cell SeparatorCell(uint styleIndex) =>
+            new Cell { DataType = CellValues.InlineString, InlineString = new InlineString(new DocumentFormat.OpenXml.Spreadsheet.Text(string.Empty)), StyleIndex = styleIndex };
+
+        private static uint EnsureSeparatorCellStyle(WorkbookPart wbPart)
+        {
+            var stylesPart = wbPart.WorkbookStylesPart ?? wbPart.AddNewPart<WorkbookStylesPart>();
+            if (stylesPart.Stylesheet == null)
+            {
+                stylesPart.Stylesheet = new S.Stylesheet(
+                    new S.Fonts(new S.Font()),
+                    new S.Fills(
+                        new S.Fill(new S.PatternFill { PatternType = S.PatternValues.None }),
+                        new S.Fill(new S.PatternFill { PatternType = S.PatternValues.Gray125 })),
+                    new S.Borders(new S.Border()),
+                    new S.CellStyleFormats(new S.CellFormat()),
+                    new S.CellFormats(new S.CellFormat()));
+            }
+
+            var stylesheet = stylesPart.Stylesheet;
+            stylesheet.Fills ??= new S.Fills(
+                new S.Fill(new S.PatternFill { PatternType = S.PatternValues.None }),
+                new S.Fill(new S.PatternFill { PatternType = S.PatternValues.Gray125 }));
+            stylesheet.CellFormats ??= new S.CellFormats(new S.CellFormat());
+
+            uint sepFillId = (uint)stylesheet.Fills.Count();
+            stylesheet.Fills.Append(new S.Fill(
+                new S.PatternFill(
+                    new S.ForegroundColor { Rgb = "FFDDEBF7" },
+                    new S.BackgroundColor { Indexed = 64U })
+                { PatternType = S.PatternValues.Solid }));
+            stylesheet.Fills.Count = (uint)stylesheet.Fills.Count();
+
+            uint sepStyleIndex = (uint)stylesheet.CellFormats.Count();
+            stylesheet.CellFormats.Append(new S.CellFormat
+            {
+                FillId = sepFillId,
+                ApplyFill = true
+            });
+            stylesheet.CellFormats.Count = (uint)stylesheet.CellFormats.Count();
+            stylesheet.Save();
+            return sepStyleIndex;
         }
 
         private static string F3TripMeanSpeed(RandomRepeatabilityTestResult? r)

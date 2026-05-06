@@ -1442,6 +1442,10 @@ namespace UtilityTools.Modules.MotorTest.Model
                     {
                         AddChart("X轴目标−实际差值", RandomRepeatabilityPlotPngGenerator.ExportDiffCurve(xResult?.MoveTripsX, "X轴目标−实际差值"));
                         AddChart("Y轴目标−实际差值", RandomRepeatabilityPlotPngGenerator.ExportDiffCurve(yResult?.MoveTripsX, "Y轴目标−实际差值"));
+                        AddChart("X轴每点差值箱线图", RandomRepeatabilityPlotPngGenerator.ExportDiffBoxPlot(xResult?.MoveTripsX, "X轴每点差值箱线图"));
+                        AddChart("Y轴每点差值箱线图", RandomRepeatabilityPlotPngGenerator.ExportDiffBoxPlot(yResult?.MoveTripsX, "Y轴每点差值箱线图"));
+                        AddChart("X轴速度-距离散点", RandomRepeatabilityPlotPngGenerator.ExportSpeedDistanceScatter(xResult?.MoveTripsX, "X轴速度-距离散点"));
+                        AddChart("Y轴速度-距离散点", RandomRepeatabilityPlotPngGenerator.ExportSpeedDistanceScatter(yResult?.MoveTripsX, "Y轴速度-距离散点"));
                         AddChart("X轴距离分箱", RandomRepeatabilityPlotPngGenerator.ExportHistogram(xResult?.DistanceHistogramX, "X轴距离分箱", "分箱区间 (μm)"));
                         AddChart("Y轴距离分箱", RandomRepeatabilityPlotPngGenerator.ExportHistogram(yResult?.DistanceHistogramX, "Y轴距离分箱", "分箱区间 (μm)"));
                         AddChart("X轴速度分箱", RandomRepeatabilityPlotPngGenerator.ExportHistogram(xResult?.SpeedHistogramX, "X轴速度分箱", "分箱区间 (μm/s)"));
