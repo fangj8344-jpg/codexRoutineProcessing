@@ -54,7 +54,14 @@ namespace UtilityTools.Modules.MotorTest.Runners
         private void PublishLog(string message)
         {
             _eventAggregator.GetEvent<MotorLogEvent>().Publish($"{_motorName}|{message}");
+            _logger.Info($"{_motorName}|{message}");
         }
+
+        // 统一日志标记：便于现场快速筛选关键信息
+        private void LogFlow(string message) => PublishLog($"【FLOW】{message}");
+        private void LogKey(string message) => PublishLog($"【KEY】{message}");
+        private void LogWarn(string message) => PublishLog($"【WARN】{message}");
+        private void LogFail(string message) => PublishLog($"【FAIL】{message}");
 
         // ==========================================
         // 流程图纸 A：无限耐久跑机测试
@@ -191,9 +198,29 @@ namespace UtilityTools.Modules.MotorTest.Runners
         {
             //先准备好这一轴的 MotorData 对象
             var myData = new MotorData { AxisType = _motorName, PositionErrors = new List<PositionError>() };
+            static bool IsLimitAbnormalResult(MotorTestResult? r)
+            {
+                if (r == null) return false;
+                if (r.IsPassed) return false;
+                if (r.IsLimitAbnormal) return true;
+                var text = $"{r.ErrorDescription} {r.Description} {r.MeasuredValue}";
+                if (string.IsNullOrWhiteSpace(text)) return false;
+                return text.Contains("限位", StringComparison.OrdinalIgnoreCase)
+                    || text.Contains("limit", StringComparison.OrdinalIgnoreCase);
+            }
+
+            static string BuildReasonText(MotorTestResult? r)
+            {
+                if (r == null) return "未知原因";
+                if (!string.IsNullOrWhiteSpace(r.ErrorDescription)) return r.ErrorDescription;
+                if (!string.IsNullOrWhiteSpace(r.Description)) return r.Description;
+                if (!string.IsNullOrWhiteSpace(r.MeasuredValue)) return r.MeasuredValue;
+                return "未知原因";
+            }
 
             // 注意：这里不再清空界面的集合，清空动作由界面的 Command 触发前自己做
-            PublishLog($"--- 开始执行 [{_motorName}] 全套基础测试 ---");
+            LogFlow($"--- 开始执行 [{_motorName}] 全套基础测试 ---");
+            LogKey($"日志标记说明: 【KEY】关键结论 【FAIL】失败终止 【WARN】告警继续 【FLOW】流程节点");
             float ratio = _motorModel.MotorParams.SubRatio;
 
             var moveTest = new MovementTestItem(_testThresholds.MovementMinDistancePulse);
@@ -230,65 +257,87 @@ namespace UtilityTools.Modules.MotorTest.Runners
             // ==========================================
             // 积木 1：电机基础移动测试
             // ==========================================
-            PublishLog($"[{_motorName}] 正在执行电机基础移动测试...");
+            LogFlow($"[{_motorName}] 正在执行电机基础移动测试...");
             var moveResult = await RunTestWithEstimatedProgress(
                 moveTest.TestName, moveStdValue, 12, cancellationToken,
                 () => moveTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken));
             PublishTestResult(moveTest.TestName, moveStdValue, moveResult);
             if (!moveResult.IsPassed)
             {
-                PublishLog($"[{_motorName}] 移动测试失败，终止。原因：{moveResult.ErrorDescription}");
+                LogFail($"[{_motorName}] 移动测试失败，流程终止。原因：{moveResult.ErrorDescription}");
                 return;
             }
-            PublishLog($"[{_motorName}] 电机基础移动测试通过。");
+            LogKey($"[{_motorName}] 电机基础移动测试通过。");
 
             // ==========================================
             // 积木 2：编码器方向及响应测试
             // ==========================================
-            PublishLog($"[{_motorName}] 正在执行编码器方向及响应测试...");
+            LogFlow($"[{_motorName}] 正在执行编码器方向及响应测试...");
             var encoderResult = await RunTestWithEstimatedProgress(
                 encoderTest.TestName, encoderStdValue, 12, cancellationToken,
                 () => encoderTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken));
             PublishTestResult(encoderTest.TestName, encoderStdValue, encoderResult);
             if (!encoderResult.IsPassed)
             {
-                PublishLog($"[{_motorName}] 编码器测试失败，终止。原因：{encoderResult.ErrorDescription}");
+                LogFail($"[{_motorName}] 编码器测试失败，流程终止。原因：{encoderResult.ErrorDescription}");
                 return;
             }
-            PublishLog($"[{_motorName}] 编码器方向及响应测试通过。");
+            LogKey($"[{_motorName}] 编码器方向及响应测试通过。");
 
             // ==========================================
             // 积木 3：满行程及限位测试 
             // ==========================================
-            PublishLog($"[{_motorName}] 正在执行满行程及限位扫描...");
+            LogFlow($"[{_motorName}] 正在执行满行程及限位扫描...");
             var fullTravelResult = await RunTestWithEstimatedProgress(
                 fullTravelTest.TestName, fullTravelStdValue, 160, cancellationToken,
                 () => fullTravelTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken));
             // 判断积木交上来的是不是定义的 TravelTestResult
+            bool limitTriggerPassed = false;
             if (fullTravelResult is TravelTestResult travelRes)
             {
                 myData.MaxRange = (float)travelRes.RealMaxPosUm;
                 myData.MinRange = (float)travelRes.RealMinPosUm;
                 myData.PositiveLimit = travelRes.IsPositiveLimitFound;
                 myData.NegativeLimit = travelRes.IsNegativeLimitFound;
+                // 继续后续测试只要求：正反限位都能正常触发
+                limitTriggerPassed = travelRes.IsPositiveLimitFound && travelRes.IsNegativeLimitFound;
+                LogKey($"[{_motorName}] 满行程结果: 正限位={travelRes.IsPositiveLimitFound}, 负限位={travelRes.IsNegativeLimitFound}, 行程={travelRes.MeasuredValue}");
             }
             PublishTestResult(fullTravelTest.TestName, fullTravelStdValue, fullTravelResult);
-            if (!fullTravelResult.IsPassed) { PublishLog($"[{_motorName}] 满行程测试失败，终止。"); return; }
+            if (!limitTriggerPassed)
+            {
+                LogFail($"[{_motorName}] 限位触发异常（正/反限位未同时触发），流程终止；后续“分段定位线性测试/丝杆顺滑度测试”不会执行。");
+                return;
+            }
+            if (!fullTravelResult.IsPassed)
+            {
+                LogWarn($"[{_motorName}] 满行程判定未通过，但正反限位触发正常，继续执行后续测试。");
+            }
+            else
+            {
+                LogKey($"[{_motorName}] 满行程判定通过，进入后续测试。");
+            }
 
             // ==========================================
             // 积木 4：限位精度(重复性)测试
             // ==========================================
-            PublishLog($"[{_motorName}] 正在执行限位精度(重复性)测试...");
+            LogFlow($"[{_motorName}] 正在执行限位精度(重复性)测试...");
             var accuracyResult = await RunTestWithEstimatedProgress(
                 accuracyTest.TestName, limitStdValue, 220, cancellationToken,
                 () => accuracyTest.ExecuteAsync(_motorId, _motorModel, _motorEntity, cancellationToken));
             PublishTestResult(accuracyTest.TestName, limitStdValue, accuracyResult);
-            if (!accuracyResult.IsPassed) { PublishLog($"[{_motorName}] 限位精度测试失败，终止。"); return; }
+            if (IsLimitAbnormalResult(accuracyResult))
+            {
+                LogFail($"[{_motorName}] 后续测试检测到限位异常，流程终止。原因：{BuildReasonText(accuracyResult)}");
+                return;
+            }
+            if (!accuracyResult.IsPassed)
+                LogWarn($"[{_motorName}] 限位精度测试不合格，但未检测到限位异常，继续后续测试。");
 
             // ==========================================
             // 积木 5：分段定位线性测试 (98点测试)
             // ==========================================
-            PublishLog($"[{_motorName}] 正在执行 98 点线性测试...");
+            LogFlow($"[{_motorName}] 正在执行 98 点线性测试...");
             int minPos = _motorModel.MotorParams.NegativeLimitPosition;
             int maxPos = _motorModel.MotorParams.PositiveLimitPosition;
             if (maxPos <= minPos) { minPos = 0; maxPos = 100000; }
@@ -308,12 +357,21 @@ namespace UtilityTools.Modules.MotorTest.Runners
 
             PublishTestResult(linearTest.TestName, linearStdValue, linearResult);
             _reportService.AddOrUpdateMotorData(myData);
+            if (IsLimitAbnormalResult(linearResult))
+            {
+                LogFail($"[{_motorName}] 分段定位线性测试检测到限位异常，流程终止。原因：{BuildReasonText(linearResult)}");
+                return;
+            }
+            if (!linearResult.IsPassed)
+                LogWarn($"[{_motorName}] 分段定位线性测试不合格，但未检测到限位异常，继续后续测试。");
+            else
+                LogKey($"[{_motorName}] 分段定位线性测试通过。");
 
 
             // ==========================================
             // 【新增】积木 6：丝杆顺滑度测试 (获取正反向速度标准差)
             // ==========================================
-            PublishLog($"🚀 [{_motorName}] 开始10分钟丝杆顺滑度测试...");
+            LogFlow($"🚀 [{_motorName}] 开始10分钟丝杆顺滑度测试...");
             PublishTestState("丝杆顺滑度测试", smoothnessStdValue, MotorTestProgressState.Running, null, 0);
             int midPoint = minPos + (maxPos - minPos) / 2;
 
@@ -356,9 +414,12 @@ namespace UtilityTools.Modules.MotorTest.Runners
                 }
                 else
                 {
-                    // 如果跑到一半卡死了，直接中止整个大测试
-                    PublishLog($"[{_motorName}] ❌ 丝杆在第 {lapCount} 圈卡死或异常，测试强行终止！");
-                    return;
+                    if (IsLimitAbnormalResult(smoothnessResult))
+                    {
+                        LogFail($"[{_motorName}] 丝杆在第 {lapCount} 圈检测到限位异常，流程终止。");
+                        return;
+                    }
+                    LogWarn($"[{_motorName}] 第 {lapCount} 圈不合格（非限位异常），继续后续圈次。");
                 }
 
                 lapCount++;
@@ -371,7 +432,7 @@ namespace UtilityTools.Modules.MotorTest.Runners
             double forwardStdPulse = allForwardStdDevsPulse.Any() ? Math.Round(allForwardStdDevsPulse.Average(), 3) : 0;
             double backwardStdPulse = allBackwardStdDevsPulse.Any() ? Math.Round(allBackwardStdDevsPulse.Average(), 3) : 0;
 
-            PublishLog($"✅ [{_motorName}] 10分钟测试达标！正向均值波动: {myData.ForwardSpeedStdDev:F3}um, 反向均值波动: {myData.BackwardSpeedStdDev:F3}um");
+            LogKey($"[{_motorName}] 10分钟测试完成。正向均值波动: {myData.ForwardSpeedStdDev:F3}um, 反向均值波动: {myData.BackwardSpeedStdDev:F3}um");
             bool isSmoothnessPassed = myData.ForwardSpeedStdDev < _testThresholds.SmoothnessStdDevMaxUm
                                       && myData.BackwardSpeedStdDev < _testThresholds.SmoothnessStdDevMaxUm;
 
@@ -389,12 +450,12 @@ namespace UtilityTools.Modules.MotorTest.Runners
             // 终点站：把填得满满当当的体检表交上去！
             // ==========================================
             _reportService.AddOrUpdateMotorData(myData);
-            PublishLog($"🎉 [{_motorName}] 所有数据已完美录入总报告！");
+            LogKey($"[{_motorName}] 所有测试数据已录入总报告。");
             // ==========================================
             // 收尾：回到物理行程中点
             // ==========================================
             midPoint = minPos + (maxPos - minPos) / 2;
-            PublishLog($"[{_motorName}] 测试全部完毕，正在回到中点位置: {midPoint}");
+            LogFlow($"[{_motorName}] 测试全部完毕，正在回到中点位置: {midPoint}");
 
             // 使用底层接口发指令，不再依赖外面的 Goto 方法
             _motorEntity.SetMotorControlModeCommand(_motorId, EnumMotorCtrType.CloseLoopPosCtr);
@@ -402,7 +463,7 @@ namespace UtilityTools.Modules.MotorTest.Runners
 
             await Task.Delay(5000, cancellationToken);
 
-            PublishLog($"--- [{_motorName}] 所有基础测试已完美通过！ ---");
+            LogKey($"--- [{_motorName}] 所有基础测试流程已执行完毕 ---");
         }
 
         private (int min, int max) ResolveFullTravelRangeByAxis()

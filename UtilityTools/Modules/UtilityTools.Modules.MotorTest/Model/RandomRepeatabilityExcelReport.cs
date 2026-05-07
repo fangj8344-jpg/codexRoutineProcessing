@@ -89,7 +89,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             AddTextRow(
                 data,
                 "快速问询",
-                $"测试过程中状态轮询已切换为 {fastQueryIntervalMs}ms（结束后恢复 {normalQueryIntervalMs}ms），便于行程与速度统计。");
+                $"测试过程中状态轮询已切换为 {fastQueryIntervalMs}ms，便于行程与速度统计。");
             AddTextRow(
                 data,
                 "测试摘要",
@@ -173,10 +173,17 @@ namespace UtilityTools.Modules.MotorTest.Model
                 xDict.TryGetValue(index, out var xPoint);
                 yDict.TryGetValue(index, out var yPoint);
                 double targetX = xPoint?.TargetXUm ?? 0;
-                // 单轴测试结果中目标值统一写入 TargetXUm/TargetXPulse，Y轴结果同样如此。
-                double targetY = yPoint?.TargetXUm ?? 0;
+                // 兼容两种来源：
+                // 1) 单轴实测流程：Y轴目标通常复用 TargetXUm/TargetXPulse
+                // 2) 虚拟数据流程：Y轴目标写在 TargetYUm/TargetYPulse
+                double targetY = 0;
+                double pulseY = 0;
+                if (yPoint != null)
+                {
+                    targetY = Math.Abs(yPoint.TargetYUm) > 1e-9 ? yPoint.TargetYUm : yPoint.TargetXUm;
+                    pulseY = yPoint.TargetYPulse != 0 ? yPoint.TargetYPulse : yPoint.TargetXPulse;
+                }
                 double pulseX = xPoint?.TargetXPulse ?? 0;
-                double pulseY = yPoint?.TargetXPulse ?? 0;
                 AddNumberRow(data, index, targetX, targetY, pulseX, pulseY);
             }
         }

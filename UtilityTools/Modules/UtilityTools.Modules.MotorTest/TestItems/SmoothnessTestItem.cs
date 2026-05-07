@@ -62,6 +62,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             {
                 result.IsPassed = false;
                 result.ErrorDescription = $"正向运行异常: {fRes.ErrorDescription}";
+                result.IsLimitAbnormal = fRes.IsLimitAbnormal;
                 return result;
             }
             int endF = motorModel.SpeedList.Count;
@@ -74,6 +75,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             {
                 result.IsPassed = false;
                 result.ErrorDescription = $"反向运行异常: {bRes.ErrorDescription}";
+                result.IsLimitAbnormal = bRes.IsLimitAbnormal;
                 return result;
             }
             int endB = motorModel.SpeedList.Count;

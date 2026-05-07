@@ -505,15 +505,9 @@ namespace UtilityTools.Modules.MotorTest.Model
         {
 
             InitAxType();
-            if (MotorModel.MotorParams.CtrType != EnumMotorCtrType.CloseLoopPosCtr)
-            {
-                _testModel.MotorEntity.SetMotorControlModeCommand(_enumMotorId, EnumMotorCtrType.CloseLoopPosCtr);
-                _testModel.MotorEntity.SetMotorEnableCommand(_enumMotorId, EnumMotorEnable.Enable);
-            }
-            if (MotorModel.MotorParams.Enable != true)
-            {
-                _testModel.MotorEntity.SetMotorEnableCommand(_enumMotorId, EnumMotorEnable.Enable);
-            }
+            // 运动前总是强制下发：模式切换 + 使能，避免状态不同步导致偶发不动。
+            _testModel.MotorEntity.SetMotorControlModeCommand(_enumMotorId, EnumMotorCtrType.CloseLoopPosCtr);
+            _testModel.MotorEntity.SetMotorEnableCommand(_enumMotorId, EnumMotorEnable.Enable);
 
         }
         /// <summary>
@@ -523,17 +517,9 @@ namespace UtilityTools.Modules.MotorTest.Model
         private void SetMotorSpeedInit()
         {
             InitAxType();
-            if (MotorModel.MotorParams.CtrType != EnumMotorCtrType.OpenLoopSpeedCtr)
-            {
-                _testModel.MotorEntity.SetMotorControlModeCommand(_enumMotorId, EnumMotorCtrType.OpenLoopSpeedCtr);
-                _testModel.MotorEntity.SetMotorEnableCommand(_enumMotorId, EnumMotorEnable.Enable);
-            }
-            if (MotorModel.MotorParams.Enable != true)
-            {
-                var setMotorEnableCmd = SelfMotorProtocol.SetMotorEnable(_enumMotorId, EnumMotorEnable.Enable);
-                _testModel.MotorEntity.SetMotorEnableCommand(_enumMotorId, EnumMotorEnable.Enable);
-
-            }
+            // 运动前总是强制下发：模式切换 + 使能，避免状态不同步导致偶发不动。
+            _testModel.MotorEntity.SetMotorControlModeCommand(_enumMotorId, EnumMotorCtrType.OpenLoopSpeedCtr);
+            _testModel.MotorEntity.SetMotorEnableCommand(_enumMotorId, EnumMotorEnable.Enable);
             
         }
         /// <summary>

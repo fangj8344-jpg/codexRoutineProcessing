@@ -44,6 +44,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             if (!forwardRes.IsPassed)
             {
                 result.ErrorDescription = "正向限位寻找失败：" + forwardRes.ErrorDescription;
+                result.IsLimitAbnormal = true;
                 return result;
             }
             result.RealMaxPos = motorModel.MotorParams.Pos;
@@ -59,6 +60,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             if (!backwardRes.IsPassed)
             {
                 result.ErrorDescription = "反向限位寻找失败：" + backwardRes.ErrorDescription;
+                result.IsLimitAbnormal = true;
                 return result;
             }
             int posBackward = motorModel.MotorParams.Pos;

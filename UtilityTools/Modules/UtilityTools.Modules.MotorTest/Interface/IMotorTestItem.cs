@@ -32,5 +32,9 @@ namespace UtilityTools.Modules.MotorTest.Interface
         public string MeasuredValue { get; set; }
         public string ErrorDescription { get; set; }
         public string Description { get; set; }
+        /// <summary>
+        /// 是否属于“限位异常”类失败（用于流程中止判定）。
+        /// </summary>
+        public bool IsLimitAbnormal { get; set; }
     }
 }

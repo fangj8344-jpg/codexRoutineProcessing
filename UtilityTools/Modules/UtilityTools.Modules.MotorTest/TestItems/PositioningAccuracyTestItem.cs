@@ -36,6 +36,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             if (!pass1Forward.IsPassed || !pass1Backward.IsPassed)
             {
                 result.ErrorDescription = "第一轮限位寻找失败";
+                result.IsLimitAbnormal = true;
                 return result;
             }
 
@@ -49,6 +50,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             if (!pass2Forward.IsPassed || !pass2Backward.IsPassed)
             {
                 result.ErrorDescription = "第二轮限位寻找失败";
+                result.IsLimitAbnormal = true;
                 return result;
             }
 

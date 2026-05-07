@@ -189,7 +189,6 @@ namespace UtilityTools.Modules.MotorTest.Model
 
                 _isSpeedMode = value;
                 RaisePropertyChanged();
-                ApplyManualModeToAllMotors(_isSpeedMode);
             }
         }
         private FiveAxisModel _xAxis;
@@ -483,8 +482,6 @@ namespace UtilityTools.Modules.MotorTest.Model
             {
                 ApplyUniversalFiveAxisDevShortcutXyOnlyTrim();
             }
-
-            ApplyManualModeToAllMotors(_isSpeedMode);
 
             _uiRenderTimer = new System.Windows.Threading.DispatcherTimer();
             _uiRenderTimer.Interval = TimeSpan.FromMilliseconds(50); // 轻量心跳，真正刷新由最小间隔节流控制
