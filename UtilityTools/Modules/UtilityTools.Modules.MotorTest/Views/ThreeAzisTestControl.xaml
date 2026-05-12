@@ -188,7 +188,7 @@
                                             <Button Content="填充虚拟数据"
                                                     Command="{Binding FillRandomRepeatabilityMockDataCommand}"
                                                     Style="{StaticResource MaterialDesignRaisedButton}"
-                                                    ToolTip="填充X/Y虚拟数据，便于图表与Excel导出联调"
+                                                    ToolTip="仅当在扫码页使用调试快捷键 Ctrl+Shift+T 无码进入测试时可用；正常扫码进测时按钮禁用。"
                                                     Padding="12,4" Margin="0,0,8,0"/>
                                             <Button Content="生成随机重复精度报告"
                                                     Command="{Binding GenerateRandomRepeatabilityReportCommand}"

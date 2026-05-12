@@ -24,7 +24,8 @@ namespace UtilityTools.Modules.MotorTest.Model
             string? histYDistancePngPath,
             string? histXSpeedPngPath,
             string? histYSpeedPngPath,
-            IReadOnlyList<string> csvFileNameHints)
+            IReadOnlyList<string> csvFileNameHints,
+            string reportScanText)
         {
             using var wordDoc = WordprocessingDocument.Create(docxPath, WordprocessingDocumentType.Document);
             var mainPart = wordDoc.AddMainDocumentPart();
@@ -33,6 +34,7 @@ namespace UtilityTools.Modules.MotorTest.Model
 
             AddTitleParagraph(body, "随机重复精度测试报告");
             AddParagraph(body, $"生成时间：{DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            AddParagraph(body, $"扫码内容：{reportScanText}");
             AddParagraph(body,
                 $"测试摘要：X轴标准差={xResult?.AvgStdX:F3} μm，Y轴标准差={yResult?.AvgStdX:F3} μm");
 

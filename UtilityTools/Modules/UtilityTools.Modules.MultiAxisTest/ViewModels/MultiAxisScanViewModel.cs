@@ -106,7 +106,7 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
 
         /// <summary>无扫码（Ctrl+Shift+T）占位码（7 段新格式）；样品台为 SampleUltra → 五轴 UniversalFiveAxis。仅调试用。</summary>
         private static readonly string[] DevModeBarcodeParts =
-            "OFFLINE/DEV/NOBAR/LOCAL/ZEM20/SampleUltra/260101001".Split('/');
+            "OFFLINE/DEV/NOBAR/LOCAL/ZEM20/SampleUltra/260101000".Split('/');
 
         private string _thresholdStageTypeDisplay = "未识别";
         public string ThresholdStageTypeDisplay

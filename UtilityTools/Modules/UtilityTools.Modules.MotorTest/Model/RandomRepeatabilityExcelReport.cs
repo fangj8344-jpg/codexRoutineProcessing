@@ -26,7 +26,8 @@ namespace UtilityTools.Modules.MotorTest.Model
             RandomRepeatabilityTestResult? yResult,
             int fastQueryIntervalMs,
             int normalQueryIntervalMs,
-            IReadOnlyList<(string Title, byte[] Png)>? embeddedChartPngs)
+            IReadOnlyList<(string Title, byte[] Png)>? embeddedChartPngs,
+            string reportScanText)
         {
             int chartCount = embeddedChartPngs?.Count ?? 0;
             using var doc = SpreadsheetDocument.Create(xlsxPath, SpreadsheetDocumentType.Workbook);
@@ -44,7 +45,8 @@ namespace UtilityTools.Modules.MotorTest.Model
                 yResult,
                 fastQueryIntervalMs,
                 normalQueryIntervalMs,
-                chartCount);
+                chartCount,
+                reportScanText);
 
             AddPointCoordinateCombinedSheet(wbPart, sheets, ref sheetId, xResult?.TargetPoints, yResult?.TargetPoints);
 
@@ -72,7 +74,8 @@ namespace UtilityTools.Modules.MotorTest.Model
             RandomRepeatabilityTestResult? yResult,
             int fastQueryIntervalMs,
             int normalQueryIntervalMs,
-            int embeddedChartCount)
+            int embeddedChartCount,
+            string reportScanText)
         {
             var wsPart = wbPart.AddNewPart<WorksheetPart>();
             var data = new SheetData();
@@ -86,6 +89,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             sheets.Append(new Sheet { Id = wbPart.GetIdOfPart(wsPart), SheetId = sheetId++, Name = "总览统计" });
 
             AddTextRow(data, "生成时间", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
+            AddTextRow(data, "扫码内容", reportScanText);
             AddTextRow(
                 data,
                 "快速问询",

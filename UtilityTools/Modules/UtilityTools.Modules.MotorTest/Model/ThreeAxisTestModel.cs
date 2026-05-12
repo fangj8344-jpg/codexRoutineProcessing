@@ -69,6 +69,9 @@ namespace UtilityTools.Modules.MotorTest.Model
             _reportService = containerProvider.Resolve<ITestReportService>();
             _eventAggregator = containerProvider.Resolve<IEventAggregator>();
             Init();
+            if (_reportService is INotifyPropertyChanged reportInpc)
+                reportInpc.PropertyChanged += ReportService_PropertyChanged;
+            FillRandomRepeatabilityMockDataCommand.RaiseCanExecuteChanged();
             SubscribeTestProgress();
         }
         private object _lockobj = new object();
@@ -435,7 +438,7 @@ namespace UtilityTools.Modules.MotorTest.Model
             GenerateRandomRepeatabilityReportCommand = new DelegateCommand(
                 GenerateRandomRepeatabilityReport,
                 CanGenerateRandomRepeatabilityReport);
-            FillRandomRepeatabilityMockDataCommand = new DelegateCommand(FillRandomRepeatabilityMockData);
+            FillRandomRepeatabilityMockDataCommand = new DelegateCommand(FillRandomRepeatabilityMockData, CanFillRandomRepeatabilityMockData);
             ByteQueue = new ConcurrentQueue<byte[]>();
             ImportantByteQueue = new ConcurrentQueue<byte[]>();
             MotorEntity = new MotorEntity(SerialPortService, NetUdpService);
@@ -1139,8 +1142,22 @@ namespace UtilityTools.Modules.MotorTest.Model
             return _lastRandomRepeatabilityXResult != null || _lastRandomRepeatabilityYResult != null;
         }
 
+        private bool CanFillRandomRepeatabilityMockData() => _reportService.DevShortcutXyOnlyAxes;
+
+        private void ReportService_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(ITestReportService.DevShortcutXyOnlyAxes))
+                FillRandomRepeatabilityMockDataCommand.RaiseCanExecuteChanged();
+        }
+
         private void FillRandomRepeatabilityMockData()
         {
+            if (!_reportService.DevShortcutXyOnlyAxes)
+            {
+                AppendRandomRepeatLogSafe("随机重复精度：虚拟数据仅可在扫码页通过调试快捷键（Ctrl+Shift+T）无码进入时使用。");
+                return;
+            }
+
             var xResult = BuildRandomRepeatabilityMockResult(axisName: "X", seed: 20260506);
             var yResult = BuildRandomRepeatabilityMockResult(axisName: "Y", seed: 20260507);
             ApplyRandomRepeatabilityResultsToUi(xResult, yResult, "虚拟数据已填充（用于图表和Excel导出联调）。");
@@ -1395,6 +1412,30 @@ namespace UtilityTools.Modules.MotorTest.Model
             }));
         }
 
+        /// <summary>序列号写入报告文件名时去掉非法字符；空或全非法时用 <c>000</c>（不与真实机号混淆）。</summary>
+        private static string SanitizeRandomRepeatabilityReportFileToken(string raw)
+        {
+            var trimmed = (raw ?? string.Empty).Trim();
+            if (trimmed.Length == 0)
+                return "000";
+
+            char[] invalid = Path.GetInvalidFileNameChars();
+            var sb = new StringBuilder(Math.Min(trimmed.Length, 80));
+            foreach (char c in trimmed)
+            {
+                if (Array.IndexOf(invalid, c) >= 0 || c == ' ')
+                    sb.Append('_');
+                else
+                    sb.Append(c);
+            }
+
+            string s = sb.ToString().Trim('_');
+            if (s.Length == 0)
+                return "000";
+            const int maxLen = 80;
+            return s.Length > maxLen ? s.Substring(0, maxLen) : s;
+        }
+
         /// <summary>
         /// 随机重复精度报告输出目录：<c>程序目录\报告\随机重复精度</c>。
         /// </summary>
@@ -1426,7 +1467,9 @@ namespace UtilityTools.Modules.MotorTest.Model
                 {
                     string reportDir = GetRandomRepeatabilityReportDirectory();
                     string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                    string reportPath = Path.Combine(reportDir, $"随机重复精度报告_{stamp}.xlsx");
+                    string serialForFile = SanitizeRandomRepeatabilityReportFileToken(
+                        _reportService.GetReportSampleSerialNumber() ?? string.Empty);
+                    string reportPath = Path.Combine(reportDir, $"{serialForFile}_随机重复精度报告_{stamp}.xlsx");
 
                     var embeddedCharts = new List<(string Title, byte[] Png)>();
                     void AddChart(string title, byte[]? png)
@@ -1449,13 +1492,18 @@ namespace UtilityTools.Modules.MotorTest.Model
                         AddChart("Y轴速度分箱", RandomRepeatabilityPlotPngGenerator.ExportHistogram(yResult?.SpeedHistogramX, "Y轴速度分箱", "分箱区间 (μm/s)"));
                     });
 
+                    string reportScanText = _reportService.GetReportScanText();
+                    if (string.IsNullOrWhiteSpace(reportScanText))
+                        reportScanText = "000";
+
                     RandomRepeatabilityExcelReport.Save(
                         reportPath,
                         xResult,
                         yResult,
                         FastInquiryQueryIntervalMs,
                         NormalInquiryQueryIntervalMs,
-                        embeddedCharts);
+                        embeddedCharts,
+                        reportScanText);
                     return reportPath;
                 }
                 finally

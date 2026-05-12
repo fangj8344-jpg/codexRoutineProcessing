@@ -138,8 +138,13 @@ namespace UtilityTools.Modules.MultiAxisTest.Model
             get => _motorKindObj; 
             set =>  _motorKindObj = value; }
 
+        private bool _devShortcutXyOnlyAxes;
         /// <inheritdoc />
-        public bool DevShortcutXyOnlyAxes { get; set; }
+        public bool DevShortcutXyOnlyAxes
+        {
+            get => _devShortcutXyOnlyAxes;
+            set => SetProperty(ref _devShortcutXyOnlyAxes, value);
+        }
 
         public MultiAxisWorkflowState()
         {
@@ -317,6 +322,28 @@ namespace UtilityTools.Modules.MultiAxisTest.Model
         public string GetCurrentStageType()
         {
             return CurrentScanDisplay?.StageType ?? string.Empty;
+        }
+
+        /// <inheritdoc />
+        public string? GetReportScanText()
+        {
+            if (!string.IsNullOrWhiteSpace(CurrentScanText))
+                return CurrentScanText.Trim();
+            var stageId = UploadInformation?.SampleStageId;
+            if (!string.IsNullOrWhiteSpace(stageId))
+                return stageId.Trim();
+            var contentStageId = UploadInformation?.Content?.StageId;
+            return string.IsNullOrWhiteSpace(contentStageId) ? null : contentStageId.Trim();
+        }
+
+        /// <inheritdoc />
+        public string? GetReportSampleSerialNumber()
+        {
+            var sn = UploadInformation?.Content?.SerialNumber;
+            if (!string.IsNullOrWhiteSpace(sn))
+                return sn.Trim();
+            sn = CurrentScanDisplay?.SerialNumber;
+            return string.IsNullOrWhiteSpace(sn) ? null : sn.Trim();
         }
     }
 }
