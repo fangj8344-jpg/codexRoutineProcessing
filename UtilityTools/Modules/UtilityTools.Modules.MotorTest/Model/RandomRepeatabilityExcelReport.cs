@@ -53,8 +53,8 @@ namespace UtilityTools.Modules.MotorTest.Model
             AddMoveTripSheet(wbPart, sheets, ref sheetId, "X轴行程明细", xResult?.MoveTripsX);
             AddMoveTripSheet(wbPart, sheets, ref sheetId, "Y轴行程明细", yResult?.MoveTripsX);
 
-            AddHistogramCombinedSheet(wbPart, sheets, ref sheetId, "距离分箱(XY)", xResult?.DistanceHistogramX, yResult?.DistanceHistogramX, separatorStyleIndex);
-            AddHistogramCombinedSheet(wbPart, sheets, ref sheetId, "速度分箱(XY)", xResult?.SpeedHistogramX, yResult?.SpeedHistogramX, separatorStyleIndex);
+            AddHistogramCombinedSheet(wbPart, sheets, ref sheetId, "距离区间(XY)", xResult?.DistanceHistogramX, yResult?.DistanceHistogramX, separatorStyleIndex);
+            AddHistogramCombinedSheet(wbPart, sheets, ref sheetId, "速度区间(XY)", xResult?.SpeedHistogramX, yResult?.SpeedHistogramX, separatorStyleIndex);
 
             AddDiffSheet(wbPart, sheets, ref sheetId, "X轴差值", xResult?.MoveTripsX);
             AddDiffSheet(wbPart, sheets, ref sheetId, "Y轴差值", yResult?.MoveTripsX);
@@ -103,14 +103,14 @@ namespace UtilityTools.Modules.MotorTest.Model
             AddTitleOnlyRow(data, "表结构说明");
             AddTextRow(data, "① 目标点坐标(XY)", "合并后的目标点列表（按点序号对齐 X/Y 目标坐标与脉冲）");
             AddTextRow(data, "② X/Y轴行程明细", "起点/实际起点/目标/实际到位/移动时间，以及行程长度与平均速度(μm/s)");
-            AddTextRow(data, "③ 其余工作表", "差值（大表分轴）+ 分箱/点统计（小表合并 XY）+ 嵌入图表");
+            AddTextRow(data, "③ 其余工作表", "差值（大表分轴）+ 区间/点统计（小表合并 XY）+ 嵌入图表");
             AddTextRow(data, "导出说明", "仅生成本工作簿文件，不另存 CSV；直方图与差值以工作表数值为准。");
             AddTextRow(
                 data,
                 "嵌入图表",
                 embeddedChartCount > 0
                     ? $"已写入工作表「嵌入图表」（共 {embeddedChartCount} 张 PNG，内嵌于 xlsx）。"
-                    : "未生成嵌入图（行程或分箱数据不足时略过）。");
+                    : "未生成嵌入图（行程或区间统计数据不足时略过）。");
             AddEmptyRow(data);
 
             AddTitleOnlyRow(data, "X轴概览");
@@ -253,7 +253,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                 columnWidths: new[] { 8d, 14d, 14d, 10d, 3d, 8d, 14d, 14d, 10d });
             sheets.Append(new Sheet { Id = wbPart.GetIdOfPart(wsPart), SheetId = sheetId++, Name = sheetName });
 
-            AddHeaderRow(data, "X序号", "X下限", "X上限", "X计数", "", "Y序号", "Y下限", "Y上限", "Y计数");
+            AddHeaderRow(data, "X序号", "X区间下限", "X区间上限", "X计数", "", "Y序号", "Y区间下限", "Y区间上限", "Y计数");
             for (int i = 0; i < dataRows; i++)
             {
                 var row = new Row();
@@ -455,7 +455,7 @@ namespace UtilityTools.Modules.MotorTest.Model
 
             var wsPart = wbPart.AddNewPart<WorksheetPart>();
             var data = new SheetData();
-            AddTitleOnlyRow(data, "以下为嵌入的曲线 / 直方图（PNG），数据仍以「差值」「距离分箱」「速度分箱」等工作表为准。");
+            AddTitleOnlyRow(data, "以下为嵌入的曲线 / 直方图（PNG），数据仍以「差值」「距离区间」「速度区间」等工作表为准。");
             AddEmptyRow(data);
 
             var drawingsPart = wsPart.AddNewPart<DrawingsPart>();

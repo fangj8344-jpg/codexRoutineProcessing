@@ -6,6 +6,10 @@
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>ZepTools.ico</ApplicationIcon>
+    <AssemblyVersion>4.0.6.0</AssemblyVersion>
+    <FileVersion>4.0.6.0</FileVersion>
+    <InformationalVersion>v4.0.6</InformationalVersion>
+    <Version>4.0.6</Version>
   </PropertyGroup>
   <ItemGroup>
     <!-- MotorTest 模块 LoadFrom 时从主程序目录解析 OpenXml / System.IO.Packaging（Modules 目录仅有模块 dll） -->

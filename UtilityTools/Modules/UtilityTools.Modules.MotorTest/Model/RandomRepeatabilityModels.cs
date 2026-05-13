@@ -47,7 +47,7 @@ namespace UtilityTools.Modules.MotorTest.Model
     }
 
     /// <summary>
-    /// 直方图分箱记录。
+    /// 随机重复精度测试：距离/速度的直方图区间记录。
     /// </summary>
     public class HistogramBinRecord : BindableBase
     {

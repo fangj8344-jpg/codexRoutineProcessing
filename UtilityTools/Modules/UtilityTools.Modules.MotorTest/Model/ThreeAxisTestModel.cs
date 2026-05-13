@@ -107,7 +107,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         private string _speedCalcTimeSource = "速度时间源: 本地时间(回退)";
         // 统一类型为 MotorDbContext
 
-        private string _version = "4.0.3";
+        private string _version = "v4.0.6";
         /// <summary>
         /// 版本号
         /// </summary>
@@ -1075,7 +1075,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     RandomSpeedHistogramX.Add(bin);
 
                 AppendRandomRepeatLog(xAxis,
-                    $"数据写入界面：目标点={xResult.TargetPoints.Count}，统计点={xResult.PointStatsX.Count}，行程={xResult.MoveTripsX.Count}，距离分箱={xResult.DistanceHistogramX.Count}，速度分箱={xResult.SpeedHistogramX.Count}");
+                    $"数据写入界面：目标点={xResult.TargetPoints.Count}，统计点={xResult.PointStatsX.Count}，行程={xResult.MoveTripsX.Count}，距离区间={xResult.DistanceHistogramX.Count}，速度区间={xResult.SpeedHistogramX.Count}");
             }
 
             // 更新界面数据 - Y轴
@@ -1097,7 +1097,7 @@ namespace UtilityTools.Modules.MotorTest.Model
                     RandomSpeedHistogramY.Add(bin);
 
                 AppendRandomRepeatLog(yAxis,
-                    $"数据写入界面：目标点={yResult.TargetPoints.Count}，统计点={yResult.PointStatsX.Count}，行程={yResult.MoveTripsX.Count}，距离分箱={yResult.DistanceHistogramX.Count}，速度分箱={yResult.SpeedHistogramX.Count}");
+                    $"数据写入界面：目标点={yResult.TargetPoints.Count}，统计点={yResult.PointStatsX.Count}，行程={yResult.MoveTripsX.Count}，距离区间={yResult.DistanceHistogramX.Count}，速度区间={yResult.SpeedHistogramX.Count}");
             }
 
             // 更新测试摘要（Y 轴单轴结果的标准差仍记在 AvgStdX）
@@ -1448,7 +1448,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         }
 
         /// <summary>
-        /// 导出随机重复精度报告：仅生成单个 Excel（xlsx），点表、行程、分箱与差值均在各工作表中。
+        /// 导出随机重复精度报告：仅生成单个 Excel（xlsx），点表、行程、区间统计与差值均在各工作表中。
         /// </summary>
         private string BuildRandomRepeatabilityExcelReport(
             RandomRepeatabilityTestResult? xResult,
@@ -1486,10 +1486,10 @@ namespace UtilityTools.Modules.MotorTest.Model
                         AddChart("Y轴每点差值箱线图", RandomRepeatabilityPlotPngGenerator.ExportDiffBoxPlot(yResult?.MoveTripsX, "Y轴每点差值箱线图"));
                         AddChart("X轴速度-距离散点", RandomRepeatabilityPlotPngGenerator.ExportSpeedDistanceScatter(xResult?.MoveTripsX, "X轴速度-距离散点"));
                         AddChart("Y轴速度-距离散点", RandomRepeatabilityPlotPngGenerator.ExportSpeedDistanceScatter(yResult?.MoveTripsX, "Y轴速度-距离散点"));
-                        AddChart("X轴距离分箱", RandomRepeatabilityPlotPngGenerator.ExportHistogram(xResult?.DistanceHistogramX, "X轴距离分箱", "分箱区间 (μm)"));
-                        AddChart("Y轴距离分箱", RandomRepeatabilityPlotPngGenerator.ExportHistogram(yResult?.DistanceHistogramX, "Y轴距离分箱", "分箱区间 (μm)"));
-                        AddChart("X轴速度分箱", RandomRepeatabilityPlotPngGenerator.ExportHistogram(xResult?.SpeedHistogramX, "X轴速度分箱", "分箱区间 (μm/s)"));
-                        AddChart("Y轴速度分箱", RandomRepeatabilityPlotPngGenerator.ExportHistogram(yResult?.SpeedHistogramX, "Y轴速度分箱", "分箱区间 (μm/s)"));
+                        AddChart("X轴距离区间", RandomRepeatabilityPlotPngGenerator.ExportHistogram(xResult?.DistanceHistogramX, "X轴距离区间", "区间 (μm)"));
+                        AddChart("Y轴距离区间", RandomRepeatabilityPlotPngGenerator.ExportHistogram(yResult?.DistanceHistogramX, "Y轴距离区间", "区间 (μm)"));
+                        AddChart("X轴速度区间", RandomRepeatabilityPlotPngGenerator.ExportHistogram(xResult?.SpeedHistogramX, "X轴速度区间", "区间 (μm/s)"));
+                        AddChart("Y轴速度区间", RandomRepeatabilityPlotPngGenerator.ExportHistogram(yResult?.SpeedHistogramX, "Y轴速度区间", "区间 (μm/s)"));
                     });
 
                     string reportScanText = _reportService.GetReportScanText();
