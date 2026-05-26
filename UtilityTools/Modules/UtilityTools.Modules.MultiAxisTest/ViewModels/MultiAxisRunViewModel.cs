@@ -16,6 +16,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using TouchSocket.Core;
 using UtilityTools.Core.Helper;
+using UtilityTools.Core.Model;
 using UtilityTools.Modules.MotorTest.Event;
 using UtilityTools.Modules.MotorTest.Model;
 using UtilityTools.Modules.MultiAxisTest.Model;
@@ -73,6 +74,12 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
         public DelegateCommand ExecuteGoBackCommand { get; set; }
         public DelegateCommand UploadDataCommand { get; set; }
         public DelegateCommand OpenEngineerConfigCommand { get; set; }
+        public DelegateCommand FillMockMotorDataCommand { get; set; }
+
+        /// <summary>
+        /// 是否为快捷键模式（控制"填充假数据"按钮可见性）
+        /// </summary>
+        public bool IsDevShortcutMode => _state.DevShortcutXyOnlyAxes;
 
         public string FirmwareCurrentVersion => string.IsNullOrWhiteSpace(_state.CurrentFirmwareVersion) ? "--" : _state.CurrentFirmwareVersion;
         public string FirmwareLatestVersion => string.IsNullOrWhiteSpace(_state.LatestFirmwareVersion) ? "--" : _state.LatestFirmwareVersion;
@@ -87,6 +94,7 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
             ExecuteGoBackCommand = new DelegateCommand(ExecuteGoBack);
             UploadDataCommand = new DelegateCommand(async () => await UploadData(), () => CanUpload);
             OpenEngineerConfigCommand = new DelegateCommand(ExecuteOpenEngineerConfig);
+            FillMockMotorDataCommand = new DelegateCommand(FillMockMotorData, () => _state.DevShortcutXyOnlyAxes);
             _thingboardService = containerProvider.Resolve<IServiceFactory>().GetThingboardService();
             _thingboardService.DataUploaded += _thingboardService_DataUploaded;
             _thingboardService.UploadFailed += _thingboardService_UploadFailed;
@@ -464,7 +472,67 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
             return await tcs.Task;
         }
 
-      
+        private void FillMockMotorData()
+        {
+            if (!_state.DevShortcutXyOnlyAxes) return;
 
+            var random = new Random(20260526);
+            var axes = new[] { "X", "Y" };
+
+            _state.InitReport();
+            _state.StartReport();
+
+            foreach (var axisName in axes)
+            {
+                var motorData = _state.GetOrCreateMotorData(axisName);
+                motorData.MinRange = 0;
+                motorData.MaxRange = 55000;
+                motorData.NegativeLimit = true;
+                motorData.PositiveLimit = true;
+                motorData.ForwardSpeedStdDev = Math.Round(0.3 + random.NextDouble() * 0.5, 3);
+                motorData.BackwardSpeedStdDev = Math.Round(0.3 + random.NextDouble() * 0.5, 3);
+                motorData.PositioningStdDev = Math.Round(0.1 + random.NextDouble() * 0.4, 3);
+
+                motorData.PositionErrors = new List<PositionError>();
+                int pointCount = 11;
+                double step = 55000.0 / (pointCount - 1);
+                for (int i = 0; i < pointCount; i++)
+                {
+                    double targetUm = i * step;
+                    double errorUm = (random.NextDouble() - 0.5) * 3.0;
+                    motorData.PositionErrors.Add(new PositionError
+                    {
+                        TargetPositionUm = Math.Round(targetUm, 2),
+                        ActualPositionUm = Math.Round(targetUm + errorUm, 2)
+                    });
+                }
+            }
+
+            _state.CompleteReport();
+
+            App.Current.Dispatcher.InvokeAsync(async () =>
+            {
+                var content = new StackPanel { Margin = new Thickness(16) };
+                content.Children.Add(new TextBlock
+                {
+                    Text = "虚拟数据已填充",
+                    FontSize = 18,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = Brushes.Green
+                });
+                content.Children.Add(new TextBlock
+                {
+                    Text = $"已生成 X/Y 双轴模拟电机测试数据（行程 55mm，11 个定位点）。\n可直接点击「提交测试数据」上传。",
+                    Margin = new Thickness(0, 10, 0, 10),
+                    TextWrapping = TextWrapping.Wrap
+                });
+                content.Children.Add(new Button
+                {
+                    Content = "确定",
+                    Command = DialogHost.CloseDialogCommand
+                });
+                await DialogHost.Show(content, "MultiAxisRunViewHost");
+            });
+        }
     }
 }

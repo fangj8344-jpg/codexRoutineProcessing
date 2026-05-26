@@ -17,6 +17,7 @@
 
     <UserControl.Resources>
         <cv:BoolToColorConverter x:Key="BoolToColorConverter" />
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </UserControl.Resources>
 
     <UserControl.InputBindings>
@@ -79,6 +80,34 @@
                             FontSize="13"
                             FontWeight="Bold"
                             Text="提交测试数据" />
+                    </StackPanel>
+                </Button>
+
+                <Button
+                    Height="32"
+                    Margin="0,0,5,0"
+                    Padding="12,0"
+                    md:ButtonAssist.CornerRadius="4"
+                    Background="#FF9800"
+                    BorderBrush="#FF9800"
+                    Command="{Binding FillMockMotorDataCommand}"
+                    DockPanel.Dock="Right"
+                    Foreground="White"
+                    Style="{StaticResource MaterialDesignRaisedButton}"
+                    ToolTip="填充虚拟电机测试数据（仅调试用）"
+                    Visibility="{Binding IsDevShortcutMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <StackPanel Orientation="Horizontal">
+                        <md:PackIcon
+                            Width="18"
+                            Height="18"
+                            Margin="0,0,6,0"
+                            VerticalAlignment="Center"
+                            Kind="DatabasePlus" />
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            FontSize="13"
+                            FontWeight="Bold"
+                            Text="填充假数据" />
                     </StackPanel>
                 </Button>
 
