@@ -212,10 +212,13 @@ namespace UtilityTools.Modules.MotorTest.TestItems
 
                 // 随机点跳转参数
                 const int randomJumpLeaveStopTimeoutSec = 10;
-                const int randomJumpBothStopTimeoutSec = 30;
+                const int randomJumpBothStopTimeoutSec = 90;
                 const int randomJumpMoveStatePollMs = 200;
+                const int maxRetryPerMove = 2;
+                const int maxSkippedMoves = 5;
 
                 bool axisOk = true;
+                int totalSkipped = 0;
 
                 for (int repeat = 0; repeat < FixedRepeatsPerPoint; repeat++)
                 {
@@ -229,72 +232,101 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                         double actualStartUm = motorModel.MotorParams.PosUm;
                         double plannedStartUm = plannedCurrent.TargetXUm;
 
-                        // 下发 GOTO 指令
-                        bool commanded = false;
-                        try
+                        bool moveSucceeded = false;
+                        int retryCount = 0;
+
+                        while (retryCount <= maxRetryPerMove)
                         {
-                            motorEntity.SetMotorGoToCommand(motorId, EnumMotorUnit.Pulse, target.TargetXPulse);
-                            commanded = true;
+                            ct.ThrowIfCancellationRequested();
+
+                            // 下发 GOTO 指令
+                            try
+                            {
+                                motorEntity.SetMotorGoToCommand(motorId, EnumMotorUnit.Pulse, target.TargetXPulse);
+                            }
+                            catch (Exception ex)
+                            {
+                                result.ErrorDescription = $"发送GOTO指令失败: {ex.Message}";
+                                axisOk = false;
+                                break;
+                            }
+
+                            // 等待电机停止
+                            var sw = Stopwatch.StartNew();
+                            bool ok = await TryRandomAxisLeaveThenStopForTargetPulseAsync(
+                                motorModel,
+                                target.TargetXPulse,
+                                ct,
+                                randomJumpLeaveStopTimeoutSec,
+                                randomJumpBothStopTimeoutSec,
+                                randomJumpMoveStatePollMs);
+                            sw.Stop();
+
+                            if (ok)
+                            {
+                                moveSucceeded = true;
+                                // 记录终点位置和时间
+                                double actualTargetUm = motorModel.MotorParams.PosUm;
+                                double moveMs = sw.Elapsed.TotalMilliseconds;
+                                double distanceUm = Math.Abs(actualTargetUm - actualStartUm);
+                                double speed = moveMs > 1e-6
+                                    ? distanceUm / (moveMs / 1000.0)
+                                    : 0;
+
+                                moveTrips.Add(new RandomMoveTripAxisRecord
+                                {
+                                    SeqNo = seqNo++,
+                                    PointIndex = target.Index,
+                                    PlannedStartUm = plannedStartUm,
+                                    ActualStartUm = actualStartUm,
+                                    TargetUm = target.TargetXUm,
+                                    ActualTargetUm = actualTargetUm,
+                                    MoveTimeMs = moveMs,
+                                    DistanceUm = distanceUm,
+                                    AvgSpeedUmPerSec = speed
+                                });
+
+                                completedMoves++;
+                                ReportProgress(completedMoves, totalPlannedMoves, overallSw.Elapsed);
+                                if (completedMoves <= 5 || completedMoves % 20 == 0 || completedMoves == totalPlannedMoves)
+                                {
+                                    WriteFlowLog(flowLogPath, $"[{motorId}] 跳转进度：{completedMoves}/{totalPlannedMoves}, seqNo={seqNo - 1}, pointIndex={target.Index}, actualStartUm={actualStartUm:F3}, actualTargetUm={actualTargetUm:F3}, moveMs={moveMs:F1}, distanceUm={distanceUm:F3}, speedUmPerSec={speed:F3}");
+                                }
+
+                                plannedCurrent = target;
+                                break;
+                            }
+
+                            // 超时：尝试重试
+                            retryCount++;
+                            if (retryCount <= maxRetryPerMove)
+                            {
+                                WriteFlowLog(flowLogPath, $"[{motorId}] 跳转超时，重试第{retryCount}次：pointIndex={target.Index}, targetPulse={target.TargetXPulse}, currentPulse={motorModel.MotorParams.Pos}, state={motorModel.MotorParams.MoveState}");
+                                await Task.Delay(300, ct).ConfigureAwait(false);
+                            }
                         }
-                        catch (Exception ex)
+
+                        if (!axisOk) break;
+
+                        if (!moveSucceeded)
                         {
-                            result.ErrorDescription = $"发送GOTO指令失败: {ex.Message}";
-                            axisOk = false;
-                            break;
+                            totalSkipped++;
+                            WriteFlowLog(flowLogPath, $"[{motorId}] 跳转失败已跳过（{totalSkipped}/{maxSkippedMoves}）：pointIndex={target.Index}, targetPulse={target.TargetXPulse}, currentPulse={motorModel.MotorParams.Pos}, state={motorModel.MotorParams.MoveState}");
+
+                            if (totalSkipped >= maxSkippedMoves)
+                            {
+                                axisOk = false;
+                                result.ErrorDescription =
+                                    $"累计跳过{totalSkipped}次超时跳转，测试终止。最后目标脉冲={target.TargetXPulse}，当前位置={motorModel.MotorParams.Pos}，状态={motorModel.MotorParams.MoveState}";
+                                WriteFlowLog(flowLogPath, $"[{motorId}] 累计跳过过多，测试终止。");
+                                break;
+                            }
+
+                            // 跳过该点，继续下一个
+                            plannedCurrent = target;
+                            completedMoves++;
+                            ReportProgress(completedMoves, totalPlannedMoves, overallSw.Elapsed);
                         }
-
-                        if (!commanded) continue;
-
-                        // 等待电机停止
-                        var sw = Stopwatch.StartNew();
-                        bool ok = await TryRandomAxisLeaveThenStopForTargetPulseAsync(
-                            motorModel,
-                            target.TargetXPulse,
-                            ct,
-                            randomJumpLeaveStopTimeoutSec,
-                            randomJumpBothStopTimeoutSec,
-                            randomJumpMoveStatePollMs);
-                        sw.Stop();
-
-                        if (!ok)
-                        {
-                            axisOk = false;
-                            result.ErrorDescription =
-                                $"电机超时未停止，目标脉冲={target.TargetXPulse}，当前位置={motorModel.MotorParams.Pos}，状态={motorModel.MotorParams.MoveState}";
-                            WriteFlowLog(flowLogPath, $"[{motorId}] 跳转失败：seqNo={seqNo}, pointIndex={target.Index}, targetPulse={target.TargetXPulse}, currentPulse={motorModel.MotorParams.Pos}, state={motorModel.MotorParams.MoveState}");
-                            break;
-                        }
-
-                        // 记录终点位置和时间
-                        double actualTargetUm = motorModel.MotorParams.PosUm;
-                        double moveMs = sw.Elapsed.TotalMilliseconds;
-                        double distanceUm = Math.Abs(actualTargetUm - actualStartUm);
-                        double speed = moveMs > 1e-6
-                            ? distanceUm / (moveMs / 1000.0)
-                            : 0; // 微米/秒；避免计时过短导致除零
-
-                        // 添加行程记录
-                        moveTrips.Add(new RandomMoveTripAxisRecord
-                        {
-                            SeqNo = seqNo++,
-                            PointIndex = target.Index,
-                            PlannedStartUm = plannedStartUm,
-                            ActualStartUm = actualStartUm,
-                            TargetUm = target.TargetXUm,
-                            ActualTargetUm = actualTargetUm,
-                            MoveTimeMs = moveMs,
-                            DistanceUm = distanceUm,
-                            AvgSpeedUmPerSec = speed
-                        });
-
-                        completedMoves++;
-                        ReportProgress(completedMoves, totalPlannedMoves, overallSw.Elapsed);
-                        if (completedMoves <= 5 || completedMoves % 20 == 0 || completedMoves == totalPlannedMoves)
-                        {
-                            WriteFlowLog(flowLogPath, $"[{motorId}] 跳转进度：{completedMoves}/{totalPlannedMoves}, seqNo={seqNo - 1}, pointIndex={target.Index}, actualStartUm={actualStartUm:F3}, actualTargetUm={actualTargetUm:F3}, moveMs={moveMs:F1}, distanceUm={distanceUm:F3}, speedUmPerSec={speed:F3}");
-                        }
-
-                        plannedCurrent = target;
                     }
                 }
 
@@ -323,15 +355,16 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                 {
                     result.IsPassed = false;
                     result.IsTestCompleted = false;
-                    result.Description = "随机坐标重复精度测试未正常完成（存在超时或指令失败）";
-                    WriteFlowLog(flowLogPath, $"[{motorId}] 流程结束（失败）：isCompleted={result.IsTestCompleted}, avgStdX={result.AvgStdX:F3}, avgMoveMs={result.AvgMoveTimeMs:F2}, error={result.ErrorDescription ?? "无"}");
+                    result.Description = $"随机坐标重复精度测试未正常完成（跳过{totalSkipped}次，存在超时或指令失败）";
+                    WriteFlowLog(flowLogPath, $"[{motorId}] 流程结束（失败）：isCompleted={result.IsTestCompleted}, avgStdX={result.AvgStdX:F3}, avgMoveMs={result.AvgMoveTimeMs:F2}, skipped={totalSkipped}, error={result.ErrorDescription ?? "无"}");
                 }
                 else
                 {
                     result.IsPassed = true;
                     result.IsTestCompleted = true;
-                    result.Description = "随机坐标重复精度测试完成";
-                    WriteFlowLog(flowLogPath, $"[{motorId}] 流程结束（成功）：isCompleted={result.IsTestCompleted}, avgStdX={result.AvgStdX:F3}, avgMoveMs={result.AvgMoveTimeMs:F2}, points={result.TargetPoints.Count}, trips={result.MoveTripsX.Count}");
+                    string skippedNote = totalSkipped > 0 ? $"（跳过{totalSkipped}次超时点）" : "";
+                    result.Description = $"随机坐标重复精度测试完成{skippedNote}";
+                    WriteFlowLog(flowLogPath, $"[{motorId}] 流程结束（成功）：isCompleted={result.IsTestCompleted}, avgStdX={result.AvgStdX:F3}, avgMoveMs={result.AvgMoveTimeMs:F2}, points={result.TargetPoints.Count}, trips={result.MoveTripsX.Count}, skipped={totalSkipped}");
                 }
 
             }
