@@ -107,7 +107,7 @@ namespace UtilityTools.Modules.MotorTest.Model
         private string _speedCalcTimeSource = "速度时间源: 本地时间(回退)";
         // 统一类型为 MotorDbContext
 
-        private string _version = "v4.0.6";
+        private string _version = "v4.0.8";
         /// <summary>
         /// 版本号
         /// </summary>
