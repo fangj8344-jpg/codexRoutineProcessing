@@ -195,9 +195,39 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                 foreach (var point in points)
                     result.TargetPoints.Add(point);
 
-                // 3. 准备电机
+                // 3. 准备电机：设置闭环+使能+运行，然后移动到行程中心脱离限位
                 WriteFlowLog(flowLogPath, $"[{motorId}] 准备电机：设置闭环位置控制 + 使能 + 运行。");
                 await PrepareAxisForRandomJumpsAsync(motorId, motorEntity, ct);
+
+                int centerPulse = (minPulse + maxPulse) / 2;
+                WriteFlowLog(flowLogPath, $"[{motorId}] 满行程结束后回中心：目标脉冲={centerPulse}, 当前位置={motorModel.MotorParams.Pos}, 限位状态={motorModel.MotorParams.LimitedState}");
+                motorEntity.SetMotorGoToCommand(motorId, EnumMotorUnit.Pulse, centerPulse);
+
+                // 等待电机到达中心位置（脱离物理限位）
+                var centerSw = System.Diagnostics.Stopwatch.StartNew();
+                const int centerTimeoutSec = 30;
+                const int centerTolerancePulse = 100;
+                bool reachedCenter = false;
+                while (centerSw.Elapsed.TotalSeconds < centerTimeoutSec)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    if (Math.Abs(motorModel.MotorParams.Pos - centerPulse) <= centerTolerancePulse
+                        && motorModel.MotorParams.MoveState == EnumMotorMoveState.MotorStop)
+                    {
+                        reachedCenter = true;
+                        break;
+                    }
+                    await Task.Delay(200, ct).ConfigureAwait(false);
+                }
+
+                if (!reachedCenter)
+                {
+                    WriteFlowLog(flowLogPath, $"[{motorId}] 回中心超时（{centerTimeoutSec}s），当前位置={motorModel.MotorParams.Pos}，继续执行。");
+                }
+                else
+                {
+                    WriteFlowLog(flowLogPath, $"[{motorId}] 已到达行程中心，当前位置={motorModel.MotorParams.Pos}，限位状态={motorModel.MotorParams.LimitedState}");
+                }
                 WriteFlowLog(flowLogPath, $"[{motorId}] 电机准备完成。");
 
                 int totalPlannedMoves = FixedRepeatsPerPoint * points.Count;
