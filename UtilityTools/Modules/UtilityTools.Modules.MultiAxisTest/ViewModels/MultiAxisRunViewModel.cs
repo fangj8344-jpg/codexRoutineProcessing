@@ -125,6 +125,16 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
             if (e.PropertyName == nameof(MultiAxisWorkflowState.FirmwareCheckMessage))
             {
                 RaisePropertyChanged(nameof(FirmwareStatusText));
+                return;
+            }
+            if (e.PropertyName == nameof(MultiAxisWorkflowState.DevShortcutXyOnlyAxes))
+            {
+                RaisePropertyChanged(nameof(IsDevShortcutMode));
+                FillMockMotorDataCommand.RaiseCanExecuteChanged();
+                if (_state.DevShortcutXyOnlyAxes)
+                {
+                    CanUpload = true;
+                }
             }
         }
 
@@ -306,6 +316,35 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
                 // 检查本地电机数据状态
                 int localMotorCount = motorTestData?.Content?.Motors?.Count ?? 0;
                 bool localHasMotorData = localMotorCount > 0;
+
+                // 本地无电机数据时直接拦截，不允许上传
+                if (!localHasMotorData)
+                {
+                    await App.Current.Dispatcher.InvokeAsync(async () =>
+                    {
+                        var panel = new StackPanel { Margin = new Thickness(16) };
+                        panel.Children.Add(new TextBlock
+                        {
+                            Text = "无法上传",
+                            FontSize = 20,
+                            FontWeight = FontWeights.Bold,
+                            Foreground = Brushes.Red
+                        });
+                        panel.Children.Add(new TextBlock
+                        {
+                            Text = "本地没有电机测试数据（Motors 为空），请先完成测试或填充数据后再上传。",
+                            Margin = new Thickness(0, 10, 0, 10),
+                            TextWrapping = TextWrapping.Wrap
+                        });
+                        panel.Children.Add(new Button
+                        {
+                            Content = "确定",
+                            Command = DialogHost.CloseDialogCommand
+                        });
+                        await DialogHost.Show(panel, "MultiAxisRunViewHost");
+                    });
+                    return;
+                }
 
                 // 构建确认弹窗
                 bool userConfirmed = await ShowUploadConfirmDialogAsync(
