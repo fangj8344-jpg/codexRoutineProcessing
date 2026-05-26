@@ -1,0 +1,439 @@
+<UserControl x:Class="UtilityTools.Modules.KeyboardTest.Views.KeyboardTestView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:oxy="http://oxyplot.org/wpf"
+             xmlns:local="clr-namespace:UtilityTools.Modules.KeyboardTest.Views"
+             mc:Ignorable="d"
+             d:DesignHeight="820"
+             d:DesignWidth="1400"
+             Background="#1a1a2e">
+    <UserControl.Resources>
+        <!-- 物理按键样式 -->
+        <Style x:Key="PhysicalKeyStyle" TargetType="Border">
+            <Setter Property="Background" Value="#2d2d2d" />
+            <Setter Property="BorderBrush" Value="#444444" />
+            <Setter Property="BorderThickness" Value="1.5" />
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="Padding" Value="6,8" />
+            <Setter Property="Margin" Value="3" />
+            <Setter Property="MinWidth" Value="110" />
+            <Setter Property="MinHeight" Value="48" />
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect ShadowDepth="2" BlurRadius="4" Opacity="0.4" Color="Black" />
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsPressed}" Value="True">
+                    <Setter Property="Background" Value="#00cc66" />
+                    <Setter Property="BorderBrush" Value="#66ffaa" />
+                    <Setter Property="Effect">
+                        <Setter.Value>
+                            <DropShadowEffect ShadowDepth="0" BlurRadius="12" Opacity="0.6" Color="#00cc66" />
+                        </Setter.Value>
+                    </Setter>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 按键名称文字 -->
+        <Style x:Key="KeyNameStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#e0e0e0" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="FontFamily" Value="Microsoft YaHei" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="TextAlignment" Value="Center" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsPressed}" Value="True">
+                    <Setter Property="Foreground" Value="#003300" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 按键ID文字 -->
+        <Style x:Key="KeyIdTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#666666" />
+            <Setter Property="FontSize" Value="9" />
+            <Setter Property="FontFamily" Value="Consolas" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsPressed}" Value="True">
+                    <Setter Property="Foreground" Value="#1B5E20" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 按钮模板 -->
+        <DataTemplate x:Key="ButtonTemplate">
+            <Border Style="{StaticResource PhysicalKeyStyle}">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding Name}" Style="{StaticResource KeyNameStyle}" />
+                    <TextBlock Style="{StaticResource KeyIdTextStyle}" Margin="0,2,0,0">
+                        <Run Text="{Binding Id, Mode=OneWay}" />
+                        <Run Text=" " />
+                        <Run Text="{Binding StateText, Mode=OneWay}" />
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- 旋钮曲线模板 -->
+        <DataTemplate x:Key="KnobChartTemplate">
+            <Border Background="#16213e"
+                    BorderBrush="#0f3460"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="10,6"
+                    Margin="4">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- 旋钮标题行 -->
+                    <StackPanel Grid.Row="0" Orientation="Horizontal">
+                        <TextBlock Text="{Binding Id}"
+                                   Foreground="#666"
+                                   FontSize="10"
+                                   FontFamily="Consolas"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,6,0" />
+                        <TextBlock Text="{Binding Name}"
+                                   Foreground="#e0e0e0"
+                                   FontSize="13"
+                                   FontWeight="Bold"
+                                   FontFamily="Microsoft YaHei"
+                                   VerticalAlignment="Center" />
+                        <!-- 旋钮按下指示 -->
+                        <Border CornerRadius="3"
+                                Padding="5,1"
+                                Margin="8,0,0,0"
+                                VerticalAlignment="Center">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Background" Value="Transparent" />
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsPressed}" Value="True">
+                                            <Setter Property="Background" Value="#ff5566" />
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <TextBlock Text="按下" Foreground="White" FontSize="9" FontWeight="Bold" />
+                        </Border>
+                    </StackPanel>
+
+                    <!-- 数据行 -->
+                    <WrapPanel Grid.Row="1" Margin="0,3,0,2">
+                        <TextBlock Foreground="#888" FontSize="11" Margin="0,0,12,0">
+                            <Run Text="方向:" />
+                            <Run Text="{Binding Direction, Mode=OneWay}" Foreground="#4FC3F7" FontWeight="Bold" />
+                        </TextBlock>
+                        <TextBlock Foreground="#888" FontSize="11" Margin="0,0,12,0">
+                            <Run Text="累计:" />
+                            <Run Text="{Binding AccumulatedValue, Mode=OneWay}" Foreground="#00E676" FontWeight="Bold" />
+                        </TextBlock>
+                        <TextBlock Foreground="#888" FontSize="11">
+                            <Run Text="次数:" />
+                            <Run Text="{Binding RotationCount, Mode=OneWay}" Foreground="#FFD54F" />
+                        </TextBlock>
+                    </WrapPanel>
+
+                    <!-- OxyPlot 曲线 -->
+                    <oxy:PlotView Grid.Row="2"
+                                  Model="{Binding PlotModel}"
+                                  MinHeight="70"
+                                  Background="Transparent" />
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <!-- 右侧旋钮圆形指示器模板 -->
+        <DataTemplate x:Key="KnobIndicatorTemplate">
+            <Border Width="68" Height="68"
+                    CornerRadius="34"
+                    Margin="3,4"
+                    Background="#2d2d2d"
+                    Padding="3">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="BorderBrush" Value="#444" />
+                        <Setter Property="BorderThickness" Value="3" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Direction}" Value="↻ 正转">
+                                <Setter Property="BorderBrush" Value="#00aaff" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Direction}" Value="↺ 反转">
+                                <Setter Property="BorderBrush" Value="#ffaa00" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsPressed}" Value="True">
+                                <Setter Property="Background" Value="#ff5566" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding Name}"
+                               Foreground="#ccc"
+                               FontSize="9"
+                               FontFamily="Microsoft YaHei"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding AccumulatedValue, StringFormat='{}{0:+0;-0;0}'}"
+                               FontSize="13"
+                               FontWeight="Bold"
+                               FontFamily="Consolas"
+                               TextAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="#666" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Direction}" Value="↻ 正转">
+                                        <Setter Property="Foreground" Value="#00aaff" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Direction}" Value="↺ 反转">
+                                        <Setter Property="Foreground" Value="#ffaa00" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="3*" />
+            <RowDefinition Height="4*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- ═══ 顶部状态栏 ═══ -->
+        <Border Grid.Row="0"
+                Background="#16213e"
+                CornerRadius="8"
+                Padding="14,8"
+                Margin="0,0,0,8">
+            <DockPanel LastChildFill="False">
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="CSSEC"
+                               Foreground="#00cc99"
+                               FontSize="18"
+                               FontWeight="Bold"
+                               FontFamily="Consolas"
+                               VerticalAlignment="Center" />
+                    <TextBlock Text="中船航海 雷达键盘"
+                               Foreground="#e0e0e0"
+                               FontSize="15"
+                               FontFamily="Microsoft YaHei"
+                               Margin="10,0,0,0"
+                               VerticalAlignment="Center" />
+                    <Border Background="#0f3460"
+                            CornerRadius="4"
+                            Padding="8,3"
+                            Margin="14,0,0,0"
+                            VerticalAlignment="Center">
+                        <TextBlock Text="VID:0x1234 PID:0x003B"
+                                   FontSize="10"
+                                   FontFamily="Consolas"
+                                   Foreground="#888" />
+                    </Border>
+                </StackPanel>
+
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock VerticalAlignment="Center" Margin="0,0,10,0" FontSize="10" Foreground="#888">
+                        <Run Text="报文:" />
+                        <Run Text="{Binding PacketCount, Mode=OneWay}" Foreground="#FFD54F" />
+                    </TextBlock>
+                    <TextBlock VerticalAlignment="Center" Margin="0,0,14,0" FontSize="12">
+                        <Run Text="触发: " Foreground="#666" />
+                        <Run Text="{Binding LastTriggered, Mode=OneWay}" Foreground="#ff5252" FontWeight="Bold" />
+                    </TextBlock>
+                    <Button Command="{Binding ConnectCommand}"
+                            Content="连接"
+                            Margin="3,0"
+                            Padding="14,4"
+                            FontSize="12"
+                            Background="#00cc66"
+                            Foreground="White"
+                            Style="{StaticResource MaterialDesignRaisedButton}" />
+                    <Button Command="{Binding DisconnectCommand}"
+                            Content="断开"
+                            Margin="3,0"
+                            Padding="14,4"
+                            FontSize="12"
+                            Style="{StaticResource MaterialDesignOutlinedButton}" />
+                    <Button Command="{Binding ResetAllCommand}"
+                            Content="重置"
+                            Margin="3,0"
+                            Padding="14,4"
+                            FontSize="12"
+                            Style="{StaticResource MaterialDesignOutlinedButton}" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- ═══ 旋钮曲线区 ═══ -->
+        <Border Grid.Row="1"
+                Background="#1a1a2e"
+                Margin="0,0,0,6">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0"
+                           Text="旋钮值变化曲线 (7个旋转编码器)"
+                           Foreground="#888"
+                           FontSize="12"
+                           FontFamily="Microsoft YaHei"
+                           Margin="8,4,0,2" />
+                <ItemsControl Grid.Row="1"
+                              ItemsSource="{Binding Knobs}"
+                              ItemTemplate="{StaticResource KnobChartTemplate}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Rows="2" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+            </Grid>
+        </Border>
+
+        <!-- ═══ 键盘布局区 ═══ -->
+        <Border Grid.Row="2"
+                Background="#111122"
+                CornerRadius="10"
+                Padding="16,10"
+                BorderBrush="#222244"
+                BorderThickness="1"
+                Margin="0,0,0,6">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="30" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- 左上区域 B1~B9 -->
+                <StackPanel Grid.Column="0" Grid.Row="0">
+                    <TextBlock Text="◆ 左上区域 (B1~B9)"
+                               Foreground="#555"
+                               FontSize="11"
+                               Margin="4,0,0,6" />
+                    <StackPanel Orientation="Horizontal">
+                        <ContentControl Content="{Binding LeftButtons[0]}" ContentTemplate="{StaticResource ButtonTemplate}" />
+                        <ContentControl Content="{Binding LeftButtons[1]}" ContentTemplate="{StaticResource ButtonTemplate}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <ContentControl Content="{Binding LeftButtons[2]}" ContentTemplate="{StaticResource ButtonTemplate}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <ContentControl Content="{Binding LeftButtons[3]}" ContentTemplate="{StaticResource ButtonTemplate}" />
+                        <ContentControl Content="{Binding LeftButtons[4]}" ContentTemplate="{StaticResource ButtonTemplate}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <ContentControl Content="{Binding LeftButtons[5]}" ContentTemplate="{StaticResource ButtonTemplate}" />
+                        <ContentControl Content="{Binding LeftButtons[6]}" ContentTemplate="{StaticResource ButtonTemplate}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <ContentControl Content="{Binding LeftButtons[7]}" ContentTemplate="{StaticResource ButtonTemplate}" />
+                        <ContentControl Content="{Binding LeftButtons[8]}" ContentTemplate="{StaticResource ButtonTemplate}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- 右下区域 B10~B19 -->
+                <StackPanel Grid.Column="2" Grid.Row="0">
+                    <TextBlock Text="◆ 右下区域 (B10~B19)"
+                               Foreground="#555"
+                               FontSize="11"
+                               Margin="4,0,0,6" />
+                    <StackPanel Orientation="Horizontal">
+                        <ContentControl Content="{Binding RightButtons[0]}" ContentTemplate="{StaticResource ButtonTemplate}" />
+                        <ContentControl Content="{Binding RightButtons[1]}" ContentTemplate="{StaticResource ButtonTemplate}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <ContentControl Content="{Binding RightButtons[2]}" ContentTemplate="{StaticResource ButtonTemplate}" />
+                        <ContentControl Content="{Binding RightButtons[3]}" ContentTemplate="{StaticResource ButtonTemplate}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <ContentControl Content="{Binding RightButtons[4]}" ContentTemplate="{StaticResource ButtonTemplate}" />
+                        <ContentControl Content="{Binding RightButtons[5]}" ContentTemplate="{StaticResource ButtonTemplate}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <ContentControl Content="{Binding RightButtons[6]}" ContentTemplate="{StaticResource ButtonTemplate}" />
+                        <ContentControl Content="{Binding RightButtons[7]}" ContentTemplate="{StaticResource ButtonTemplate}" />
+                        <ContentControl Content="{Binding RightButtons[8]}" ContentTemplate="{StaticResource ButtonTemplate}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <ContentControl Content="{Binding RightButtons[9]}" ContentTemplate="{StaticResource ButtonTemplate}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- 旋钮指示器（横向排列，在按钮下方） -->
+                <StackPanel Grid.Row="1" Grid.ColumnSpan="4" Margin="0,10,0,0">
+                    <TextBlock Text="◆ 旋钮 (K1~K7)"
+                               Foreground="#555"
+                               FontSize="11"
+                               Margin="4,0,0,6" />
+                    <ItemsControl ItemsSource="{Binding Knobs}"
+                                  ItemTemplate="{StaticResource KnobIndicatorTemplate}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ═══ 底部日志 ═══ -->
+        <Border Grid.Row="3"
+                Background="#16213e"
+                CornerRadius="6"
+                Padding="8,4"
+                MaxHeight="110">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <DockPanel Grid.Row="0" Margin="4,0,4,2">
+                    <TextBlock Text="事件日志" Foreground="#666" FontSize="11" DockPanel.Dock="Left" VerticalAlignment="Center" />
+                    <TextBlock DockPanel.Dock="Left" Foreground="#444" FontSize="10" Margin="12,0" VerticalAlignment="Center">
+                        <Run Text="设备: " />
+                        <Run Text="{Binding DeviceInfo, Mode=OneWay}" Foreground="#4FC3F7" />
+                    </TextBlock>
+                    <Button DockPanel.Dock="Right" Content="清除" Command="{Binding ClearLogCommand}"
+                            Foreground="#666" FontSize="10"
+                            Style="{StaticResource MaterialDesignToolButton}" />
+                </DockPanel>
+                <ListBox Grid.Row="1"
+                         ItemsSource="{Binding Logs}"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         Foreground="#aaa"
+                         FontSize="10.5"
+                         FontFamily="Consolas, Microsoft YaHei"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
