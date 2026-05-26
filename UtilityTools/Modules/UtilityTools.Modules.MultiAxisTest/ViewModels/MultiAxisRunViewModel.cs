@@ -94,6 +94,12 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
 
             // 订阅测试结果事件，追踪各轴测试状态
             _eventAggregator.GetEvent<MotorTestResultEvent>().Subscribe(OnMotorTestResult, ThreadOption.UIThread);
+
+            // 快捷键进入时直接允许上传
+            if (_state.DevShortcutXyOnlyAxes)
+            {
+                CanUpload = true;
+            }
         }
 
         private void State_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -150,10 +156,16 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
         }
 
         /// <summary>
-        /// 综合评估是否允许上传：所有已完成的轴必须全部通过，且至少有一轴完成
+        /// 综合评估是否允许上传：所有已完成的轴必须全部通过，且至少有一轴完成；快捷键模式始终允许
         /// </summary>
         private void EvaluateCanUpload()
         {
+            if (_state.DevShortcutXyOnlyAxes)
+            {
+                CanUpload = true;
+                return;
+            }
+
             if (_axisTestCompleted.Count == 0)
             {
                 CanUpload = false;
@@ -262,39 +274,194 @@ namespace UtilityTools.Modules.MultiAxisTest.ViewModels
         {
             try
             {
-                // 1. 打上测试结束时间
-                // 因为你的 _state 就是档案柜，直接调它！
-                //取出最终要上传的数据原件
-
                 var motorTestData = _state.GetFinalReport();
-              
-                // 2. 拿到管家，准备拼装数据
-                // 因为确保配置存在这件事交给了底层 Service，我们这里只要拿 DeviceId 就行
+                string sampleStageId = motorTestData?.SampleStageId ?? string.Empty;
+
+                // 查询云端是否已有该样品台的标定数据
+                bool cloudHasData = false;
+                string cloudQueryError = null;
+                string cloudRawJson = null;
+                if (!string.IsNullOrWhiteSpace(sampleStageId))
+                {
+                    var queryResult = await _thingboardService.QueryCalibrationExistsAsync(sampleStageId);
+                    if (queryResult.Success)
+                    {
+                        cloudHasData = queryResult.HasData;
+                        cloudRawJson = queryResult.RawJson;
+                    }
+                    else
+                    {
+                        cloudQueryError = queryResult.ErrorMsg;
+                    }
+                }
+
+                // 检查本地电机数据状态
+                int localMotorCount = motorTestData?.Content?.Motors?.Count ?? 0;
+                bool localHasMotorData = localMotorCount > 0;
+
+                // 构建确认弹窗
+                bool userConfirmed = await ShowUploadConfirmDialogAsync(
+                    sampleStageId, cloudHasData, cloudQueryError, localHasMotorData, localMotorCount);
+
+                if (!userConfirmed)
+                    return;
+
                 ThingsBoardAuthManager.LoadConfig();
                 var config = ThingsBoardAuthManager.Current;
-                // 🚨 3. 严格按照 API 文档的要求，拼装匿名外壳对象
                 _state.UploadInformation.DeviceId = config.DeviceId;
 
-
-                // 4. 序列化成 JSON 字符串
                 var options = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
                 string jsonPayload = System.Text.Json.JsonSerializer.Serialize(_state.UploadInformation, options);
 
-                // 5. 🚀 一键发射！底层保镖会负责查票、买票、带票过安检
                 HttpTestResult = await _thingboardService.UploadTelemetryAsync(jsonPayload);
 
-                // 6. 后续处理：如果成功（盾牌变绿弹窗），准备下一台设备的测试 
                 if (HttpTestResult)
                 {
                     NLog.LogManager.GetCurrentClassLogger().Debug($"标定数据上传成功:\n{jsonPayload}");
                 }
-
-
             }
             catch (Exception ex) 
             {
                 NLog.LogManager.GetCurrentClassLogger().Debug($"上传失败:{ex}");
             }
+        }
+
+        private async Task<bool> ShowUploadConfirmDialogAsync(
+            string sampleStageId,
+            bool cloudHasData,
+            string? cloudQueryError,
+            bool localHasMotorData,
+            int localMotorCount)
+        {
+            var tcs = new TaskCompletionSource<bool>();
+
+            await App.Current.Dispatcher.InvokeAsync(async () =>
+            {
+                var panel = new StackPanel { Margin = new Thickness(20), MinWidth = 360 };
+
+                panel.Children.Add(new TextBlock
+                {
+                    Text = "上传确认",
+                    FontSize = 20,
+                    FontWeight = FontWeights.Bold,
+                    Margin = new Thickness(0, 0, 0, 12)
+                });
+
+                // 样品台 ID
+                panel.Children.Add(new TextBlock
+                {
+                    Text = $"样品台编号：{(string.IsNullOrWhiteSpace(sampleStageId) ? "未知" : sampleStageId)}",
+                    Margin = new Thickness(0, 0, 0, 8)
+                });
+
+                // 云端数据状态
+                string cloudStatusText;
+                Brush cloudStatusColor;
+                if (cloudQueryError != null)
+                {
+                    cloudStatusText = $"⚠ 云端查询失败：{cloudQueryError}";
+                    cloudStatusColor = Brushes.Orange;
+                }
+                else if (cloudHasData)
+                {
+                    cloudStatusText = "⚠ 云端已有该样品台的电机标定数据，上传将覆盖！";
+                    cloudStatusColor = Brushes.Red;
+                }
+                else
+                {
+                    cloudStatusText = "✓ 云端暂无该样品台的电机标定数据";
+                    cloudStatusColor = Brushes.Green;
+                }
+
+                panel.Children.Add(new TextBlock
+                {
+                    Text = cloudStatusText,
+                    Foreground = cloudStatusColor,
+                    FontWeight = cloudHasData ? FontWeights.Bold : FontWeights.Normal,
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(0, 0, 0, 8)
+                });
+
+                // 本地数据状态
+                string localStatusText;
+                Brush localStatusColor;
+                if (localHasMotorData)
+                {
+                    localStatusText = $"✓ 本地有 {localMotorCount} 个轴的电机测试数据";
+                    localStatusColor = Brushes.Green;
+                }
+                else
+                {
+                    localStatusText = "⚠ 本地无电机测试数据，上传可能覆盖云端已有数据！";
+                    localStatusColor = Brushes.Red;
+                }
+
+                panel.Children.Add(new TextBlock
+                {
+                    Text = localStatusText,
+                    Foreground = localStatusColor,
+                    FontWeight = !localHasMotorData ? FontWeights.Bold : FontWeights.Normal,
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(0, 0, 0, 16)
+                });
+
+                // 如果云端有数据且本地无数据，加强警告
+                if (cloudHasData && !localHasMotorData)
+                {
+                    panel.Children.Add(new TextBlock
+                    {
+                        Text = "❌ 严重警告：本地无数据，继续上传将导致云端已有数据被空数据覆盖！",
+                        Foreground = Brushes.Red,
+                        FontWeight = FontWeights.Bold,
+                        TextWrapping = TextWrapping.Wrap,
+                        Margin = new Thickness(0, 0, 0, 16)
+                    });
+                }
+
+                panel.Children.Add(new TextBlock
+                {
+                    Text = "是否确认上传？",
+                    FontSize = 14,
+                    Margin = new Thickness(0, 0, 0, 12)
+                });
+
+                // 按钮区域
+                var btnPanel = new StackPanel
+                {
+                    Orientation = System.Windows.Controls.Orientation.Horizontal,
+                    HorizontalAlignment = HorizontalAlignment.Right
+                };
+
+                var cancelBtn = new Button
+                {
+                    Content = "取消",
+                    Margin = new Thickness(0, 0, 8, 0),
+                    MinWidth = 80
+                };
+                cancelBtn.Click += (s, e) =>
+                {
+                    DialogHost.CloseDialogCommand.Execute(false, null);
+                };
+
+                var confirmBtn = new Button
+                {
+                    Content = "确认上传",
+                    MinWidth = 80
+                };
+                confirmBtn.Click += (s, e) =>
+                {
+                    DialogHost.CloseDialogCommand.Execute(true, null);
+                };
+
+                btnPanel.Children.Add(cancelBtn);
+                btnPanel.Children.Add(confirmBtn);
+                panel.Children.Add(btnPanel);
+
+                var dialogResult = await DialogHost.Show(panel, "MultiAxisRunViewHost");
+                tcs.TrySetResult(dialogResult is true);
+            });
+
+            return await tcs.Task;
         }
 
       
