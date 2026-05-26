@@ -100,7 +100,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             // 这里的逻辑对应你原代码里的 for (int i = 0; i < 60; i++)
             DateTime startTime = DateTime.Now;
             int loopCount = 0;
-            while ((DateTime.Now - startTime).TotalSeconds < 120) // 60秒超时
+            while ((DateTime.Now - startTime).TotalSeconds < 180) // 3分钟超时
             {
                 if (ct.IsCancellationRequested)
                 {
@@ -163,7 +163,7 @@ namespace UtilityTools.Modules.MotorTest.TestItems
 
             result.ErrorDescription = "检测超时";
             result.IsLimitAbnormal = true;
-            LogFail($"检测超时(120s)。finalPos={motorModel.MotorParams.Pos}, finalLimit={motorModel.MotorParams.LimitedState}, SN={motorModel.MotorParams.SNLimted}, SP={motorModel.MotorParams.SPLimted}");
+            LogFail($"检测超时(180s)。finalPos={motorModel.MotorParams.Pos}, finalLimit={motorModel.MotorParams.LimitedState}, SN={motorModel.MotorParams.SNLimted}, SP={motorModel.MotorParams.SPLimted}");
             return result;
         }
     }
