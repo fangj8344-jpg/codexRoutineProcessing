@@ -152,7 +152,7 @@ namespace UtilityTools.Core.Protocol
             {
                 LOGGER.Debug($"解析缓存不足, 扩容 {_buffer.Length} -> {_idx + data.Length}");
                 byte[] _tmp = new byte[_idx + data.Length];
-                Buffer.BlockCopy(_buffer, 0, _tmp, 0, _buffer.Length);
+                Buffer.BlockCopy(_buffer, 0, _tmp, 0, _idx);
                 _buffer = _tmp;
             }
 
@@ -164,9 +164,18 @@ namespace UtilityTools.Core.Protocol
             int header_pos;
             while ((header_pos = FindHeaderPos(st)) >= 0)
             {
-                if (_idx < header_pos + 2) break;
+                // 确保能安全读取长度字段（header + 2字节长度）
+                if (_idx < header_pos + DataPacket.HEADER.Length + 2) break;
 
                 int length = BitConverter.ToInt16(_buffer, header_pos + DataPacket.HEADER.Length);
+
+                // 长度字段无效（截断包或损坏数据）：跳过此假包头继续搜索
+                if (length < DataPacket.NONE_DATA_BYTES || length > 4096)
+                {
+                    st = header_pos + DataPacket.HEADER.Length;
+                    continue;
+                }
+
                 int ed = header_pos + length;
                 if (_idx < ed) break;//表示此包不全
 
