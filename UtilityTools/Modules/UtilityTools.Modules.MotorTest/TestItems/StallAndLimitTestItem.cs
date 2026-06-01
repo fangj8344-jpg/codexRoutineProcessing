@@ -97,10 +97,17 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             }
 
             // 2. 核心监控循环：每隔一段时间检查一次电机状态
-            // 这里的逻辑对应你原代码里的 for (int i = 0; i < 60; i++)
             DateTime startTime = DateTime.Now;
             int loopCount = 0;
-            while ((DateTime.Now - startTime).TotalSeconds < 180) // 3分钟超时
+            const int stallCompareSamples = 4;       // 与约 3 秒前的采样比位移
+            const int stallPulseThreshold = 50;
+            const int stallWhileMoveThreshold = 3;   // MotorMove 下连续 3 次几乎不动 → 堵转
+            const int initialStopConfirmSeconds = 10; // 初始即 Stop 时，给下位机一个稳定确认窗口
+            int stallWhileMoveCount = 0;
+            bool hasObservedMove = false;
+            DateTime? initialStopSince = null;
+
+            while ((DateTime.Now - startTime).TotalSeconds < 180)
             {
                 if (ct.IsCancellationRequested)
                 {
@@ -109,56 +116,113 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                 }
 
                 int currentPos = motorModel.MotorParams.Pos;
+                var moveState = motorModel.MotorParams.MoveState;
+                var limitState = motorModel.MotorParams.LimitedState;
                 posHistory.Add(currentPos);
                 loopCount++;
                 if (loopCount % 5 == 0)
                 {
-                    LogFlow($"状态快照: pos={currentPos}, moveState={motorModel.MotorParams.MoveState}, limit={motorModel.MotorParams.LimitedState}, SN={motorModel.MotorParams.SNLimted}, SP={motorModel.MotorParams.SPLimted}");
+                    LogFlow($"状态快照: pos={currentPos}, moveState={moveState}, limit={limitState}, SN={motorModel.MotorParams.SNLimted}, SP={motorModel.MotorParams.SPLimted}");
                 }
 
-                // --- 判定逻辑 A：堵转判定 ---
-                if (posHistory.Count > 5)
+                // --- 优先判定限位（停稳后也能命中，避免被堵转逻辑抢先 return）---
+                if (_direction && limitState == EnumMotorLimitedState.PhyForwardLimited)
                 {
-                    // 如果最近几次位置几乎没动 (变化 < 50)，判定为堵转
-                    if (Math.Abs(currentPos - posHistory[posHistory.Count - 4]) < 50)
+                    result.IsPassed = true;
+                    result.MeasuredValue = "PhyForwardLimited";
+                    LogKey($"命中物理正限位，测试通过。pos={currentPos}, limit={limitState}");
+                    return result;
+                }
+                if (!_direction && limitState == EnumMotorLimitedState.PhyBackwardLimited)
+                {
+                    result.IsPassed = true;
+                    result.MeasuredValue = "PhyBackwardLimited";
+                    LogKey($"命中物理负限位，测试通过。pos={currentPos}, limit={limitState}");
+                    return result;
+                }
+                if (motorModel.MotorParams.SNLimted || motorModel.MotorParams.SPLimted)
+                {
+                    result.MeasuredValue = motorModel.MotorParams.SNLimted ? "SNLimted" : "SPLimted";
+                    result.ErrorDescription = "触发软件限位";
+                    result.IsLimitAbnormal = true;
+                    LogFail($"触发软件限位。SN={motorModel.MotorParams.SNLimted}, SP={motorModel.MotorParams.SPLimted}, pos={currentPos}");
+                    return result;
+                }
+
+                if (!hasObservedMove && moveState == EnumMotorMoveState.MotorStop)
+                {
+                    initialStopSince ??= DateTime.Now;
+                    if (loopCount == 1)
                     {
-                        motorEntity.SetMotorOperatingStatusCommand(motorId, EnumMotorOperatingState.Stop);
-                        result.MeasuredValue = "stall";
-                        result.ErrorDescription = $"位置 {currentPos} 发生堵转";
-                        LogFail($"判定堵转。currentPos={currentPos}, comparePos={posHistory[posHistory.Count - 4]}");
-                        return result;
+                        LogFlow($"下发运动后初始状态即为 MotorStop，进入 {initialStopConfirmSeconds}s 到位确认窗口。");
                     }
-                    // --- 判定逻辑 B：物理限位判定 ---
-                    var limitState = motorModel.MotorParams.LimitedState;
-                    if (_direction && limitState == EnumMotorLimitedState.PhyForwardLimited)
+
+                    var stopSec = (DateTime.Now - initialStopSince.Value).TotalSeconds;
+                    if (loopCount % 5 == 0)
+                    {
+                        LogFlow($"初始阶段仍为 MotorStop，继续等待启动/到位确认（已等待 {stopSec:F0}s / {initialStopConfirmSeconds}s）...");
+                    }
+
+                    if (stopSec >= initialStopConfirmSeconds)
                     {
                         result.IsPassed = true;
-                        result.MeasuredValue = "PhyForwardLimited";
-                        LogKey($"命中物理正限位，测试通过。pos={currentPos}, limit={limitState}");
-                        return result;
-                    }
-                    if (!_direction && limitState == EnumMotorLimitedState.PhyBackwardLimited)
-                    {
-                        result.IsPassed = true;
-                        result.MeasuredValue = "PhyBackwardLimited";
-                        LogKey($"命中物理负限位，测试通过。pos={currentPos}, limit={limitState}");
+                        result.MeasuredValue = limitState == EnumMotorLimitedState.None ? "MotorStop" : limitState.ToString();
+                        result.Description = "电机保持停止状态，按到位完成";
+                        LogKey($"下发运动后 {initialStopConfirmSeconds}s 内持续 MotorStop，按到位完成。pos={currentPos}, limit={limitState}");
                         return result;
                     }
 
-                    // --- 判定逻辑 C：软件限位判定 ---
-                    if (motorModel.MotorParams.SNLimted || motorModel.MotorParams.SPLimted)
+                    await Task.Delay(1000, ct);
+                    continue;
+                }
+
+                if (!hasObservedMove && moveState != EnumMotorMoveState.MotorStop)
+                {
+                    hasObservedMove = true;
+                    initialStopSince = null;
+                    LogKey($"检测到电机已启动，转入运动监控。pos={currentPos}, moveState={moveState}");
+                }
+
+                if (hasObservedMove && moveState == EnumMotorMoveState.MotorStop)
+                {
+                    result.IsPassed = true;
+                    result.MeasuredValue = limitState == EnumMotorLimitedState.None ? "MotorStop" : limitState.ToString();
+                    result.Description = "电机停止，按到位完成";
+                    LogKey($"检测到电机已停止，按到位完成。pos={currentPos}, limit={limitState}");
+                    return result;
+                }
+
+                // --- 堵转判定（仅在已启动且仍处于 MotorMove 时生效）---
+                if (posHistory.Count > stallCompareSamples)
+                {
+                    int comparePos = posHistory[posHistory.Count - 1 - stallCompareSamples];
+                    int deltaPulse = Math.Abs(currentPos - comparePos);
+                    bool barelyMoved = deltaPulse < stallPulseThreshold;
+
+                    if (barelyMoved && moveState == EnumMotorMoveState.MotorMove)
                     {
-                        result.MeasuredValue = motorModel.MotorParams.SNLimted ? "SNLimted" : "SPLimted";
-                        result.ErrorDescription = "触发软件限位";
-                        result.IsLimitAbnormal = true;
-                        LogFail($"触发软件限位。SN={motorModel.MotorParams.SNLimted}, SP={motorModel.MotorParams.SPLimted}, pos={currentPos}");
-                        return result;
+                        // 仍处在运动状态但长时间不动 → 真堵转
+                        stallWhileMoveCount++;
+                        if (loopCount % 5 == 0)
+                        {
+                            LogWarn($"电机处于 MotorMove 但位移很小，疑似堵转累计中。deltaPulse={deltaPulse}, count={stallWhileMoveCount}/{stallWhileMoveThreshold}");
+                        }
+                        if (stallWhileMoveCount >= stallWhileMoveThreshold)
+                        {
+                            motorEntity.SetMotorOperatingStatusCommand(motorId, EnumMotorOperatingState.Stop);
+                            result.MeasuredValue = "stall";
+                            result.ErrorDescription = $"位置 {currentPos} 发生堵转（运动中 {stallWhileMoveThreshold} 秒无有效位移）";
+                            LogFail($"判定堵转。currentPos={currentPos}, comparePos={comparePos}, moveState=MotorMove");
+                            return result;
+                        }
+                    }
+                    else
+                    {
+                        stallWhileMoveCount = 0;
                     }
                 }
 
-              
-
-                await Task.Delay(1000, ct); // 每秒监测一次
+                await Task.Delay(1000, ct);
             }
 
             result.ErrorDescription = "检测超时";
