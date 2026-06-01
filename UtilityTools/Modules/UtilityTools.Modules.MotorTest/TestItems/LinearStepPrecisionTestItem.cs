@@ -36,8 +36,18 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             var result = new LinearTestResult { IsPassed = false };
             if (motorModel.MotorParams.SubRatio == 0)
             {
-                result.ErrorDescription = $"严重异常：[{TestName}] 检测到电机转换系数(SubRatio)为 0！配置丢失，测试强制终止！";
-                return result;
+                var waitStart = DateTime.UtcNow;
+                const int waitSubRatioTimeoutSec = 15;
+                while (motorModel.MotorParams.SubRatio == 0)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    if ((DateTime.UtcNow - waitStart).TotalSeconds > waitSubRatioTimeoutSec)
+                    {
+                        result.ErrorDescription = $"严重异常：[{TestName}] 电机转换系数(SubRatio)为0，等待{waitSubRatioTimeoutSec}秒仍未收到有效状态回包！请检查该轴通信连接。";
+                        return result;
+                    }
+                    await Task.Delay(500, ct).ConfigureAwait(false);
+                }
             }
             double ratio = motorModel.MotorParams.SubRatio;
             // 用于记录：目标位置、实际位置、偏差

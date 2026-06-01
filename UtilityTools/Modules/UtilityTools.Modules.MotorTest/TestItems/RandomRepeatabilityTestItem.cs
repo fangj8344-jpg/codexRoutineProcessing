@@ -115,12 +115,24 @@ namespace UtilityTools.Modules.MotorTest.TestItems
             string flowLogPath = CreateFlowLogPath(motorId);
             WriteFlowLog(flowLogPath, $"[{motorId}] 流程开始：designSpacingUm={FixedPointSpacingUm:F1}, repeatsPerPoint={FixedRepeatsPerPoint}, histogramBins={_histogramBins}, 当前PosUm={motorModel.MotorParams.PosUm:F3}");
 
-            // 验证参数
+            // 验证参数：等待 SubRatio 被状态回包填充（最多等 15 秒）
             if (motorModel.MotorParams.SubRatio <= 0)
             {
-                result.ErrorDescription = "电机换算系数异常（SubRatio<=0）";
-                WriteFlowLog(flowLogPath, $"[{motorId}] 参数异常：SubRatio={motorModel.MotorParams.SubRatio}");
-                return result;
+                WriteFlowLog(flowLogPath, $"[{motorId}] SubRatio={motorModel.MotorParams.SubRatio}，等待状态回包填充...");
+                var waitStart = DateTime.UtcNow;
+                const int waitSubRatioTimeoutSec = 15;
+                while (motorModel.MotorParams.SubRatio <= 0)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    if ((DateTime.UtcNow - waitStart).TotalSeconds > waitSubRatioTimeoutSec)
+                    {
+                        result.ErrorDescription = $"电机换算系数异常（SubRatio={motorModel.MotorParams.SubRatio}），等待{waitSubRatioTimeoutSec}秒仍未收到有效状态回包，请检查该轴通信是否正常";
+                        WriteFlowLog(flowLogPath, $"[{motorId}] 等待超时，SubRatio仍为{motorModel.MotorParams.SubRatio}，测试终止。请确认该轴的UDP状态端口(5002)通信正常。");
+                        return result;
+                    }
+                    await Task.Delay(500, ct).ConfigureAwait(false);
+                }
+                WriteFlowLog(flowLogPath, $"[{motorId}] SubRatio已就绪：{motorModel.MotorParams.SubRatio}，等待耗时{(DateTime.UtcNow - waitStart).TotalMilliseconds:F0}ms");
             }
 
             try
@@ -674,6 +686,9 @@ namespace UtilityTools.Modules.MotorTest.TestItems
                 // 第二段：等待“回到停止”或“位置连续收敛到目标”。
                 startWait = DateTime.UtcNow;
                 int stableAtTargetCount = 0;
+                int stableStoppedCount = 0;
+                int lastStablePos = motorModel.MotorParams.Pos;
+                const int stableStoppedThreshold = 5;
                 while (true)
                 {
                     ct.ThrowIfCancellationRequested();
@@ -684,11 +699,25 @@ namespace UtilityTools.Modules.MotorTest.TestItems
 
                         stableAtTargetCount++;
                         if (stableAtTargetCount >= 3)
-                            return true; // 状态位可能延迟，位置已连续稳定到位则判完成
+                            return true;
                     }
                     else
                     {
                         stableAtTargetCount = 0;
+                    }
+
+                    // 电机停稳判定：停止状态 + 位置连续不变 → 认为运动完成
+                    int currentPos = motorModel.MotorParams.Pos;
+                    if (IsMotorStop(motorModel) && currentPos == lastStablePos)
+                    {
+                        stableStoppedCount++;
+                        if (stableStoppedCount >= stableStoppedThreshold)
+                            return true;
+                    }
+                    else
+                    {
+                        stableStoppedCount = 0;
+                        lastStablePos = currentPos;
                     }
 
                     if ((DateTime.UtcNow - startWait).TotalSeconds > stopTimeoutSeconds)
