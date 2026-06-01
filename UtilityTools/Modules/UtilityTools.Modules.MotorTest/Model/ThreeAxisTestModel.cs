@@ -356,6 +356,8 @@ namespace UtilityTools.Modules.MotorTest.Model
             set { _loadSize = value; RaisePropertyChanged(); }
         }
         private CancellationTokenSource _cancellationToken;
+        private Task _activeMotorTestTask = Task.CompletedTask;
+        private readonly SemaphoreSlim _testSessionGate = new(1, 1);
         /// <summary>
         /// 取消令牌
         /// </summary>
@@ -667,111 +669,70 @@ namespace UtilityTools.Modules.MotorTest.Model
 
         private async void TestMotorTogether(string testModel)
         {
+            CancellationToken token;
             try
             {
-                // 1. 初始化取消令牌
-                CancellationToken = new CancellationTokenSource();
-                TestPerformance(); // 开启高频问询
-                _reportService.StartReport();
-                if (Motors != null && Motors.Count > 0)
-                {
-                    // 【核心修复】：在这里显式声明这个“任务篮子”变量
-                    List<Task> testTasks = new List<Task>();
-
-                    for (int i = 0; i < Motors.Count; i++)
-                    {
-                        // 获取当前轴的引用，避免变量不存在报错
-                        var currentMotor = Motors[i];
-                        var token = CancellationToken.Token;
-
-                        // 2. 将每个轴的任务添加到篮子里
-                        switch (testModel)
-                        {
-                            case "BaseTest":
-                                testTasks.Add(currentMotor.BaseTest(token));
-                                break;
-                            case "TestSmoothnessDetection":
-                                testTasks.Add(currentMotor.SmoothnessTest(token));
-                                break;
-                            case "DurabilityTest":
-                                testTasks.Add(currentMotor.DurabilityTest(token));
-                                break;
-                        }
-                    }
-
-                    // 3. 同时等待篮子里所有的任务完成
-                    if (testTasks.Count > 0)
-                    {
-                        await Task.WhenAll(testTasks);
-                        _reportService.CompleteReport();
-                    }
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // 用户点了停止，正常退出
+                token = await PrepareMotorTestSessionAsync().ConfigureAwait(true);
             }
             catch (Exception ex)
             {
-                NLog.LogManager.GetCurrentClassLogger().Error($"并行测试异常: {ex}");
+                NLog.LogManager.GetCurrentClassLogger().Error(ex, "无法启动并行电机测试");
+                return;
+            }
+
+            var runTask = TestMotorTogetherInternalAsync(testModel, token);
+            AssignActiveMotorTestTask(runTask);
+
+            try
+            {
+                await runTask.ConfigureAwait(true);
+            }
+            catch (OperationCanceledException)
+            {
+                // 用户停止或新一轮测试接管
+            }
+            catch (Exception ex)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Error(ex, "并行测试异常");
             }
             finally
             {
-                CloseTestPerformance(); // 恢复正常频率
+                FinishMotorTestSession();
             }
         }
 
-
-        private async void IndependentMotortest(string testModel)
+        private async Task TestMotorTogetherInternalAsync(string testModel, CancellationToken token)
         {
-            // 1. 准备工作（还在 UI 线程，为了重置界面状态）
             TestPerformance();
-            ProgressValue = 0;
-            CancellationToken = new CancellationTokenSource();
-            var token = CancellationToken.Token;
-
+            _reportService.StartReport();
             try
             {
-                // 这样整个 for 循环和 switch 判断，都在后台跑，绝对不占 UI 资源
-                await Task.Run(async () =>
+                if (Motors == null || Motors.Count == 0)
+                    return;
+
+                var testTasks = new List<Task>();
+                for (int i = 0; i < Motors.Count; i++)
                 {
-                    if (Motors != null && Motors.Count > 0)
+                    var currentMotor = Motors[i];
+                    switch (testModel)
                     {
-                        for (int i = 0; i < Motors.Count; i++)
-                        {
-                            token.ThrowIfCancellationRequested(); // 随时检查强行中止
-
-                            var currentMotor = Motors[i];
-
-                            // 3. 执行具体的测试逻辑
-                            // 这里的 await 会在后台线程异步等待，不会跳回 UI 线程
-                            switch (testModel)
-                            {
-                                case "BaseTest": await currentMotor.BaseTest(token); break;
-                                case "TestSmoothnessDetection": await currentMotor.SmoothnessTest(token); break;
-                                case "DurabilityTest": await currentMotor.DurabilityTest(token); break;
-                            }
-
-                            // 4. 【关键点】：更新进度条这种 UI 操作，必须手动切回 UI 线程
-                            System.Windows.Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                ProgressValue = ((i + 1.0) / Motors.Count) * 100;
-                            });
-                        }
+                        case "BaseTest":
+                            testTasks.Add(currentMotor.BaseTest(token));
+                            break;
+                        case "TestSmoothnessDetection":
+                            testTasks.Add(currentMotor.SmoothnessTest(token));
+                            break;
+                        case "DurabilityTest":
+                            testTasks.Add(currentMotor.DurabilityTest(token));
+                            break;
                     }
-                }, token);
+                }
 
-                // 全部测完，拉满进度
-                ProgressValue = 100;
-            }
-            catch (OperationCanceledException)
-            {
-                // 捕获到取消，进度清零
-                ProgressValue = 0;
-            }
-            catch (Exception ex)
-            {
-                NLog.LogManager.GetCurrentClassLogger().Error($"串行测试（后台模式）异常: {ex}");
+                if (testTasks.Count > 0)
+                {
+                    await Task.WhenAll(testTasks).ConfigureAwait(true);
+                    _reportService.CompleteReport();
+                }
             }
             finally
             {
@@ -779,12 +740,158 @@ namespace UtilityTools.Modules.MotorTest.Model
             }
         }
 
-        private void ShotDown()
+        private async void IndependentMotortest(string testModel)
         {
-            if (CancellationToken != null)
+            CancellationToken token;
+            try
             {
-                CancellationToken.Cancel();
+                token = await PrepareMotorTestSessionAsync().ConfigureAwait(true);
             }
+            catch (Exception ex)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Error(ex, "无法启动串行电机测试");
+                return;
+            }
+
+            ProgressValue = 0;
+            var runTask = IndependentMotortestInternalAsync(testModel, token);
+            AssignActiveMotorTestTask(runTask);
+
+            try
+            {
+                await runTask.ConfigureAwait(true);
+                ProgressValue = 100;
+            }
+            catch (OperationCanceledException)
+            {
+                ProgressValue = 0;
+            }
+            catch (Exception ex)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Error(ex, "串行测试（后台模式）异常");
+            }
+            finally
+            {
+                FinishMotorTestSession();
+            }
+        }
+
+        private async Task IndependentMotortestInternalAsync(string testModel, CancellationToken token)
+        {
+            TestPerformance();
+            try
+            {
+                await Task.Run(async () =>
+                {
+                    if (Motors == null || Motors.Count == 0)
+                        return;
+
+                    for (int i = 0; i < Motors.Count; i++)
+                    {
+                        token.ThrowIfCancellationRequested();
+
+                        var currentMotor = Motors[i];
+                        switch (testModel)
+                        {
+                            case "BaseTest": await currentMotor.BaseTest(token).ConfigureAwait(false); break;
+                            case "TestSmoothnessDetection": await currentMotor.SmoothnessTest(token).ConfigureAwait(false); break;
+                            case "DurabilityTest": await currentMotor.DurabilityTest(token).ConfigureAwait(false); break;
+                        }
+
+                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            ProgressValue = ((i + 1.0) / Motors.Count) * 100;
+                        });
+                    }
+                }, token).ConfigureAwait(true);
+            }
+            finally
+            {
+                CloseTestPerformance();
+            }
+        }
+
+        /// <summary>
+        /// 取消上一轮测试并等待其结束，再签发新的 CancellationToken，避免多轴任务重叠。
+        /// </summary>
+        private async Task<CancellationToken> PrepareMotorTestSessionAsync()
+        {
+            await _testSessionGate.WaitAsync().ConfigureAwait(true);
+            try
+            {
+                CancellationToken?.Cancel();
+
+                try
+                {
+                    await _activeMotorTestTask.ConfigureAwait(true);
+                }
+                catch (OperationCanceledException)
+                {
+                    // 上一轮因取消结束，属预期
+                }
+                catch (Exception ex)
+                {
+                    NLog.LogManager.GetCurrentClassLogger().Warn(ex, "等待上一轮电机测试结束时发生异常");
+                }
+
+                TryStopAllMotorsAfterSessionCancel();
+
+                CancellationToken?.Dispose();
+                CancellationToken = new CancellationTokenSource();
+                IsCurrentTestRunning = true;
+                return CancellationToken.Token;
+            }
+            finally
+            {
+                _testSessionGate.Release();
+            }
+        }
+
+        private void AssignActiveMotorTestTask(Task task)
+        {
+            _activeMotorTestTask = task ?? Task.CompletedTask;
+        }
+
+        private void FinishMotorTestSession()
+        {
+            IsCurrentTestRunning = false;
+        }
+
+        private void TryStopAllMotorsAfterSessionCancel()
+        {
+            if (Motors == null)
+                return;
+
+            foreach (var motor in Motors)
+            {
+                try
+                {
+                    motor.StopMotor();
+                }
+                catch (Exception ex)
+                {
+                    NLog.LogManager.GetCurrentClassLogger().Warn(ex, "停止电机时发生异常");
+                }
+            }
+        }
+
+        private async void ShotDown()
+        {
+            CancellationToken?.Cancel();
+
+            try
+            {
+                await _activeMotorTestTask.ConfigureAwait(true);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Warn(ex, "等待测试任务停止时发生异常");
+            }
+
+            TryStopAllMotorsAfterSessionCancel();
 
             IsCurrentTestRunning = false;
             ProgressValue = 0;
@@ -793,24 +900,28 @@ namespace UtilityTools.Modules.MotorTest.Model
             YProgressValue = 0;
             XCurrentTestDisplay = "X轴测试已手动停止";
             YCurrentTestDisplay = "Y轴测试已手动停止";
-
-            if (Motors != null)
-            {
-                foreach (var motor in Motors)
-                {
-                    motor.StopMotor();
-                }
-            }
         }
 
         private async void StartRandomRepeatabilityTest()
         {
-            CancellationToken?.Cancel();
-            CancellationToken = new CancellationTokenSource();
+            CancellationToken token;
+            try
+            {
+                token = await PrepareMotorTestSessionAsync().ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Error(ex, "无法启动随机重复精度测试");
+                return;
+            }
+
+            var runTask = RunRandomRepeatabilityTestAsync(token);
+            AssignActiveMotorTestTask(runTask);
+
             try
             {
                 AppendRandomRepeatLogSafe("随机重复精度：测试任务已启动。");
-                await RunRandomRepeatabilityTestAsync(CancellationToken.Token);
+                await runTask.ConfigureAwait(true);
             }
             catch (OperationCanceledException)
             {
@@ -830,6 +941,10 @@ namespace UtilityTools.Modules.MotorTest.Model
                 NLog.LogManager.GetCurrentClassLogger().Error(ex, "随机坐标重复精度测试异常");
                 TryRestoreXyMotorsAfterRandomFailure();
                 ShowRandomRepeatabilityErrorDialog(detail);
+            }
+            finally
+            {
+                FinishMotorTestSession();
             }
         }
 
@@ -1597,30 +1712,27 @@ namespace UtilityTools.Modules.MotorTest.Model
         /// 
         private async void IndependentMotorDurabilityTest()
         {
-            // 1. 取消之前的任务并重新创建令牌
-            CancellationToken?.Cancel();
-            CancellationToken = new CancellationTokenSource();
-            var token = CancellationToken.Token;
+            CancellationToken token;
+            try
+            {
+                token = await PrepareMotorTestSessionAsync().ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                NLog.LogManager.GetCurrentClassLogger().Error(ex, "无法启动多轴耐久测试");
+                return;
+            }
+
+            var runTask = IndependentMotorDurabilityTestInternalAsync(token);
+            AssignActiveMotorTestTask(runTask);
 
             try
             {
-                // 开启狂暴模式（高频问询状态）
-                TestPerformance();
-
-                // 2. 准备所有电机的测试任务（并行起跑）
-                var testTasks = new List<Task>();
-                foreach (var motor in Motors)
-                {
-                    // 注意：这里不加 await，直接把任务丢进列表
-                    testTasks.Add(RunSingleMotorDurabilityWithCleanup(motor, token));
-                }
-
-                // 3. 同时等待所有电机测试结束（或被取消）
-                await Task.WhenAll(testTasks);
+                await runTask.ConfigureAwait(true);
             }
             catch (OperationCanceledException)
             {
-                // 正常取消，不需要处理
+                // 正常取消
             }
             catch (Exception ex)
             {
@@ -1628,11 +1740,29 @@ namespace UtilityTools.Modules.MotorTest.Model
             }
             finally
             {
-                // 4. 收尾：停止所有电机，恢复正常问询频率
+                FinishMotorTestSession();
+            }
+        }
+
+        private async Task IndependentMotorDurabilityTestInternalAsync(CancellationToken token)
+        {
+            try
+            {
+                TestPerformance();
+
+                var testTasks = new List<Task>();
                 if (Motors != null)
                 {
-                    foreach (var motor in Motors) motor.StopMotor();
+                    foreach (var motor in Motors)
+                        testTasks.Add(RunSingleMotorDurabilityWithCleanup(motor, token));
                 }
+
+                if (testTasks.Count > 0)
+                    await Task.WhenAll(testTasks).ConfigureAwait(true);
+            }
+            finally
+            {
+                TryStopAllMotorsAfterSessionCancel();
                 CloseTestPerformance();
             }
         }
